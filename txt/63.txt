@@ -1,0 +1,661 @@
+IEEE TRANSACTIONS ON NEURAL SYSTEMS AND REHABILITATION ENGINEERING, VOL. 21, NO. 3, MAY 2013
+
+427
+
+On the Automated Removal of Artifacts Related
+to Head Movement From the EEG
+Ian Daly, Martin Billinger, Reinhold Scherer, and Gernot Müller-Putz
+
+Abstract—Contamination of the electroencephalogram (EEG)
+by artifacts related to head movement is a major cause of reduced
+signal quality. This is a problem in both neuroscience and other
+uses of the EEG. To attempt to reduce the influence, on the EEG,
+of artifacts related to head movement, an accelerometer is placed
+on the head and independent component analysis is applied to
+attempt to separate artifacts which are statistically related to head
+movements. To evaluate the method, EEG and accelerometer
+measurements are made from 14 individuals with Cerebral palsy
+attempting to control a sensorimotor rhythm based brain–computer interface. Results show that the approach significantly
+reduces the influence of head movement related artifacts in the
+EEG.
+Index Terms—Automated artifact removal, brain–computer
+interface (BCI), electroencephalogram, head movement, independent component analysis (ICA).
+
+I. INTRODUCTION
+
+T
+
+HE ELECTROENCEPHALOGRAM (EEG) is a noninvasive method for recording bioelectrical brain activity
+which may be used for, amongst other things, neuroscience
+studies. It is a commonly used method because it is relatively
+cheap, safe, and convenient to use with humans, both in
+clinical and natural settings, when compared to many other
+neuroimaging technologies [1].
+The EEG may also be used for a number of other applications.
+One example of this is the control of brain–computer interfaces
+(BCIs). A BCI is a device which allows control of a computer
+via the interpretation of brain activity [2]. As such, BCIs may
+be used as assistive technology devices to help severely disabled
+individuals with communication, navigation, interaction, or entertainment [3].
+EEG studies are conducted with a very broad range of subject
+groups. Both healthy subjects and patients may be involved. In
+many of these groups head movement, both voluntary movement by individuals who do not wish to sit completely still,
+and involuntary movement, for example caused by spasms in
+the case of individuals with cerebral palsy (CP), or a number
+of other conditions, is a problem [4]. Head movement produces
+
+Manuscript received October 04, 2012; revised January 17, 2013; accepted
+January 26, 2013. Date of current version May 04, 2013. This work was supported by the FP7 Framework EU Research Project ABC (No. 287774). This
+paper only reflects the authors’ views and funding agencies are not liable for
+any use that may be made of the information contained herein.
+The authors are with the Institute for Knowledge Discovery, Laboratory of
+Brain–Computer Interfaces, Graz University of Technology, 8010 Graz, Austria
+(e-mail: reinhold.scherer@tugraz.at).
+Color versions of one or more of the figures in this paper are available online
+at http://ieeexplore.ieee.org.
+Digital Object Identifier 10.1109/TNSRE.2013.2254724
+
+muscle movement artifacts as the neck muscles stretch and contract to move the head, contaminating the EEG with electromyographic (EMG) noise and reducing the quality of the EEG signals obtained. Additionally, low frequency harmonics related to
+the, relatively, slow head movements can pollute the EEG [5].
+Finally, head movement can, in some cases and with some EEG
+systems, cause pulling at the leads and small shifts in electrode
+positions which results in other large artifacts in the EEG.
+These artifacts share overlapping spectral and spatial characteristics with a number of features of the EEG which are of
+interest to neuroscience. For example, the sensorimotor rhythm
+activity related to motor imagery (a common BCI paradigm)
+can be contaminated by neck muscle movement related EMG,
+which affects broad groups of electrodes over the scalp in a very
+broad frequency range.
+Therefore, there is a clear need to reduce the influence of
+head movements and their related artifacts on the EEG. Furthermore, it is desirable to do this by reducing the magnitude
+of the contamination of the EEG rather than by just removing
+the corresponding EEG signals. Reducing the influence of artifacts, while retaining the corresponding period of EEG, allows
+a greater proportion of the EEG to be used for neuroscience
+studies or could, potentially, result in faster, more accurate, BCI
+control.
+Current state-of-the-art approaches to removing the influence
+of head movement artifacts are not as prevalent as attempts
+to remove electrooculography (EOG) artifacts, or EMG artifacts. In [5] a method is presented for the automatic detection of
+movement related artifacts via first extracting a large number of
+time/frequency features and then classifying EEG epochs into
+normal EEG or head movement artifact contaminated EEG via
+linear discriminant analysis (LDA). Such an approach is able to
+identify some head movement artifacts but does not attempt to
+reduce or remove their influence from the EEG.
+A potential solution to this problem is proposed in this paper.
+An accelerometer is placed on the center of the head and used
+to record head movements in the x, y, and z dimensions, relative to the starting position and orientation of the accelerometer.
+Independent component analysis (ICA) is then used to identify
+components in the EEG which are maximally statistically independent of one another. Components which are correlated with
+the accelerometer signals above some threshold are then flagged
+for removal and cleaned EEG reconstructed from the remaining
+components.
+The assumption underlying the method is that EMG, and
+other artifacts, generated during head movement are statistically related to periods of head movement. They will, therefore,
+be placed into the same component(s) as low-frequency signals
+
+1534-4320/$31.00 © 2013 IEEE
+
+428
+
+IEEE TRANSACTIONS ON NEURAL SYSTEMS AND REHABILITATION ENGINEERING, VOL. 21, NO. 3, MAY 2013
+
+which are also statistically related to head movement and which
+correlate with the accelerometer signals.
+Therefore, this work aims to investigate the possibility of
+reducing head movement related components in the EEG via
+an accelerometer and ICA. This is done from two perspectives.
+Firstly, from the perspective of neuroscience studies in which
+the objective is to obtain as clear EEG signals as possible.
+Secondly, from the perspective of BCI, in which the objective
+is to maximize the user’s ability to interact with/or operate a
+computer.
+EEG and accelerometer signals are recorded during attempted online control of a sensorimotor rhythm based BCI,
+by 14 users with CP (a potential BCI user group [6], [7]), as
+part of an online BCI study. Individuals with CP represent a
+good candidate population for the proposed artifact reduction
+method as they could, potentially, benefit significantly from
+BCIs as assistive technology for communication and control.
+At the same time a number of individuals with CP experience
+problems with muscle tone regulation and spasms which produce intermittent head movements and reduce the quality of
+their EEG [8].
+We hypothesize that the proposed method will, 1) reduce
+the influence of head movement related artifacts on the EEG,
+2) improve the quality of the EEG, and 3) improve the theoretical (offline) BCI control accuracies that may be obtained.
+
+TABLE I
+PARTICIPANT (BCI USER) DETAILS. GMFCS DENOTES THE GROSS MOTOR
+FUNCTION CLASSIFICATION SYSTEM SCORE, ORTHOPAEDIC DISORDERS ARE
+DENOTED BY CODES WHICH INDICATE LOWER LIMB DISORDERS (MMII) OR
+UPPER LIMB DISORDERS (MMSS). SUBJECTS DOMINANT HAND IS EITHER,
+LEFT (L), RIGHT (R), BILATERAL (B), OR UNKNOWN
+
+II. METHODS
+A total of 14 individuals with CP attempted to use an online
+sensorimotor rhythm BCI while an accelerometer was attached
+onto the top of their head. ICA was then applied offline to attempt to reduce the influence of head movement related artifacts
+in the EEG.
+A. Subjects
+Fourteen individuals with CP participated in this study (seven
+male, age range 22–58 with a median age of 36). Institutional review board (IRB) ethical approval was obtained for all measurements conducted. Details of the participants are summarized in
+Table I.
+B. Signal Measurement
+EEG was recorded from 16 electrode channels via the GAMMAsys active electrode system (g.tec, Austria). Channels were
+arranged primarily over the motor and parietal cortical areas.
+The sampling rate was set to 512 Hz.
+The following channels were used, AFz, FC3, FCz, FC4, C3,
+Cz, C4, CP3, CPz, CP4, PO3, POz, PO4, O1, Oz, and O2. The
+reference electrode was placed on either the right or left ear
+according to the particular condition of each subject and the
+ground electrode was placed either behind the left ear at either TP7, TP9, or at FPz (again according to particular subject
+conditions).
+Additionally, accelerometer sensors were used to record the
+subjects’ head movements in the x, y, and z dimensions by
+placing a xyzPLUX triaxial accelerometer (PLUX, Portugal) at
+position Fz. Note, the orientation of the accelerometer varied
+between users, hence the starting position varies. Synchronisation of signal timing between the EEG and the accelerometer
+
+Fig. 1. Electrode setup used for measuring the EEG and accelerometer signals.
+Note, the locations of the reference and ground electrodes varied between subjects depending upon convenience and comfort for each subject.
+
+was achieved via the TOBI signal server [9], [10]. All data was
+sampled at a frequency of 512 Hz and saved to file. The electrode setup is illustrated in Fig. 1.
+
+DALY et al.: ON THE AUTOMATED REMOVAL OF ARTIFACTS RELATED TO HEAD MOVEMENT FROM THE EEG
+
+C. Brain–Computer Interface
+The sensorimotor rhythm BCI paradigm is based upon a
+method proposed in [11] and [12], in which four mental tasks
+are attempted by the BCI user and the best two used for online
+control. The paradigm first consists of an initial training phase
+which lasts for a few minutes. During this phase the user is
+asked to perform four different mental tasks in response to cues:
+1) kinaesthetically imagined movement of either hand;
+2) kinaesthetically imagined movement of their feet;
+3) mental arithmetic;
+4) mental word-letter association.
+No feedback is provided during the training phase. Instead
+the system uses the data recorded to select the two tasks which
+are best suited for online control for each individual user.
+During the second phase the user is again cued to perform
+one of the two best performing (most discriminative) tasks. This
+time feedback is provided to the user informing them how well
+they are performing at the specified task. The central aim of this
+work is to investigate the artifact removal method, therefore,
+for further details on the BCI system used the reader is referred
+to [13].
+Performing each task should result in an event-related
+(de)synchronization (ERD/S), a power decrease or increase in
+a specific EEG frequency band relative to a reference interval.
+This occurs primarily over the sensorimotor areas and within
+the mu (8–13 Hz) and beta (13–30 Hz) frequency bands [14].
+The timing, spatial, and spectral distributions of the ERD/S
+differs between tasks and allows identification of which predefined task a BCI user is attempting.
+D. Preprocessing
+EEG signals are first preprocessed before application of the
+artifact removal method. This ensures any improvements in
+signal quality seen may be attributed to the proposed artifact
+removal method, and not to other preprocessing steps. Signals
+are band-pass filtered in the range 1–40 Hz with a fourth-order
+Butterworth filter.
+E. Artifact Reduction
+Head movement related artifacts are removed from the EEG
+by first applying SOBI ICA [15] to separate the EEG into components which are maximally statistically independent from one
+another. SOBI is an extension of the ICA method based upon
+the concept of joint diagonalization of time lagged covariance
+matrices and is chosen because it is known to be effective at
+separating neuronal sources and artifacts in the EEG [16]. Each
+independent component (IC) derived by SOBI is then band-pass
+filtered (fourth-order, Butterworth) between 1–10 Hz to create
+filtered ICs
+. This frequency range is chosen to attempt
+to retain head movement related artifacts, which are observed
+in the accelerometer signals to reside 10 Hz, while removing
+low frequency drifts in baseline at below 1 Hz. Accelerometer
+signals are also filtered into the same range.
+Pearson’s correlation coefficient is calculated between each
+and each accelerometer signal (x, y, and z). Thresholding
+is applied to remove
+s which are highly correlated with one
+or more of the accelerometer signals. The threshold is set to two
+
+429
+
+standard deviations above the mean correlation calculated between the
+and the accelerometer signals.
+s which have
+greater correlations than this threshold with one or more of the
+accelerometer signals are marked for removal. This choice of
+threshold is based upon visual inspection of
+s from a subset
+of the data.
+s containing movement artifacts were observed
+to have correlations with the accelerometer signals greater than
+two standard deviations above the mean.
+Finally, the remaining original ICs, corresponding to the
+s
+not marked for removal, are multiplied by the mixing matrix
+produced by the SOBI ICA algorithm to reconstruct cleaned
+EEG with the component(s) which highly correlate with the accelerometer signals removed.
+F. Validation
+Validation of the efficacy of the artifact reduction method is
+performed in five ways, 1) analytically, by measuring the change
+in the signal quality index (SQI) [17] of the EEG, 2) by visually
+inspecting the signals before and after artifact removal, 3) by
+visually inspecting the ERD/S maps (generated via the method
+described in [18]) during attempted motor imagery and mental
+task performance, 4) by measuring the strength of the ERD/S
+signal in the original and cleaned EEG, and 5) by measuring
+the change in offline BCI classification accuracies achievable
+before and after cleaning the signals.
+The SQI is described in [17]. It is based upon thresholding
+various measures applied to the EEG such as the amplitude,
+the power spectrum, and various statistical measures such
+as kurtosis etc. It attempts to determine if a given portion of
+EEG is clean based upon whether the thresholds are exceeded.
+When applied to a long period of EEG the SQI is applied in a
+moving window of length 1 s, step size 0.25 s. Each window in
+which thresholds are exceeded is assigned the value 1 and each
+window in which they are not is assigned the value zero. The
+mean SQI over all windows then gives an approximate value
+of the cleanliness of the EEG. Thus, high mean SQI values
+indicate EEG heavily contaminated by artifacts.
+To determine if there is an effect on BCI classification
+results, accuracies are calculated offline for both the original
+and cleaned EEG. This ensures that comparisons made are
+meaningful as with both datasets the accuracy reflects the best
+achievable accuracy via offline analysis. For a given trial of
+length 6 s a linear discriminant analysis (LDA) classifier is applied in a sliding window of length 0.25 s. Band power features
+are extracted from the frequency bands 8–13 Hz and 13–30 Hz.
+Training and validation is performed within a leave-one-out
+train and validation scheme for trials recorded during the
+training phase (4 class) and during the feedback phase (2 class).
+Note, due to factors such as subject fatigue and poor performance by subjects in the training phase not all subjects were able
+to attempt the feedback phase. Additionally, different numbers
+of trials were attempted by each subject in both the training and
+feedback phases. Hence, direct comparisons of accuracies between subjects are not possible.
+Therefore, to compare the results Cohen’s kappa coefficient
+is calculated for every user from both the raw and cleaned EEG
+at the location of the peak accuracy. A paired -test is then used
+
+430
+
+IEEE TRANSACTIONS ON NEURAL SYSTEMS AND REHABILITATION ENGINEERING, VOL. 21, NO. 3, MAY 2013
+
+Fig. 2. Mean power spectra of all ICs flagged for removal by the method
+versus those not flagged for removal (i.e., those retained for reconstruction of
+the cleaned EEG) from user 5.
+
+to compare the Cohen’s kappa values between the original EEG
+and the cleaned EEG.
+The strength of the ERD/S is assessed via measuring the proportion of ERD/S values which are deemed to be significant
+within time-frequency regions of interest. Significance is determined via the method described in [18]. The regions of interest are taken from 0–6 s relative to the cue and in frequency
+bands 8–13 Hz and 13–30 Hz. The total number of significant
+time-frequency locations of observed ERD/S is divided by the
+total possible number of significant ERD/S locations in each region of interest and averaged over sensorimotor channels, FC3,
+FCz, FC4, C3, Cz, C4, CP3, CPz, and CP4.
+III. RESULTS
+It is important to first check the assumption that artifacts that
+occur during head movement, such as EMG, are grouped into
+the same ICs as the low frequency head movement induced artifacts. To do this the power spectra of ICs flagged for removal
+are inspected. Fig. 2 illustrates the mean power spectra for ICs
+marked for removal compared to the mean power spectra for
+ICs marked as clean for a typical user (user 5).
+Note, the ICs marked for removal contain broad band signals with both large low-frequency components and large highfrequency components. Visual inspection of the time series of
+these ICs reveals the high frequency components in the removed
+ICs correspond to EMG activity and the low frequency components correlate with the accelerometer signals. Thus, the initial assumption upon which the method is based, that ICA may
+group EMG activity into the same ICs as the low frequency head
+movement related artifacts to which they are statistically related,
+is validated.
+A mean of 6.28 a standard deviation of 1.54 ICs are flagged
+for removal by the method. The number of ICs removed for each
+user is listed in Table III.
+Visual inspection of the EEG, before and after application of
+the proposed method, reveals a visually apparent decrease in the
+amount of movement related artifacts. Fig. 3 illustrates an example of EEG before and after artifact reduction taken from user
+
+9. Note, there is a period of head movement from 237 s through
+to 244 s apparent in the accelerometer signals. After reduction
+of the movement components the head movement contamination in the EEG is visibly reduced.
+The power spectra on the motor cortex channels are also illustrated in Fig. 3. The application of the artifact removal method is
+seen to reduce the power at frequencies above 20 Hz by a large
+amount while making only very small reductions in power to
+other spectral regions and producing some increases in the mu
+frequency band. As the artifacts are broad band we would expect some reduction at a wide range of frequencies. The high
+frequency reduction is likely to correspond to EMG components
+that are statistically related to head movements.
+Table II lists the peak accuracies achieved during offline attempts to classify the original EEG (preprocessed only) and the
+cleaned EEG after application of preprocessing and the artifact
+reduction method. Results are listed for both the training phase
+(four classes) and the feedback phase (two classes) for users
+who completed enough trials for a classifier to be trained. Peak
+accuracies are taken from 2 s after the cue to the end of the trial
+to attempt to avoid cue related classifications. Statistically significant
+results are indicated by an asterisk
+.
+Statistical significance is indicated against the null hypothesis
+of equal probability of each class been selected by the classifier.
+Because each user performed tasks in a different order, became
+fatigued at different points, and had varying degrees of success
+at training the classifier, different numbers of trials are available
+for each user.
+Comparison of Cohen’s kappa values, calculated at the locations of peak accuracy, from each user between the original and
+cleaned EEG in the training and feedback phases reveals no significant difference induced in the classification accuracies. For
+both the training and feedback phases the paired -test returns
+values of
+.
+Fig. 4 illustrates an example of the ERD/S spectrum (calculated via the method described in [18]) during the feet motor imagery task estimated from the original (preprocessed only) EEG
+and from the cleaned EEG from user 1. Statistically significant
+time-frequency regions of ERD are illustrated in red and ERS in
+blue. Note, after reduction of the influence of movement related
+artifacts ERD/S patterns are clearer and more concentrated in
+the mu frequency band.
+The distributions of ERD/S strengths over all users, in the region of interest 0–6 s, 8–13 Hz, before and after artifact removal,
+are also illustrated in Fig. 4. Note, the mean ERD/S strength is
+increased after application of the artifact removal method. This
+increase is statistically significant as assessed via a paired -test
+.
+Note, it is also important to compare the baseline signals from
+which the ERD/S is calculated. The mean power in the baseline
+( 1.5–0 s relative to cue) over all subjects is compared between
+the original EEG and the cleaned EEG. No significant differences in band-power in the baseline is observed, as assessed via
+a paired -test
+.
+Changes in the SQI between the original raw EEG and the
+cleaned EEG are listed in Table III. Mean the variance of the
+SQI values calculated over the entire EEG signals are listed for
+each user alongside the p values for paired -tests comparing
+
+DALY et al.: ON THE AUTOMATED REMOVAL OF ARTIFACTS RELATED TO HEAD MOVEMENT FROM THE EEG
+
+431
+
+Fig. 3. An example of the effect of head movement artifact reduction in the EEG from user 9. The top-left plot illustrates 16 channel original EEG prior to artifact
+reduction. The second from top-left plot illustrates the same signals after artifact reduction, the third from top-left plot illustrates the ICs that have been removed
+and the lower-left plot illustrates the accelerometer signals in the x, y, and z dimensions. Finally, the plot on the right illustrates the power spectra over the EEG
+recorded from motor cortical channels from user 9 before and after artifact removal (red, solid line, plots illustrate pre-removal power and blue, dashed line, plots
+post-removal power). (a) EEG. (b) Power spectra.
+
+TABLE II
+PEAK CLASSIFICATION ACCURACIES ACHIEVED DURING THE TRAINING
+(FOUR CLASSES) AND FEEDBACK (TWO CLASSES) PHASES OF SENSORIMOTOR
+RHYTHM BCI OPERATION. ALL ACCURACIES ARE FOUND VIA OFFLINE
+ANALYSIS ON THE ORIGINAL EEG AND THE CLEANED EEG. PEAK ACCURACIES
+ARE IDENTIFIED IN THE TIME RANGE 2–6 S TO DISCOUNT SHORT-LIVED BRAIN
+STATE RESPONSES TO THE CUE [19]. STATISTICALLY SIGNIFICANT ACCURACIES
+, ASSESSED AGAINST THE NULL HYPOTHESIS OF EQUAL CHANCE
+CLASSIFICATION INTO EACH CLASS, ARE INDICATED WITH AN ASTERISK
+.
+“RAW” COLUMN INDICATES THE ORIGINAL, UNCLEANED EEG, AND THE “NO.”
+COLUMN INDICATES THE NUMBER OF TRIALS
+
+TABLE III
+MEAN SQI MEASURES VARIANCES FOR THE ORIGINAL AND CLEANED
+EEG FOR EACH USER. P-VALUES FOR PAIRED -TESTS INDICATE
+THE SIGNIFICANCE LEVEL OF THE CHANGE IN SQI VALUES INDUCED
+BY THE ARTIFACT REMOVAL METHOD. FINAL COLUMN LISTS THE
+NUMBER OF ICS REMOVED BY THE METHOD FOR EACH SUBJECT
+
+IV. DISCUSSION
+
+the means of the distributions of original and cleaned SQIs. The
+lower the SQI values the cleaner the signals. In all but four cases
+there is a significant reduction (improvement) in SQI values, and
+in only two cases (users 7 and 12) does the SQI get significantly
+worse after attempted artifact reduction.
+
+The proposed method reduces the influence of head movement artifacts in the EEG. This is validated by analytically measuring the signal quality index and the strength of the ERD/S
+before and after artifact removal, which both exhibit significant
+improvements. It is also seen in visual inspections of the raw
+EEG and the ERD/S spectra. The BCI classification accuracies
+are not significantly changed by application of the method.
+The magnitude of other artifacts such as the EMG may also be
+seen to be reduced after application of the method. Indeed, the
+
+432
+
+IEEE TRANSACTIONS ON NEURAL SYSTEMS AND REHABILITATION ENGINEERING, VOL. 21, NO. 3, MAY 2013
+
+Fig. 4. ERD/S strengths. Examples are presented of sensorimotor rhythms relating to the condition feet motor imagery, in the original EEG (a) and the cleaned
+EEG (b), and from the word–letter association task, in the original EEG (d) and the cleaned EEG (e), from user 1. Each plot is split into nine subplots illustrating
+periods of ERD
+the common average referenced (CAR) channels FC3, FCz, FC4, C3, Cz, C4, CP3, CPz, and CP4. Red colors indicate significant
+and blue significant periods of ERS relative to the reference period ( 1.5–0 s, relative to the cue at 0 s). The significance is determined via bootstrapping, which
+is described in [18]. The vertical line denotes the cue presentation time. Plot 4c illustrates the proportion of significant ERD/S values found in the time-frequency
+region of interest 0–6 s, 8–13 Hz in the original and cleaned EEG. (a) Feet imagery, original EEG. (b) Feet imagery, cleaned EEG. (c) Mean ERD/S strength.
+(d) Word-letter association, original EEG. (e) Word-letter association, cleaned EEG.
+
+IC(s) removed by the proposed method are observed to be broad
+band and contain both low frequency changes, which correlate
+with the accelerometer signals, and high frequency EMG which
+shares a statistical relationship with head movement periods and
+is therefore grouped into the same ICs.
+Visual inspection of the EEG before and after application
+of the method reveals a considerable reduction in both high
+and low frequency components while inspection of the power
+spectra reveals attenuation at a range of frequencies. Inspection
+of the ERD/S maps before and after artifact removal reveals a
+reduction in noise and a sharpening of the appearance of significant ERD/S patterns in the mu frequency band and time range
+0–6 s, which is known to be important in ERD/S [14]. Furthermore, this improvement is analytically measured and seen to be
+statistically significant
+.
+There is a significant improvement (reduction) in the SQI
+in 10 users and a nonsignificant improvement in 1 other user.
+In two users (users 7 and 12) there is a significant worsening
+(increase) in the SQI. However, inspecting the experimental
+logs and the raw EEG for these two users reveals that there
+were some periods when either the ground electrode or one,
+or more, other electrodes came loose during measurements
+due to large muscle spasms. Therefore, rendering portions of
+the EEG unusable and potentially confounding the attempted
+
+separation of clean EEG and head movement artifacts into
+different ICs.
+It is important to note that the method is not able to remove all
+types of artifacts, only those which are in some way statistically
+related to head movements. Thus, electrode pops are not always
+removed, neither are blinks. To remove these types of artifacts
+it would be necessary to couple the proposed method with a
+good eye blink removal method such as that proposed in [20].
+Alternatively, EOG signals could be recorded and, potentially,
+incorporated into the artifact removal method. However, this is
+a task for future work.
+It is also important to highlight that the method is currently
+applied to the entire signal. Thus, for EEG recorded over 5 min
+the ICA method would be applied to the entire signal set. Therefore, to use the method in other applications, such as BCI, it is
+necessary to modify the method to be applied over much shorter
+time windows. This could be done by, for example, training
+the ICA mixing matrix on a long period of EEG (for example
+recorded during an initial calibration session) and then applying
+the trained mixing matrix to much shorted time windows during
+online BCI operation. However, validation of the efficacy of this
+approach is a task requiring further investigation.
+Additionally, it is important to consider different causes of
+head movement. Subjects are, by experimental design, seated,
+
+DALY et al.: ON THE AUTOMATED REMOVAL OF ARTIFACTS RELATED TO HEAD MOVEMENT FROM THE EEG
+
+and do not move about the measurement room during the course
+of the experiment. Thus, head movements recorded on the accelerometer are a result of subject induced movement. However, this movement could be a result of either neck or trunk
+movements. Both movement types have the potential to produce
+similar accelerometer signals but are likely to produce some
+differing artifact patterns. Currently, the two movement types
+are not distinguished by the method, and, as the method is applied to the whole signal duration, it is probable that a mixture
+of both movement types is used as a basis for removal of the
+6.28 1.54 ICs by the method. Future work will explore alternative possibilities for differentiating these movement types
+and their effect on artifact contamination in the EEG.
+An alternative use for the method could be to use the accelerometer signals for epoch based rejection. Thus, an EEG
+epoch is rejected if the accelerometer signals at the corresponding times exhibit large fluctuations. However, epoch
+based rejection, while straightforward, entails a potentially
+large loss of the amount of available EEG. Artifact attenuation
+approaches are therefore preferable.
+When considering the classification accuracy at the BCI task,
+there are both increases and decreases in accuracies. Over all
+subjects there is no significant change in classification accuracy
+induced by the method, as assessed by a paired -test
+. It is therefore not possible to state that the method induces either an increase or a decrease in classification accuracy.
+However, users for whom there is a reduction in accuracy need
+special attention. The feedback accuracy of user 5 appears to
+decrease by a large amount. However, it is important to note that
+in this user there are only a small number of trials (22) available during the feedback phase, so large changes in accuracy
+correspond to only a small number of trials having differences
+in classification results induced by the artifact reduction method.
+A small number of other users also exhibit small reductions in
+classification accuracies after application of the method. This is
+surprising given the significant increase in ERD/S strength and
+that no significant change in pre-ERD/S baseline is observed.
+Given that there is no overall significant change in accuracy it
+is possible that a small number of trials contained cue related
+artifacts. However, the small number of trials involved means
+statistical verification of this is difficult.
+Additionally, it is conceivable that the method is not removing enough artifactual components from the EEG to result
+in a significant increase in accuracy. The method is only aimed
+at removing artifacts related to head movement of the subjects
+and will therefore be likely to fail to remove artifacts which
+are not statistically related to head movements, such as blinks.
+The retention of these artifacts in the EEG, coupled with the
+relatively small number of trials available for some subjects,
+means it is possible that a significant increase in accuracy is
+not possible without applying some additional artifact removal
+method to deal with the remaining artifacts.
+It is important to highlight the need to reduce the influence of
+head movement artifacts, not only for neuroscience studies, but
+also for use of the EEG in BCI control. Without doing so one
+cannot be sure that classification results are not confounded by
+artifacts.
+While the proposed method does not produce perfectly clean
+EEG it does significantly improve the signal quality in a large
+
+433
+
+number of subjects. Considering the method is only based upon
+16-channel EEG the finding that there is a meaningful reduction
+in head movement related artifacts is encouraging. Future work
+may address how well the method scales to differing numbers
+of channels.
+The proposed use of an accelerometer to attempt to attenuate movement artifacts is the first such attempt we are aware
+of. However, it is worth noting that the Emotiv BCI headset
+(Emotiv, San Francisco, CA, USA) includes an integrated accelerometer. Thus, our proposed method could be applicable to
+the application of this system to recording the EEG.
+One of the next steps in the use of this method will be to
+attempt to apply it online during BCI operation to improve
+the quality of the EEG prior to classification. Doing so will,
+hopefully, improve the online performance of BCI systems by
+reducing the influence of a major source of artifacts in the EEG.
+To conclude, artifact reduction in the EEG by the use of an
+accelerometer to measure head movements coupled with ICA
+is successful at reducing the influence of head movement artifacts. This is measured in five ways, 1) visual inspection of
+the raw EEG signals reveals a reduction in head movement related artifacts, 2) visual inspection of the ERD/S spectra reveals
+a strengthening of the ERD/S after application of the method,
+3) measuring the ERD/S strength reveals a significant increase
+after application of the method, 4) there is no significant change
+in BCI classification accuracies after application of the method,
+and 5) there are significant improvements in SQI in 10 of the 14
+subjects after application of the method.
+Therefore, this approach has been shown to have the potential to be used in improving the quality of EEG signals used in
+neuroscience studies and also in the construction of BCIs. In
+particular the proposed method could be useful for a range of
+BCI user groups who are liable to produce head movement related artifacts during BCI operation.
+REFERENCES
+[1] B.-K. Min, M. J. Marzelli, and S.-S. Yoo, “Neuroimaging-based approaches in the brain-computer interface,” Trends Biotechnol. vol. 28,
+no. 11, pp. 552–60, Nov. 2010.
+[2] J. R. Wolpaw, N. Birbaumer, D. J. McFarland, G. Pfurtscheller, and T.
+M. Vaughan, “Brain-computer interfaces for communication and control,” Clin. Neurophysiol., vol. 113, pp. 767–791, Jun. 2002.
+[3] J. d. R. Millan, R. Rupp, G. Müller-Putz, R. Murray-Smith, C.
+Giuliemma, M. Tangermann, C. Vidaurre, F. Cincotte, A. Kübler,
+R. Leeb, C. Neuper, K. Müller, and D. Mattia, “Combining braincomputer interfaces and assistive technologies: State-of-the-art and
+challenges,” Front. Neuroprosthet. vol. 4, no. 1, 2011.
+[4] K. W. Krigger, “Cerebral palsy: An overview,” Am. Family Physician
+vol. 73, pp. 91–100, Jan. 2006.
+[5] S. O’ Regan, S. Faul, and W. Marnane, “Automatic detection of EEG
+artefacts arising from head movements,” in Proc. Annu. Int. Conf. IEEE
+Eng. Med. Biol. Soc., Jan. 2010, vol. 2010, pp. 6353–6.
+[6] C. Neuper, G. R. Müller, A. Kübler, N. Birbaumer, and G. Pfurtscheller,
+“Clinical application of an EEG-based brain-computer interface: A
+case study in a patient with severe motor impairment,” Clin. Neurophysiol., vol. 114, pp. 399–409, Mar. 2003.
+[7] M. J. Mir, “Electrocorticography (ECoG) based brain computer interface for Cerebral palsy patients,” Ph.D. dissertation, Cornell Univ.,
+Ithaca, NY, 2009.
+[8] F. Miller, Cerebral Palsy, F. Miller and E. Browne, Eds. New York:
+Springer, 2005.
+[9] G. R. Müller-Putz, C. Breitwieser, F. Cincotti, R. Leeb, M. Schreuder,
+and F. Leotta et al., “Tools for brain-computer interaction: A general
+concept for a hybrid BCI,” Front. Neuroinform., vol. 5, p. 30, Jan. 2011.
+
+434
+
+IEEE TRANSACTIONS ON NEURAL SYSTEMS AND REHABILITATION ENGINEERING, VOL. 21, NO. 3, MAY 2013
+
+[10] C. Breitwieser, I. Daly, C. Neuper, and G. Muller-Putz, “Proposing
+a standardized protocol for raw biosignal transmission,” IEEE Trans.
+Biomed. Eng. vol. 59, no. 3, pp. 852–859, Mar. 2012.
+[11] J. Faller, C. Vidaurre, E. Friedrich, U. Costa, and E. Opisso, “Automatic
+adaptation to oscillatory EEG activity in spinal cord injury and stroke
+patients,” in Proc. TOBI Workshop, 2012, no. 1, pp. 7–8.
+[12] E. V. C. Friedrich, R. Scherer, and C. Neuper, “The effect of distinct
+mental strategies on classification performance for braincomputer interfaces,” Int. J. Psychophysiol., vol. 84, pp. 86–94, 2012.
+[13] J. Faller, C. Vidaurre, T. Solis-Escalante, C. Neurper, and R. Scherer,
+“Autocalibration and recurrent adaptation: Towards a plug and play
+online ERD-BCI,” IEEE Trans. Neural Syst. Rehabil. Eng., vol. 20,
+no. 3, pp. 313–319, May 2012.
+[14] G. Pfurtscheller and F. Lopes da Silva, “Event-related EEG/MEG synchronization and desynchronization: Basic principles,” Clin. Neurophysiol., vol. 110, no. 11, pp. 1842–1857, Nov. 1999.
+[15] A. Belouchrani, K. Abed-Meraim, J.-F. Cardoso, and E. Moulines, “A
+blind source separation technique using second-order statistics,” IEEE
+Trans. Signal Process., vol. 45, no. 2, pp. 434–444, Feb. 1997.
+[16] A. C. Tang, M. T. Sutherland, and C. J. McKinney, “Validation of SOBI
+components from high-density EEG,” NeuroImage vol. 25, no. 2, pp.
+539–53, Apr. 2005.
+[17] I. Daly, F. Pichiorri, J. Faller, V. Kaiser, A. Kreilinger, and R. Scherer
+et al., “What does clean EEG look like?,” in Proc. IEEE Eng. Med.
+Biol. Soc. Conf., 2012, pp. 3963–3966.
+[18] B. Graimann, J. E. Huggins, S. P. Levine, and G. Pfurtscheller, “Visualization of significant ERD/ERS patterns in multichannel EEG and
+ECoG data,” J. Clin. Neurophysiol. vol. 113, pp. 43–7, Jan. 2002.
+[19] G. Pfurtscheller, R. Scherer, G. R. Müller-Putz, and F. H. Lopes da
+Silva, “Short-lived brain state after cued motor imagery in naive subjects,” Eur. J. Neurosci. vol. 28, no. 7, pp. 1419–26, Oct. 2008.
+[20] A. Schlögl, C. Keinrath, D. Zimmermann, and R. Scherer, “A fully
+automated correction method of EOG artifacts in EEG recordings,”
+Clin. Neurophysiol., vol. 118, no. 1, pp. 98–104, 2007.
+
+Ian Daly received the M.Eng. degree in computer
+science and the Ph.D. degree in cybernetics from the
+University of Reading, Reading, U.K. and has been a
+post-doctoral researcher in the Laboratory of BrainComputer Interfaces, Graz University of Technology,
+Graz, Austria, since May 2011.
+His research focuses on brain–computer interfaces, nonlinear dynamics, machine learning,
+signal processing, bio-signal analysis, meta-heuristic
+search techniques, and functional connectivity
+analysis in the EEG.
+
+Martin Billinger received the M.Sc. degree in
+electrical engineering from Graz University of Technology, Graz, Austria, where he has been working
+toward the Ph.D. degree in computer science in
+the Laboratory of Brain-Computer Interfaces, since
+November 2009.
+His research interests are brain–computer interfaces, bio-signal processing, machine learning, mathematical modelling, and effective connectivity analysis in the EEG.
+
+Reinhold Scherer received the M.Sc. degree and the
+Ph.D. degree in computer science from Graz University of Technology, Graz, Austria, in 2001 and 2008,
+respectively. From 2008 to 2010 he was postdoctoral
+researcher and member of the Neural Systems and the
+Neurobotics Laboratories at the University of Washington, Seattle, WA, USA.
+Since 2011, he is Assistant Professor at the Institute for Knowledge Discovery, BCI Lab, Graz University of Technology, Graz, Austria, and member of
+the Institute for Neurological Rehabilitation and Research at the rehabilitation center Judendorf-Strassengel, Austria. His research
+interests include BCIs based on EEG and ECoG signals, statistical and adaptive
+signal processing and robotics-mediated rehabilitation.
+
+Gernot Müller-Putz received the Ph.D. degree in electrical engineering (“New Concepts
+in Brain-Computer Communication Use of
+Steady-State Somatosensory Evoked Potentials,
+User Training by Telesupport and Control of Functional Electrical Stimulation”) from Graz University
+of Technology, Graz, Austria, in 2004, and received the “venia docendi” for medical informatics
+(“Towards EEG-based Control of Neuroprosthetic
+Devices”) at the Faculty of Computer Science, Graz
+University of Technology, in 2008.
+He is Head of the Institute for Knowledge Discovery, Graz University of
+Technology, Graz, Austria. He is also Head of the Laboratory for Brain–Computer Interfaces (BCI-Lab) at Graz University of Technology. Beginning
+in 2000, he worked on noninvasive electroencephalogram-based (EEG)
+brain–computer interfacing (BCI) for the control of neuroprosthetic devices at
+the Graz University of Technology. His research interests include EEG-based
+neuroprosthesis control, hybrid BCI systems, the human somatosensory
+system, and assistive technology.
+
+

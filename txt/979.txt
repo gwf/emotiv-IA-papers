@@ -1,0 +1,776 @@
+Krzysztof Kotowski, Piotr Fabian, and Katarzyna Stapor
+
+2 M
+ achine learning approach to automatic
+recognition of emotions based on bioelectrical
+brain activity
+Abstract: The feeling and the expression of emotions are the basic skills of social
+interaction. People with disorders such as autism, attention deficit/hyperactivity
+disorder, or depression may experience social marginalization because of problems
+with these skills. Automatic emotion recognition systems may help in diagnosis,
+monitoring, and rehabilitation. Specific patterns of bioelectrical brain activity in
+response to affective stimuli (facial expressions, music, and videos) are biomarkers of
+perceived emotions. The analysis of these patterns in the time domain (event-related
+potentials) or frequency (brain waves) is complicated because of the scale and
+complexity and our incomplete knowledge about the processes taking place in the
+brain. Nowadays machine learning methods, including deep learning, come with help
+along with the growing amount of available data. In this study, the state-of-the-art
+methods for the recognition of emotions based on electroencephalography data will
+be presented.
+
+2.1 Introduction
+The most common way of measuring bioelectrical brain activity is electroencephalography (EEG). It is a completely noninvasive and relatively cheap method used
+in brain-computer interfaces, cognitive psychology, and medical diagnostics. The
+EEG electrodes placed on the scalp record the electrical activity between groups of
+neurons in the cortical surface of the brain. It enables the EEG practitioners to find
+patterns of this activity connected with certain actions, disorders, and mental states.
+PubMed reports over 168,000 publications related to EEG. The great number of them
+is connected with the diagnosis of epilepsy and the prediction of epileptic seizures
+as the most popular applications of EEG in medicine [1, 2]. The second very popular
+area is anesthesiology, where the EEG is used to assess the depth of anesthesia and
+to monitor the effects of psychotropic drugs and anesthetic agents [3, 4]. Finally, the
+last wide, emerging area of the main interest in this publication is connected with the
+diagnostics of mental disorders such as autism spectrum disorder (ASD) [5], attention
+deficit/hyperactivity disorder (ADHD) [6], schizophrenia [7, 8], depression [9], dementia [10], or sleep disorders [11].
+
+Open Access. © 2020 Krzysztof Kotowski, Piotr Fabian, and Katarzyna Stapor, published by De Gruyter.
+This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 License.
+https://doi.org/10.1515/9783110667219-002
+
+16
+
+2 Machine learning approach to automatic recognition of emotions
+
+Many mental disorders are characterized by problems connected with the right
+feeling and expression of emotions. People with ASD, ADHD, or depression, especially when not diagnosed early, may experience social marginalization because
+of these problems. Psychotropic drugs, like antidepressants, and antipsychotics,
+work by interfering with the monoamine system, which is essential in the control
+of behaviors and emotions according to many studies [12]. At the same time, the
+emotions themselves are an important factor in the regulation of a human’s mental
+and physical health. As stated by Luneski et al. [13], positive emotions may provide
+health benefits by accelerating the recovery of patients after heart surgery, having
+cardiovascular diseases or breast cancer, and are able to increase the level of salivary immunoglobulin (S-IgA). By contrast, negative emotions may weaken the
+human immune system, increase the risk of common cold up to four times [14], and
+reactivate the latent Epstein-Barr virus [15]. Thus, a significant motivation exists
+for researching emotions and minimizing their effect on specific aspects of human
+health.
+However, the patterns of EEG connected with mental disorders and emotions
+are noisy, inconclusive, and hard to capture even for experts in the field. Thus,
+the EEG in psychiatry is usually considered a method of a low detection rate and
+a low diagnostic yield [10]. This is where computer science and computational
+methods (like machine learning) may come to help increase the reliability of existing ­procedures and discover the new ones when dealing with complexities of the
+human brain. Computing that relates to, arises from, or influences emotions is
+defined as affective computing [16].
+This chapter presents the state-of-the-art computer-aided emotion recognition methods and their applications in practice, with special focus on the medical
+context. It starts with an introduction to the theoretical models of emotions and their
+EEG correlates. Chapter 2.4 defines the term machine learning and explains how the
+­computer is able to learn from the provided data. Chapter 2.5 presents the whole
+process of emotion recognition using machine learning, including literature review,
+data collection, feature extraction, classifiers, and results analysis. In addition, the
+short review of EEG simulators is included.
+
+2.2 Psychological models of emotion
+Analysis of emotions or emotional states needs to be preceded with the definition
+of the model in which they are measured. Our emotions are mental states generated
+by the central nervous system [17]. Despite a number of significant works, emotion
+theory is still far from complete. Human emotions are, to a large extent, subjective
+and nondeterministic. The same stimulus may create different emotions in different
+individuals, and the same individual may express different emotions in response to
+
+2.2 Psychological models of emotion
+
+17
+
+the same stimulus, at different times. Despite this variability, it is assumed that there
+are basic principles, perhaps even basic neural mechanisms, that make a particular
+event “emotional” [16]. There are a number of emotional state space models, generally categorized into discrete and continuous models.
+The discrete emotion models describe different numbers of independent emotion
+categories. One of the most popular models by Paul Ekman [18] describes six universal basic emotions of anger, disgust, fear, happiness, sadness, and surprise. The
+model is derived from the observation of universal facial expressions presented in
+Fig. 2.1. The paper describing the model [18] has been cited over 7,000 times; however,
+the existence of basic emotions is still an unsettled issue in psychology, rejected by
+many researchers [19]. Another model by Plutchik [20] describes eight primary bipolar
+emotions: joy and sadness; anger and fear; surprise and anticipation; and trust and
+disgust. However, unlike Ekman’s model, Plutchik’s wheel of emotions relates these
+pairs in the circumplex model. Recently, the model consisting of as many as 27 classes
+bridged by continuous gradients was proposed [21].
+
+Fig. 2.1: Facial expressions of six basic Ekman emotions. Top row: anger, fear, and disgust. Bottom
+row: surprise, happiness, and sadness.
+
+18
+
+2 Machine learning approach to automatic recognition of emotions
+
+The continuous models are usually represented in numerical dimensional space.
+The most popular dimensions were defined by Mehrabian and Russell [22] as pleasure, arousal, and dominance (PAD model). The first dimension is frequently called
+valence in the literature; it describes how pleasant (or unpleasant) is the stimuli
+for the participant. The arousal dimension defines the intensity of emotion. Dominance is described as a level of control and influence over one’s surroundings and
+others [23]. Usually, less attention is paid to this third dimension in the literature [24].
+However, only the dominance dimension enables to distinguish between angry and
+anxious, alert and surprised, or relaxed from protected [23]. The model that includes
+only valence and arousal levels is called a circumplex model of affect [25] and is one
+of the most commonly used to describe the emotions elicited with stimuli. Various
+adjectives may be assigned to specific values of valence and arousal, as shown in
+Fig. 2.2 (i.e., a state of high arousal and high valence may be described as the state
+of excitement). For purposes of emotion classification, the model is sometimes discretized by defining four subspaces of LALV, LAHV, HALV, and HAHV on the ranges
+of valence and arousal (as shown in Fig. 2.1), where LAHV means low-arousal highvalence subspace. There are also works on full mappings between different discrete
+and continuous emotion models [26].
+
+Fig. 2.2: The circumplex model of affect as presented by Russell et al. [25].
+
+2.3 EEG correlates of emotion
+
+19
+
+2.3 EEG correlates of emotion
+The relation between EEG data and current emotional state may be considered in the
+context of two main approaches: the locationist and the constructionist paradigms.
+The locationist approach is closely related to the theory of basic emotions described
+in chapter 2.2. It assumes that each emotion is generated by a unique neural pathway
+and has a unique footprint in brain signal [18]. Similarly to the theory of the basic
+emotions, the locationist approach is currently being criticized by many researchers
+in the field [27]. They present the constructionist approach as the alternative where
+the emotions result from the interaction of different functional networks of the brain.
+There is some recent evidence that using dimensional models derived from the constructionist approach (like PAD) reflects the brain activity by means of EEG data more
+coherently [28]. Also, the majority of recent papers in automatic emotion recognition
+use dimensional models [29].
+Different stimuli may be used to induce specific emotions and their correlates.
+Typically, the normative sets of videos, images, music, and/or odors are used. They
+are provided with emotional ratings obtained from a large population using selfassessment forms. The most common image set of this kind is the International Affective Picture System (IAPS) [30].
+The number of studies has shown that correlates of emotion are usually associated with event-related potentials (ERPs), frontal EEG asymmetry, event-related
+­synchronization, and steady-state visually evoked potentials (for reviews, see [29, 31]).
+2.3.1 Event-related potentials
+The ERPs are the stereotyped brain responses elicited by specific stimuli. They are
+analyzed in the time domain as waveforms composed from a number of components of different latency and amplitudes. The modulation of these latencies and
+amplitudes in the context of emotional processing has been analyzed for more than
+50 years. Affective stimuli affect mainly the amplitudes of the components [32]. The
+earlier ERP components of latency up to 300 ms have been shown to correlate more
+with the valence dimension, i.e., by enhanced N100 (negative amplitude component
+with 100 ms latency) and N200 components’ amplitude for unpleasant stimuli. These
+effects have been theoretically associated with attention orientation at early stages
+of processing. Also, it has been shown that unpleasant and high arousing stimuli
+evoke greater ERP responses for females relative to males [33]. The arousal dimension
+is reflected by later components N200, P300, and slow waves (550 to 850 ms after
+stimuli onset) with higher amplitudes for more arousing stimuli [34]. The basic emotions processing is frequently analyzed by means of ERP correlates of facial expression perception. Here, the early posterior negativity (EPN, in the range of 240–340 ms)
+
+20
+
+2 Machine learning approach to automatic recognition of emotions
+
+Fig. 2.3: The example of ERP waveform as presented in our previous article [37]. It presents the
+difference between ERPs, especially in the EPN component, evoked with neutral and emotional
+(happy and angry) face image stimuli.
+
+component is known to be emotion sensitive [35, 36], which we confirmed in another
+study [37] (Fig. 2.3). The majority of papers on EEG emotion correlates (72 out of 130)
+can be found in ERP studies [29]. In standard ERP experiments, the trials have to be
+repeated dozens of times and averaged to enhance the signal and attenuate the noise,
+but there are also examples of effective online single-trial ERP classifiers [38].
+
+2.3.2 Spectral density (frequency domain)
+The spectral density of the EEG signal can be obtained using a Fourier transform.
+It reflects the power of brain activity in different frequency bands. Specific bands
+are sometimes called brain waves or neural oscillations; the most popular ones are
+alpha (8–12 Hz), theta (4–8 Hz), beta (13–30 Hz), and gamma (30–70 Hz) waves. The
+spectral power of alpha brain waves is one of the best-known markers of engagement
+and alertness—the lower the power in the alpha range, the higher the engagement.
+The power of alpha waves is also connected with discrete emotions of happiness,
+sadness, and fear [39]. The asymmetry of the EEG spectrum between frontal parts
+of different hemispheres of the brain is known as a steady correlate of valence
+[40]. Studies in the higher-frequency gamma band showed a significant interaction between valence and hemisphere, suggesting that the left part of the brain is
+
+2.4 Introduction to machine learning
+
+21
+
+involved more in positive emotions than the right hemisphere [41]. More complex
+emotion correlates are defined in terms of coherence between different areas of the
+brain; for example, the phase synchronization between frontal and right temporoparietal regions has been connected with higher valence and arousal [42], and the
+coherence between prefrontal and posterior beta oscillations has been shown to
+increase while watching highly arousing images [43].
+
+2.4 Introduction to machine learning
+2.4.1 The concept of machine learning
+Machine learning is now understood as the application of methods in the field of computer science, mathematics, and similar fields for the automatic collection of knowledge and drawing conclusions based on the provided data. Attempts to use computers
+for more complex tasks than just mathematical calculations took place in the 1950s,
+shortly after the construction of fully electronic computers. The application of statistical methods gave hope for automatic drawing conclusions from a large number of
+examples given to the input of algorithms. Computers were called electronic brains,
+and it was thought that in a short time they would be used in tasks such as text translation, speech recognition, and understanding and would also help to understand the
+functioning of the human brain. A system that fulfills such tasks was supposed to be
+called artificial intelligence (AI). A test, called the Turing test, was even proposed by
+Alan Turing to check if the system exhibits “intelligence” features [44]. In general, it
+relied on conducting a conversation in natural language and assessing its course by
+a judge. If the judge could not tell if he was talking with a man or a machine, it meant
+that the machine was intelligent. However, it turned out that the development of such
+a system is not easy, and the results were far from expected. In the 1970s, the initial
+enthusiasm dropped, and research in this field slowed down. The period of reduced
+interest in AI called later AI winter lasted until the 1990s of the twentieth century [45].
+One of the reasons for failures could be modest computing capabilities of computers
+at that time, millions of times smaller than those currently available even in portable
+devices.
+At present, there are programs that effectively simulate a human-made conversation and can pass the Turing test. However, the condition for recognizing a ­computer
+as “intelligent” is still shifted, and new requirements are set. Currently, the term
+“artificial general intelligence” is applied to a theoretical system that can take over
+any task that requires intelligence and cognitive skills. Such a system could, through
+further improvement (also self-improvement), get more skills than a human and lead
+to a point called singularity, beyond which it will not be possible to stop it and predict
+the development. In popular applications, the term “artificial intelligence” is used in
+relation to machine learning of varying degrees of sophistication.
+
+22
+
+2 Machine learning approach to automatic recognition of emotions
+
+2.4.2 The importance of data sets
+As mentioned earlier, one of the reasons for failures in applying machine learning
+methods at the beginning of their development was the insufficient size of learning
+sets. Many machine learning systems are formally classifiers, i.e., systems assigning
+an appropriate label to a previously unknown object based on information collected
+by the analysis of a suitably large training set, usually already labeled.
+One of the approaches to the construction of classifiers is artificial neural networks developed for decades [46]. The concept refers to a structure found in the
+brains of living organisms. The information is processed by a network of interconnected neurons. Neuron sums up the signals received at its inputs, scaled by the socalled weights, and then the obtained sum is converted by an activation function.
+This function computes the response of the neuron, its transition into an active state.
+The network may contain many neurons, usually organized in layers. The input data
+are passed to the inputs of the first layer, and the result of the classification is read
+from the last one.
+To make a proper classification, such a network requires computing a lot of
+parameters—weights of connection. The determination of these weights is usually
+performed by numerical methods in subsequent iterations in which the error of
+the response generated by the network is reduced. Depending on the model used,
+a “feature vector” calculated with separate functions may be passed to the network
+input—the numbers describing selected properties of the input samples or even
+directly the values of the samples may be passed. In the second case, initial layers of
+the network are responsible for extracting features.
+
+2.5 Automatic emotion recognition using machine learning
+The visual analysis of the EEG signal is not easy even for researchers or physicians
+experienced in the domain. Physiological signals, especially EEG, introduce problems
+with noise, artifacts, and low signal-to-noise ratio. The computerized process is necessary to increase the diagnostic value of EEG. The emotion recognition is a great
+example of a problem that is resolvable only with the support of modern methods of
+machine learning. This chapter presents modern solutions for this problem, explains
+the process of designing emotion classifiers using machine learning, and lists stateof-the-art methods and applications.
+
+2.5.1 Sources of the data
+Three modern EEG caps from research-grade systems are presented in Fig. 2.4.
+­Majority of works in the literature is based on these devices [29]. Besides the EEG cap,
+the EEG amplifier is of the greatest importance when recording high-quality data.
+
+2.5 Automatic emotion recognition using machine learning
+
+23
+
+Fig. 2.4: Three most popular EEG caps from research-grade EEG systems. From left to right: Biosemi
+ActiveTwo 128 channels (Biosemi, Amsterdam, Netherlands), BrainProducts ActiCap 32 channels
+(Brain Products Inc., Gilching, Germany) and Compumedics Quik-Cap 64 channels (Compumedics,
+Victoria, Australia).
+
+It should provide a sampling rate of at least 256 Hz (to record a whole effective spectrum of the brain activity), the resolution at the level of nanovolts and additional
+channels for electrooculography or accelerometers. Because of the high cost of these
+systems, there is an increasing interest in using low-cost commercial EEG systems
+like Emotiv EPOC+ [37].
+
+2.5.1.1 EEG data sets
+There are several publicly accessible data sets for emotion recognition from EEG
+signals (Tab. 2.1). Arguably, the most popular one in the literature is the Database for
+Emotion Analysis Using Physiological Signals (DEAP) [47]. It contains EEG recordings (BioSemi ActiveTwo with 32 channels according to the 10–20 international
+positioning system at 512 Hz sampling frequency) from 32 participants watching
+40 one-minute long music videos. Participants rated each video in terms of the levels
+of arousal, valence, and dominance using nine-level self-assessment manikins. Also,
+they rated like/dislike and familiarity of the video. The mean locations of the stimuli
+videos in all mentioned dimension of assessment are presented in Fig. 2.5.
+Other publicly available EEG databases for emotion recognition are listed in the
+table below (Tab. 2.1). Majority of them use video clips as stimuli for emotion elicitation.
+
+2.5.1.2 EEG simulators
+EEG simulators, besides being the data source for algorithms testing, can be a useful
+tool for tutoring and teaching physicians to recognize not only emotional states but
+also epilepsy, pain, or depth of anesthesia of monitored patients. However, there
+
+24
+
+2 Machine learning approach to automatic recognition of emotions
+
+Tab. 2.1: The EEG databases for emotion recognition.
+Database name (year)
+
+EEG recording details
+
+Stimuli used
+
+Emotions model used
+
+DEAP [47] (2012)
+
+32 participants,
+BioSemi ActiveTwo,
+32 channels, 512 Hz
+
+40 video clips
+
+DREAMER [48] (2018)
+
+23 participants, Emotiv
+EPOC low-cost EEG,
+16 channels, 128 Hz
+
+18 video clips
+
+MAHNOB-HCI [49] (2012)
+
+27 participants,
+BioSemi ActiveTwo,
+32 channels, 1024 Hz
+
+20 video clips
+
+SEED [50] (2018)
+
+15 participants, ESI
+NeuroScan System,
+62 channels, 1000 Hz
+
+72 video clips
+
+eNTERFACE06_EMOBRAIN
+[51] (2006)
+
+16 participants,
+BioSemi ActiveTwo,
+54 channels, 1024 Hz
+
+327 images from
+IAPS
+
+USTC-ERVS [52] (2014,
+no longer available online)
+
+28 participants,
+Neuroscan Synamps2,
+32 channels, 500 Hz
+
+92 video clips
+
+Valence and arousal
+levels divided into
+four classes: HAHV,
+LAHV, HALV, and LALV
+PAD model levels and
+nine discrete emotion
+classes: amusement,
+excitement,
+happiness, calmness,
+anger, disgust,
+fear, sadness, and
+surprise
+Valence and arousal
+levels, nine discrete
+emotion classes:
+neutral, anxiety,
+amusement,
+sadness, joy,
+disgust, anger,
+surprise, and fear
+Valence and arousal
+levels, four discrete
+emotion classes:
+happiness, sadness,
+neutral, and fear
+Three discrete
+emotion classes:
+calm, exciting
+positive, and exciting
+negative
+Valence and arousal
+levels
+
+is currently no standardized method of teaching EEG interpretation in residency
+programs. There are some initial works on creating software EEG simulators for
+teaching [53, 54], including a recent ongoing study with promising results in education [55]. Besides, there are several general-purpose EEG simulators, including
+the recent open-source EEG software simulator SEREEGA [56] (mainly for ERPs) and
+free BESA simulator. This kind of software may be integrated into virtual patient
+environments [57] to enhance the experience and extend the range of training
+scenarios.
+
+2.5 Automatic emotion recognition using machine learning
+
+25
+
+Fig. 2.5: The visualization of the DEAP database as presented by Koelstra et al. [47]. Triangles mark
+the mean locations of the stimuli on the arousal-valence plane divided into four conditions (LALV,
+HALV, LAHV, HAHV). Liking is encoded by color: dark red is low liking and bright yellow is high liking.
+Dominance is encoded by symbol size: small symbols stand for low dominance and big for high
+dominance.
+
+The only commercially available hardware EEG simulator is the five-channel MiniSim 330
+simulator. The recent design of hardware EEG simulator in the form of a physical phantom
+head is worth mentioning [58]. However, for now, hardware simulators are only used for
+testing EEG instruments and may never be necessary for medical training that will be
+based on software simulators that are easier to share, maintain, adapt, and extend.
+2.5.1.3 Custom EEG experiments
+The most challenging method of acquiring necessary EEG data for further analysis
+is to perform a new custom experiment on a group of participants. The design of
+such an experiment requires broad knowledge in the domain and much patience
+during recordings. However, it is an essential part of each research to validate the
+method or hypothesis on the real-world data from own experiment. In fact, each
+
+26
+
+2 Machine learning approach to automatic recognition of emotions
+
+EEG medical diagnostic procedure is an experiment that is designed to test the
+hypothesis that the patient is healthy. To test the hypothesis correctly using EEG,
+it is extremely important to strictly follow the instruction and conditions of the
+­experiment. Our knowledge about processes in the brain is very limited, so confounding variables (extra variables that are not controlled in the experiment) may
+have an undefined critical effect on the brain response. The list of confounding
+variables is usually very long: age and gender of participants (many confirmed differences), the effect of the researcher (the way instructions are provided, presence
+during experiment), the time of the day, the mood and motivation of the participant, left/right handedness (if participant responds by button push), or the effects
+of drugs and stimulants.
+The independent variable (the controlled variable) in the emotion recognition
+experiments is usually a class (or value in the circumplex model) of emotion that
+intends to be elicited using the specific stimuli. According to the thorough survey
+of Al-Nafjan et al. [29], the most frequently used stimulus type is an affective image
+(more than 35% of articles) before videos, music, and other modalities like games or
+imagination techniques. The dependent variable (the output of the experiment) in
+EEG experiments is defined in the selected feature space (time or frequency) as listed
+in chapter 2.5.2.1.
+2.5.2 Methods
+The process of designing any EEG automatic classifier has similar steps presented in Fig. 2.6. The differences lay mainly in the types of stimuli, extracted features, and machine learning models. This chapter is focused on presenting the
+overview of recently used methods as described in more detail in a few review
+papers [29, 31, 59, 60].
+
+2.5.2.1 Preprocessing
+The first standard step after collecting the necessary EEG data is preprocessing.
+Usually, it involves artifacts rejection based on excessive peak-to-peak amplitudes
+(over 70–100 µV), filtering using band-pass filters to remove low-frequency potential
+drift (under 0.5 Hz, caused i.e., by sweating) and high-frequency oscillations (over
+40–70 Hz, usually containing only noise), as well as 50-Hz noise from the electric
+network. Frequently, the signal from each electrode is re-referenced to the average
+of all channels to remove common environmental artifacts; this is called common
+average reference. The independent component analysis may be used to remove
+external sources of noise, for example, the eyeblink or cardiac rhythm artifacts. The
+example of a detailed preprocessing pipeline for ERP analysis in emotion processing
+can be found in our previous work [37].
+
+2.5 Automatic emotion recognition using machine learning
+
+27
+
+Fig. 2.6: The block diagram of a standard procedure for designing an automatic emotion recognition
+system, as presented by Zheng and Lu [61].
+
+2.5.2.2 Feature extraction
+The EEG data are usually high dimensional (in terms of a number of samples and
+number of channels in each trial), so the limited number of features should be extracted
+to simplify the model, speed up the training, and increase generalization. The optimal
+approach would be to search through all the possible EEG channels, spectral bands,
+and time segments for a set of features that maximize the classification score. In practice, the majority of recent automatic classification systems use properties of power
+spectral density bands as the main features [29, 31]. They are fast and easy to calculate and allow online classification in applications such as patients monitoring. An
+additional advantage in the medical context is that most physicians are familiar with
+these types of features. The common properties of a frequency band may be extracted
+as mean power, frontal asymmetry, or higher order crossing. In terms of time domain,
+the simple statistics of the signal like root mean square of the signal, mean, standard deviation, or entropy are usually not enough to effectively predict more emotional
+states. Surprisingly, considering a number of known ERP correlates of emotion, very
+few papers extract features from ERP waveforms. One of them is the study of Frantzidis
+et al. [62], where the amplitudes of P100, N100, P200, N200, and P300 components
+are used as supportive features together with frequency bands. The feature extraction
+step may be omitted when using deep learning methods (usually deep artificial neural
+networks) that select proper features as an integral part of the training procedure.
+2.5.2.3 Emotion classification and estimation using machine learning
+Machine learning classification (for discrete classes of emotions) and regression (for
+continuous emotion space) models are extensively used in the domain literature.
+
+28
+
+2 Machine learning approach to automatic recognition of emotions
+
+The most common classification method in the emotion recognition domain (like in
+many other domains) is the support vector machine (SVM). In short, this technique
+is designed to find the most representative samples that will become the “support
+vectors” in the feature space. The support vectors define the decision boundary
+(the optimal hyperplane) separating one class from another. There is also the possibility to use support vectors in the regression task when working on continuous
+emotion model. Another popular model in the EEG domain is the k-nearest neighbors ­classifier/regressor. Similarly to SVM, it is based on the comparison of the testing
+data to the previously provided training data. Specifically, if the majority of these
+k-closest training samples represent one particular class the testing sample probably
+also belongs to the same class. Other classifiers successfully used for emotion recognition are linear discriminant analysis and artificial neural networks. In recent years,
+the deep artificial neural networks have rapidly become more important because of
+the simplicity of use (lack of feature extraction, or sometimes even signal preprocessing steps) and prevailing results [63].
+
+2.5.3 Results
+The physicians familiar with EEG analysis are usually trained to recognize patterns
+of EEG changes in the time domain (seizures) and in the frequency domain (depth of
+anesthesia, psychiatric disorders). However, the accuracy of the diagnosis is limited
+by human perception, the experience of the physician, and the state of knowledge
+about the brain, so computerized methods can easily overperform humans. The
+results reported in the literature achieve levels of 82–94% for two-class (such as
+arousal vs. neutral or happiness vs. sadness) and 66–82% for four-class classification (such as HAHV, HALV, LALV, and LAHV classes or joy, anger, sadness, and pleasure) [31]. On the example of the DEAP data set, Li et al. [63] shows the comparison of
+accuracies using different classifiers of HAHV, HALV, LALV, and LAHV classes: 45%
+for the random decision forest, 63% for the kNN, 67% for the SVM, 70% for convolutional neural network, and 75% for hybrid neural network presented in the article.
+On the example of the eNTERFACE06_EMOBRAIN database, the best classification
+accuracy among calm, exciting positive, and exciting negative emotional states is
+achieved around 77% [64]. On the SEED data set, the emotion classification into positive, neutral, and negative classes has achieved accuracy up to 83% [65]. Presented
+accuracies are virtually unreachable even for human experts.
+
+2.5.4 Applications
+Automatic recognition of emotions may find, and finds, many applications. Data are
+not only frequently derived from the EEG but also combined with visual information
+
+2.5 Automatic emotion recognition using machine learning
+
+29
+
+(facial expressions), voice analysis, and other physiological signals like electrocardiogram or galvanic skin response. The medical applications include mainly diagnosis and monitoring of patients, and the nonmedical ones are mainly associated
+with brain-computer interfaces. An extensive review of EEG applications in emotion
+recognition from over 300 papers is presented by Al-Nafjan et al. [29].
+For example, Friedrich et al. [66] described a neurofeedback game that teaches
+emotions for children with ASD. Children undergoing therapy were to control brain
+wave activity in selected bands by playing a game controlled by these waves. Studies
+have shown an improvement in various aspects of social interaction. Markiewcz [67]
+described the use of EEG measurements and feedback in the treatment of diseases as
+depression, autism, schizophrenia, neurosis, and Parkinson’s disease.
+The application of automatic emotion recognition in the effective diagnosis of
+Parkinson disease is presented by Yuvaraj et al. [68]. EEG signals were recorded
+from 20 patients with Parkinson’s disease and 20 healthy participants while watching video clips. Using an SVM classifier, the samples were grouped and classified as
+six emotions: sadness, happiness, fear, anger, surprise, and disgust. Patients with
+­Parkinson’s disease responded less to visual stimuli. This was particularly true in
+the case of negative emotions.
+The diagnosis of ASD in children was successfully applied using the theta coherence index, as described by Yeung et al. [69]. It is also possible to diagnose Asperger’s
+syndrome using the task of recognizing facial expressions. Patients with Asperger’s
+syndrome have deficiencies in the unconscious processing of coarse information—
+there is no N400 component. They count only on voluntary attention in recognizing
+emotional expression [70].
+To diagnose schizophrenia in the study [71], 108 healthy and 108 schizophrenic
+patients observed emotional images, including sadness, fear, anger, disgust, and happiness, while ERP was recorded in conscious and unconscious conditions. The results
+showed that patients with schizophrenia had shorter brain activity, around 70 ms.
+Also, patients with schizophrenia in response to disgust had a positive pulse after 70
+ms, and normal people had a negative pulse in response to fear and anger compared
+with happiness in the temporal-occipital regions. Significant differences between the
+two groups were obtained by analysis of variance (ANOVA).
+In the study of depressive disorders, emotions were generated using music
+[72] and face images expressing the basic Ekman emotions [73]. The first study
+showed that patients with depression have significantly (in terms of ANOVA) more
+complex EEG signals in the parietal and frontal lobes compared with healthy
+people, and this complexity can be reduced by listening to music. In the second
+study, the connectivity of brain network functions was analyzed by separating coherence between brain waves. Total consistency in the gamma band has
+proven to be a promising indicator of depression with lower overall values for
+healthy people. In addition, abnormal connections were reported in patients with
+depression.
+
+30
+
+2 Machine learning approach to automatic recognition of emotions
+
+2.6 Summary
+The connection between emotions and health is recent of high interest in the fields of
+medicine and psychology. The affective computing subdomain of automatic emotion
+recognition systems may help significantly push forward this research. The number
+of applications, promising results, and many open issues motivate researchers to
+work on this topic. However, very few papers on computational models of emotion
+recognition involve psychological and medical experts to validate the approach and
+cooperate with computer scientists. Machine learning has the potential to initiate a
+breakthrough in neuroscience and medical domain. The recent interest and advancements in automatic emotion recognition open new possibilities in terms of medical
+diagnosis and treatment. Although provided with the proper amount of good quality
+data, these computerized methods exceed human capabilities at a large extent.
+By contrast, this topic is very controversial in terms of privacy policies and recent
+general data protection regulation. Thus, each EEG experiment has to be accepted
+by the proper ethics committee and preceded by a written consent of the patient. The
+presented machine learning approach may be analogically applied in other physiological signals and other diagnostic fields.
+
+2.7 Acknowledgments
+This work was supported by statutory funds for young researchers of Institute of Informatics, Silesian University of Technology, Gliwice, Poland (BKM/560/RAU2/2018).
+
+2.8 References
+[1]	Varsavsky A, Mareels I, Cook M. Epileptic Seizures and the EEG: Measurement, Models,
+Detection and Prediction. 1st ed. Boca Raton: CRC Press, 2010.
+[2]	Alotaiby TN, Alshebeili SA, Alshawi T, Ahmad I, Abd El-Samie FE. “EEG seizure detection and
+prediction algorithms: a survey.” EURASIP Journal on Advances in Signal Processing 2014, no. 1
+(December 2014).
+[3]	Marchant N, et al. “How electroencephalography serves the anesthesiologist.” Clinical EEG and
+Neuroscience 45, no. 1 (January 2014): 22–32.
+[4]	Purdon PL, Sampson A, Pavone KJ, Brown EN. “Clinical electroencephalography for anesthesiologists: Part I.” Anesthesiology 123, no. 4 (October 2015): 937–60.
+[5]	Bosl WJ, Tager-Flusberg H, Nelson CA. “EEG analytics for early detection of autism spectrum
+disorder: a data-driven approach.” Scientific Reports 8, no. 1 (May 2018): 6828.
+[6]	Adeli H, Ghosh-Dastidar S. Automated EEG-Based Diagnosis of Neurological Disorders:
+Inventing the Future of Neurology. 1st ed. Boca Raton, FL: CRC Press, 2010.
+[7]	Isaac C, Januel D. “Neural correlates of cognitive improvements following cognitive remediation
+in schizophrenia: a systematic review of randomized trials.” Socioaffective Neuroscience and
+Psychology 6, no. 1 (January 2016): 30054.
+
+2.8 References
+
+31
+
+[8]	Campos C, et al. “Neuroplastic changes following social cognition training in schizophrenia:
+a systematic review.” Neuropsychology Review 26, no. 3 (September 2016): 310–28.
+[9]	Acharya UR, Sudarshan VK, Adeli H, Santhosh J, Koh JEW, Adeli A. “Computer-aided diagnosis
+of depression using EEG signals.” European Neurology 73, no. 5–6 (2015): 329–36.
+[10]	Badrakalimuthu VR, Swamiraju R, de Waal H. “EEG in psychiatric practice: to do or
+not to do?” Advances in Psychiatric Treatment 17, no. 2 (March 2011): 114–21.
+[11]	Tan DEB, Tung RS, Leong WY, Than JCM. “sleep disorder detection and identification.” Procedia
+Engineering 41 (2012): 289–95.
+[12]	Lövheim H. “A new three-dimensional model for emotions and monoamine neurotransmitters.”
+Medical Hypotheses 78, no. 2 (February 2012): 341–48.
+[13]	Luneski A, Konstantinidis E, Bamidis PD. “Affective medicine.” Methods of Information
+Medicine 49, no. 3 (January 2018): 207–18.
+[14]	Cohen S, Doyle WJ, Skoner DP, Rabin BS, Gwaltney JM, Jr. “Social ties and ­susceptibility to the
+common cold.” JAMA 277, no. 24 (June 1997): 1940–4.
+[15]	Glaser R, Pearl DK, Kiecolt-Glaser JK, Malarkey WB. “Plasma cortisol levels and reactivation of
+latent Epstein-Barr virus in response to examination stress.” Psychoneuroendocrinology 19, no.
+8 (January 1994): 765–72.
+[16] Picard RW. Affective Computing. Cambridge, MA: MIT Press, 1997.
+[17]	Panksepp J. Affective Neuroscience: The Foundations of Human and Animal Emotions. New York,
+NY: Oxford University Press, 1998.
+[18]	Ekman P. “An argument for basic emotions.” Cognition and Emotion 6, no. 3–4 (May 1992):
+169–200.
+[19]	Russell JA. “Core affect and the psychological construction of emotion.” Psychological Review
+110, no. 1 (2003): 145–72.
+[20]	Plutchik R. “The Nature of emotions: human emotions have deep evolutionary roots, a fact that
+may explain their complexity and provide tools for clinical practice.” American Scientist 89,
+no. 4 (2001): 344–50.
+[21]	Cowen AS, Keltner D. “Self-report captures 27 distinct categories of emotion bridged
+by continuous gradients.” Proceedings of the National Academy of Sciences 114, no. 38
+(September 2017): E7900–9.
+[22]	Mehrabian A, Russell JA. An approach to environmental psychology. Cambridge, MA: The MIT
+Press, 1974.
+[23]	Russell JA, Mehrabian A. “Evidence for a three-factor theory of emotions.” Journal of Research
+in Personality 11, no. 3 (September 1977): 273–94.
+[24]	Bakker I, van der Voordt T, Vink P, de Boon J. “Pleasure, arousal, dominance: Mehrabian and
+Russell revisited.” Current Psychology 33, no. 3 (September 2014): 405–21.
+[25]	Russell JA, Lewicka M, Niit T. “A cross-cultural study of a circumplex model of affect.” Journal of
+Personality and Social Psychology 57, no. 5 (1989): 848–56.
+[26]	Landowska A. “Towards new mappings between emotion representation models.” Applied
+Sciences 8, no. 2 (2018): 274.
+[27]	Lindquist KA, Barrett LF. “A functional architecture of the human brain: emerging insights
+from the science of emotion.” Trends in Cognitive Sciences 16, no. 11 (November 2012):
+533–40.
+[28]	Wyczesany M, Ligeza TS. “Towards a constructionist approach to emotions: verification of the
+three-dimensional model of affect with EEG-independent component analysis.” Experimental
+Brain Research 233, no. 3 (March 2015): 723–33.
+[29]	Al-Nafjan A, Hosny M, Al-Ohali Y, Al-Wabil A. “Review and classification of emotion recognition
+based on EEG brain-computer interface system research: a systematic review.” Applied
+Sciences 7, no. 12 (2017).
+
+32
+
+2 Machine learning approach to automatic recognition of emotions
+
+[30]	Bradley MM, Lang PJ. “The International Affective Picture System (IAPS) in the study of emotion
+and attention.” In Handbook of Emotion Elicitation and Assessment, pp. 29–46. New York, NY:
+Oxford University Press, 2007.
+[31]	Kim MK, Kim M, Oh E, Kim SP. “A review on the computational methods for emotional state
+estimation from the human EEG.” Computational and Mathematical Methods in Medicine 2013
+(2013): 1–13.
+[32]	Olofsson JK, Nordin S, Sequeira H, Polich J. “Affective picture processing: an integrative review
+of ERP findings.” Biological Psychology 77, no. 3 (March 2008): 247–65.
+[33]	Lithari C, et al. “Are females more responsive to emotional stimuli? A neurophysiological study
+across arousal and valence dimensions.” Brain Topography 23, no. 1 (March 2010): 27–40.
+[34]	Rozenkrants B, Polich J. “Affective ERP processing in a visual oddball task: arousal, valence,
+and gender.” Clinical Neurophysiology 119, no. 10 (October 2008): 2260–5.
+[35]	Eimer M, Holmes A. “Event-related brain potential correlates of emotional face processing.”
+Neuropsychologia 45, no. 1 (January 2007): 15–31.
+[36]	Wronka E, Walentowska W. “Attention modulates emotional expression processing.”
+Psychophysiology 48, no. 8 (August 2011): 1047–56.
+[37]	Kotowski K, Stapor K, Leski J, Kotas M. “Validation of Emotiv EPOC+ for extracting ERP
+correlates of emotional face processing.” Biocybernetics and Biomedical Engineering 38, no. 4
+(January 2018): 773–81.
+[38]	Blankertz B, Lemm S, Treder M, Haufe S, Müller KR. “Single-trial analysis and ­classification of
+ERP components—a tutorial.” NeuroImage 56, no. 2 (May 2011): 814–25.
+[39]	Balconi M, Lucchiari C. “EEG correlates (event-related desynchronization) of emotional face
+elaboration: a temporal analysis.” Neuroscience Letters 392, no. 1 (January 2006): 118–23.
+[40]	Balconi M, Mazza G. “Brain oscillations and BIS/BAS (behavioral inhibition/activation system)
+effects on processing masked emotional cues: ERS/ERD and coherence measures of alpha
+band.” International Journal of Psychophysiology 74, no. 2 (November 2009): 158–65.
+[41]	Müller MM, Keil A, Gruber T, Elbert T. “Processing of affective pictures modulates righthemispheric gamma band EEG activity.” Clinical Neurophysiology 110, no. 11 (November 1999):
+1913–20.
+[42]	Wyczesany M, Grzybowski S, Barry R, Kaiser J, Coenen AM, Potoczek A. “Covariation of
+EEG synchronization and emotional state as modified by anxiolytics.” Journal of Clinical
+Neurophysiology 28, no. 3 (June 2011): 289–96.
+[43]	Miskovic V, Schmidt LA. “Cross-regional cortical synchronization during affective image
+viewing.” Brain Research 1362 (November 2010): 102–11.
+[44]	Turing AM. “Computing machinery and intelligence.” In Parsing the Turing Test, pp. 23–65.
+Springer, 2009.
+[45]	Hendler J. “Avoiding another AI winter.” IEEE Intelligent Systems 23, no. 2 (March 2008): 2–4.
+[46]	Macukow B. “Neural networks—state of art, brief history, basic models and architecture.”
+In Computer Information Systems and Industrial Management, pp. 3–14, 2016.
+[47]	Koelstra S, et al. “DEAP: a database for emotion analysis; using physiological signals.”
+IEEE Transactions on Affective Computing 3, no. 1 (January 2012): 18–31.
+[48]	Katsigiannis S, Ramzan N. “DREAMER: a database for emotion recognition through EEG and ECG
+signals from wireless low-cost off-the-shelf devices.” IEEE Journal of Biomedical and Health
+Informatics 22, no. 1 (January 2018): 98–107.
+[49]	Soleymani M, Lichtenauer J, Pun T, Pantic M. “A multimodal database for affect recognition
+and implicit tagging.” IEEE Transactions on Affective Computing 3, no. 1 (January 2012):
+42–55.
+[50]	Zheng W, Liu W, Lu Y, Lu B, Cichocki A. “EmotionMeter: a multimodal framework for recognizing
+human emotions.” IEEE Transactions on Cybernetics (2018): 1–13.
+
+2.8 References
+
+33
+
+[51]	Savran A, et al. “Emotion detection in the loop from brain signals and facial images.”
+In Proceedings of the eNTERFACE 2006 Workshop, 2006.
+[52]	Wang S, Zhu Y, Wu G, Ji Q. “Hybrid video emotional tagging using users’ EEG and video
+content.” Multimedia Tools and Applications 72, no. 2 (September 2014): 1257–83.
+[53]	Mayorov O. “Virtual training simulator—designer of EEG signals for tutoring students and
+doctors to methods of quantitative EEG analysis (qEEG).” Presented at the Medical Infobahn for
+Europe 2000, 2000, vol. 77, pp. 573–7.
+[54]	Morita K, Shiraishi Y, Sato S. “Making EEG output on human simulator.” In IEEE International
+Workshop on Biomedical Circuits and Systems, 2004, pp. S3/6–12. 2004.
+[55]	Hubert M, Cios J, Cavalcanti M, Khurma A. “An effective tool for teaching EEG interpretation to
+residents and medical students (P4.5-019).” Neurology 92, no. 15 Supplement (April 2019).
+[56]	Krol LR, Pawlitzki J, Lotte F, Gramann K, Zander TO. “SEREEGA: simulating event-related EEG
+activity.” Journal of Neuroscience Methods 309 (November 2018): 13–24.
+[57]	Kononowicz AA, Hege I. “The world of virtual patients.” In Simulations in Medicine: Pre-clinical
+and Clinical Applications, pp. 121–38. Berlin, Boston: De Gruyter, 2015.
+[58]	Oliveira AS, Schlink BR, Hairston WD, König P, Ferris DP. “Induction and separation of motion
+artifacts in EEG data using a mobile phantom head device.” Journal of Neural Engineering 13,
+no. 3 (May 2016).
+[59]	Zangeneh Soroush M, Maghooli K, Setarehdan SK, Motie Nasrabadi A. “A review on EEG signals
+based emotion recognition.” International Clinical Neuroscience Journal 4, no. 4 (October
+2017): 118–29.
+[60]	Alarcao SM, Fonseca MJ. “Emotions recognition using EEG signals: a survey.” IEEE Transactions
+on Affective Computing 10 (2017): 374–93.
+[61]	Wei-Long Zheng, Bao-Liang Lu. “Investigating critical frequency bands and channels for
+EEG-based emotion recognition with deep neural networks.” IEEE Transactions on Autonomous
+Mental Development 7, no. 3 (September 2015): 162–75.
+[62]	Frantzidis CA, Bratsas C, Papadelis CL, Konstantinidis E, Pappas C, Bamidis PD. “Toward
+emotion aware computing: an integrated approach using multichannel ­neurophysiological
+recordings and affective visual stimuli.” IEEE Transactions on Information Technology in
+Biomedicine 14, no. 3 (May 2010): 589–97.
+[63]	Li Y, Huang J, Zhou H, Zhong N. “Human emotion recognition with electroencephalographic
+multidimensional features by hybrid deep neural networks.” Applied Sciences 7, no. 10
+(October 2017): 1060.
+[64]	Khalili Z, Moradi MH. “Emotion recognition system using brain and peripheral signals: using
+correlation dimension to improve the results of EEG.” In 2009 International Joint Conference on
+Neural Networks, pp. 1571–5, 2009.
+[65]	Li X, Song D, Zhang P, Zhang Y, Hou Y, Hu B. “Exploring EEG features in cross-subject emotion
+recognition.” Frontiers in Neuroscience 12 (March 2018): 162.
+[66]	Friedrich EVC, et al. “An effective neurofeedback intervention to improve social interactions in
+children with autism spectrum disorder.” Journal of Autism and Developmental Disorders 45,
+no. 12 (December 2015): 4084–100.
+[67]	Markiewcz R. “The use of EEG biofeedback/neurofeedback in psychiatric rehabilitation.”
+Psychiatria Polska 51, no. 6 (December 2017): 1095–106.
+[68]	Yuvaraj R, et al. “Detection of emotions in Parkinson’s disease using higher order spectral
+features from brain’s electrical activity.” Biomedical Signal Processing and Control 14
+(November 2014): 108–16.
+[69]	Yeung MK, Han YMY, Sze SL, Chan AS. “Altered right frontal cortical connectivity during facial
+emotion recognition in children with autism spectrum disorders.” Research in Autism Spectrum
+Disorders 8, no. 11 (November 2014): 1567–77.
+
+34
+
+2 Machine learning approach to automatic recognition of emotions
+
+[70]	Tseng YL, Yang HH, Savostyanov AN, Chien VSC, Liou M. “Voluntary attention in Asperger’s
+syndrome: brain electrical oscillation and phase-synchronization during facial emotion
+recognition.” Research in Autism Spectrum Disorders 13–14 (May 2015): 32–51.
+[71]	Brennan AM, Harris AWF, Williams LM. “Neural processing of facial expressions of emotion in
+first onset psychosis.” Psychiatry Research 219, no. 3 (November 2014): 477–85.
+[72]	Akdemir Akar S, Kara S, Agambayev S, Bilgiç V. “Nonlinear analysis of EEGs of patients with
+major depression during different emotional states.” Computers in Biology and Medicine 67
+(December 2015): 49–60.
+[73]	Li Y, Cao D, Wei L, Tang Y, Wang J. “Abnormal functional connectivity of EEG gamma band in
+patients with depression during emotional face processing.” Clinical Neurophysiology 126,
+no. 11 (November 2015): 2078–89.
+
+

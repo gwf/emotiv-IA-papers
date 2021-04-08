@@ -1,0 +1,1972 @@
+applied
+sciences
+Article
+
+A Method to Obtain Parameters of One-Column Jansen–Rit
+Model Using Genetic Algorithm and Spectral Characteristics
+Adam Łysiak *
+
+and Szczepan Paszkiel
+Faculty of Electrical Engineering, Automatic Control and Informatics, Opole University of Technology,
+45-758 Opole, Poland; s.paszkiel@po.opole.pl
+* Correspondence: a.lysiak@doktorant.po.edu.pl
+
+Abstract: In this paper, a method of obtaining parameters of one-column Jansen–Rit model was
+proposed. Methods present in literature are focused on obtaining parameters in an on-line manner,
+producing a set of parameters for every point in time. The method described in this paper can provide
+one set of parameters for a whole, arbitrarily long signal. The procedure consists of obtaining specific
+frequency features, then minimizing mean square error of those features between the measured
+signal and the modeled signal, using genetic algorithm. This method produces an 8-element vector,
+which can be treated as an EEG signal feature vector specific for a person. The parameters which
+were being obtained are maximum postsynaptic potential amplitude, maximum inhibitory potential
+amplitude, ratio of the number of connections between particular neuron populations, the shape
+of a nonlinear function transforming the average membrane potential into the firing rate and the
+input noise range. The method shows high reproducibility (intraclass correlation coefficient for
+particular parameters ranging from 0.676 to 0.978) and accuracy (ranging from 0.662 to 0.863). It was
+additionally verified using EEG signal obtained for a single participant. This signal was measured
+using Emotiv EPOC+ NeuroHeadset.
+
+
+Citation: Łysiak, A.; Paszkiel, S. A
+Method to Obtain Parameters of
+
+Keywords: EEG modeling; Jansen model; Rit model; Jansen–Rit model; neural mass model; onecolumn model; genetic algorithm; biofeedback; EEG classification; EEG frequency features; model
+parameters estimation
+
+One-Column Jansen–Rit Model Using
+Genetic Algorithm and Spectral
+Characteristics. Appl. Sci. 2021, 11,
+677. https://doi.org/10.3390/
+
+1. Introduction
+
+app11020677
+
+The electroencephalography (EEG) is a noninvasive brain examination, in which
+brain waves are measured on a skin surface of the subject’s head. EEG is most often used
+by neurologists to differentiate functional from organic brain diseases, to diagnose sleep
+disorders, headaches, dizziness, to monitor brain activity during heart operations. EEG
+offers high temporal resolution which is not possible with magnetic resonance imaging
+(MRI).
+Since the EEG’s history goes back to 1924 [1], the EEG signal analysis field is profoundly studied [2–4]. On the other side, there is whole field devoted to EEG signal
+modeling, which can be divided into three main categories [5]. Firstly, there are microscopic (detailed) models, focused on modeling individual neurons and their connections.
+Secondly, mesoscopic (reduced) models, in which neurons are modeled in less complex
+manner. Finally, macroscopic models, which simulate whole neuron networks without
+simulating individual neurons. In this paper, the third category is considered.
+First macroscopic model, considering only excitatory neural interactions, was introduced in 1956 by Beurle [6]. In 1972, Wilson and Cowan proposed a model with additional
+inhibitory interactions [7]. Amari, in 1975, proposed a spatial-temporal model [8], in opposition to only time-variant predecessors. Despite the simplicity of those models, they
+constitute the foundation of all the later ones [5], like Lopes da Silva’s [9], Jansen’s [10], or
+Wendling’s [11].
+
+Received: 18 December 2020
+Accepted: 10 January 2021
+Published: 12 January 2021
+Publisher’s Note: MDPI stays neutral with regard to jurisdictional claims in published maps and institutional affiliations.
+
+Copyright: © 2021 by the authors. Licensee MDPI, Basel, Switzerland.
+This article is an open access article
+distributed under the terms and conditions of the Creative Commons Attribution (CC BY) license (https://
+creativecommons.org/licenses/by/
+4.0/).
+
+Appl. Sci. 2021, 11, 677. https://doi.org/10.3390/app11020677
+
+https://www.mdpi.com/journal/applsci
+
+Appl. Sci. 2021, 11, 677
+
+2 of 12
+
+In this paper, the one-column Jansen–Rit (J-R) model was analyzed. The mathematical single-column model was developed by many researchers including Lopes Da Silva,
+Jansen, and Rit [10]. It is widely present in literature [10,12–22]. In [10], the authors deeply
+analyzed the model, taking into account not only alpha waves, but also epileptic activity
+and bifurcations, with the emphasis put on the influence of the p parameter (so the representation of the activity exterior to the column). In [12], the authors focused on comparison
+between the one column J-R model, double column J-R model, and Wendling’s model.
+However, parameters of the models were adjusted to represent specific brain activities,
+without comparison to real signals. Authors of [14] extended the model and analyzed
+both real and simulated signals, with the focus on transition from sine to spike activities.
+Nonetheless, fitting the model to real signal was absent. In [16,17], the J-R model was
+extended, however without explicit, numerical comparison to real signals. The one-column
+J-R model has been also used under stochastic and periodic driving, to study ictogenesis
+(progression from the interictal state to the seizure) [19]. In [20], the authors studied the dynamical interactions of cortical areas. In [21], the authors used Jansen–Rit model to develop
+an in silico platform to examine the effects of neighboring regions electrical stimulation on
+a another brain region. The authors of [22] analyzed the dynamics of a revised Jansen–Rit
+model in the stop-signal task.
+In 2012, the authors of [23] presented a method for estimating parameters in the J-R
+model using state observer. In the next year the method was implemented to estimate
+parameters of both modeled and real signals (which were obtained via subdural grid
+electrode) [24]. In 2016, the authors of [25] applied unscented Kalman filter to estimate the
+J-R model parameters in real time, while monitoring propofol-based anesthetic state (via
+EEG). Obtained parameters were used to classify anesthetic brain state.
+In the mentioned works, the parameters were being obtained in a continuous way; i.e.,
+they constituted a parameter–time matrix, with a set of parameter values for each specific
+moment. This paper presents a different approach to obtaining J-R model parameters,
+which is an off-line method. Obtained parameters, like in previous works, could be used
+for signal classification. The parameters themselves, however, are obtained once for full
+duration of a signal. That means that they could hypothetically constitute EEG signal
+features for specific individual, enabling off-line classification of obtained signals.
+To obtain the parameters for the whole signal, the genetic algorithm was used. Minimized function was defined as the mean square error (of the modeled and real signal) of
+the power spectrum of some specific frequencies. The specific objective of this research
+was to test if minimizing function defined in this way would be suitable, as it proved to be.
+Empirical comparison shows that the generated signals show close similarity to measured
+signals in the spectrum content.
+2. Materials and Methods
+2.1. Modeled Signal
+The conducted research included modeling of the neural structure by the Jansen–Rit
+single column model [10]. It includes a population of pyramidal structures receiving stimulatory and inhibitory impulses from interneurons and an input fed with noise simulating
+the impact of other neural structures. Pyramidal cells of the cerebral cortex, due to their
+characteristic location in the cerebral cortex structure, are considered to be the main source
+of the electroencelographic signal from the human brain. The Jansen–Rit model’s block
+diagram is shown in Figure 1.
+The P1 , P2 , and P3 blocks can be presented using the equations:
+(
+Aate−at t ≥ 0
+he (t) =
+(1)
+0
+t<0
+(
+hi ( t ) =
+
+Bbte−bt
+
+t≥0
+
+0
+
+t<0
+
+(2)
+
+Appl. Sci. 2021, 11, 677
+
+3 of 12
+
+. Sci. 2021, 11, x FOR PEER REVIEW
+
+3 of 12
+
+where: A and B are the maximal post-synaptic potential amplitudes, a and b are membrane
+time-constants.
+
+Figure 1. The Figure
+one-column
+model.
+The Pmodel.
+functions
+presented
+in Equation (1), P3
+1 and P
+2 blocks
+1. TheJansen–Rit
+one-column
+Jansen–Rit
+The
+P1 andare
+P2 the
+blocks
+are the(he)
+functions
+(he) presented
+is the functionin(hi)
+presented
+in
+Equation
+(2).
+The
+S
+,
+S
+,
+and
+S
+(sigm)
+blocks
+are
+the
+sigmoidal
+functions
+in
+1 2
+in3Equation (2). The S1, S2, and S3 (sigm) blockspresented
+are
+Equation (1), P3 is the function (hi) presented
+Equation (5), pthe
+is noise,
+while
+the
+C
+–C
+are
+the
+coefficients
+of
+connections
+between
+particular
+neural
+structures.
+1 presented
+4
+sigmoidal functions
+in Equation (5), p is noise, while the C1–C4 are the coefficients of
+connections between particular neural structures.
+
+Equation (1) can also be presented in the form of two first order differential equations:
+
+ .
+The P1, P2, and P3 blocks can be presented
+using the equations:
+y(t) = z(t)
+.
+≥(0t) − 2az(t) − a2 y(t)
+ℎ ( ) = z(t) = Aax
+
+0
+
+(
+(
+(
+(
+
+)=
+)=
+)=
+)=
+
+( )=
+( )=
+
+<0
+
+(3)
+
+(1)
+
+Equation (2) also can be expressed this way, by changing “A” and “a” terms to “B”
+and “b”. The model( can
+using six first-order equations [10]:
+≥0
+(2)
+ℎ ) =be therefore expressed
+0
+<
+0
+ .
+= y3 ( t )
+
+ y. 0 (t) post-synaptic
+where: A and B are the maximal
+potential amplitudes, a and b are membrane
+
+
+y
+t
+= y4 ( t )
+(
+)
+
+
+time-constants.
+ .1
+y2 ( t ) = y5 ( t )
+(4)
+Equation (1) can also .be
+presented in the form of two first order differential equay3 (t) = A· a·sigm(y1 (t) − y2 (t)) − 2· a·y3 (t) − a2 ·y0 (t)
+
+
+.
+
+tions:
+
+
+y (t) = A· a·( p(t) + C2 ·sigm(C1 ·y0 (t))) − 2· a·y4 (t) − a2 ·y1 (t)
+
+ .4
+(y)5 (=
+t) = ( B
+) ·b·C4 ·sigm(C3 ·y0 (t)) − 2·b·y5 (t) − b2 ·y2 (t)
+(3)
+( )=
+( )−2 ( )− 2 ( )
+where sigm is the sigmoidal function, responsible for the neural structure activation rate,
+Equation
+(2) also can
+way, byrepresentation
+changing “A”of
+and
+“a”
+terms towas
+“B”presented in
+dependent
+on be
+theexpressed
+potential this
+(graphical
+this
+function
+and “b”. TheFigure
+model2):
+can be therefore expressed using six first-order equations [10]:
+2e0
+sigm(v) =
+,
+(5)
+( )
+1 + e r ( v0 − v )
+
+( )
+( )
+∙ ∙
+
+∙
+
+∙
+
+p(t) is the signal delivered to the model, made of white noise, originally in the range of
+120–320 pulses per second, C1 , C2 , C3 , and C4 are numbers of synapses established between
+(4)
+( ) − neuron
+( ) −populations,
+2 ∙ ∙ ( )bounded
+− ∙ by
+( )equation:
+particular
+
+( )+
+
+∙
+
+∙
+
+( )
+
+−2∙
+
+∙ ( ) −
+
+∙
+
+( )
+
+
+C2 = 0.80·C1
+∙ ∙ ∙
+∙ ( ) −2∙ ∙ ( )− ∙ ( )
+(6)
+C3 = 0.25·C1
+
+
+where sigm is the sigmoidal function, responsible for
+the neural
+C4 =
+0.25·C1structure activation rate,
+dependent on the potential (graphical representation of this function was presented in
+Output of the model, or the modeled EEG signal, is denoted as y and can be obtained
+Figure 2):
+by simple subtraction:
+2
+y(t) = y, 1 (t) − y2 (t).
+(7)
+(5)
+( )=
+
+1+
+
+(
+
+)
+
+In the sigmoidal function the parameters e0 and v0 are directly responsible for the
+p(t) is the signal delivered to the model, made of white noise, originally in the range of
+activation function’s shape, i.e., the inflection point. The parameter r is responsible for
+120–320 pulses per second, C1, C2, C3, and C4 are numbers of synapses established between
+particular neuron populations, bounded by equation:
+
+Appl. Sci. 2021, 11, x FOR PEER REVIEW
+
+Appl. Sci. 2021, 11, 677
+
+4 of 12
+
+4 of 12
+
+= 0.80 ∙
+= 0.25 ∙
+(6)
+steepness (slope). These parameters were
+= being
+0.25 ∙modified in a course of this study, since
+the postsynaptic potential transforms into a firing rate not exactly in the same way from a
+Output of the model, or the modeled EEG signal, is denoted as y and can be obtained
+population to a population [10,26].
+by simple subtraction:
+The model was simulated with frequency of 1 kHz, using mid-point numerical method
+of solving differential equations. y( ) = ( ) − ( ).
+(7)
+
+Figure2.2.Sigmoidal
+Sigmoidalfunction
+functionchanging
+changingthe
+thepopulation’s
+population’smembrane
+membranepotential
+potential
+into
+fluctuation
+rate.
+Figure
+into
+fluctuation
+rate.
+
+2.2. Model
+Parameter
+Obtaining
+Process
+In the
+sigmoidal
+function
+the parameters e0 and v0 are directly responsible for the
+activation
+function’s
+shape,
+i.e.,
+the
+point.parameters
+The parameter
+r ismembrane
+responsible
+for
+Due to the small variability in
+theinflection
+time constant
+of the
+and
+steepness
+These
+parameters
+were
+being
+modified
+in amodel
+coursecan
+of feature
+this study,
+since
+delays
+in the(slope).
+dendritic
+tree (a
+and b, [10]),
+it was
+assumed
+that the
+changes
+postsynaptic
+potential
+transforms
+firing
+rate
+notand
+exactly
+in the
+same
+way from
+inthe
+eight
+parameters,
+i.e., A, B,
+C, e0 , v0 , r,into
+andap’s
+lower
+limit
+range.
+These
+parameters
+a population
+to form
+a population
+[10,26].
+mostly
+affect the
+of the signal.
+Due to the relatively high number of arguments in the
+The model
+was
+with frequency
+of used
+1 kHz,
+mid-point numerical
+minimized
+function,
+thesimulated
+genetic algorithm
+(GA) was
+for using
+the minimization
+process.
+method
+of other
+solving
+differential
+Along
+with
+heuristics,
+it isequations.
+often used for parameter estimation [27].
+Preliminary study was done comparing GA to different common heuristics, i.e.,
+2.2. Modelannealing
+Parameter(SA),
+Obtaining
+Process
+simulated
+particle
+swarm (PS), and surrogate optimization (SO). In the task
+of J-R model
+parameter
+obtaining,
+GA time
+and the
+PS proved
+to be more
+accurate
+than the
+Due to the small variabilitythe
+in the
+constant
+parameters
+of the
+membrane
+and
+rest
+of
+the
+compared
+algorithms.
+Despite
+the
+longest
+time
+to
+compute,
+genetic
+algorithm
+delays in the dendritic tree (a and b, [10]), it was assumed that the model can feature
+was
+chosen
+of its lowest
+vast
+tuning
+changes
+in because
+eight parameters,
+i.e.,value
+A, B,ofC,found
+e0, v0, optimum
+r, and p’s and
+lower
+limit
+and capabilities.
+range. These
+Specific
+values
+of
+the
+computation
+time
+and
+the
+found
+optimum
+are
+presented
+in Table
+parameters mostly affect the form of the signal. Due to the relatively high number
+of 1.
+arNote,
+that
+both,
+time
+and
+optimal
+value,
+were
+normalized
+to
+the
+highest
+value.
+guments in the minimized function, the genetic algorithm (GA) was used for the minimi-
+
+zation process. Along with other heuristics, it is often used for parameter estimation [27].
+
+Table 1.Preliminary
+Results of the
+preliminary
+study
+comparingGA
+common
+heuristics
+in task heuristics,
+of obtainingi.e.,
+Jansen
+study
+was done
+comparing
+to different
+common
+simRit
+(J-R)
+model
+parameters.
+Values
+of
+time
+and
+optimum
+are
+normalized
+to
+the
+highest
+value.
+ulated annealing (SA), particle swarm (PS), and surrogate optimization (SO). In the task
+
+of J-R model
+parameter obtaining, the GATime
+and the PS proved to beFound
+moreOptimum
+accurate than the
+Algorithm
+rest of the compared algorithms. Despite the longest time to compute, genetic algorithm
+Genetic algorithm
+1.000
+0.161
+was Simulated
+chosen because
+of its lowest value of
+found optimum and vast tuning
+capabilities.
+annealing
+0.440
+1.000
+SpecificParticle
+valuesswarm
+of the computation time and
+the
+found
+optimum
+are
+presented
+in Table 1.
+0.978
+0.189
+Note,
+that both,
+time and optimal value, 0.236
+were normalized to the highest
+value.
+Surrogate
+optimization
+0.275
+
+Appl. Sci. 2021, 11, 677
+
+Algorithm
+Genetic algorithm
+Simulated annealing
+Particle swarm
+Surrogate optimization
+
+Time
+1.000
+0.440
+0.978
+0.236
+
+Found Optimum
+0.161
+1.000
+0.189
+0.275
+
+5 of 12
+
+Function minimized in this comparison, and in the rest of this paper, is described
+below.
+Function minimized in this comparison, and in the rest of this paper, is described
+below.
+2.2.1. Function Minimized in This Study
+2.2.1.In
+Function
+in This
+Study
+order toMinimized
+match the EEG
+signal
+generated by the model to the reference EEG signal,
+it was
+to develop
+ansignal
+error generated
+function that
+would
+betominimized
+by EEG
+the genetic
+In necessary
+order to match
+the EEG
+by the
+model
+the reference
+signal,
+algorithm.
+it was necessary to develop an error function that would be minimized by the genetic
+The frequency analysis was used in the function to limit the impact of the differences
+algorithm.
+in length
+between the
+modeled
+real
+The value
+of the
+the impact
+minimized
+function
+was
+The frequency
+analysis
+wasand
+used
+in signals.
+the function
+to limit
+of the
+differences
+calculated
+as the mean
+error
+thesignals.
+modeledThe
+andvalue
+real signal)
+the power
+specin
+length between
+the square
+modeled
+and(ofreal
+of the from
+minimized
+function
+was
+mean square
+(of the(DFT)
+modeled
+and real
+signal)
+fromthat
+the power
+trumcalculated
+obtained as
+viathe
+discrete
+Fouriererror
+transform
+in range
+2–18
+Hz. Note
+the dispectrum
+via discrete
+in range
+2–18frequency
+Hz. Note that
+mensions obtained
+of this product
+may Fourier
+change transform
+depending(DFT)
+on the
+sampling
+and the
+the
+dimensions
+of
+this
+product
+may
+change
+depending
+on
+the
+sampling
+frequency
+and
+the
+length of the signal.
+length
+of the signal.
+Function
+defined in that way is dimensionless. Its visualization is given in
+Function
+defined in that way is dimensionless. Its visualization is given in Figure 3.
+Figure
+3.
+
+Figure 3.
+3. Visualization
+Visualizationof
+ofthe
+thefunction
+functionminimized
+minimizedininthis
+this
+study.
+Plots
+(a–c)
+show
+spectra
+of the
+study.
+Plots
+(a–c)
+show
+spectra
+of the
+signals:
+signals:
+original,
+modeled,
+and
+their
+difference,
+respectively.
+Note,
+that
+plot
+(c)
+is
+an
+absolute
+original, modeled, and their difference, respectively. Note, that plot (c) is an absolute value of the
+value of the difference.
+difference.
+
+2.2.2. The Genetic Algorithm
+To
+To minimize
+minimize the
+the described
+described function
+function (MSE of the power
+power spectrum), the Global Optimization
+Toolbox
+of
+the
+Matlab
+environment
+was
+utilized
+mization Toolbox of the Matlab environment was utilized[28].
+[28].
+To
+To ensure
+ensure robustness
+robustness and
+and avoid
+avoid possible
+possible local
+local minima
+minima problems,
+problems, the
+the algorithm
+algorithm was
+was
+conducted
+with
+the
+population
+size
+of
+256.
+The
+parameter
+obtaining
+process
+conducted with the population size of 256. The parameter obtaining process stopped
+stopped after
+after
+150
+150 populations,
+populations, when
+when the
+the performance
+performance stagnated.
+stagnated. Selection
+Selection of
+of parents
+parents for
+for the
+the consecutive
+consecutive
+generations
+generations was
+was conducted
+conducted using
+using the
+the stochastic
+stochastic universal
+universal sampling.
+sampling. In
+In the
+the reproduction
+reproduction
+step,
+size)
+best
+individuals
+were
+guaranteed
+to survive
+to thetonext
+step, 13
+13(5%
+(5%ofofthe
+thepopulation
+population
+size)
+best
+individuals
+were
+guaranteed
+to survive
+the
+generation.
+The
+remaining
+243
+individuals
+were
+obtained
+in
+80%
+by
+crossover
+and
+20%
+next generation. The remaining 243 individuals were obtained in 80% by crossoverin
+and
+in
+by
+Gaussian
+mutation.
+20%
+by Gaussian
+mutation.
+The
+The algorithm
+algorithm sought
+sought the
+the function
+function values
+values in
+in the
+the ranges
+ranges presented
+presented in
+in Table
+Table 2,
+2, among
+among
+real
+numbers.
+real numbers.
+Table 2. Ranges of the search domains of particular parameters.
+Parameter
+
+Lower Search Range
+
+Upper Search Range
+
+A (mV)
+B (mV)
+C
+v0 (mV)
+e0 (s−1 )
+r
+Lower noise limit (pps)
+Noise range (pps)
+
+2.25
+12
+70
+5
+2
+0.5
+50
+200
+
+4.25
+32
+675
+7
+3
+0.6
+300
+1000
+
+Appl. Sci. 2021, 11, 677
+
+6 of 12
+
+2.2.3. Computation Complexity
+Since genetic algorithm is a stochastic approach to solve a problem, it is, by definition,
+impossible to exactly determine its computation complexity. However, with restraints
+imposed on some of its parameters, the maximal computation complexity (in terms of time)
+can be determined.
+In the proposed method, the main restraint is the number of populations. After
+reaching this number, the algorithm stops, and the best score obtained by it is given as
+a result. Preliminary research pointed out that for the defined fitness function (MSE of
+the power spectra), the algorithm convergences in less than 150 iterations. Therefore, this
+number was chosen as a maximal number of populations.
+Knowing that every population is composed of a constant number of 256 individuals,
+it can be determined that for every genetic algorithm execution there will be maximally
+38,400 (150 populations, each made from 256 individuals) fitness function evaluations. To
+determine the time needed for single fitness function evaluation, the function was executed
+for 100,000 times with different, random inputs. The mean time of those executions was
+used to determine maximal computation complexity of a proposed method.
+The genetic algorithm itself can be sped up by various means; for example, saving
+value for each individual and just loading the value instead of evaluating it, or imposing
+additional restraints, like, for example, maximum number of stall generations after which
+the algorithm stops. The value determined in this study is the maximum time needed for
+the complete GA execution.
+The study of time needed for the minimized function execution was conducted on
+the computer with Intel Core i7-3740QM CPU (four 2.7 GHz cores, although function was
+evaluated without parallelization, i.e., using only one core), Crucial MX500 SSD drive
+(560 MB/s read speed), and 16 GB RAM (4 × 4 GB DDR3, 1600 MHz), in the Matlab R2020a
+environment.
+2.3. Repeatability of the Method
+To determine the repeatability of the proposed method, the intraclass correlation
+coefficient (ICC) was used. To obtain the ICC, k measurements should be conducted on
+each of n subjects. In this study, the parameter obtaining process should be interpreted as a
+measurement. According to [29], 100 subjects with 10 measurements per subject should be
+more than sufficient for the accurate ICC determination.
+The ICC can be defined in number of different ways, depending on the use. Here,
+the coefficient was defined for “two-way mixed effects, absolute agreement model” (in
+literature known as “ICC(A,k)” [30]), as suggested in [31]. It is defined as follows:
+ICC =
+
+MSBS − MSE
+,
+MSBS + MSBMn−MSE
+
+(8)
+
+where:
+MSBS is the mean square between modeled signals,
+MSE is the mean square error,
+MSBM is the mean square between measurements (parameter obtaining processes),
+n is the number of the measured signals.
+2.4. Accuracy of the Method
+As mentioned before, to the best knowledge of the authors, in the literature, there
+are no deterministic ways to obtain the J-R model parameters for the real (measured)
+EEG signals. Therefore, it is impossible to compare parameters obtained via the proposed
+method to the “real” parameters of measured signals, as those are unobtainable. The
+accuracy of the method can be determined, however, using signals generated by the J-R
+model itself. This way, the original parameters of the signal are known and the difference
+between them and the parameters obtained by the proposed method could be obtained.
+
+is an 8-element vector with values ranging from 0 (when the given parameter is as wrong
+as it could be) to 1 (when the parameter’s value is identical to the reference).
+2.5. Reference Signals Generation Process
+Appl. Sci. 2021, 11, 677
+
+Both, the accuracy and the repeatability studies of the proposed method, were7conof 12
+ducted on the dataset generated by the J-R model.
+First, 100 signals were generated with random parameter values, from ranges listed
+in Table 2. Then, to somehow simulate real measurement, additional white Gaussian noise
+Accuracy
+was signal.
+definedSignal
+as onetominus
+difference
+between
+parameter’s
+was added
+to each
+noisethe
+ratio
+was equal
+to 0 dBthe
+forobtained
+every signal,
+which
+value and
+parameter’s
+by to
+thethe
+range
+of possible
+parameter’s
+means
+thatthe
+thereal
+power
+of addedvalue
+noise divided
+was equal
+power
+of the original
+signal.values
+Next,
+(from
+Table
+2). It
+was visualized
+in thewere
+rightobtained
+part of Figure
+4. Accuracy
+that
+way is
+for
+each
+noised
+signal,
+the parameters
+10 times
+using thedefined
+proposed
+method.
+an 8-element
+vector
+with values presented
+ranging from
+0 (when
+the clarity,
+given parameter
+is as wrong
+as
+This process
+is graphically
+in Figure
+4. For
+only one signal
+generait
+could
+be)
+to
+1
+(when
+the
+parameter’s
+value
+is
+identical
+to
+the
+reference).
+tion was visualized.
+
+Figure
+4. Visualization
+accuracy study.
+process was
+was conducted
+conducted 100
+times, with
+different reference
+reference
+Figure 4.
+Visualization of
+of the
+the accuracy
+study. Note,
+Note, that
+that this
+this process
+100 times,
+with different
+parameters.
+parameters.
+
+Each reference
+was Process
+generated with 1 kHz sampling frequency using a mid2.5. Reference
+Signals signal
+Generation
+point numerical method of solving differential equations and lasted for 20 s.
+Both, the accuracy and the repeatability studies of the proposed method, were conducted
+the dataset
+generated by the J-R model.
+2.6. Real,on
+Measured
+Signal
+First, 100 signals were generated with random parameter values, from ranges listed in
+proposed
+method simulate
+was additionally
+tested on aadditional
+real signal.white
+To measure
+it, noise
+a 14TableThe
+2. Then,
+to somehow
+real measurement,
+Gaussian
+channel
+Emotiv
+EPOC+
+NeuroHeadset
+electroencephalograph
+was
+used.
+Emotiv
+EPOC+
+was added to each signal. Signal to noise ratio was equal to 0 dB for every signal, which
+NeuroHeadset
+is designed
+for scalable
+and
+contextual
+human
+research.
+Arrangemeans that the power
+of added
+noise was
+equal
+to the power
+of brain
+the original
+signal.
+Next,
+ment
+of
+specific
+electrodes
+utilize
+10–20
+standard.
+The
+signal
+was
+measured
+between
+the
+for each noised signal, the parameters were obtained 10 times using the proposed method.
+O2 electrode
+and
+the
+Common
+Mode
+Sense
+(CMS)
+electrode
+[32],
+which
+was
+chosen
+beThis process is graphically presented in Figure 4. For clarity, only one signal generation
+cause
+alpha
+waves
+have
+biggest
+amplitude
+in
+occipital
+lobe,
+especially
+in
+the
+nondominant
+was visualized.
+hemisphere
+[33]. Signal
+Hzsampling
+frequency.
+Obtaining
+reEach reference
+signalwas
+was sampled
+generatedwith
+with 128
+1 kHz
+frequency
+usingelectrode
+a mid-point
+sistance
+not
+exceeding
+10
+k
+Ohm
+at
+the
+start
+of
+the
+measurement
+is
+an
+essential
+condition
+numerical method of solving differential equations and lasted for 20 s.
+2.6. Real, Measured Signal
+The proposed method was additionally tested on a real signal. To measure it, a 14channel Emotiv EPOC+ NeuroHeadset electroencephalograph was used. Emotiv EPOC+
+NeuroHeadset is designed for scalable and contextual human brain research. Arrangement
+of specific electrodes utilize 10–20 standard. The signal was measured between the O2
+electrode and the Common Mode Sense (CMS) electrode [32], which was chosen because
+alpha waves have biggest amplitude in occipital lobe, especially in the nondominant
+hemisphere [33]. Signal was sampled with 128 Hz frequency. Obtaining electrode resistance
+not exceeding 10 k Ohm at the start of the measurement is an essential condition for
+obtaining a good quality EEG. It depends, to a large extent, on proper preparation of the
+scalp, which before the electrodes are attached, should be carefully degreased and the
+superficial calloused layer of the epidermis removed.
+The participant was a 25-year male without any diagnosed neurological disorders.
+The measurement was taken while the subject was well-rested and without drug usage in
+prior 6 months.
+After putting on the electroencephalograph, the participant relaxed, closed their eyes,
+and after some time, opened their eyes again. To avoid rise of frequency and amplitude
+of the signal, immediately after closing eyes persisting for a few seconds [34], only part
+of the signal was used for further analysis (seconds 15–25 in Figure 5a,b). This part, with
+corresponding discrete Fourier transform (DFT), is shown in Figure 5c,d.
+
+Appl. Sci. 2021, 11, 677
+
+The measurement was taken while the subject was well-rested and without drug usage in
+prior 6 months.
+After putting on the electroencephalograph, the participant relaxed, closed their eyes,
+and after some time, opened their eyes again. To avoid rise of frequency and amplitude
+of the signal, immediately after closing eyes persisting for a few seconds [34], only part
+8 of of
+12
+the signal was used for further analysis (seconds 15–25 in Figure 5a,b). This part, with
+corresponding discrete Fourier transform (DFT), is shown in Figure 5c,d.
+
+Figure
+5. Plots
+Plots of
+ofthe
+themeasured
+measuredsignal:
+signal:(a)(a)full
+full
+signal,
+spectrogram
+of the
+signal,
+(c) analyzed
+fragment
+the
+Figure 5.
+signal,
+(b)(b)
+spectrogram
+of the
+full full
+signal,
+(c) analyzed
+fragment
+with with
+the most
+most
+apparent
+alpha-waves,
+the discrete
+Fourier
+transform
+(c) plot.
+apparent
+alpha-waves,
+(d) the(d)
+discrete
+Fourier
+transform
+of theof
+(c)the
+plot.
+
+To
+To minimize the impact of artefacts, including the imperfect adhesion of electrodes
+to
+to the
+the head
+head skin,
+skin, the acquired
+acquired signal
+signal was
+was first filtered in the range of 2–20 Hz, so range
+greater
+greater than the typical alpha wave frequencies (8–12 Hz [35]). They are characterized by
+an
+μV on average [36]. The activity of these waves increases
+an amplitude
+amplitude of
+of 3 to about 50 µV
+also present
+present when a person
+when the subject lay with eyes closed before falling asleep. It is also
+is at rest, in a relaxed or
+is
+or meditative
+meditative state,
+state, etc.
+etc. Alpha waves disappear during increased
+mental effort [37].
+mental
+During the
+the conducted
+conducted research,
+research, the digital bandpass filter with steepness parameter
+During
+of 0.85
+0.85 and stopband attenuation of 60 dB was used.
+of
+3. Results
+Results
+3.
+In Table
+Table 3,
+In
+3, the
+the results
+results of
+of the
+the repeatability
+repeatability and
+and the
+the accuracy
+accuracy studies
+studies are
+are shown.
+shown.
+Table 3.
+Accuracy and
+Table
+3. Accuracy
+and repeatability
+repeatability results.
+results.
+Parameter
+Parameter
+AA
+(mV)
+(mV)
+B (mV)
+B (mV)
+C
+v0 (mV)
+e0 (s−1 )
+r
+Lower noise limit (pps)
+Noise range (pps)
+
+Accuracy
+(Mean)(Mean)Accuracy
+(Std)
+Accuracy
+Accuracy
+(Std)
+0.794 0.794
+0.724 0.724
+0.853
+0.756
+0.662
+0.700
+0.761
+0.863
+
+0.272
+0.343
+0.189
+0.306
+0.403
+0.384
+0.320
+0.191
+
+0.272
+0.343
+
+ICC ICC
+0.8970.897
+0.9100.910
+0.978
+0.865
+0.676
+0.733
+0.877
+0.966
+
+Parameters obtained for the real signal are shown in Table 4. Search ranges and values
+used in original work were also included.
+The convergence curve of the genetic algorithm is presented in Figure 6.
+It can be seen that the initial random population had the best individual about 2.4
+worse than the final population (2.02 vs. 0.85).
+
+Parameters obtained for the real signal are shown in Table 4. Search ranges and values used in original work were also included.
+Appl. Sci. 2021, 11, 677
+
+Table 4. Values of parameters obtained for the measured signal. Values in column “default” were
+9 of 12
+used in original works.
+
+Parameter
+Lower Range Upper Range Default Value Obtained Value
+A (mV)
+2.25for the measured
+4.25 signal. Values
+3.25in column “default”
+4.21 were
+Table 4. Values
+of parameters obtained
+used in original
+works.
+B (mV)
+12
+32
+22
+12.06
+C
+70
+675
+135
+406.50
+Parameter
+Lower Range
+Upper Range
+Default Value
+Obtained Value
+v0 (mV)
+5
+7
+6
+6.60
+A (mV) −1
+2.25
+4.25
+3.25
+4.21
+e0
+(s
+)
+2
+3
+2.5
+2.92
+B (mV)
+12
+32
+22
+12.06
+C r
+70 0.5
+675
+135
+406.50
+0.6
+0.56
+0.6
+v0 (mV)
+5
+7
+6
+6.60
+Lowere0noise
+limit (pps)
+50
+300
+120
+278.77
+2
+3
+2.5
+2.92
+(s−1 )
+Noise rrange (pps)
+1000
+200
+897.34
+0.5 200
+0.6
+0.56
+0.6
+Lower noise limit (pps)
+Noise range (pps)
+
+50
+200
+
+300
+1000
+
+120
+200
+
+The convergence curve of the genetic algorithm is presented in Figure 6.
+
+278.77
+897.34
+
+Figure 6.
+genetic
+algorithm.
+Minimized
+function,
+so the
+is is
+Figure
+6. The
+Theconvergence
+convergencecurve
+curveofofthe
+the
+genetic
+algorithm.
+Minimized
+function,
+so score,
+the score,
+dimensionless.
+dimensionless.
+
+ci. 2021, 11, x FOR PEER REVIEW
+
+It can be
+seen that
+the initial random
+population
+about(7c)
+2.4
+Figure
+7 shows
+5-s fragments
+of the original
+signalhad
+(7a)the
+andbest
+theindividual
+modeled signal
+worse
+than
+the
+final
+population
+(2.02
+vs.
+0.85).
+with corresponding spectra (plots 7b and 7d, respectively). Even though the signals are
+of 12
+Figure
+7 shows
+5-stime
+fragments
+thefrequency
+original signal
+(7a)
+the10modeled
+signal
+slightly
+different
+in the
+plane, of
+their
+planes
+areand
+almost
+identical.
+It is to(7c)
+be
+with corresponding
+spectra
+(plots 7bbyand
+respectively).
+Even though
+the signals
+are
+expected,
+as the function
+minimized
+the7d,
+algorithm
+was defined
+in the spectral
+plane.
+slightly different in the time plane, their frequency planes are almost identical. It is to be
+expected, as the function minimized by the algorithm was defined in the spectral plane.
+
+Figure
+Figure7.7.Visual
+Visualillustration
+illustrationof
+ofoptimal
+optimalparameters—comparison
+parameters—comparison of
+of the
+the modeled
+modeled and
+and real
+real signals.
+signals.
+
+After
+evaluating
+defined
+function
+for 100,000
+times,
+meanfor
+time
+After evaluating
+defined
+function
+for 100,000
+times,
+the mean
+timethe
+needed
+oneneeded for one
+was
+to be
+about 0.013 s.this
+Multiplying
+thisnumber
+value by
+evaluation wasevaluation
+determined
+to determined
+be about 0.013
+s. Multiplying
+value by the
+ofthe number of
+in each(256)
+population
+and the
+number of populations
+(150), the maximal time
+individuals in individuals
+each population
+and the(256)
+number
+of populations
+(150), the maximal
+for thegenetic
+whole algorithm
+genetic algorithm
+was calculated
+to be 9about
+min Core
+(Intel i7Core i7-3740QM
+time for the whole
+was calculated
+to be about
+min 9(Intel
+
+3740QM CPU with four 2.7 GHz cores, 16 GB RAM). Time is the main disadvantage of the
+proposed method. It was not focus of this study, however, to obtain results in an online
+manner.
+4. Discussion and Conclusions
+
+Appl. Sci. 2021, 11, 677
+
+10 of 12
+
+CPU with four 2.7 GHz cores, 16 GB RAM). Time is the main disadvantage of the proposed
+method. It was not focus of this study, however, to obtain results in an online manner.
+4. Discussion and Conclusions
+In this paper, a genetic algorithm was used to obtain one column Jansen–Rit model
+parameters. A spectral similarity function was minimized to generate most optimal parameters for a specific individual. This method proved to be repeatable and accurate, but
+quite computationally expensive. However, given the convergence curve in Figure 6, the
+best value was obtained as a best score already in about the 30th population. That means
+that algorithm could potentially give results faster. On the other hand, convergence of
+stochastic algorithms tends to depend strongly on initial population. In future works, it
+would be beneficial to conduct repeatability studies on the proposed method with limited
+maximal population. Results of conducted repeatability studies with the proposed maximal
+population suggest that the algorithm does not get stuck in local minima.
+Results of repeatability and accuracy can point out which parameters have the greatest
+contribution to the value of the minimized function, and, therefore, in future studies, which
+parameters could be expected to constitute the most informative signal features. Hence: A
+and B (the maximal post-synaptic potential amplitudes) have rather high accuracy compared to the other parameters. ICC value of A, however, is comparatively low. Nonetheless,
+by itself, the intraclass correlation of 0.897 can be interpreted as good [31]. C, so the numbers of synapses between neuron populations, proved to be the most determinative of the
+minimized function, wielding ICC at 0.978 and the accuracy of 0.853. It is not surprising, as
+this parameter is known to have biggest influence on the shape of the modeled signal [10].
+Parameters describing the activation function gave mixed results. On one hand, v0 and r
+turned out to be quite descriptive. On the other hand, ICC and accuracy values of the e0
+parameter suggest that it is not as informative. It may be due to the quite narrow sought
+range and should be studied in future research. Parameters characterizing the noise signal
+delivered to the model also proved to be very descriptive, wielding highest accuracy and
+very high ICC. Parameter p was extensively studied in [10], providing deeper insight into
+its influence on the whole model.
+Values of the parameters obtained for the real signal significantly differ from the
+original works and are close to defined ranges’ extremes. That could suggest that those
+ranges could be further widened in future works.
+Results obtained in this paper show that the genetic algorithm works well in a JR model parameter obtaining task. The defined function can be effectively minimized.
+Due to the stochastic character of this type of algorithm, the main disadvantage of the
+proposed method is the computational cost—it is certainly not a fast way to obtain model
+parameters. However, there is already an online method of parameter obtainment [23–25].
+State observers proposed in those works predict model parameters dynamically, i.e., in
+a specific timestamp. The method proposed in this paper enables to obtain parameters
+for arbitrarily long time periods. Furthermore, this research was conducted on a personal
+computer. Utilizing some sort for computation cluster would significantly reduce the
+computation time.
+Utilization of J-R model parameters as a classifier input should be checked in future
+studies. The parameters should be obtained for an already classified set of signals and used
+to train some classification algorithm.
+Author Contributions: Conceptualization, A.Ł. S.P.; methodology, A.Ł. S.P. software, A.Ł.; validation,
+S.P.; formal analysis, A.Ł., S.P.; investigation, A.Ł., S.P.; resources, A.Ł.; data curation, A.Ł.; writing—
+original draft preparation, A.Ł., S.P.; writing—review and editing, A.Ł., S.P.; visualization, A.Ł.;
+supervision, S.P.; project administration, A.Ł. All authors have read and agreed to the published
+version of the manuscript.
+Funding: This research received no external funding.
+
+Appl. Sci. 2021, 11, 677
+
+11 of 12
+
+Institutional Review Board Statement: Ethical review and approval were waived for this study, due
+to not performing any invasive measurements or treatments to a participant, which was also the
+author of the paper.
+Informed Consent Statement: Informed consent was obtained from all subjects involved in the
+study.
+Data Availability Statement: The data presented in this study are available on request from the
+corresponding author. The data are not publicly available due to privacy restrictions.
+Conflicts of Interest: The authors declare no conflict of interest.
+
+References
+1.
+
+2.
+
+3.
+
+4.
+
+5.
+6.
+7.
+8.
+9.
+10.
+11.
+12.
+13.
+14.
+15.
+16.
+
+17.
+18.
+19.
+20.
+21.
+
+22.
+
+Louis, E.K.S.; Frey, L.C.; Britton, J.W.; Hopp, J.L.; Korb, P.; Koubeissi, M.Z.; Lievens, W.E.; Pestana-Knight, E.M.; Foundation,
+C.C.C. Electroencephalography (EEG): An Introductory Text and Atlas of Normal and Abnormal Findings in Adults, Children, and Infants;
+American Epilepsy Society: Chicago, IL, USA, 2016.
+Paszkiel, S. Using the Raspberry PI2 Module and the Brain-Computer Technology for Controlling a Mobile Vehicle. In Automation
+2019; Szewczyk, R., Zieliński, C., Kaliczyńska, M., Eds.; Springer International Publishing: Cham, Switzerland, 2020; Volume 920,
+pp. 356–366. [CrossRef]
+Paszkiel, S. Characteristics of Question of Blind Source Separation Using Moore-Penrose Pseudoinversion for Reconstruction of
+EEG Signal. In Automation 2017; Szewczyk, R., Zieliński, C., Kaliczyńska, M., Eds.; Springer International Publishing: Cham,
+Switzerland, 2017; Volume 550, pp. 393–400.
+Paszkiel, S. Augmented Reality of Technological Environment in Correlation with Brain Computer Interfaces for Control Processes.
+In Recent Advances in Automation, Robotics and Measuring Techniques; Szewczyk, R., Zieliński, C., Kaliczyńska, M., Eds.; Springer
+International Publishing: Cham, Switzerland, 2014; Volume 267, pp. 197–203.
+Shayegh, F.; Fattahi, R.A.; Sadri, S.; Ansari-Asl, K. A brief survey of computational models of normal and epileptic EEG signals:
+A guideline to model-based seizure prediction. J. Med. Signals Sens. 2011, 1, 62–72. [CrossRef] [PubMed]
+Beurle, R.L. Properties of a mass of cells capable of regenerating pulses. Philos. Trans. R. Soc. Lond. Ser. B Biol. Sci. 1956, 240,
+55–94. [CrossRef]
+Wilson, H.R.; Cowan, J.D. Excitatory and Inhibitory Interactions in Localized Populations of Model Neurons. Biophys. J. 1972, 12,
+1–24. [CrossRef]
+Amari, S.-I. Homogeneous nets of neuron-like elements. Biol. Cybern. 1975, 17, 211–220. [CrossRef] [PubMed]
+Da Silva, F.H.L.; Hoeks, A.; Smits, H.; Zetterberg, L.H. Model of brain rhythmic activity: The alpha-rhythm of the thalamus. Biol.
+Cybern. 1974, 15, 27–37. [CrossRef]
+Grimbert, F.; Faugeras, O. Analysis of Jansen’s Model of a Single Cortical Column. INRIA, RR-5597. May 2006. Available online:
+https://hal.inria.fr/inria-00070410 (accessed on 18 June 2020).
+Wendling, F.; Bartolomei, F.; Bellanger, J.J.; Chauvel, P. Epileptic fast activity can be explained by a model of impaired GABAergic
+dendritic inhibition. Eur. J. Neurosci. 2002, 15, 1499–1508. [CrossRef] [PubMed]
+Svozilova, V.; Mezl, M. Modeling of the EEG signal. Elektrorevue 2016, 18, 43–51.
+Jansen, B.H.; Zouridakis, G.; Brandt, M.E. A neurophysiologically-based mathematical model of flash visual evoked potentials.
+Biol. Cybern. 1993, 68, 275–283. [CrossRef]
+Wendling, F.; Bellanger, J.J.; Bartolomei, F.; Chauvel, P. Relevance of nonlinear lumped-parameter models in the analysis of
+depth-EEG epileptic signals. Biol. Cybern. 2000, 83, 367–378. [CrossRef]
+Todo, R.S. Personalization of a Biophysically Realistic Computational Model of the Brain Activity Using EEG and MRI Data. 2018.
+Available online: https://repositori.upf.edu/handle/10230/44674 (accessed on 18 December 2020).
+Jafarian, A.; Freestone, D.R.; Nesic, D.; Grayden, D.B. Slow-Fast Duffing Neural Mass Model. In Proceedings of the 2019 41st
+Annual International Conference of the IEEE Engineering in Medicine and Biology Society (EMBC), Berlin, Germany, 23–27 July
+2019; Volume 2019, pp. 142–145.
+Al-Hossenat, A.; Wen, P.; Li, Y. Modelling and simulating different bands of EEG signals with the virtual brain. Int. J. Electr.
+Electron. Data Commun. 2019, 7, 5.
+Al-Hossenat, A.; Wen, P.; Li, Y. Simulation α of EEG Using Brain Network Model; Swinburne University of Technology: Melbourne,
+Australia, 2017; pp. 336–345.
+Jedynak, M.; Pons, A.J.; Garcia-Ojalvo, J.; Goodfellow, M. Temporally correlated fluctuations drive epileptiform dynamics.
+NeuroImage 2017, 146, 188–196. [CrossRef] [PubMed]
+Huang, G.; Zhang, D.; Meng, J.; Zhu, X. Interactions between two neural populations: A mechanism of chaos and oscillation in
+neural mass model. Neurocomputing 2011, 74, 1026–1034. [CrossRef]
+Basu, I.; Crocker, B.; Farnes, K.; Robertson, M.M.; Paulk, A.C.; Vallejo, D.I.; Dougherty, D.D.; Cash, S.S.; Eskandar, E.N.; Kramer,
+M.M.; et al. A neural mass model to predict electrical stimulation evoked responses in human and non-human primate brain. J.
+Neural Eng. 2018, 15, 066012. [CrossRef] [PubMed]
+Ye, W. Dynamics of a revised neural mass model in the stop-signal task. Chaos Solitons Fractals 2020, 139, 110004. [CrossRef]
+
+Appl. Sci. 2021, 11, 677
+
+23.
+24.
+
+25.
+26.
+27.
+28.
+29.
+30.
+31.
+32.
+33.
+34.
+35.
+36.
+
+37.
+
+12 of 12
+
+Postoyan, R.; Chong, M.; Nešić, D.; Kuhlmann, L. Parameter and state estimation for a class of neural mass models. In Proceedings
+of the 2012 IEEE 51st IEEE Conference on Decision and Control (CDC), Wailea, HI, USA, 10–13 December 2012; pp. 2322–2327.
+Freestone, D.; Kuhlmann, L.; Chong, M.; Nešić, D.; Grayden, D.; Aram, P.; Postoyan, R.; Cook, M.J.; Elger, C.E.; Tetzlaff, R.; et al.
+Patient-Specific Neural Mass Modeling—Stochastic And Deterministic Methods. In Recent Advances in Predicting and Preventing
+Epileptic Seizures; Technische Universität: Dresden, Germany, 2013; pp. 63–82. [CrossRef]
+Kuhlmann, L.; Freestone, D.R.; Manton, J.; Heyse, B.; Vereecke, H.E.M.; Lipping, T.; Struys, M.M.; Liley, D.T. Neural mass
+model-based tracking of anesthetic brain states. NeuroImage 2016, 133, 438–456. [CrossRef] [PubMed]
+Freeman, W.J. Mass Action in the Nervous System: Examination of the Neurophysiological Basis of Adaptive Behavior through the EEG;
+Academic Press: New York, NY, USA, 1975.
+Quaranta, G.; Lacarbonara, W.; Masri, S.F. A review on computational intelligence for identification of nonlinear dynamical
+systems. Nonlinear Dyn. 2020, 99, 1709–1761. [CrossRef]
+Genetic Algorithm—MATLAB & Simulink. Available online: https://www.mathworks.com/help/gads/genetic-algorithm.html
+(accessed on 2 December 2020).
+Wolak, M.E.; Fairbairn, D.J.; Paulsen, Y.R. Guidelines for estimating repeatability. Methods Ecol. Evol. 2012, 3, 129–137. [CrossRef]
+McGraw, K.O.; Wong, S.P. Forming Inferences about Some Intraclass Correlation Coefficients. Psychol. Methods 1996, 1, 30.
+[CrossRef]
+Koo, T.K.; Li, M.Y. A Guideline of Selecting and Reporting Intraclass Correlation Coefficients for Reliability Research. J. Chiropr.
+Med. 2016, 15, 155–163. [CrossRef]
+Zabcikova, M. Measurement of Visual and Auditory Stimuli Using EEG Headset Emotiv Epoc+. MATEC Web Conf. 2019, 292,
+01023. [CrossRef]
+Marcuse, L.; Fields, M.; Yoo, J. Rowan’s Primer of EEG, 2nd ed.; Elsevier: Amsterdam, The Netherlands, 2015.
+Greenfield, L.J.; Geyer, J.D.; Carney, P.R. Reading EEGs. A Practical Approach; Lippincott Williams & Wilkins: Philadelphia, PA,
+USA, 2012.
+Foster, J.J.; Sutterer, D.W.; Serences, J.T.; Vogel, E.K.; Awh, E. Alpha-Band Oscillations Enable Spatially and Temporally Resolved
+Tracking of Covert Spatial Attention. Psychol. Sci. 2017, 28, 929–941. [CrossRef] [PubMed]
+Paszkiel, S.; Hunek, W.; Shylenko, A. Project and Simulation of a Portable Device for Measuring Bioelectrical Signals from the
+Brain for States Consciousness Verification with Visualization on LEDs. In Challenges in Automation, Robotics and Measurement
+Techniques; Szewczyk, R., Zieliński, C., Kaliczyńska, M., Eds.; Springer International Publishing: Cham, Switzerland, 2016;
+Volume 440, pp. 25–35. [CrossRef]
+Paszkiel, S.; Dobrakowski, P.; Łysiak, A. The Impact of Different Sounds on Stress Level in the Context of EEG, Cardiac Measures
+and Subjective Stress Level: A Pilot Study. Brain Sci. 2020, 10, 728. [CrossRef] [PubMed]
+
+

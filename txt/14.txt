@@ -1,0 +1,903 @@
+Proceedings of the Twenty-Seventh International Joint Conference on Artificial Intelligence (IJCAI-18)
+
+Multi-modality Sensor Data Classification with Selective Attention
+Xiang Zhang† , Lina Yao† , Chaoran Huang† ,
+Sen Wang§ , Mingkui Tan¶ , Guodong Long‡ and Can Wang§
+†
+School of Computer Science and Engineering, University of New South Wales
+§
+School of Information and Communication Technology, Griffith University
+¶
+School of Software Engineering, South China University of Technology
+‡
+Center for Quantum Computation and Intelligent Systems, University of Technology Sydney
+xiang.zhang3@student.unsw.edu.au, {lina.yao, chaoran.huang}@unsw.edu.au,
+{sen.wang, can.wang}@griffith.edu.au, mingkuitan@scut.edu.cn, guodong.long@uts.edu.au
+Abstract
+Multimodal wearable sensor data classification
+plays an important role in ubiquitous computing
+and has a wide range of applications in scenarios
+from healthcare to entertainment. However, most
+existing work in this field employs domain-specific
+approaches and is thus ineffective in complex situations where multi-modality sensor data are collected. Moreover, the wearable sensor data are less
+informative than the conventional data such as texts
+or images. In this paper, to improve the adaptability of such classification methods across different application domains, we turn this classification
+task into a game and apply a deep reinforcement
+learning scheme to deal with complex situations
+dynamically. Additionally, we introduce a selective
+attention mechanism into the reinforcement learning scheme to focus on the crucial dimensions of
+the data. This mechanism helps to capture extra
+information from the signal and thus it is able to
+significantly improve the discriminative power of
+the classifier. We carry out several experiments on
+three wearable sensor datasets and demonstrate the
+competitive performance of the proposed approach
+compared to several state-of-the-art baselines.
+
+1
+
+Introduction
+
+Nowadays, diverse categories of sensors can be found in various wearable devices. Such devices are now being widely
+applied in multiple fields, such as Internet of Things [Kamburugamuve et al., 2015; Zhang et al., ]. As a result, massive
+multimodal sensor data are being produced continuously. The
+question that how we can deal with these data efficiently and
+effectively has become a major concern.
+Compared to conventional sensor data such as images and
+videos, these data are naturally formed as a 1-D signal, with
+each element representing one sensor channel accordingly.
+There are several challenges for such sensor data classification. First, most existing classification methods use domain-
+
+3111
+
+specific knowledge and thus may become ineffective or even
+fail in complex situations where multimodal sensor data are
+being collected [Bigdely-Shamlo et al., 2015]. For example,
+one approach that works well on IMU (Inertial Measurement
+Unit) signals may not be able to deal with EEG (Electroencephalography) brain signals. Therefore, an effective and universal sensor data classification method is highly desirable for
+complex situations. This framework is expected to have both
+efficiency and robustness over various sensor signals.
+Second, the wearable sensor data carries far less information than texts and images. For example, a sample signal
+gathered by a 64-channel EEG equipment only contains 64
+numerical elements. Hence, a more effective classifier is required to extract discriminative information from such limited
+raw data. However, maximizing the utilization of the given
+scarce data demands cautious preprocessing and a rich fund
+of domain knowledge.
+Inspired by attention mechanism [Cavanagh and others,
+1992], we propose to concentrate on a focal zone of the signal to automatically learn the informative attention patterns
+for different sensor combinations. Here, the focal zone is
+a selection block of the signal with a certain length, sliding over the feature dimensions. Note that reinforcement
+learning has been shown to be capable of learning humancontrol level policy on a variety of tasks [Mnih et al., 2015].
+Then we exploit the reinforcement learning to discover the
+focal zone. Moreover, considering that the signals in different categories may have different inter-dimension dependency [Markham and Townshend, 1981], we propose to use
+the LSTM (Long Short-Term Memory [Gers et al., 1999;
+Zhang et al., 2018]) to exploit the latent correlation between
+signal dimensions. We propose a weighted average spatial
+LSTM (WAS-LSTM) classifier by exploring the dependency
+in sensor data.
+The main contributions of this paper are as follows:
+• We propose a selective attention mechanism for sensor data classification using the spatial information only.
+The proposed method is insensitive to sensor types since
+it is capable of handling multimodal sensor data.
+• We apply deep reinforcement learning to automatically
+
+Proceedings of the Twenty-Seventh International Joint Conference on Artificial Intelligence (IJCAI-18)
+
+Figure 1: Flowchart of the proposed approach. The focal zone x̄i is a selected fragment from x0i to feed in the state transition and the reward
+model. In each step t, one action is selected by the state transition to update st based on the agent’s feedback. The reward model evaluates
+the quality of the focal zone to the reward rt . The dueling DQN is employed to find the optimal focal zone x̄∗i which will be feed into the
+LSTM based classifier to explore the inter-dimension dependency and predict the sample’s label yi0 . F CL denotes Fully Connected Layer.
+The State Transition contains four actions: left shifting, right shifting, extend, and condense.
+
+select the most distinguishable features, called focal
+zone, for multimodal sensor data of different sensor
+types and combinations. We design a novel objective
+function as the award in reinforcement learning task to
+optimize the focal zone. The new reward model saves
+more than 98% training time of the deep reinforcement
+learning.
+• We propose Weighted Average Spatial LSTM classifier
+to capture the cross-dimensional dependency in multimodal sensor data.
+
+2
+
+Proposed Method
+
+Suppose the input sensor data can be denoted by X =
+{(xi , yi ), i = 1, 2, · · · I} where (xi , yi ) denotes the 1-D sensor signal, called one sample in this paper, and I denotes the
+number of samples. In each sample, the feature xi ∈ RK
+contains K elements and the corresponding ground truth
+yi ∈ R is an integer denotes the sample’s category. xi can
+be described as a vector with K elements, xi = {xik , k =
+1, 2, · · · , K}.
+The proposed algorithm is shown in Figure 1. The main
+focus of the algorithm is to exploit the latent dependency between different signal dimensions. To this end, the proposed
+approach contains several components: 1) the replicate and
+shuffle processing; 2) the selective attention learning; 3) the
+sequential LSTM-based classification. In the following, we
+will first discuss the motivations of the proposed method and
+then introduce the aforementioned components in details.
+
+2.1
+
+Motivation
+
+How to exploit the latent relationship between sensor signal
+dimensions is the main focus of the proposed approach. The
+signals belonging to different categories are supposed to have
+
+3112
+
+different inter-dimension dependent relationships which contain rich and discriminative information. This information is
+critical to improve the distinctive signal pattern discovery.
+In practice, the sensor signal is often arranged as 1-D vector, which is less informative for the limited and fixed element
+arrangement. The elements order and the number of elements
+in each signal vector can affect the element dependency. In
+many real-world scenarios, the multimodal sensor data are associated with the practical placement. For example, the EEG
+data are concatenated following the distribution of biomedical EEG channels. Unfortunately, the practical sensor sequence, with the fixed order and number, may not be suitable
+for inter-dimension dependency analysis. Meanwhile, the optimal dimension sequence [Tan et al., 2015] varies with the
+sensor types and combinations. Therefore, we propose the
+following three techniques to amend these drawbacks.
+First, we replicate and shuffle the input sensor signal vector
+on dimension-wise in order to provide as much latent dependency as possible among feature dimensions (Section 2.2).
+Second, we introduce a focal zone as a selective attention mechanism, where the optimal inter-dimension dependency for each sample only depends on a small subset of features. Here, the focal zone is optimized by deep reinforcement learning which has been proved to be stable and wellperformed in policy learning (Section 2.3).
+Third, we propose the WAS-LSTM classifier by extracting
+the distinctive inter-dimension dependency (Section 2.4).
+
+2.2
+
+Data Replicate and Shuffle
+
+To provide more potential inter-dimension spatial dependencies, we propose a method called Replicate and Shuffle (RS).
+RS is a two-step feature transformation method which maps
+xi to a higher dimensional space x0i with more complete ele-
+
+Proceedings of the Twenty-Seventh International Joint Conference on Artificial Intelligence (IJCAI-18)
+
+ment combinations:
+0
+
+xi ∈ RK → x0i ∈ RK , K 0 > K
+In the first step (Replicate), replicate xi for h = K 0 %K + 1
+times where % denotes remainder operation. Then we get a
+new vector with length as h ∗ K which is not less than K 0 ; in
+the second step (Shuffle), we randomly shuffle the replicated
+vector in the first step and intercept the first K 0 element to
+generate x0i . Theoretically, compared to xi , x0i contains more
+diverse and complete inter-dimension dependencies.
+
+2.3
+
+Selective Attention Mechanism
+
+In the next process, we attempt to find the optimal dependency which includes the most distinctive information. But
+K 0 , the length of x0i , is too large and is computationally expensive. To balance the length and the information content,
+we introduce the attention mechanism [Cavanagh and others,
+1992]. We introduce the attention mechanism to emphasize
+the informative fragment in x0i and denote the fragment by x̄i ,
+which is called focal zone. Suppose x̄i ∈ RK̄ and K̄ denotes
+the length of the focal zone. For simplification, we continue
+denote the k-th element by x̄ik in the focal zone. To optimize the focal zone, we employ deep reinforcement learning
+as the optimization framework for its excellent performance
+in policy optimization [Mnih et al., 2015].
+Overview. As shown in Figure 1, the focal zone optimization includes two key components: the environment (including state transition and reward model), and the agent. Three
+elements (the state s, the action a, and the reward r) are exchanged in the interaction between the environment and the
+agent. All of the three elements are customized based on the
+specific situation in this paper.
+• The state S = {st , t = 0, 1, · · · , T } ∈ R2 describes
+the position of the focal zone, where t denotes the time
+stamp. In the training, s0 is initialized as s0 = [(K 0 −
+K̄)/2, (K 0 + K̄)/2]. Since the focal zone is a shifting
+fragment on 1-D x0i , we design two parameters to define the state: st = {starttidx , endtidx }, where starttidx
+and endtidx separately denote the start index and the end
+index of the focal zone1 .
+• The action A = {at , t = 0, 1, · · · , T } ∈ R4 describes
+which the agent could choose to act on the environment.
+In our case, we define 4 categories of actions for the focal zone (as described in the State Transition part in
+Figure 1): left shifting, right shifting, extend, and condense. Here at time stamp t, the state transition only
+choose one action to implement following the agent’s
+policy π: st+1 = π(st , at ).
+• The reward R = {rt , t = 0, 1, · · · , T } ∈ R is calculated by the reward model, which will be detailed later.
+The reward model Φ: rt = Φ(st ) receives the current
+state and returns an evaluation as the reward.
+• We employ the Dueling DQN (Deep Q Networks [Wang
+et al., 2015]) as the optimization policy π(st , at ),
+For example, for a random x0i = [3, 5, 8, 9, 2, 1, 6, 0], the state
+{starttidx = 2, endtidx = 5} is sufficient to determine the focal
+zone as [8, 9, 2, 1].
+1
+
+3113
+
+which is enabled to learn the state-value function efficiently. Dueling DQN learns the Q value V (st ) and
+the advantage function A(st , at ) and combines them:
+Q(st , at ) ← V (st ), A(st , at ). The primary reason we
+employ a dueling DQN to optimize the focal zone is that
+it updates all the four Q values2 at every step while other
+policy only updates one Q value at each step.
+Reward Model. Next, we detailedly introduce the design
+of the reward model for it is one crucial contribution of this
+paper. The purpose of reward model is to evaluate how the
+current state impact our final target which refers to the classification performance in our case. Intuitively, the state which
+can lead to the better classification performance should have
+a higher reward: rt = F (st ). As a result, in the standard
+reinforcement learning framework, the original reward model
+regards the classification accuracy as the reward. F refers
+to the WAS-LSTM. Note, WAS-LSTM focuses on the spatial
+dependency between different dimensions at the same timepoint while the normal LSTM focuses on the temporal dependency between a sequence of samples collected at different
+time-points. However, the WAS-LSTM requires considerable
+training time, which will dramatically increase the optimization time of the whole algorithm. In this section, we propose
+an alternative method to calculate the reward: construct a new
+reward function rt = G(st ) which is positively related with
+rt = F (st ). Therefore, we can employ G to replace F . Then,
+the task is changed to construct a suitable G which can evaluate the inter-dimension dependency in the current state st and
+feedback the corresponding reward rt . We propose an alternative G composed by three components: the autoregressive
+model [Akaike, 1969] to exploit the inter-dimension dependency in x0i , the Silhouette Score [Laurentini, 1994] to evaluate the similarity of the autoregressive coefficients, and the
+reward function based on the silhouette score.
+The autoregressive model [Akaike, 1969] receives the focal
+zone x̄i and specifies that how the last variable depends on its
+own previous values.
+p
+X
+x̄iK̄ =
+ϕj x̄i(K̄−j) + C + ε̄
+j=1
+
+where p is the order of the autoregressive model, C indicates a constant, and ε̄ indicates the withe noise. From
+this equation, we can infer that the autoregressive coefficient
+ϕ = {ϕj , j = 1, 2, · · · , p} ∈ Rp incorporates the dependent
+relationship in the focal zone. Then, to evaluate how rich information is taken in the ϕ, we employ silhouette score [Lovmar et al., 2005] to interpret the consistence of ϕ. The higher
+score sst indicates the focal zone in state st contains more
+inter-dimension dependency, which means x̄i is easier to be
+classified by the classifier in the next stage. At last, based on
+the sst ∈ [−1, 1], we design a reward function:
+esst +1
+K̄
+−β 0
+e2 − 1
+K
+The function contains two parts, the first part is a normalized exponential function with the exponent sst + 1 ∈ [0, 1],
+rt =
+
+2
+Since we have four actions in at , the Q(st , at ) contains 4 Q
+values. The arrangement is similar with the one-hot label.
+
+Proceedings of the Twenty-Seventh International Joint Conference on Artificial Intelligence (IJCAI-18)
+
+this part encourages the reinforcement learning algorithm to
+search the better st which leads to a higher sst . The motivation of the exponential function is that: the reward growth
+rate is increasing with the silhouette score’s increase3 . The
+second part is a penalty factor for the focal zone length to
+keep the bar shorter and the β is the penalty coefficient.
+In summary, the aim of focal zone optimization is to learn
+the optimal focal zone x̄∗i which can lead to the maximum
+reward. The optimization totally iterates N = ne ∗ ns times
+where ne and ns separately denote the number of episodes
+and steps [Wang et al., 2015]. ε-greedy method [Tokic, 2010]
+is employed in the state transition.
+
+2.4
+
+Weighted Average Spatial LSTM Classifier
+
+In this section, we propose Weighted Average Spatial LSTM
+classification for two purposes. The first attempt is to capture the cross-relationship among feature dimensions in the
+optimized focal zone x̄∗i . The LSTM-based classifier is
+widely used for its excellent sequential information extraction ability which is approved in several research areas such
+as natural language processing [Gers and Schmidhuber, 2001;
+Sundermeyer et al., 2012]. Compared to other commonly employed spatial feature extraction methods, such as Convolutional Neural Networks, LSTM is less depends on the hyperparameters setting. However, the traditional LSTM focuses
+on the temporal dependency among a sequence of samples.
+Technically, the input data of traditional LSTM is 3-D tensor shaped as [nb , nt , K̄] where nb and ns denote the batch
+size and the number of temporal sample, separately. The
+WAS-LSTM aims to capture the dependency among various
+dimensions at one temporal point, therefore, we set nt = 1
+and transpose the input data as: [nb , nt , K̄] → [nb , K̄, nt ].
+The second advantage of WAS-LSTM is that it could stabilize the performance of LSTM via moving average method
+[Lipton et al., 2015]. Specifically, we calculate the LSTM
+outputs Oi by averaging the past two outputs instead of only
+the final one (Figure 1):
+
+Datasets
+EID
+RSSI
+PAMAP2
+
+Task
+PID
+AR
+AR
+
+Type
+EEG
+RFID
+IMU
+
+#-S
+8
+6
+9
+
+#-C
+8
+21
+8
+
+Samples
+168,000
+3,100
+120,000
+
+#-D
+14
+12
+14
+
+S-rate (Hz)
+128
+2
+100
+
+Table 1: Datasets description. PID, AR, and S-rate denote Person Identification, Activity Recognition, and Sampling rate, respectively. #-S, #-C, #-D separately denote the number of subjects,
+classes, and dimensions.
+Methods
+NonDL
+
+DL
+
+SVM
+RF
+KNN
+AB
+LDA
+LSTM
+GRU
+1-D CNN
+WAS-LSTM
+Ours
+
+Acc
+0.1438
+0.9365
+0.9413
+0.2518
+0.1485
+0.4315
+0.4314
+0.8031
+0.9518
+0.9621
+
+EID Dataset
+Pre
+Rec
+0.1653 0.1545
+0.9261 0.9142
+0.9471 0.9298
+0.2684 0.2491
+0.1524 0.1358
+0.5132 0.4278
+0.455
+0.4288
+0.8127 0.805
+0.9657 0.9631
+0.9618 0.9615
+
+F1
+0.1445
+0.9457
+0.9511
+0.2911
+0.1479
+0.4532
+0.4218
+0.8278
+0.9658
+0.9615
+
+Table 2: Comparison of EID
+
+3.1
+
+Datasets
+
+The predicted label is calculated by yi0 = L(x̄∗i ) where L denotes the LSTM algorithm. `2 -norm (with parameter λ) is
+adopted as regularization to prevent overfitting. The sigmoid
+activation function is used on hidden layers. The loss function is cross-entropy and is optimized by the AdamOptimizer
+algorithm [Kingma and Ba, 2014].
+
+More details refer to Table 1.
+• EID. The EID (EEG ID identification) is collected in
+a constrained setting where 8 subjects (5 males and 3
+females) aged 26±2. EEG signal monitors the electrical
+activity of the brain. This dataset gathers the raw EEG
+signals by Emotiv EPOC+ headset with 14 channels at
+the sampling rate of 128 Hz.
+• RSSI. The RSSI (Radio Signal Strength Indicator) [Yao
+et al., 2018] collects the signals from passive RFID tags.
+21 activities, including 18 ADLs (Activity of Daily Living) and 3 abnormal falls, are performed by 6 subject
+aged 25 ± 5. RSSI measures the power present in a received radio signal, which is a convenient environmental
+measurement in ubiquitous computing.
+• PAMAP2. The PAMAP2 [Fida et al., 2015] is collected by 9 participants (8 males and 1 females) aged
+27 ± 3. 8 ADLs are selected as a subset of our paper.
+The activity is measured by 1 IMU attached to the participants’ wrist. The IMU collects sensor signal with
+14 dimensions including two 3-axis accelerometers, one
+3-axis gyroscopes, one 3-axis magnetometers and one
+thermometer.
+
+3
+
+3.2
+
+Oi = (Oi(K̄−1) + OiK̄ )/2
+
+Experiments
+
+In this section, we evaluate the proposed approach over 3 sensor signal datasets (separately collected by EEG headset, environmental sensor, and wearable sensor) including 2 widely
+used public datasets and 2 limited but more practical local
+datasets. Firstly we describe the details of each dataset. Secondly, we demonstrate the effectiveness and robustness by
+comparing the performance of our approach to baselines and
+state-of-the-art. Lastly, we provide the efficiency of the alternative reward model designed in Section 2.3.
+3
+For example, for the same silhouette score increment 0.1, sst :
+0.9 → 1.0 can earn higher reward increment than sst : 0.1 → 0.2.
+
+3114
+
+Results
+
+In this section, we compare the proposed approach with baselines and the state-of-the-art methods. Our method focuses
+on the focal zone which is optimized by deep reinforcement
+learning and then explores the dependency between sensor
+signal elements by a deep learning classifier. All the three
+datasets are randomly split into the training set (90%) and the
+testing set (10%). Each sample is one sensor vector recording
+collected at one time point. Through the previous experimental tuning and the Orthogonal Array based hyper-parameters
+tuning method [Zhang et al., 2017], the hyper-parameters are
+set as following. In the selective attention learning: the order of autoregressive is 3; K̄ = 128, the Dueling DQN has 4
+
+Proceedings of the Twenty-Seventh International Joint Conference on Artificial Intelligence (IJCAI-18)
+
+Methods
+NonDL
+
+DL
+
+SVM
+RF
+KNN
+AB
+LDA
+LSTM
+GRU
+1-D CNN
+WAS-LSTM
+Ours
+
+Acc
+0.8918
+0.9614
+0.9612
+0.4704
+0.8842
+0.7421
+0.7049
+0.9714
+0.9553
+0.9838
+
+RSSI Dataset
+Rec
+Pre
+0.8924 0.8908
+0.9713 0.9652
+0.9628 0.9618
+0.4125 0.4772
+0.8908 0.8845
+0.6505 0.6132
+0.7728 0.6584
+0.9676 0.9635
+0.9533 0.9545
+0.9782 0.9669
+
+zero-padding) and one fully connected layer (164 nodes).
+Relu activation function is employed in the CNN. The results
+from Tables 2 ∼ 4 show that:
+• Our approach outperforms all the baselines and the stateof-the-arts over all the local and public datasets ranging
+from EEG, RFID to wearable IMU sensors;
+• The sensor spatial based WAS-LSTM classifier achieves
+a high-level performance, which indicates the method
+that extracting inter-dimension dependency for classification is effective;
+• Our method (WAS-LSTM with focal zone) performs
+better than WAS-LSTM, which illustrates that the
+learned informative attention is effective.
+To have a closer observation, the CM (confusion matrix)
+and the ROC curves (including the AUC score) of the datasets
+are reported in Figure 2. The CMs illustrate that the robustness of the proposed approach keeps high accuracy even over
+few samples and numerous categories.
+
+F1
+0.8805
+0.9624
+0.9634
+0.3708
+0.8802
+0.6858
+0.6915
+0.9645
+0.9592
+0.9698
+
+Table 3: Comparison of RSSI
+Methods
+NonDL
+
+DL
+
+Stateof-the
+-Arts
+
+SVM
+RF
+KNN
+AB
+LDA
+LSTM
+GRU
+1-D CNN
+[Fida et al., 2015]
+[Chowdhury et al.,
+2017]
+[Erfani et al., 2017]
+[Zheng et al., 2014]
+WAS-LSTM
+Ours
+
+Acc
+0.7492
+0.9817
+0.9565
+0.5776
+0.7127
+0.7925
+0.8625
+0.9819
+0.96
+0.8488
+0.967
+0.9336
+0.9821
+0.9882
+
+PAMAP2 Dataset
+Pre
+Rec
+0.7451 0.7522
+0.9893 0.9711
+0.9651 0.9625
+0.4298 0.5814
+0.7175 0.7298
+0.7487 0.7478
+0.8515 0.8349
+0.9715 0.9721
+0.9981
+0.9804
+
+0.9459
+0.9756
+
+F1
+0.7486
+0.9801
+0.9638
+0.4942
+0.7236
+0.7482
+0.8431
+0.9718
+0.841
+
+3.3
+
+0.9713
+0.9780
+
+Table 4: Comparison of PAMAP2
+
+lays and the node number in each layer are: 2 (input layer),
+32 (FCL), 4 (A(st , at )) + 1 (V (st )), 4 (output). The decay
+parameter γ = 0.8, ne = ns = 50, N = 2, 500,  = 0.2,
+learning rate= 0.01, memory size = 2000, length penalty coefficient β = 0.1, and the minimum length of focal zone is
+set as 10. In the deep learning classifier: the node number in
+the input layer equals to the number of feature dimensions,
+three hidden layers with 164 nodes, two layers of LSTM cells
+and one output layer. The learning rate = 0.001, `2 -norm coefficient λ = 0.001, forget bias = 0.3, batch size = 9, and
+iterate for 1000 iterations.
+Tables 2 ∼ 4 show the classification metrics comparison
+between our approach and baselines including Non-DL and
+DL baselines. Since the EID and RSSI are local datasets,
+we only compare with state-of-the-art over the public dataset
+PAMAP2. Table 4 shows that our approach achieves the highest accuracy on both datasets. DL represents deep learning. The notation and hyper-parameters of the baselines
+are listed here. RF denotes Random Forest, AdaB denotes
+Adaptive Boosting, LDA denotes Linear Discriminant Analysis. In addition, the key parameters of the baselines are
+listed here: Linear SVM (C = 1), RF (n = 200), KNN
+(k = 3). In LSTM, nsteps = 5, another set is the same as the
+WAS-LSTM classifier, along with the GRU (Gated Recurrent
+Unit [Chung et al., 2014]). The CNN works on sensor data
+and contains 2 stacked convolutional layers (both with stride
+[1, 1], patch [2, 2], zero-padding, and the depth are 4 and 8,
+separately.) and followed by one pooling layer (stride [1, 2],
+
+3115
+
+Reward Model Efficiency Demonstration
+
+In this paper, we propose a new reward model to replace the
+original reward model: G → F . The original F , in our case,
+refers to the WAS-LSTM classifier (Section 2.4), intuitively.
+F requires a large amount of training time to find the optimal focal zone x̄∗ . Take the EID dataset as an example,
+F needs around 4000 sec on the Titan X (Pascal) GPU for
+each step while the whole focal zone optimization contains N
+(N > 2000) iterations. Therefore, to save training time, we
+attempt to employ G to approximate G to update the reward.
+Thus, two prerequisites are demanded: 1) G should have high
+correlation with F to guarantee arg max G ≈ arg max F ; 2)
+x̄∗
+
+x̄∗
+
+the training time of G should be shorter than F . In this section, we demonstrate the two prerequisites by experimental
+analyzes.
+First, on the focal zone optimization procedure on EID
+dataset, we conduct an experiment to measure a batch of data
+pairs of the reward (represents the reward of G) and the WASLSTM classifier accuracy (represents the reward of F ). The
+relationship between the reward and the accuracy is shown
+in Figure 3. The figure illustrates that the accuracy has an
+approximately linear relationship with the reward. The correlations coefficient is 0.8258 (with p-value as 0.0115), which
+demonstrates the accuracy and reward are highly positive related. As a result, we can estimate arg max F by arg max G.
+x̄∗
+
+x̄∗
+
+Moreover, another experiment is carried on to measure the
+single step training time of two reward models G and F . The
+training times are marked as T1 and T2, respectively. Figure 4 qualitatively shows that T2 is much higher than T1 (8
+states represent 8 different focal zones). Quantitatively, the
+sum of T1 over 8 states is 35237.41 sec while the sum of
+T2 is 601.58 sec. This results demonstrate that the proposed
+approach, designing a G to approximate and estimate the F ,
+saves 98.3% training time in focal zone optimization.
+
+3.4
+
+Discussions
+
+In this section, we discuss several characteristics of the proposed approach.
+
+Proceedings of the Twenty-Seventh International Joint Conference on Artificial Intelligence (IJCAI-18)
+
+(a) EID CM
+
+(b) RSSI CM
+
+(d) EID ROC
+
+(e) RSSI ROC
+
+(c) PAMAP CM
+
+(f) PAMAP ROC
+
+Figure 2: Confusion matrix and ROC curves of three datasets. CM denotes confusion matrix. The RSSI dataset overall contains 21 classes
+and we only select several representative classes.
+
+be consistent in training and testing stages. Various policies
+should be trained according to different sensor combinations.
+
+8000
+
+0.98
+
+T1
+T2
+
+7000
+
+0.96
+
+6000
+
+Training Time (s)
+
+Accuracy
+
+0.94
+0.92
+0.9
+0.88
+
+Furthermore, the proposed WAS-LSTM directly focuses
+on the dependency among the sensor dimensions and can produce a predicted label for each point. This provides the foundation for the quick-reaction online detection and other applications which require instantaneous detection. However,
+this reuires a enough number of signal dimensions to carry
+sufficient information for the aim of accurately recognition.
+
+4000
+3000
+2000
+1000
+
+0.86
+0.3
+
+5000
+
+0.32
+
+0.34
+
+0.36
+
+0.38
+
+0.4
+
+0.42
+
+Reward
+
+Figure 3: The relationship between the classifier accuracy
+and the reward. The correlationship coefficient is 0.8258
+while the p-value is 0.0115.
+
+0
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+State
+
+Figure 4: Reward model
+training time in various states.
+T1 and T2 separately denote
+the training time in reward
+model G and F .
+
+4
+
+First, we propose a robust, universal, and adaptive classification framework which can efficiently deal with multimodality sensor data. Specifically, our approach works better
+on high-dimensional feature space in that the information of
+inter-dimension dependency is richer.
+In addition, we propose a novel idea that adopts an alternative reward model to estimate and replace the original reward
+model. In this way, the disadvantages of the original model,
+such as expensive computation, can be eliminated. The key is
+to keep the reward produced by the new model highly related
+to the original reward. The higher correlation coefficient, the
+better. This sheds light on the possible combination of deep
+learning classifier and reinforcement learning.
+Nevertheless, one weakness is that the reinforcement learning policy only works well in the specific environment in
+which the model is trained. The dimension indices should
+
+3116
+
+Conclusion
+
+In this paper, we present a robust and efficient multi-modality
+sensor data classification framework which integrates selective attention mechanism, deep reinforcement learning, and
+WAS-LSTM classification. In order to boost the chance of
+inter-dimension dependency in sensor features, we replicate
+and shuffle the sensor data. Additionally, the optimal spatial dependency is required for high-quality classification, for
+which we introduce the focal zone with attention mechanism.
+Furthermore, we extended the LSTM to exploit the crossrelationship among spatial dimensions, which is called WASLSTM, for classification. The proposed approach is evaluated on three different sensor datasets, namely, EEG, RFID
+and wearable IMU sensors. The experimental results show
+that our approach outperforms the state-of-the-art baselines.
+Moreover, the designed reward model saves 98.3% of the
+training time in reinforcement learning.
+
+Proceedings of the Twenty-Seventh International Joint Conference on Artificial Intelligence (IJCAI-18)
+
+References
+[Akaike, 1969] Hirotugu Akaike.
+Fitting autoregressive
+models for prediction. Annals of the institute of Statistical Mathematics, 21(1):243–247, 1969.
+[Bigdely-Shamlo et al., 2015] Nima Bigdely-Shamlo, Tim
+Mullen, Christian Kothe, Kyung-Min Su, and Kay A Robbins. The prep pipeline: standardized preprocessing for
+large-scale eeg analysis. Frontiers in neuroinformatics,
+9:16, 2015.
+[Cavanagh and others, 1992] Patrick Cavanagh et al.
+Attention-based motion perception.
+Science,
+257(5076):1563–1565, 1992.
+[Chowdhury et al., 2017] Alok Chowdhury, Dian Tjondronegoro, Vinod Chandran, and Stewart Trost. Physical
+activity recognition using posterior-adapted class-based
+fusion of multi-accelerometers data. IEEE Journal of
+Biomedical and Health Informatics, 2017.
+[Chung et al., 2014] Junyoung Chung, Caglar Gulcehre,
+KyungHyun Cho, and Yoshua Bengio. Empirical evaluation of gated recurrent neural networks on sequence modeling. arXiv preprint arXiv:1412.3555, 2014.
+[Erfani et al., 2017] Sarah M Erfani, Mahsa Baktashmotlagh, Masud Moshtaghi, Vinh Nguyen, Christopher
+Leckie, James Bailey, and Kotagiri Ramamohanarao.
+From shared subspaces to shared landmarks: A robust
+multi-source classification approach. In AAAI, pages
+1854–1860, 2017.
+[Fida et al., 2015] Benish Fida, Daniele Bibbo, Ivan
+Bernabucci, Antonino Proto, Silvia Conforto, and Maurizio Schmid. Real time event-based segmentation to
+classify locomotion activities through a single inertial
+sensor. In MOBIHEALTH, pages 104–107, 2015.
+[Gers and Schmidhuber, 2001] Felix A Gers and E Schmidhuber. Lstm recurrent networks learn simple context-free
+and context-sensitive languages. IEEE Transactions on
+Neural Networks, 12(6):1333–1340, 2001.
+[Gers et al., 1999] Felix A Gers, Jürgen Schmidhuber, and
+Fred Cummins. Learning to forget: Continual prediction
+with lstm. 1999.
+[Kamburugamuve et al., 2015] Supun
+Kamburugamuve,
+Leif Christiansen, and Geoffrey Fox. A framework for
+real time processing of sensor data in the cloud. Journal
+of Sensors, 2015, 2015.
+[Kingma and Ba, 2014] Diederik Kingma and Jimmy Ba.
+Adam: A method for stochastic optimization. arXiv
+preprint arXiv:1412.6980, 2014.
+[Laurentini, 1994] Aldo Laurentini. The visual hull concept
+for silhouette-based image understanding. IEEE Transactions on pattern analysis and machine intelligence,
+16(2):150–162, 1994.
+[Lipton et al., 2015] Zachary C Lipton, David C Kale,
+Charles Elkan, and Randall Wetzel. Learning to diagnose with lstm recurrent neural networks. arXiv preprint
+arXiv:1511.03677, 2015.
+
+3117
+
+[Lovmar et al., 2005] Lovisa Lovmar, Annika Ahlford, Mats
+Jonsson, and Ann-Christine Syvänen. Silhouette scores
+for assessment of snp genotype clusters. BMC genomics,
+6(1):35, 2005.
+[Markham and Townshend, 1981] BL Markham and JRG
+Townshend. Land cover classification accuracy as a function of sensor spatial resolution. 1981.
+[Mnih et al., 2015] Volodymyr Mnih, Koray Kavukcuoglu,
+David Silver, Andrei A Rusu, Joel Veness, Marc G Bellemare, Alex Graves, Martin Riedmiller, Andreas K Fidjeland, Georg Ostrovski, et al. Human-level control through
+deep reinforcement learning. Nature, 518(7540):529,
+2015.
+[Sundermeyer et al., 2012] Martin Sundermeyer,
+Ralf
+Schlüter, and Hermann Ney. Lstm neural networks for
+language modeling. In Thirteenth Annual Conference
+of the International Speech Communication Association,
+2012.
+[Tan et al., 2015] Ming Tan, Cicero dos Santos, Bing Xiang, and Bowen Zhou. Lstm-based deep learning models for non-factoid answer selection. arXiv preprint
+arXiv:1511.04108, 2015.
+[Tokic, 2010] Michel Tokic. Adaptive ε-greedy exploration
+in reinforcement learning based on value differences. In
+Annual Conference on Artificial Intelligence, pages 203–
+210. Springer, 2010.
+[Wang et al., 2015] Ziyu Wang, Tom Schaul, Matteo Hessel, Hado Van Hasselt, Marc Lanctot, and Nando De Freitas. Dueling network architectures for deep reinforcement
+learning. arXiv preprint arXiv:1511.06581, 2015.
+[Yao et al., 2018] Lina Yao, Quan Z Sheng, Xue Li, Tao Gu,
+Mingkui Tan, Xianzhi Wang, Sen Wang, and Wenjie Ruan.
+Compressive representation for device-free activity recognition with passive rfid signal strength. IEEE Transactions
+on Mobile Computing, 17(2):293–306, 2018.
+[Zhang et al., ] Xiang Zhang, Lina Yao, Quan Z Sheng,
+Salil S Kanhere, Tao Gu, and Dalin Zhang. Converting
+your thoughts to texts: Enabling brain typing via deep feature learning of eeg signals. In PerCom 2018.
+[Zhang et al., 2017] Xiang Zhang, Lina Yao, Chaoran
+Huang, Quan Z Sheng, and Xianzhi Wang. Intent recognition in smart living through deep recurrent neural networks. In International Conference on Neural Information
+Processing, pages 748–758. Springer, 2017.
+[Zhang et al., 2018] Dalin Zhang, Lina Yao, Xiang Zhang,
+Sen Wang, Weitong Chen, and Robert Boots. Eeg-based
+intention recognition from spatio-temporal representations
+via cascade and parallel convolutional recurrent neural networks. In AAAI, 2018.
+[Zheng et al., 2014] Yi Zheng, Qi Liu, Enhong Chen, Yong
+Ge, and J Leon Zhao. Time series classification using
+multi-channels deep convolutional neural networks. In International Conference on Web-Age Information Management, pages 298–310. Springer, 2014.
+
+

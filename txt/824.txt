@@ -1,0 +1,3136 @@
+D E V E L O P M E N T O F A M U LT I M O D A L
+H U M A N - C O M P U T E R I N T E R FA C E
+FOR THE CONTROL OF A MOBILE ROBOT
+
+by:
+
+maxime jacques
+
+thesis submitted to the
+faculty of graduate and postdoctoral studies
+in partial fulfillment of the requirements
+for the m.a.sc. degree in biomedical engineering
+
+ottawa-carleton institute for biomedical engineering
+school of electrical engineering and computer science
+faculty of engineering
+university of ottawa
+© maxime jacques, ottawa, canada, 2012
+
+Maxime Jacques: Development of a Multimodal Human-Computer Interface for
+the Control of a Mobile Robot, April 2012
+
+ii
+
+ABSTRACT
+
+The recent advent of consumer grade Brain-Computer Interfaces (bci)
+provides a new revolutionary and accessible way to control computers.
+bci can translate cognitive electroencephalography (eeg) signals into
+computer or robotic commands using specially built headsets. Capable of
+enhancing traditional interfaces that require interaction with a keyboard,
+mouse or touchscreen, bci systems present tremendous opportunities to
+benefit various fields. Movement restricted users can especially benefit
+from these interfaces. In this thesis, we present a new way to interface a
+consumer-grade bci solution to a mobile robot. A Red-Green-Blue-Depth
+(rgbd) camera is used to enhance the navigation of the robot with cognitive thoughts as commands. We introduce an interface presenting 3 different methods of robot-control: 1) a fully manual mode, where a cognitive
+signal is interpreted as a command, 2) a control-flow manual mode, reducing the likelihood of false-positive commands and 3) an automatic
+mode assisted by a remote rgbd camera. We study the application of
+this work by navigating the mobile robot on a planar surface using the
+different control methods while measuring the accuracy and usability of
+the system. Finally, we assess the newly designed interface’s role in the
+design of future generation of bci solutions.
+
+iii
+
+ACKNOWLEDGMENTS
+
+First, I would like to express my gratitude to my supervisor, Dr. Emil
+M. Petriu. He made my years at the University of Ottawa all the better
+with his continuous support, charisma and abundance of excellent ideas.
+Dr. Petriu’s sound engineering advice, insightful criticisms, and patient
+encouragement have been immensely useful and appreciated.
+This work has been the source of a great deal of learning in the field of
+programming and coding, and I am grateful to fellow engineering student
+Alexandros Stathakis for his cheerful and patient assistance in the matter.
+I would also like to extend my gratitude my friend and former colleague
+Stéphane Gagnon, who offered great computer engineering advice and
+assistance during the beginnings of this research. I am also happy to have
+spent time with the students of the Discovery Lab, with whom I shared
+stimulating discussions, invaluable advice and good times.
+Finally, I would like to thank my family for their enduring enthusiastic
+(or irrational...) support of my multiple endeavours and projects. I always
+know I can count on them.
+Merci beaucoup.
+
+iv
+
+CONTENTS
+1
+
+introduction
+1
+1.1 Overview
+1
+1.2 What are Brain-Computer Interfaces?
+2
+1.3 Problem statement
+2
+1.4 Using sensor fusion to assist BCI robot navigation
+3
+1.5 Related work in the field
+4
+1.6 Objectives of this thesis
+4
+1.7 How this thesis is organized
+5
+2 background information
+7
+2.1 Introduction
+7
+2.2 Understanding the workings of Brain-Computer Interfaces
+7
+2.2.1 BCI target users and environment
+11
+2.2.2 The development and training of a BCI
+11
+2.3 BCI multimodal user interfaces
+12
+2.4 Mobile robot navigation with a BCI
+14
+2.5 Sensor fusion for multimodal systems
+15
+2.5.1 Remote robot navigation with a RGBD camera
+16
+2.5.2 Robotic Navigation with augmented reality systems
+16
+2.6 Summary
+17
+3 literature review
+19
+3.1 Introduction
+19
+3.2 State of the art in BCI for robot control
+19
+3.2.1 The issues with consumer-grade BCI
+19
+3.2.2 UI design to make BCI more robust
+20
+3.2.3 The usability of inaccurate BCI systems
+22
+3.2.4 Using the Emotiv Epoc BCI solution
+23
+3.2.5 Controlling a mobile robot with a BCI
+24
+3.2.6 BCI avatar-control in virtual reality
+25
+3.2.7 Telepresence mobile robot controlled with a BCI
+26
+3.2.8 External cameras for mobile robot navigation
+26
+3.2.9 RGBD cameras for navigation and object recognition
+27
+3.2.10 Grasping objects with a RGBD camera and a BCI
+28
+3.3 Summary
+28
+4 application proposal
+30
+4.1 A solution to the problem statement
+30
+4.1.1 Research outline
+30
+4.1.2 BCIdrive
+31
+
+v
+
+contents
+
+4.1.3 BCIdrive purpose
+31
+BCIdrive framework
+32
+4.2.1 Hardware used with BCIdrive
+32
+4.2.2 Software used to design BCIdrive
+33
+4.3 BCI module
+34
+4.3.1 Graphical User Interface
+35
+4.3.2 Emotiv Epoc BCI solution
+36
+4.3.3 Emotiv Epoc BCI training
+37
+4.3.4 EmotivSharp
+37
+4.4 Computer vision module
+38
+4.4.1 Designing a 3D marker for RGBD cameras
+38
+4.4.2 Mobile robot position detection
+39
+4.4.3 Mobile robot orientation detection
+40
+4.4.4 Calibration of the system
+41
+4.5 Navigation module
+42
+4.6 Summary
+44
+5 experimental setup, results and analysis
+45
+5.1 Experimental Setup
+45
+5.2 Measurements of usability, accuracy and speed
+46
+5.3 Control methods
+49
+5.4 Experiments
+50
+5.5 Results
+53
+5.6 Analysis of the results
+57
+5.7 Summary
+61
+6 conclusion
+63
+6.1 Conclusion
+63
+6.2 Summary of contributions
+63
+6.3 Future research
+64
+6.4 Final word
+64
+a appendix a - detailed results of the experiments
+66
+a.1 Experiment - BCI with direct EEG commands
+66
+a.2 Control method 1 - BCI with control flow
+67
+a.3 Control method 2 - BCI as mouse
+68
+a.4 Control method 3 - BCI as mouse with automatic navigation
+69
+a.5 Accuracy comparison
+70
+4.2
+
+bibliography
+
+71
+
+vi
+
+LIST OF FIGURES
+
+Figure 1
+Figure 2
+
+Figure 3
+
+Figure 4
+
+Figure 5
+Figure 6
+Figure 7
+Figure 8
+Figure 9
+Figure 10
+Figure 11
+Figure 12
+Figure 13
+
+Figure 14
+Figure 15
+Figure 16
+Figure 17
+Figure 18
+Figure 19
+
+The EEG signal from activation in the brain to the
+different frequency waves, EEG frequency table (from:[1]).
+The 5 types of EEG wavelengths. Picture from: Hugo
+Gamboa, “EEG 1 second sample” December 2005
+via Wikipedia, Creative Commons Attribution.
+9
+Standard placement of BCI electrodes. Picture from:
+BCI2000 31 January 2008 via BCI2000.org, Creative
+Commons Attribution.
+10
+a) Stephen Hawking uses a cheek motion detector
+to communicate with his computer and b) Emotiv
+Epoc BCI acquisition device
+12
+A typical BCI for robotic navigation
+13
+Different UI accessibility controls
+14
+Mobile robot navigation using internal sensors vs.
+external sensors
+15
+Virtual text overlaid on a marker detected in the
+environment
+17
+Augmented Reality marker detected in the environment
+18
+A UI providing 3 navigation choices associated to
+specific cognitive thoughts
+21
+An adaptable UI changes its options according to
+the user stress level
+21
+a) RGB and b) depth images of the same scene from
+a Kinect RGBD Camera.
+28
+The robotic arm of a PR2 robot. Picture from: Timothy Vollmer, “A PR2 robot by Willow Garage” 2
+May 2011 via Flickr, Creative Commons Attribution.
+29
+BCI system framework
+31
+BCIdrive internal modules
+33
+BCI Module
+35
+BCIdrive Interface
+35
+Emotiv Epoc Control Panel
+36
+Computer Vision Module
+38
+
+vii
+
+8
+
+Figure 20
+
+Figure 21
+Figure 22
+Figure 23
+
+Figure 24
+
+Figure 25
+Figure 26
+Figure 27
+Figure 28
+Figure 29
+Figure 30
+Figure 31
+Figure 32
+Figure 33
+Figure 34
+Figure 35
+Figure 36
+
+a) Ground detection in the point cloud image. b)
+Colour filtering to identify objects 12cm above the
+floor
+40
+a) the marker and with rectangle support and b)
+the orientation detection in the UI
+41
+Navigation Module
+42
+a) BCI Control Flow navigation method in the UI
+with feedback b) The steps required to send an activation command to the mobile robot
+43
+a) The UI buttons used with the BCI as mouse control method b) location of the gyroscope on the acquisition device
+44
+The experimental Setup
+47
+a) the mounted Kinect Camera and b) the operator
+wearing the BCI acquisition device
+48
+Navigation experiment 1
+51
+Navigation experiment 2
+51
+Navigation experiment 3
+52
+Navigation experiment 4
+52
+The average number of false-positive sent per set
+of registered EEG commands.
+54
+The average success rate per set of registered EEG
+commands.
+54
+The average number of false-positive per control
+method.
+55
+The average navigation time per control method.
+56
+The average number of false-positives sent per control method.
+56
+The average distance from the last waypoint in experiment 4.
+57
+
+L I S T O F TA B L E S
+
+Table 1
+Table 2
+Table 3
+Table 4
+Table 5
+
+Hardware used with BCIdrive
+33
+Software used in the BCIdrive framework
+34
+Results of the direct EEG commands experiment
+Results of Control method 1
+67
+Results of Control method 2
+68
+
+viii
+
+66
+
+Table 6
+Table 7
+
+Results of Control method 3
+69
+Accuracy comparison between BCI as mouse and
+automatic drive
+70
+
+LISTINGS
+
+ACRONYMS
+
+BCI
+
+Brain-Computer Interface
+
+RGB
+
+Red Green Blue
+
+RGBD
+
+Red Green Blue Depth
+
+EEG
+
+Electroencephalography
+
+HCI
+
+Human-Computer Interaction
+
+EMG
+
+Electromyography
+
+PSP
+
+Post synaptic potential
+
+UI
+
+User Interface
+
+GUI
+
+Graphical User Interface
+
+SNR
+
+Signal to Noise Ratio
+
+SVM
+
+Support Vector Machine
+
+SLAM
+
+Simultaneous Localization And Map-building
+
+DOF
+
+Degrees Of Freedom
+
+IR
+
+Infrared
+
+UGVO
+
+Unmanned Ground Vehicle Object
+
+VR
+
+Virtual Reality
+
+ix
+
+acronyms
+
+AR
+
+Augmented Reality
+
+DOD
+
+Department of Defense
+
+x
+
+1
+
+INTRODUCTION
+
+This thesis investigates the possibility of using a current generation consumergrade Brain-Computer Interface (BCI) solution to navigate a remote mobile robot. A custom-made application, BCIdrive, was designed to work
+with the Emotiv Epoc BCI solution, in conjunction with new computer
+vision technologies, to provide a better BCI experience when navigating a
+mobile robot. The application was tested by navigating a mobile robot
+across a flat surface. The result is an accurate and usable navigation
+method that can be applied to improve current BCI.
+
+1.1
+
+overview
+
+Traditionally, users have been interacting with their computers through a
+mouse and keyboard combination, and recently, with the help of touchscreen devices. Who has never wished for a more direct way to communicate with a computer, to simply think of a command and have it executed
+directly? To answer this question, one should look into the last frontier
+of Human-Computer Interaction (HCI): the brain. BCI offer the potential
+to dramatically alter our interactions with computers, by interfacing our
+thoughts directly as inputs. By interfacing directly with our thoughts, BCI
+present an infinite possibility of input commands. Also, they can potentially reduce the lag induced by the human nervous system with traditional touch input methods. More importantly, BCI can provide an alternative computer access method to disabled and paraplegic users.
+
+1
+
+1.2 what are brain-computer interfaces?
+
+1.2
+
+BCI
+
+what are brain-computer interfaces?
+
+development has been ongoing since Vidal’s work on real-time de-
+
+tection of brain activity in the 1970’s [2, 3]. Typically, BCI acquisition
+devices are comprised of various sets of sensors on non-invasive headsets or, are implanted through invasive surgeries on human and animal
+subjects. These devices gather the electrical signals emanating from the
+scalp during mental processes. The main use of BCI systems is to gather
+Electroencephalography (EEG) signals and to interface them to a computer
+where they are decoded into specific commands. The resulting information can be used as an alternative set of computer controls or to interpret
+brain activity in real-time. BCI are often used as a smaller part in the
+context of a full HCI. A complete HCI can decode various inputs from the
+human body, including Electromyography (EMG) signals from the activation of facial muscles. A BCI can greatly complement a HCI by offering an
+additional source of control for movement impaired or paralyzed users.
+
+1.3
+
+problem statement
+
+In research by Zicker and al, it was determined that the 2 highest categories where people with physical disabilities wanted improvement in
+their lives were: 1) their mobility and 2) in the activities related to daily
+living [4]. BCI devices currently used in universities and hospitals can potentially provide a solution to those issues and more. However, they can
+be expensive to acquire and require an elaborate and time-consuming
+setup before each use. Because of these issues, many potential developers and users are prevented from using BCI and thus improving them.
+
+2
+
+1.4 using sensor fusion to assist bci robot navigation
+
+New consumer-grade BCI devices have recently been introduced with the
+intended purpose of adding new control mechanisms to video games.
+These BCI systems provide a whole interfacing package, coming with
+their own EEG decoding algorithms making them affordable and easy to
+use with most consumer computer systems. However, the problem with
+most consumer-grade BCI is that their cheaper electrodes can often pick
+up ambient noise which makes for poor command reception (either a
+wrong command is received by the system from the user, or none at all).
+This false-positive effect can render the user experience frustrating, affecting the accuracy of the BCI application. The noise problem is inherent
+to the type of acquisition device included with consumer grade BCI, pertaining mostly to the low-cost hardware design. Improving the quality of
+the acquisition devices would likely increase their cost and make them
+less accessible to smaller developers. The problem is reminiscent to the
+chicken and egg dilemma: software developers want better devices and
+hardware makers are reticent to take risks designing new devices, with a
+lack of software and a small user base.
+
+1.4
+
+using sensor fusion to assist bci robot navigation
+
+The efficient navigation of a mobile robot with a minimum number of
+steps and inputs has always been a major component of robotic research.
+Limiting the complexity of the controls allows a wider range of users to
+get familiar faster with the robot. Automatic robotic navigation using sensor fusion is a solution explored by this thesis to reduce the number of
+navigation steps. In this case, an Red Green Blue Depth (RGBD) camera is
+used with a specially designed 3D marker tag to detect and navigate the
+
+3
+
+1.5 related work in the field
+
+mobile robot, with a minimum amount of commands from the user. Augmented reality systems and computer vision algorithms are combined to
+provide the orientation and position of the mobile robot in the environment.
+
+1.5
+
+related work in the field
+
+Related work in the field of user-friendly BCI applications include the research done by Bryan, M. on controlling a PR2 robot to grasp 3 different
+objects with an RGBD camera and a BCI using visual evoked potentials [5].
+Research by van de Laar, B. focuses on the fun aspect of using inaccurate
+BCI
+
+devices, suggesting that users can be drawn into imperfect BCI sys-
+
+tems [6]. Another source of research is the work done to control a tractor
+using the Emotiv BCI headset and EMG signals [7]. These applications
+introduce various techniques to solve the frustration and low-accuracy
+when sending commands with a BCI. The problem with these interfaces
+is that they don’t allow free cognitive control of the application: either the
+user is limited to a set of input presented on the screen (visual evoked
+potentials) or has to perform a series of EMG activations, which are not
+suited to users suffering from facial paralysis.
+
+1.6
+
+objectives of this thesis
+
+The hypothesis of this thesis is that using sensor fusion can improve the
+user experience when controlling a robot with a consumer-grade BCI. New
+sensors systems like the Microsoft Kinect RGBD cameras are affordable
+and provide precise information about the environment. These new sen-
+
+4
+
+1.7 how this thesis is organized
+
+sor systems have the potential to reduce input errors from the user which
+can provide a valuable addition to BCI systems. The goal of this thesis
+is therefore to explore and develop a way to efficiently navigate a mobile robot with a BCI and a Kinect RGBD camera. In order to do this, the
+developed application should:
+
+1. Reduce the number of wrong commands received from the user
+wearing the BCI;
+2. Provide a navigation oriented application with robust control methods;
+3. Use input methods available to most users (meaning reducing the
+need for EMG inputs), and;
+4. Automate simple navigation tasks with a combination of sensor
+technology and navigation algorithms, thus requiring less input from
+the user.
+1.7
+
+how this thesis is organized
+
+This thesis is divided into 6 chapters:
+
+• Chapter 2 covers the background information on multimodal BCI systems, the development of robust User Interface (UI) and the navigation of mobile robots using sensor fusion. Sensor technologies and
+computer vision algorithms are studied in this chapter to provide a
+basic understanding of the concepts used in this thesis.
+• Chapter 3 is a literature review of the current research on BCI and
+mobile robot navigation. The state-of-the art research on the control
+of mobile robots with BCI is studied and analyzed with the problem
+statement in mind.
+
+5
+
+1.7 how this thesis is organized
+
+• Chapter 4 explains the proposed solution to the problem statement.
+The workings of the application, sensor technology and navigation
+algorithms are explained in detail. The possible real life applications
+of this solution are also described.
+• Chapter 5 describes the experimental setup used to control the mobile robot with the developed software application and provides an
+analysis of the results. The experiments are done in escalating order
+from basic BCI commands to the use of automatic navigation assist.
+An analysis is provided describing the advantages of the various
+control methods designed for the experiments.
+• Chapter 6 is a conclusion to the thesis, summarizing the research
+done and providing some remarks explaining the contributions of
+this thesis to the field of BCI. This chapter also introduces some new
+ideas for future work on BCI for mobile robot navigation.
+
+6
+
+B A C K G R O U N D I N F O R M AT I O N
+
+2.1
+
+introduction
+
+Mobile robots can provide assistance to paraplegic or disabled users in
+ways never done before; potentially assisting them in various tasks they
+are unable to do themselves. With a BCI, paralyzed users can control mobile robots to retrieve items or food, to replace them in social situations, or
+even to simply explore different locations while sitting home. This chapter
+covers the development of BCI solutions and the sensor systems used to
+externally navigate mobile robots. The types of remote robot navigation
+will be covered, as well as the sensor technologies and computer vision
+algorithms used. This chapter should provide a better understanding of
+the background mechanics in mobile robot navigation with a BCI.
+
+2.2
+
+understanding the workings of brain-computer interfaces
+
+BCI
+
+are used to link mental processes to computer systems. They usually
+
+comprise of software and hardware parts and provide the entire solution
+to gather, decode and convert human thoughts to specific commands. Specially designed acquisition devices, looking either like shower cap devices
+or headsets, are used to collect the minuscule residual electric signals emanating from a user’s brain. They work by collecting the electromagnetic
+energy emanating from the human head when groups of neurons are
+activated when a cognitive thought is processed. Most BCI process EEG
+
+7
+
+2
+
+2.2 understanding the workings of brain-computer interfaces
+
+Figure 1: The EEG signal from activation in the brain to the different frequency
+waves, EEG frequency table (from:[1]).
+
+signals, which come from the Post synaptic potential (PSP), an accumulation of electrical energy from large populations of active neurons originating in the cortex (figure: 1). The variation in PSP is recorded in different
+observed frequency bands: delta, theta, alpha, beta and gamma (figure:
+2). Most of the EEG cerebral activity is between 1 to 20 Hz, where the
+frequency bands indicate different states of a human brain. For example,
+variations in the beta frequency band will indicate a change in concentration and alertness. The variation of those frequency bands over a period
+of time can be analyzed to decode specific visual thoughts, which is the
+rationale behind visual-biofeedback BCI. The reason that EEG are used for
+most BCI is that they are inexpensive to acquire in real-time and do not require invasive surgery. The known disadvantages of using EEG is that they
+have poor spatial resolution and the quality of the signal can be affected
+by the user’s skull thickness [1]. To be effective, BCI devices record EEG
+
+8
+
+2.2 understanding the workings of brain-computer interfaces
+
+ Ğ ůƚĂ Ϭ ͘ϱ Ͳϰ , ǌ
+
+d Ś Ğ ƚĂ ϰ Ͳϴ , ǌ
+
+ ůƉ Ś Ă ϴ Ͳϭ ϯ , ǌ
+
+ Ğ ƚĂ ϭ ϯ Ͳϯ Ϭ , ǌ
+
+' Ă ŵ ŵ Ă ϯ Ϭ Ͳϭ Ϭ Ϭ , ǌ
+
+Figure 2: The 5 types of EEG wavelengths. Picture from: Hugo Gamboa, “EEG
+1 second sample” December 2005 via Wikipedia, Creative Commons
+Attribution.
+
+signals at various locations of the human scalp using a varying number
+of small metal electrodes. An acquisition device with more electrodes can
+provide a better localization of the source of the EEG signal, but it makes
+the device harder to setup. The electrode density on a scalp is therefore
+a compromise between a possible loss of accuracy in the detected signal
+and a better ease of use. In order to standardize measurements, the International Federation of Societies for Electroencephalography and Clinical
+Neurophysiology (IFSECN) has adopted the 10-20 system, which recommends the placement of 10 to 20 electrodes at specific emplacements on
+the head (figure: 3). Since EEG signals in raw form contain a vast array
+of information (frequency, amplitude, phase, distribution and more) it
+is necessary to convert them into distinguishable commands. Specially
+designed training and decoding algorithms are used for this purpose, using neural networks, Support Vector Machine (SVM) [8] or other machine
+learning methods, to convert the EEG into accurate computer commands.
+
+9
+
+2.2 understanding the workings of brain-computer interfaces
+
+Figure 3: Standard placement of BCI electrodes. Picture from: BCI2000 31 January 2008 via BCI2000.org, Creative Commons Attribution.
+
+Open software such as OpenVibe (author?) [9], can also interface with
+some BCI acquisition devices to simplify EEG data processing. Poor Signal
+to Noise Ratio (SNR) is one of the biggest issues affecting self-paced, noninvasive BCI, as they allow any potential cognitive thought to be registered as a specific command. Registering more commands with a selfpaced BCI solution can introduce 2 types of issues: 1) users having a hard
+time differentiating between cognitive thoughts, and 2) computer algorithms misinterpreting the collected EEG data. These issues contribute to
+the source of wrong commands in BCI systems, by either a false-positive
+(making a computer execute a different command than the one the user
+was trying to send) or a false-negative (when the system executes a command when the user did not intend to send one).
+
+10
+
+2.2 understanding the workings of brain-computer interfaces
+
+2.2.1 BCI target users and environment
+The target user in a BCI scenario is someone who isn’t capable of using a
+traditional computer input method (keyboard, mouse, touchscreen or joystick). These users are often in a demanding situation, unavailable to use
+their hands or limited in their mobility, while still retaining full mental
+capacity. This is where BCI fit, by reading the brains of these users to interact with computer, when no other method would work. These devices can
+provide a full range of support to reduced mobility users, such as allowing them to move their wheelchairs with their thoughts [10] or by offering
+new means of communication for people suffering degenerative diseases,
+such as the Lou Gehrig disease [11]. BCI such as the Emotiv Epoc (figure:
+4b) can also help sufferers of motor neurone diseases communicate faster
+by interfacing directly with their brain, instead of muscular motions, like
+professor Stephen Hawking’s cheek-motion controlled wheelchair (figure:
+4a).
+
+2.2.2 The development and training of a BCI
+Noninvasive BCI devices are often used to send simple commands, since
+decoding EEG signals can be error prone and various issues can arise like
+improper placement and environmental noise. Two of the common interaction methods with a BCI are: 1) the self-paced method, where incoming
+EEG signals are monitored and recognized as specific cognitive tasks, and
+2) the evoked potential method, where options are being presented to the
+user, via visual or other sensory stimulus, and the computer gathers the
+nervous response to the signal [12]. Movement thought patterns are often
+
+11
+
+2.3 bci multimodal user interfaces
+
+(a) NASA/Paul
+Alers,
+Professor
+Stephen Hawking at NASA, 21
+April 2008 from www.nasa.gov,
+Creative Commons License
+
+(b)
+
+Figure 4: a) Stephen Hawking uses a cheek motion detector to communicate with
+his computer and b) Emotiv Epoc BCI acquisition device
+
+registered as cognitive commands in self-paced systems [13]. Increasing
+the number of these cognitive thoughts can lead to an exponential increase in erroneous commands (Experiment 1, Chapter 5). Currently, in
+order to use a self-paced BCI, training is required at the either or both
+the user and computer level. This allows the BCI application to recognize
+trained cognitive thoughts efficiently, and the user to focus his change the
+activation of his cognitive thoughts with feedback (figure: 5).
+
+2.3
+
+bci multimodal user interfaces
+
+Multimodal interfaces are applications that combine various type of human input methods (touchscreen, keyboard and mouse, microphone, etc.)
+to provide better system accessibility to impared users. The advantage of
+
+12
+
+2.3 bci multimodal user interfaces
+
+Figure 5: A typical BCI for robotic navigation
+
+a multimodal system with a BCI component is that can offer in theory
+an infinite amount of input (as many as the number of different cognitive
+thoughts a user can have). As, was shown, the problem with offering a BCI
+input is the risk of sending wrong information. For example, a distracted
+user may be distracted while navigating a robot in a maze and send the
+robot in the wrong direction. Multimodal systems with a BCI component
+therefore have to be more robust than their traditional counterparts. Traditional mouse and keyboard applications can offer more advanced options
+to a user because the chance of sending an erroneous command while
+clicking or typing is much lower. Even then, these systems have integrated
+measures to prevent user created errors, especially for crucial decisions
+(when deleting files, figure: 6a). In Usability Engineering, Nielsen, J. specifies that information should be “accessed and produced in the sequence
+that users will most effectively and productively do things” [14]. One of
+the ways to minimize erroneous inputs from the user in a BCI system is
+to use sensor fusion to limit the number of inputs available. For example,
+
+13
+
+2.4 mobile robot navigation with a bci
+
+(a) Confirm action message box
+
+(b) Full user control
+
+(c) Restricted user control
+
+Figure 6: Different UI accessibility controls
+
+using a sonar to detect obstacles to the right and front of a robot would
+disable the associated commands (figure: 6c). Limiting the user has 2 beneficial aspects: it prevents user mistakes and removes options that the
+application believes the user would not think of choosing, reducing the
+likelihood of false-positives. Sensor fusion therefore assists the user when
+navigating complex environments while allowing a more robust user interface making it difficult to take incorrect and invalid actions. This way,
+users are less likely to commit errors, and are going to be more inclined
+to use the software in a productive way.
+
+2.4
+
+mobile robot navigation with a bci
+
+Cameras can be mounted internally (inside the robot, as a sensor) or externally to navigate remote mobile robots. With internally mounted cameras,
+the user “sees” what the robot sees. Completely autonomous robots can
+rely on Simultaneous Localization And Map-building (SLAM) algorithms,
+or on previously provided maps to locate themselves in their environments. In other cases, one or multiple cameras are mounted at a remote
+location with views on the mobile robot. The mobile robot then receives
+his navigation motions from a computer connected to the cameras. Using
+external cameras, a robot can be a single mobile unit blind to its environ-
+
+14
+
+2.5 sensor fusion for multimodal systems
+
+Figure 7: Mobile robot navigation using internal sensors vs. external sensors
+
+ment (figure: 7). The other advantage of using external cameras is that
+the environment doesn’t need to be previously mapped, since reckoning
+and localization can be done with once the robot’s position is determined.
+The research done in this chapter focuses on mobile robot navigation
+using external cameras. One of the advantages remote navigation offers
+multimodal applications with a BCI is the easy adaptability for a variety
+of environments. For example, to order a robot to pick up a book, or to
+open a door, a user with a mounted camera could look at the item and
+think “go”, instead of controlling each task of the robot from a first person
+perspective. This automation of tasks can be applied to mobile robot navigation, in order to reduce the number BCI cognitive activations required,
+which can lead to mental fatigue.
+
+2.5
+
+sensor fusion for multimodal systems
+
+Sensor fusion, or the combination of data collected from multiple sensors,
+offers more accuracy and robustness in multimodal systems. With sensor
+
+15
+
+2.5 sensor fusion for multimodal systems
+
+fusion, a BCI multimodal system can prioritize a sensor with a better view
+of the environment and merge selected data to provide different control
+alternatives and automatic functions.
+
+2.5.1 Remote robot navigation with a RGBD camera
+RGBD
+
+cameras (like the Microsoft Kinect) are a combination of conven-
+
+tional Red Green Blue (RGB) colour cameras and depth cameras. The
+depth part of the camera functions by illuminating an area with Infrared
+(IR) light and collecting the reflected light with an IR camera. The result is
+a point-cloud image with accurate 3D data of the scene in relation to the
+camera’s position. When used for robotic navigation, a remote RGBD can
+provide a robot’s position, calculate the distance between the robot and
+the camera and calculate the distance between the robot and user-selected
+way-points.
+
+2.5.2
+
+Robotic Navigation with augmented reality systems
+
+Augmented Reality (AR) systems provide layers of virtual objects onto the
+real world, with the help of a proprietary marker designs and RGB cameras [15]. In order to do this, AR systems detect the position and orientation of a marker in relation to a camera in an image or video feed (figure:
+8). Position estimation algorithms, edge detection mechanisms and black
+and white filters can assist in the detection of the marker tag’s 6 Degrees
+Of Freedom (DOF) properties (XYZ position, and 3D rotation). In robotics,
+they can be used to provide the orientation and position of sensitive objects, such as helping a robot locate glasses of water in order to fill them
+
+16
+
+2.6 summary
+
+Figure 8: Virtual text overlaid on a marker detected in the environment
+
+[16], or to dock a space shuttle in space [15]. AR systems can also be used
+to provide the locate and navigate a mobile robot from an external point
+of view (figure: 9).
+
+2.6
+
+summary
+
+This chapter covered the technologies and resources used in a multimodal
+system with a BCI component for robot navigation. The next chapter will
+provide a literature review on the cutting edge developments in BCI research and their contributions to the development of usable BCI applications.
+
+17
+
+2.6 summary
+
+Figure 9: Augmented Reality marker detected in the environment
+
+18
+
+3
+
+L I T E R AT U R E R E V I E W
+
+3.1
+
+introduction
+
+BCI are a fairly new component of HCI, offering a whole new dimension to
+
+the control of computer systems. BCI can be used as a part, or as the whole
+of the HCI component. This chapter covers the state of the art research on
+BCI
+
+3.2
+
+applications, with an emphasis on their accessibility and usability.
+
+state of the art in bci for robot control
+
+3.2.1 The issues with consumer-grade BCI
+New human-machine interfaces can offer tremendous opportunities for
+military users, as they are often using their hands for other purposes. Secondary actions such as remote drone control or sending coordinates to
+locations can be done quickly by mental thought. Also, a BCI device can
+sense the emotional state of a user and react accordingly, by reducing the
+number of commands if the user is panicking, injured or even lacking
+sleep. Research was done for the US Department of Defense (DOD) by a
+third party research group to recommend alternative methods to control
+an Unmanned Ground Vehicle Object (UGVO) [17]. Various alternative input methods were studied, including teeth clicking, whispering and using
+a consumer-grade BCI system, to see if any of them were suitable to replace traditional input methods. Lack of consistency and feedback were
+both described to be a problem with the BCI solution in the DOD review,
+
+19
+
+3.2 state of the art in bci for robot control
+
+leading the testers discouraged with the system. The research conclusion
+was that current consumer-grade BCI devices such as the Emotiv Epoc,
+had “too low command recognition and too high latency” to be used in a
+military environment [17], and other venues should be studied for their
+projects. The testers were hindered and perplexed as the system decoded
+cognitive thoughts which they did not activate, or finally decoded the
+thoughts they did activate, but after much processing. The question that
+arises from such research is whether these BCI solutions are inaccurate
+and unusable on their own, or if they can still be used by being interfaced
+differently. Research was conducted in Chapter 5 to determine the accuracy of cognitive EEG commands with the Emotiv Epoc, and was found
+to be usable with a low amount of registered commands, but became less
+reliable as more EEG commands were registered.
+
+3.2.2 UI design to make BCI more robust
+Current BCI solutions often cause frustration in users, being slower and
+more inaccurate than conventional input methods. But, for low-mobility
+or even paralyzed users unable to use traditional methods, BCI are often
+the only way to interact with computer systems. Despite their current issues, disabled users can still benefit from BCI, as long as they work at all.
+Often, the main cause of frustration when using a HCI is the poorly designed UI. A proper UI is likely to encourage people to use new devices,
+and lower the initial anxiety associated with learning how to use it. Some
+of the most important rules of a properly designed HCI are: consistency,
+feedback, error prevention and a system flow that doesn’t require the
+user to memorize too much information and shortcuts [18]. Fault toler-
+
+20
+
+3.2 state of the art in bci for robot control
+
+Figure 10: A UI providing 3 navigation choices associated to specific cognitive
+thoughts
+
+Figure 11: An adaptable UI changes its options according to the user stress level
+
+ance is another important aspect of HCI design. Errors should be difficult
+to make for inexperienced users. Also, a user in a high stress level can
+be the biggest source of error probability in any HCI [19]. BCI systems
+have a distinct advantage over most common input methods in that they
+can read the mental state of a user, and react accordingly. For example, a
+properly tuned BCI could detect when users are stressed or overwhelmed
+and limit the number of possible input options, or propose specific options for this situation (figure:11). Another way to enhance BCI solutions
+
+21
+
+3.2 state of the art in bci for robot control
+
+is described in a scenario provided as an example of the Openvibe BCI
+software [9], showing a user walking a virtual avatar in a museum with a
+BCI. The interface used allows only a possibility of 3 movements: left, right
+
+and forward, since walking freely in the museum would be very tedious
+using current BCI devices. The user therefore has to memorize 3 cognitive
+commands in order to initiate an avatar movement. Limiting the numbers
+of EEG inputs in this situation allows the user to move quickly to the desired location while minimizing the number of false-positive commands
+(figure: 10). This limitation improves the accuracy of a BCI application;
+however, it prevents free exploration of the environment by the user. This
+can prove problematic for situations where a user wishes to navigate to a
+location not previously programmed in the system.
+
+3.2.3 The usability of inaccurate BCI systems
+As we have seen, BCI systems can be inherently inaccurate in their decoding of EEG signals from cognitive thoughts. Research has been made to
+determine if a level of fun generated from BCI use could overcome the
+frustration associated with inaccurate commands. The idea is that this
+level of fun would entice users to keep trying, and as a consequence, get
+better at activating cognitive commands. In the research by Laar, B. et al,
+the level of perceived control was measured against the level of frustration [6]. As predicted, less control meant more frustration in users. However, it was also found that the level of fun was not directly proportional
+to the level of control. In fact, it was discovered that even a small lack of
+control accuracy (while keeping the accuracy rate over 96.73%), generated
+continued interest in users who had completed the game. However, as the
+
+22
+
+3.2 state of the art in bci for robot control
+
+accuracy got lower, subject grew more frustrated with the control method.
+This study means that a specific ratio of errors can be made before users
+give up on a BCI. On the other hand, it also demonstrates that users familiar with traditional input methods are unwilling to tolerate even a small
+(4%) lack in accuracy.
+
+3.2.4
+
+EMG
+
+Using the Emotiv Epoc BCI solution
+signals come from the activation of muscles. Some BCI devices, like
+
+the Emotiv Epoc, have the ability to receive EMG signals from the user’s
+facial expressions. These signals, like their EEG counterpart, can be interfaced to a system or a computer. The advantage of using EMG signals
+over EEG is that they are more accurate and faster to decode and don’t
+require previous training. Their disadvantages are that only a relative
+number of commands can be issued, noise can easily be induced in the
+system (any facial movement can be triggered quite easily in daily situations, like smiling or blinking) and that they cannot be used by patients
+with facial paralysis. In certain conditions however, EMG signals can be
+used advantageously and adapted to different users for various scenarios.
+A robust UI was developed to control a tractor with a user’s eye movement across a field with a small deviation, using the Emotiv Epoc with
+EMG
+
+signals [7]. The research supported the usability of the Emotiv Epoc
+
+BCI EMG
+
+functions with a control flow optimized interface. To minimize
+
+wrong commands, a series of EMG activations had to be performed in the
+correct order in order to send a single command to the tractor.
+
+23
+
+3.2 state of the art in bci for robot control
+
+3.2.5
+
+Controlling a mobile robot with a BCI
+
+Barbosa, A. et al developed a system to directly control a mobile robot by
+activating intuitive mental commands [20]. Imaginary movement of the
+arm turned the robot left or right and imaginary lifting of the legs or the
+tongue would activate or stop the robot. Removing artefacts such as eye
+movements or blinks from the EEG allowed the research team to create a
+solution with an accuracy rate of 90%. The rate of erroneous commands
+in the experiment was only 1.25% after more than 400 attempts with a
+real robot. Research by Bell, C.J. et al, introduced the concept of a mobile
+robot being used to pick up and transport remote objects [21]. A BCI
+interface with evoked potentials from visual stimuli was used to navigate
+the robot to 4 possible locations, 2 of which were objects that the remote
+robot could pick up. A camera was installed on the robot to provide visual
+feedback. The accuracy of this system was 95% with 4 possible choices.
+One of the shortcomings of an interface using evoked potentials is that
+the user options have to be cycled through, either at random or following
+a sequence. This can prove problematic when adding new functions, or
+when a user is getting impatient waiting for his selected choice to appear.
+Another experiment applied the concept of a mobile robot controlled by
+evaluating the attention of a subject [22]. Once the subject’s attention level
+reached a certain threshold, a forward command was issued. The mobile
+robot would stop moving if an obstacle was detected, or if the subject’s
+attention level decreased under the activation threshold. This research
+shows that determining a user’s attention level can provide a useful input
+to a multimodal interface, as it can be interfaced to certain functions, or
+
+24
+
+3.2 state of the art in bci for robot control
+
+even monitored to provide different EEG commands based on the state of
+the user.
+
+3.2.6 BCI avatar-control in virtual reality
+In their research in the control of a Virtual Reality (VR) avatar with a BCI,
+Friedman, D. et al, compared the performance of a free-choice control
+method versus a directed control method. In one situation, the subjects
+received training before setting out to control a VR avatar in a cave-like
+simulator. In the free-choice control method, subjects could either use
+head-rotation or foot imagery (thinking of their feet) to freely move the
+avatar around the environment. When directed, the users were told what
+to think to control the avatar. The conclusion of the research indicates
+that “participants performed better when instructed “what to think,” as
+compared to being free to decide for themselves” [23]. With free choice,
+subjects felt the environment distracting which made the activation of
+cognitive commands harder. This could be because the immersive environment provided more information to the subjects which they had to
+process in real-time, affecting their mental concentration. When told to
+give cognitive commands in sequence, the subjects’ control of the avatar
+yielded better results (82.1% mean accuracy in the control condition versus 75% in the free-choice condition) [23]. This research indicates that
+giving free-control of avatars or mobile robots to subjects can distract
+them by allowing too much choice. BCI recognition can become less accurate as the subjects’ thoughts get divided between the need to think about
+their location in the environment and the control of their avatar or mobile
+robot.
+
+25
+
+3.2 state of the art in bci for robot control
+
+3.2.7
+
+Telepresence mobile robot controlled with a BCI
+
+Research by Escolano, C. et al, explains the concept of a using a sharedcontrol design with a P300 evoked potential BCI to navigate a remote
+mobile robot. In their experiments, a mobile robot located in a different
+room was controlled by a subject with a BCI. The Graphical User Interface (GUI) used in the experiments provided visual feedback and targets
+on the screen. To navigate the mobile robot, users could choose from a
+selection of locations in the GUI. The number of possible targets was dictated by the robot’s camera and laser finder system, based on obstacles
+in front of the robot to prevent users from navigating into them. Once a
+task was received, communications with the BCI were disabled until the
+robot was ready to move again. The shared-control strategy “overcomes
+low information transfer rates, avoids exhausting mental processes, and
+explicitly avoids delay problems in the control loop caused by Internet
+communication” [24]. This is one of the examples where sensor fusion
+is used to help the navigation process and lower the number of possible
+inputs. This results in an increased accuracy of commands and a faster
+navigation time when using a BCI.
+
+3.2.8 External cameras for mobile robot navigation
+Multiple external cameras working in a collaborative system can increase
+the range of navigation of a mobile robot. In the experiment by Chakravarty,
+P. and Ray, J., 2 colour cameras were mounted on a ceiling in order to
+view the movements of a mobile robot from above [25]. A ground map
+was built by the system using homeography to coordinate the location
+
+26
+
+3.2 state of the art in bci for robot control
+
+of the robot within the 2 camera frame. This allowed the mobile robot
+to be localized and navigated across the 2 camera frames. This research
+shows that coordinating sensors such as external cameras increases the
+range of detection and navigation of a mobile robot. A mapping system
+such as the one developed in this research could be used to enhance a
+BCI
+
+navigation system, by covering a greater area with multiple external
+
+cameras.
+
+3.2.9 RGBD cameras for navigation and object recognition
+A RGBD camera installed on a robot was able to provide real-time robot
+localization as well as information about the obstacles around the robot
+(figure: 12) [26]. The RGBD camera provided 2 sensor functions to the
+mobile robot: obstacle clearance and self-localization. The mobile robot
+localized itself in a 2 room apartment by comparing the distance of the
+walls in the depth image to a previously provided map using a system
+designed to recognize objects with a RGBD camera and neural networks
+using segmentation [27]. Similar research was conducted to localize and
+grasp objects using depth image segmentation. Segmentation of the depth
+data with the colour image data of a RGBD allowed a robot to clean a table
+cluttered with various objects. A supervised classifier was programmed
+to help find graspable segments of the multiple objects on the table [28].
+This research is important to the field of multimodal interfaces with a
+BCI
+
+component. It demonstrates that sensor fusion can provide additional
+
+information about the environment when coupled with computer vision
+algorithms and machine learning. Simplification of complex data into selectable choices can make a BCI more accurate and easier to use.
+
+27
+
+3.3 summary
+
+(a)
+
+(b)
+
+Figure 12: a) RGB and b) depth images of the same scene from a Kinect RGBD
+Camera.
+
+3.2.10
+
+Grasping objects with a RGBD camera and a BCI
+
+A BCI controlled PR2 robot was used to grasp remote objects with an
+RGBD
+
+and a BCI (figure: 13). Subjects rotated their head to control the
+
+robot’s RGBD camera. Once objects were in sight, subjects were presented
+with a UI to allow them to grab objects with the robot. A confirmation
+message was used to limit the number of false-positive commands [5].
+This example shows the use of using a multimodal system with a BCI
+component and a RGBD camera. With the RGBD camera, the researchers
+were able to simplify the complex act of a robot grasping an object to
+a simple BCI command. This allowed users to provide better cognitive
+commands by being more focused on the task, and less on the complexity
+of moving a robot’s arm.
+
+3.3
+
+summary
+
+The gathering of multiple sensors and computer vision algorithms can
+improve BCI controlled mobile robot navigation systems by providing a
+
+28
+
+3.3 summary
+
+Figure 13: The robotic arm of a PR2 robot. Picture from: Timothy Vollmer, “A
+PR2 robot by Willow Garage” 2 May 2011 via Flickr, Creative Commons Attribution.
+
+better and more accurate view of the environment. Sensor fusion can compensate for the inaccuracies of consumer-grade BCI devices by providing
+additional environment data. Simplifying this data into limited numbers
+of BCI inputs has the potential to offer a better user experience. Sensor
+fusion bridges the gap between the design of usable BCI applications and
+the development of more accurate EEG acquisition devices.
+
+29
+
+4
+
+A P P L I C AT I O N P R O P O S A L
+
+4.1
+
+a solution to the problem statement
+
+As was shown in chapter 3, the philosophy of approach when designing
+BCI
+
+solutions has been divided between accessibility and accuracy. Most
+
+BCI
+
+systems and acquisition devices used in university laboratories are
+
+complicated and expensive. Consumer-grade BCI are able to provide a
+trade-off to laboratory BCI by being more accessible and affordable to
+general users. This chapter explains the development of a multimodal
+interface using a consumer-grade BCI solution for simple robot navigation
+scenarios.
+
+4.1.1 Research outline
+The work for this research is divided into 3 sections:
+
+1. Developing a BCI Multimodal Software Framework called BCIdrive;
+2. Integrating sensor data into BCIdrive, and providing 3 navigation
+control methods;
+3. Testing the performance of BCIdrive by navigating a mobile robot
+across waypoints.
+
+30
+
+4.1 a solution to the problem statement
+
+,ƵŵĂŶ
+
+ŵŽƚŝǀ
+
+/ĚƌŝǀĞ
+
+ĐƋƵŝƐŝƚŝŽŶ
+ĚĞǀŝĐĞ
+
+hƐĞƌ
+/ŶƚĞƌĨĂĐĞ
+
+Z'ĐĂŵĞƌĂ
+<ŝŶĞĐƚ
+
+ůƵĞƚŽŽƚŚ
+
+'
+ĞĐŽĚŝŶŐ
+ƐŽĨƚǁĂƌĞ
+
+EĂǀŝŐĂƚŝŽŶ
+ĂůŐŽƌŝƚŚŵƐ
+
+D'
+
+DŽďŝůĞ
+ZŽďŽƚ
+Eyd
+
+&ĞĞĚďĂĐŬ
+
+Figure 14: BCI system framework
+
+4.1.2
+
+BCIdrive
+
+BCIdrive is the multimodal application developed to interface with the
+Emotiv Epoc BCI acquisition device and software. It provides an application to navigate a mobile robot using a combination of sensor data, cognitive thoughts and EMG activations. BCIdrive was designed to receive
+information from the user (by means of the Emotiv Epoc solution) and
+data from the RGBD camera in order to automatically navigate the mobile
+robot (figure: 14). BCIdrive works as a self-paced BCI control method (as
+opposed to a evoked potential method), meaning the interface is waiting
+for cognitive commands from the user rather than offering different audio
+or visual stimulations to trigger functions. Three different navigation control methods are offered to users depending on their control preferences
+and mobility needs.
+
+4.1.3 BCIdrive purpose
+The purpose of BCIdrive is to provide the following:
+
+31
+
+4.2 bcidrive framework
+
+1. An interface to navigate a mobile robot with a BCI and an external
+RGBD
+
+camera;
+
+2. Two robust navigation control methods suited to the users’ mobility
+needs, and;
+3. An automatic BCI control method as a proof of concept to improve
+the user experience with sensor fusion, compared to the other methods.
+
+4.2
+
+bcidrive framework
+
+BCI drive is a multimodal interface composed of 3 internal modules: a
+BCI
+
+module, a computer vision module and a navigation module (figure:
+
+15). The core module of the framework is the BCI module; it serves as
+the coordinating point between the GUI, the computer vision module and
+the navigation module. When inputs are received from the user, they are
+deciphered by the BCI module and combined with sensor data analysis
+in the computer vision module to provide the position and orientation of
+the mobile robot. The navigation module was designed to translate this
+information into navigation commands for the mobile robot.
+
+4.2.1
+
+Hardware used with BCIdrive
+
+The hardware used by BCIdrive was selected in function of the requirements. The Lego NXT robot was provided by the university lab, and constitutes a simple and affordable mobile robotic system. The Emotiv Epoc
+is the only device of its kind, able to provide cognitive commands (with
+
+32
+
+4.2 bcidrive framework
+
+ŽŵƉƵƚĞƌ
+sŝƐŝŽŶ
+DŽĚƵůĞ
+
+/
+DŽĚƵůĞ
+
+EĂǀŝŐĂƚŝŽŶ
+DŽĚƵůĞ
+Figure 15: BCIdrive internal modules
+
+a software training solution), different facial EMG activations and a gyroscope that can be used for mouse movements. The Microsoft Kinect
+camera is the most affordable and usable RGBD camera currently on the
+market.
+Hardware
+
+Details
+
+Lego NXT
+Microsoft Kinect RGBD camera
+
+Mobile Robot with Bluetooth
+640x480 Depth resolution up to
+4m. 1024x960 RGB resolution.
+Low-cost consummer-grade
+14-channel EEG and EMG
+headset
+
+Emotiv Epoc BCI acquisition Device
+
+Table 1: Hardware used with BCIdrive
+
+4.2.2
+
+Software used to design BCIdrive
+
+The software used by BCIdrive was selected in function of the hardware
+requirements. The Microsoft Kinect comes with its own SDK, which can
+be used conjointly with Microsoft Robotics Studio and the Lego NXT. The
+computer vision algorithms were selected for their robust image detection
+
+33
+
+4.3 bci module
+
+and manipulation abilities (NyArToolkitCS for the augmented reality tag
+and AForge.Net for image filtering and shape detection). The Emotiv Control panel is included with the Emotiv solution and is used for cognitive
+training. The EmotivSharp software is used for to interface series of EMG
+activations from the Emotiv Control Panel into computer commands.
+Software
+
+Version
+
+Microsoft Robotics Studio
+Microsoft Kinect SDK
+NyArToolkitCS (augmented reality)
+AForge.Net (computer vision algorithm)
+Microsoft Visual Studio
+EmotivSharp
+Emotiv Control Panel
+
+4
+1
+4.0.2
+2.2.4
+2010
+0.45
+1.0.0.5
+
+Table 2: Software used in the BCIdrive framework
+
+4.3
+
+bci module
+
+The BCI module is composed of a GUI providing user-feedback and 3
+control methods, and a BCI module receiving EEG and EMG commands
+from the user.
+
+34
+
+4.3 bci module
+
+ŵŽƚŝǀ
+ŽŶƚƌŽů
+WĂŶĞů
+
+ŵŽƚŝǀ^ŚĂƌƉ
+;'ʹ D'ĨƵŶĐƚŝŽŶƐͿ
+
+DŽƵƐĞ
+;ƉŽƐŝƚŝŽŶʹ ďƵƚƚŽŶƐͿ
+
+'h/
+;ĨĞĞĚďĂĐŬͲ ĂĐƚŝŽŶƐͿ
+
+EĂǀŝŐĂƚŝŽŶ
+DŽĚƵůĞ
+Figure 16: BCI Module
+
+4.3.1
+
+Graphical User Interface
+
+Figure 17: BCIdrive Interface
+
+The GUI is divided into multiple parts.
+
+35
+
+4.3 bci module
+
+• (1, 2 and 3) The controls for the 3 navigation methods with userfeedback in the center;
+• (4) The 3D depth image: the floor is identified in green, pink colouring indicates a height of 12 cm off the ground;
+• (5) The RGB image: the highlighted AR marker indicates the orientation of the mobile robot.
+
+4.3.2
+
+Emotiv Epoc BCI solution
+
+BCIdrive interfaces with the commercial non-invasive Emotiv Epoc BCI
+solution, using both the acquisition device (Emotiv headset) and the rawdata decoding software (Emotiv Control Panel) (figure: 18). Training of
+the cognitive EEG functions is done with the Emotiv Control Panel. EMG
+activations (winks) are detected automatically by the Emotiv headset. The
+software allows a configuration of up to 4 EEG cognitive functions, but
+only a maximum of 3 are used with BCIdrive’s control methods.
+
+Figure 18: Emotiv Epoc Control Panel
+
+36
+
+4.3 bci module
+
+4.3.3
+
+Emotiv Epoc BCI training
+
+Training the 4 cognitive functions is done with the Emotiv Epoc control
+panel. First, a neutral mental state has to be recorded for a duration of
+around 30 seconds. Then, the first cognitive function is trained with the
+user thinking of a particular thought and holding that thought for a duration of around 10 seconds. Up to 4 cognitive functions can be trained and
+recorded this way. Cognitive training can be cumulative, which means
+that specific cognitive thought training can be done multiple times for
+the same function more accurate results. For this research, cognitive training of the functions consisted of thinking about a thin rope pulling the
+user’s head in the intended direction. For example, the “left” cognitive
+function was trained by having the user think of his left ear being pulled
+to the left, and for the “up” direction, the function was trained by having
+the user think of his head being pulled “up”. The neutral state is trained
+once at the start of the training, and once again after all the cognitive
+functions are trained.
+
+4.3.4
+
+EmotivSharp
+
+EmotivSharp is the software layer that receives the cognitive EEG and EMG
+functions from the Emotiv Epoc control panel and transfers them into the
+control flow class of BCIdrive as user inputs. This layer is only used for
+the Control Flow navigation method, as it receives the EMG inputs and
+applies a time recording to them.
+
+37
+
+4.4 computer vision module
+
+<ŝŶĞĐƚ^<
+ĨŽƌŐĞ͘EĞƚ &ŝůƚĞƌ
+Z'ŝŵĂŐĞ
+ĞƉƚŚŝŵĂŐĞ
+ĐĐĞůĞƌŽŵĞƚĞƌ
+ĚĂƚĂ
+
+ZdĂŐĞƚĞĐƚŝŽŶ
+
+;ďůĂĐŬĂŶĚǁŚŝƚĞͿ
+
+&ůŽŽƌĞƚĞĐƚŝŽŶ
+ΘEydŚĞŝŐŚƚ
+ĚĞƚĞĐƚŝŽŶ
+
+Z'ƚŽĞƉƚŚ ϯ
+;ŝŵĂŐĞĨƌĂŵĞ
+ĐŽŶǀĞƌƐŝŽŶͿ
+
+ĨŽƌŐĞ͘EĞƚ &ŝůƚĞƌ
+;EydŚĞŝŐŚƚͿ
+
+ĂŶĚ
+^ŚĂƉĞĞƚĞĐƚŝŽŶ
+;ƌĞĐƚĂŶŐůĞͿ
+
+ϯWŽƐŝƚŝŽŶ
+
+KƌŝĞŶƚĂƚŝŽŶǀĞĐƚŽƌ
+ƉƌŽũĞĐƚŝŽŶŽŶĨůŽŽƌ
+ƐƵƌĨĂĐĞ
+
+ϯKƌŝĞŶƚĂƚŝŽŶ
+
+EĂǀŝŐĂƚŝŽŶ
+DŽĚƵůĞ
+Figure 19: Computer Vision Module
+
+4.4
+
+computer vision module
+
+The computer vision module serves 2 purposes: 1) giving visual feedback
+to the user and 2) enabling the automatic control of the mobile robot. It
+integrates visual data from the RGBD camera to detect the position and
+orientation of the mobile robot using a specially designed 3D marker.
+
+4.4.1 Designing a 3D marker for RGBD cameras
+A 305 x 225 mm rectangle cardboard is installed on top of the mobile
+robot with an augmented reality marker on top. This allows both camera
+
+38
+
+4.4 computer vision module
+
+systems (depth and RGB) to detect the marker’s properties from their respective visual environment (figure: 21a). The rectangular cardboard is an
+easy shape to detect in the point-cloud provided by the RGBD camera. The
+AR
+
+marker comes from the NyArToolKit algorithm, and was modified to
+
+change the black contour into dark blue. The reason for this is that the
+black square absorbs the IR light from the RGBD camera, making shape
+detection difficult in the depth image. Since a black and white filter is applied to the RGB image, the change of colour does not affect the detection
+of the AR marker in the RGB image.
+
+4.4.2 Mobile robot position detection
+An algorithm detects the 3D position of the mobile robot on the floor
+in the depth image. First, the data from the integrated accelerometer is
+polled to determine the normal vector to the ground floor. 3D pixels in
+the image are analyzed to find those which are 12 cm above the floor
+(the height of the 3D marker off the floor). A filter is then applied onto
+the image to separate the NXT height pixels from the rest (figure: 20). A
+shape detection algorithm is applied onto the resulting image to detect
+rectangles corresponding to the 3D marker size (figure: 21a). Once the
+3D marker is found, the center position of the marker (X, Y, Z) in the
+depth image is projected onto the ground floor (which is 12 cm lower) to
+determine the ground position of the mobile robot.
+
+39
+
+4.4 computer vision module
+
+(a)
+
+(b)
+
+Figure 20: a) Ground detection in the point cloud image. b) Colour filtering to
+identify objects 12cm above the floor
+
+4.4.3
+
+Mobile robot orientation detection
+
+The 3D orientation of the mobile robot is detected with the RGB image
+and the NyArToolKit algorithm. A black and white filter is applied to
+the RGB image to reduce the number of artefacts in the environment and
+assist in the detection of the AR marker by the algorithm. Once detected,
+the AR marker’s orientation axes (in relation to the external camera) are
+provided by the algorithm, with X axis becoming the orientation vector in
+BCIdrive (figure: 21b). This vector is converted into the 3D image space
+(of the depth camera) using an homography transformation matrix. The
+AR
+
+marker can be detected as long as the 4 corners are visible in the RGB
+
+image and that there is sufficient lighting. This could cause a problem
+in the orientation detection, if the AR marker is at a slight angle from
+the floor surface. To correct for slam deviations, the orientation vector
+is projected onto the ground floor surface using the ground floor equation provided by the Kinect accelerometer. The resulting vector is used to
+determine the 3D orientation of the mobile robot in the depth camera’s
+reference frame, or 3D space.
+
+40
+
+4.4 computer vision module
+
+(a)
+
+(b)
+
+Figure 21: a) the marker and with rectangle support and b) the orientation detection in the UI
+
+4.4.4 Calibration of the system
+In order to use the system, the floor area needs to be detected by the
+RGBD
+
+camera. This usually takes a few seconds, and, to help with mea-
+
+surements, the angle of the RGBD camera can be modified in the UI by the
+user. Once the floor is detected, the system is ready to detect the position
+of the 3D marker. The detection of the augmented reality marker by the
+RGB camera depends on the amount of ambient light. The augmented
+reality marker cannot be detected in low-light conditions. No other calibration is required, because the 3D positioning is done with the depth
+camera only. The precision of the Kinect camera varies in function of the
+distance of the item detected, with a random depth error of 4 cm at the
+maximum range of around 5 meters, and less than 2 cm of error within 3
+m of the camera [29].
+
+41
+
+4.5 navigation module
+
+ŽŶƚƌŽů&ůŽǁ
+
+/ĂƐŵŽƵƐĞ
+
+/ĂƐŵŽƵƐĞ
+;ǁŝƚŚ ĂƵƚŽŶĂǀͿ
+
+Eyd
+Figure 22: Navigation Module
+
+4.5
+
+navigation module
+
+The navigation module receives data from the BCI and computer vision
+modules. It sends motion parameters to the mobile robot according to the
+selected control method.
+
+BCI with control flow navigation method
+A control-flow navigation method is used to reduce the number of falsepositive commands sent to the mobile robot (figure: 23). The commands
+are time sensitive, and the user only has to wait for the procedure to reset
+itself in case of a mistake or a false-positive command being activated.
+Winking twice initializes the registration of a cognitive function. Moving
+the mobile robot is done by registering a cognitive command: right, left
+or forward, displaying the selected command in the UI. If no cognitive actions are received during the allowed time period the control flow system
+resets itself without sending any command to the mobile robot. Winking
+twice again within the time limit sends the registered command to the
+mobile robot.
+
+42
+
+4.5 navigation module
+
+(a)
+
+^ƚĞƉϭ
+
+^ƚĞƉϯ
+
+^ƚĞƉϮ
+ZĞŐŝƐƚĞƌĐŽŵŵĂŶĚǁŝƚŚŝŶϭϬƐ
+
+tŝŶŬƚǁŝĐĞ
+ǁŝƚŚŝŶϱƐ
+ƚŽŝŶŝƚŝĂůŝǌĞ
+
+'͞ZŝŐŚƚ͟ƚŽƚƵƌŶƌŝŐŚƚ
+'͞>ĞĨƚ͟ƚŽƚƵƌŶůĞĨƚ
+
+tŝŶŬƚǁŝĐĞ
+ǁŝƚŚŝŶϭϬƐ
+ƚŽƐĞŶĚ
+
+DŽďŝůĞ
+ZŽďŽƚ
+
+'͞hƉ͟ƚŽŐŽĨŽƌǁĂƌĚ
+
+(b)
+
+Figure 23: a) BCI Control Flow navigation method in the UI with feedback b) The
+steps required to send an activation command to the mobile robot
+
+BCI as mouse navigation method
+In this control method, the BCI headset’s gyroscope is used to control the
+mouse cursor (figure: 24b). A single cognitive EEG thought is associated
+to a left mouse click. The user only needs to point the mouse (by moving
+his neck) on a control button (left turn, right turn, forward and backward)
+(figure: 24) and activate the cognitive “click” function to send a command
+to the mobile robot.
+
+BCI as mouse automatic navigation method
+The automatic navigation method makes full use of the computer vision
+module descripted earlier. In order to move the NXT to a destination,
+the BCI headset is used to click a location on the floor with a cognitive
+EEG
+
+thought (similar to the BCI as mouse method, but this time directly
+
+43
+
+4.6 summary
+
+(a)
+
+(b)
+
+Figure 24: a) The UI buttons used with the BCI as mouse control method b)
+location of the gyroscope on the acquisition device
+
+onto the depth image in the UI). Once a command is issued, the mobile
+robot is automatically directed to the location by the computer vision and
+navigation modules.
+
+4.6
+
+summary
+
+BCIdrive provides a multimodal solution to navigate a mobile robot with
+a consumer-grade BCI. It works by integrating sensor fusion to detect and
+navigate the robot with 3 different control methods. The next chapter will
+describe the experimental procedures used to test BCIdrive. An analysis
+of the results of the experiments will describe the advantages of using
+BCIdrive.
+
+44
+
+E X P E R I M E N TA L S E T U P, R E S U LT S A N D A N A LY S I S
+
+This chapter describes the experimental setup and the experiments done
+to test the 3 control methods and the Emotiv Epoc. The goal of the experiments was to first test the accuracy of the Emotiv Epoc with EEG signals
+and second, the usability of the specially designed application, BCIdrive.
+The results are given in graph form and provide an average of the results over 5 trials. An analysis of the results is provided at the end of the
+chapter.
+
+5.1
+
+experimental setup
+
+The experiments were conducted in a flat open space (figure: 25) with a
+minimum of noise and distractions, which is important for BCI applications. The navigable area for the experiments was marked with a black
+rectangle. Waypoints were marked on the ground at various positions, depending on the experiment (figure: 25a). The Microsoft Kinect camera was
+mounted on a support at 1,45m above the floor, facing down (figure: 25).
+A healthy 27 years-old human operator wearing the Emotiv Epoc headset controlled the mobile robot with a combination of cognitive thoughts,
+head movements and winks. A profile was created with the Emotiv Epoc
+Control Panel in order to train the subject in the use of the BCI. Training the BCI consisted of thinking about a particular cognitive thought for
+8 seconds. Training was cumulative, each thought and neural state was
+trained a few times until the Emotiv control panel control (left, right, up
+
+45
+
+5
+
+5.2 measurements of usability, accuracy and speed
+
+and down) was properly associated with the thought. The subject sat facing a computer screen with visual information of the experiment area, to
+simulate a remote operation procedure. The Lego NXT robot (NXT) was
+programmed to be a nonautonomous mobile robot, controlled only by
+BCIdrive from the Kinect camera (figure: 25c).
+
+5.2
+
+measurements of usability, accuracy and speed
+
+Usability measurements are done by measuring the number of wrong
+navigation commands activated in each experiment. These wrong commands are defined as false-positives, meaning that the command was
+confirmed for activation by the system and sent to the NXT but wasn’t
+previously warranted or activated by the subject. The experiences did not
+stop when false-positives were accidentely introduced, as the consequential navigation errors were corrected by the user. False-negatives, such as
+when the user sends a command that is not positively received by the
+system, were not counted as wrong commands. This is because it is hard
+to determine whether the cognitive thought was properly activated by
+the user, or simply that the cognitive thought was not clear enough for
+the system to detect it. Accuracy measurements were done by measuring the distance from of the NXT to a specific waypoint in centimeters
+with a tape measure with an precision error of 1mm. Error in depth by
+the Kinect Depth camera were rated at 2cm, based on literature measurements for the distance of the operations. Errors in accuracy in the NXT
+navigation were unavoidable, and were considered reproductible, meaning that the NXT navigation precision was considered constant for all
+the experiments. The absolute error in accuracy was considered to be ±
+
+46
+
+5.2 measurements of usability, accuracy and speed
+
+(a) The layout used for the navigation experiments
+&ŽƌǁĂƌĚ
+Ϭ͘ϯŵ
+
+ZŝŐŚƚdƵƌŶ
+ϰϱ϶
+
+>ĞĨƚ dƵƌŶ
+ϰϱ϶
+
+(b) The mobile robot commands
+are configured for 45º turns
+and 0.4m forward or backward motions.
+
+(c) The NXT with mounted 3D
+marker
+
+Ϯ͕Ϭϱŵ
+>ĞŐĞŶĚ͗
+tĂǇƉŽŝŶƚ
+
+ϭ͕Ϯϱŵ
+Eyd
+KƌŝĞŶƚĂƚŝŽŶĂƚ
+ƐƚĂƌƚ
+
+Eyd
+;^ƚĂƌƚŝŶŐ WŽƐŝƚŝŽŶϭͿ
+
+;^ƚĂƌƚŝŶŐ
+WŽƐŝƚŝŽŶϮͿ
+
+(d) Experimental navigation area
+
+Figure 25: The experimental Setup
+
+47
+
+5.2 measurements of usability, accuracy and speed
+
+(a)
+
+(b)
+
+Figure 26: a) the mounted Kinect Camera and b) the operator wearing the BCI
+acquisition device
+
+2.01cm. Time measurement were done by timing the navigation of the
+mobile robot from the start position to the last waypoint of the experiment with a chronometer. Timing starts when the user is ready, and stops
+when the NXT has reached its final destination, completing all the necessary waypoints along the way. Random error for the time measurements
+(time to click to start and stop) is 2s, and precision error is 1 ms. The
+absolute error in time measurements was considered to be ± 2.001s Each
+experiment was performed 5 times, and an average value (number of
+false-positive signals, time to completion and accuracy of navigation at
+final waypoint) is calculated for each experiment.
+
+48
+
+5.3 control methods
+
+5.3
+
+control methods
+
+BCI with control flow
+Navigation commands are sent to the NXT after a control-flow mechanism using EMG and EEG signals is correctly activated, as described in
+chapter 4. The user needs to wink twice to register a cognitive command,
+and twice again to send the command. The activations need to be performed in the allowed time (5s for the first set of winks and 10 seconds
+for both the EEG activation and the last set of winks) or the interface will
+reset the control-flow mechanism without sending the command. The
+commands can turn the NXT left or right at an angle of 45 degrees, or
+send it forward a distance of 0.3 m.
+
+BCI as mouse
+The subject controls the mouse cursor by moving his head while wearing
+the BCI acquisition device. Buttons on the UI turn the NXT left or right at
+an angle of 45 degrees, or send it forward a distance of 0.3 m. When hovering above a button, the user sends the EEG command to click the mouse
+left button. In this control method, only 1 cognitive EEG thought is registered to the left mouse button to simulate a click. Other EEG commands
+are disabled to remove the possibility of issuing the wrong command.
+
+BCI automatic navigation
+The mouse is linked to the BCI as in the previous control method. This
+time the subject clicks on the point-cloud image on the UI to move the
+
+49
+
+5.4 experiments
+
+NXT to that destination. When the NXT finished moving, it awaits a new
+destination command. The NXT can only move to destinations that are
+within the camera’s field of view. In this control method, like the previous
+one, only 1 cognitive EEG thought is registered to the left mouse button.
+
+5.4
+
+experiments
+
+Series of direct EEG commands with the Emotiv Epoc BCI solution
+An experiment was conducted to test the accuracy of the Emotiv Epoc
+when issuing EEG cognitive commands. 1 to 4 cognitive commands were
+trained and registered with the Emotiv Epoc control panel. Training a
+cognitive command constitutes in the recording of a particular thought
+for up to 8 seconds with the Emotiv Epoc software. This can be done multiple times to increase the accuracy of the detection. Successful training
+is accepted once the user is capable of positively sending the cognitive
+command to the control panel while wearing the BCI headset. The experiments consisted in sending a series of 1 to 4 cognitive commands to test
+the average success rate when sending 1 or more commands. The following variables were recorded:
+
+• The time required to register all the commands;
+• The number of wrong commands (or false-positive signals) that
+were received during the process, and;
+• The number of times a series of commands was sent without any
+false-positive signal over the total number of tests (0 wrong command over 5 tests indicates a 100% success rate).
+
+50
+
+5.4 experiments
+
+Navigation of a mobile robot with BCIdrive
+The following navigation experiments were conducted.
+
+1. Forward drive: The NXT is facing east towards the destination, which
+is 0.6 m away. 2 forward motions are required to navigate the NXT.
+Ϯ͕Ϭϱŵ
+>ĞŐĞŶĚ͗
+tĂǇƉŽŝŶƚ
+
+ϭ͕Ϯϱŵ
+Ϭ͘ϲŵ
+
+Eyd
+KƌŝĞŶƚĂƚŝŽŶĂƚ
+ƐƚĂƌƚ
+
+Figure 27: Navigation experiment 1
+
+2. Turn then drive: The NXT is facing north and the destination is 0.6
+m to the right of the NXT. 4 commands are required: 2 right turns
+and 2 forward motions.
+Ϯ͕Ϭϱŵ
+>ĞŐĞŶĚ͗
+tĂǇƉŽŝŶƚ
+&ŝŶĂůĞƐƚŝŶĂƚŝŽŶ
+
+ϭ͕Ϯϱŵ
+Ϭ͘ϲŵ
+
+Eyd
+KƌŝĞŶƚĂƚŝŽŶĂƚ
+ƐƚĂƌƚ
+
+Figure 28: Navigation experiment 2
+
+51
+
+5.4 experiments
+
+3. Square drive: The NXT is facing north, and needs to navigate to 3
+waypoints in the shape of a square. 10 commands are required: 4
+left turns and 6 forward motions.
+Ϯ͕Ϭϱŵ
+>ĞŐĞŶĚ͗
+
+Ϭ͘ϲŵ
+tĂǇƉŽŝŶƚ
+
+ϭ͕Ϯϱŵ
+
+Ϭ͘ϲŵ
+
+Ϭ͘ϲŵ
+
+Eyd
+KƌŝĞŶƚĂƚŝŽŶĂƚ
+ƐƚĂƌƚ
+
+Figure 29: Navigation experiment 3
+
+4. Drive to destination then return: The NXT is facing forward in the
+bottom left corner. A waypoint is located 1.8 m to the left and up
+from the NXT. The NXT needs to reach that location before going
+back to a final destination 0.8 m from the waypoint. There is no
+particular navigation sequence to execute for this experiment; rather,
+the subject is free to navigate the NXT to the waypoint in any way.
+Ϯ͕Ϭϱŵ
+>ĞŐĞŶĚ͗
+tĂǇƉŽŝŶƚ
+
+ϭ͕Ϯϱŵ
+ϭ͘ϴŵ
+
+ϭŵ
+
+Eyd
+KƌŝĞŶƚĂƚŝŽŶĂƚ
+ƐƚĂƌƚ
+
+Figure 30: Navigation experiment 4
+
+52
+
+5.5 results
+
+The following variables were recorded for each experiment:
+
+• The time required to complete the navigation, and;
+• The number of false-positive commands sent during the navigation.
+
+For experiment 4, the distance between the final waypoint and the NXT
+robot was measured for the BCI as mouse and the BCI as mouse with
+automatic navigation methods. Experiments 1, 2 and 3 were conducted
+5 times per control. Experiment 4 was conducted only with the BCI as
+mouse and BCI as mouse with automatic navigation control methods.
+
+5.5
+
+results
+
+Series of direct EEG commands with the Emotiv Epoc BCI solution
+The number of columns in the 3 charts decreases from left to right, as the
+minimum number of required cognitive commands in the sets increases.
+The tests were not completed if less commands were registered than were
+needed to complete the series (for example, a minimum of 2 EEG cognitive commands needed to be registered to perform the “Left” + “Right”
+series).
+
+53
+
+5.5 results
+
+ǀĞƌĂŐĞŶƵŵďĞƌŽĨĨĂůƐĞͲƉŽƐŝƚŝǀĞƐĞŶƚƉĞƌƐĞƚŽĨĐŽŵŵĂŶĚƐ
+ϰ͕ϬϬ
+ϯ͕ϱϬ
+
+ηŽĨĨĂůƐĞͲƉŽƐŝƚŝǀĞ
+
+ϯ͕ϬϬ
+ϭ'ĐŽŵŵĂŶĚ
+ƌĞŐŝƐƚĞƌĞĚ
+
+Ϯ͕ϱϬ
+Ϯ͕ϬϬ
+
+Ϯ'ĐŽŵŵĂŶĚƐ
+ƌĞŐŝƐƚĞƌĞĚ
+
+ϭ͕ϱϬ
+ϯ'ĐŽŵŵĂŶĚƐ
+ƌĞŐŝƐƚĞƌĞĚ
+
+ϭ͕ϬϬ
+Ϭ͕ϱϬ
+
+ϰ'ĐŽŵŵĂŶĚƐ
+ƌĞŐŝƐƚĞƌĞĚ
+
+Ϭ͕ϬϬ
+
+^ĞƌŝĞƐŽĨ'ĐŽŵŵĂŶĚƐƐĞŶƚ
+
+Figure 31: The average number of false-positive sent per set of registered EEG
+commands.
+
+ǀĞƌĂŐĞ ƐƵĐĐĞƐƐ ƌĂƚĞ;ǌĞƌŽ ĨĂůƐĞͲƉŽƐŝƚŝǀĞƐͿƉĞƌƐĞƚŽĨĐŽŵŵĂŶĚƐ
+ϭϬϬ͕ϬϬ
+ϵϬ͕ϬϬ
+
+ǀĞƌĂŐĞ ^ƵĐĐĞƐƐ ƌĂƚĞ;йͿ
+
+ϴϬ͕ϬϬ
+ϳϬ͕ϬϬ
+ϲϬ͕ϬϬ
+
+ϭ'ĐŽŵŵĂŶĚ
+ƌĞŐŝƐƚĞƌĞĚ
+
+ϱϬ͕ϬϬ
+
+Ϯ'ĐŽŵŵĂŶĚƐ
+ƌĞŐŝƐƚĞƌĞĚ
+
+ϰϬ͕ϬϬ
+ϯϬ͕ϬϬ
+
+ϯ'ĐŽŵŵĂŶĚƐ
+ƌĞŐŝƐƚĞƌĞĚ
+
+ϮϬ͕ϬϬ
+ϭϬ͕ϬϬ
+
+ϰ'ĐŽŵŵĂŶĚƐ
+ƌĞŐŝƐƚĞƌĞĚ
+
+Ϭ͕ϬϬ
+
+^ĞƌŝĞƐ ŽĨ'ĐŽŵŵĂŶĚƐ ƐĞŶƚ
+
+Figure 32: The average success rate per set of registered EEG commands.
+
+54
+
+5.5 results
+
+ǀĞƌĂŐĞƚŝŵĞŽĨĐŽŵƉůĞƚŝŽŶƉĞƌƐĞƚŽĨĐŽŵŵĂŶĚƐ
+ϰϱ͕ϬϬ
+
+ϰϬ͕ϬϬ
+
+ϯϱ͕ϬϬ
+
+ϭ'ĐŽŵŵĂŶĚ
+ƌĞŐŝƐƚĞƌĞĚ
+
+ǀĞƌĂŐĞƚŝŵĞ;ƐĞĐŽŶĚƐͿ
+
+ϯϬ͕ϬϬ
+Ϯ'ĐŽŵŵĂŶĚƐ
+ƌĞŐŝƐƚĞƌĞĚ
+Ϯϱ͕ϬϬ
+ϯ'ĐŽŵŵĂŶĚƐ
+ƌĞŐŝƐƚĞƌĞĚ
+
+ϮϬ͕ϬϬ
+
+ϰ'ĐŽŵŵĂŶĚƐ
+ƌĞŐŝƐƚĞƌĞĚ
+
+ϭϱ͕ϬϬ
+
+ϭϬ͕ϬϬ
+
+ϱ͕ϬϬ
+
+Ϭ͕ϬϬ
+Η>ĞĨƚΗ
+
+Η>ĞĨƚΗнΗZŝŐŚƚΗ
+
+Η>ĞĨƚΗнΗZŝŐŚƚΗнΗhƉΗ
+
+Η>ĞĨƚΗн
+ΗZŝŐŚƚΗнΗhƉΗнΗŽǁŶΗ
+
+^ĞƌŝĞƐŽĨ'ĐŽŵŵĂŶĚƐƐĞŶƚ
+
+Figure 33: The average number of false-positive per control method.
+
+55
+
+5.5 results
+
+Navigation of a mobile robot with BCIdrive
+
+ǀĞƌĂŐĞŶĂǀŝŐĂƚŝŽŶƚŝŵĞƉĞƌĐŽŶƚƌŽůŵĞƚŚŽĚŝŶĞĂĐŚ
+ĞǆƉĞƌŝŵĞŶƚ
+ϯϱϬ
+
+ϯϬϬ
+
+dŝŵĞƚŽĐŽŵƉůĞƚĞ;ƐĞĐŽŶĚƐͿ
+
+ϮϱϬ
+/ǁŝƚŚ
+ĐŽŶƚƌŽůĨůŽǁ
+ϮϬϬ
+
+ϭϱϬ
+/ĂƐŵŽƵƐĞ
+
+ϭϬϬ
+
+ϱϬ
+
+/ĂƐŵŽƵƐĞ
+ǁŝƚŚ
+ĂƵƚŽŵĂƚŝĐ
+ŶĂǀŝŐĂƚŝŽŶ
+
+Ϭ
+ǆƉĞƌŝŵĞŶƚϭ
+
+ǆƉĞƌŝŵĞŶƚϮ
+
+ǆƉĞƌŝŵĞŶƚϯ
+
+ǆƉĞƌŝŵĞŶƚϰ
+
+ǆƉĞƌŝŵĞŶƚǁŝƚŚϯĐŽŶƚƌŽůŵĞƚŚŽĚƐ
+
+Figure 34: The average navigation time per control method.
+
+ǀĞƌĂŐĞ ŶƵŵďĞƌ ŽĨĨĂůƐĞͲƉŽƐŝƚŝǀĞƐƉĞƌĐŽŶƚƌŽůŵĞƚŚŽĚ ŝŶĞĂĐŚ ĞǆƉĞƌŝŵĞŶƚ
+Ϯ͕ϬϬ
+
+ǀĞƌĂŐĞ ŶƵŵďĞƌ ŽĨĨĂůƐĞͲƉŽƐŝƚǀĞƐ
+
+ϭ͕ϴϬ
+ϭ͕ϲϬ
+/ǁŝƚŚ
+ĐŽŶƚƌŽůĨůŽǁ
+
+ϭ͕ϰϬ
+ϭ͕ϮϬ
+
+/ĂƐŵŽƵƐĞ
+
+ϭ͕ϬϬ
+Ϭ͕ϴϬ
+
+/ĂƐŵŽƵƐĞ
+ǁŝƚŚ
+ĂƵƚŽŵĂƚŝĐ
+ŶĂǀŝŐĂƚŝŽŶ
+
+Ϭ͕ϲϬ
+Ϭ͕ϰϬ
+Ϭ͕ϮϬ
+Ϭ͕ϬϬ
+ǆƉĞƌŝŵĞŶƚ ǆƉĞƌŝŵĞŶƚ ǆƉĞƌŝŵĞŶƚ ǆƉĞƌŝŵĞŶƚ
+ϭ
+Ϯ
+ϯ
+ϰ
+ǆƉĞƌŝŵĞŶƚƐ ǁŝƚŚ ϯĐŽŶƚƌŽůŵĞƚŚŽĚƐ
+
+Figure 35: The average number of false-positives sent per control method.
+
+56
+
+5.6 analysis of the results
+
+ǀĞƌĂŐĞĚŝƐƚĂŶĐĞŽĨƚŚĞEydĨƌŽŵƚŚĞĨŝŶĂůǁĂǇƉŽŝŶƚŝŶ
+ĞǆƉĞƌŝŵĞŶƚϰ͘
+Ϯϱ
+
+ĚŝƐƚĂŶĐĞ;ĐŵͿ
+
+ϮϬ
+
+ϭϱ
+
+ϭϬ
+
+ϱ
+
+Ϭ
+/ĂƐŵŽƵƐĞ
+
+/ĂƐŵŽƵƐĞǁŝƚŚĂƵƚŽŵĂƚŝĐŶĂǀŝŐĂƚŝŽŶ
+
+ŽŶƚƌŽůDĞƚŚŽĚ
+
+Figure 36: The average distance from the last waypoint in experiment 4.
+
+5.6
+
+analysis of the results
+
+Series of direct EEG commands with the Emotiv Epoc BCI solution
+Number of false-positives commands
+This experiment proves the usability of the Emotiv Epoc with a lower
+amount of registered inputs. Figure 35 shows that false-positives started
+appearing when 3 or 4 commands were registered. An increase in registered commands generally meant an increase in false-positives. This is
+likely due to noise-generated faults in the proprietary EEG deciphering
+software, which had to decide which of 4 cognitive command was sent.
+
+57
+
+5.6 analysis of the results
+
+Success rate
+The success rate was determined as the number of times a series of commands was sent without any false-positives command over 5 tests. Sending only 1 EEG cognitive command (Left) produced a 100% success rate
+when 1 or 2 cognitive commands were registered, meaning that no falsepositive command was activated. However, the success rate dropped to
+60% and 20% when 3 or 4 cognitive commands were registered. The average success rate was under 40% when sending series of 2 or 3 cognitive
+commands with 3 or 4 registered commands. At the other end of the
+graph, trying to activate a series of 4 cognitive commands with 4 registered commands led to a 0% success rate 32.
+
+Time of completion
+The time required to activate a cognitive command was faster when only 1
+or 2 EEG commands were registered. Also, it was noted that a larger set of
+registered command increased the subject’s concentration level. The subject needed to remember how to activate 4 specific cognitive commands.
+This explains why a sending 1 cognitive command “Left” when 4 are registered takes on average 11.6s longer than when only 1 EEG command is
+registered 33.
+
+Conclusion
+Registering 1 or 2 EEG cognitive commands with the Emotiv Epoc yielded
+positive results (100% success rate when 1 or 2 cognitive command were
+registered) with a previously trained subject. Increasing the number of
+
+58
+
+5.6 analysis of the results
+
+registered EEG commands reduced the success rate dramatically, and increased the activation time per command.
+
+Navigation of a mobile robot with BCIdrive
+Usability
+The number of false-positive commands was fairly low for the 3 control methods. In Experiment 3, BCI with control flow and BCI as mouse
+showed an average of 50% less false-positives than BCI with automatic
+navigation 35. Experiment 4 shows no false-positives for BCI automatic
+navigation, compared to an average of 1.8 for the BCI as mouse method.
+False-positives occurred in the BCI as mouse and BCI automatic navigation control methods when a EEG click command was sent twice by the
+application, or while hovering over the wrong button or location. While
+Experiment 3 needed 10 commands to navigate the mobile robot for BCI
+with automatic navigation, Experiment 4 needed only 2 commands with
+the same control method. This explains the reduction in the false-positive
+for the method between Experiment 3 and 4. BCI as mouse saw an increase of 1.6 false-positive commands between Experiment 3 and 4. This
+is due to the increase in the concentration needed to freely navigate the
+NXT, as opposed to following a series of commands.
+
+Navigation time
+As expected, BCI automatic navigation was faster in Experiment 2, 3 and
+4. The results were especially more pronounced in Experiment 4, when
+the navigation task was more complex and abstract: average navigation
+
+59
+
+5.6 analysis of the results
+
+time was 102 s, or 80% faster than the BCI with mouse method. The BCI automatic navigation method was only marginally faster than BCI as mouse
+in Experiment 3 (2.6s or 4%) and even a bit slower in experiment 1. Using
+the gyroscope to carefully click a location on the depth image with the
+automatic method took more time than selecting a navigation button. In
+Experiment 2, only 1 EEG cognitive command was needed to rotate and
+move the NXT with BCI automatic navigation, as opposed to 2 for the
+other methods. This explains why BCI automatic navigation is faster in
+Experiment 2 by 11.6 s compared to BCI as mouse and a staggering 97.6s
+compared to the BCI control flow method.
+
+Accuracy
+BCI
+
+automatic navigation was 4.8cm (27%) closer to the last waypoint
+
+on average than the BCI as mouse method 36. This is because a precise
+location can be selected with the automatic navigation while the BCI as
+mouse control method relies on preselected motions.
+
+Other details
+Experiment 4 wasn’t conducted with the BCI with Control Flow method.
+This was due to the increase in mental concentration needed to navigate
+the NXT to a complex location with this control method. The higher number of EEG cognitive commands registered (Left, Right and Up) increased
+the mental fatigue of the subject when used continuously for a longer
+period which resulted in a substantial increase of navigation time.
+
+60
+
+5.7 summary
+
+Conclusion
+BCI
+
+with control flow was the hardest method to use, requiring extensive
+
+mental concentration to navigate the NXT. The advantage of this navigation method however, is that it does not require neck movements to
+control the mouse cursor, instead relying on winks to start and send the
+activation process. This method would be useful for users without the
+ability to move their neck. BCI as mouse proved efficient for waypoint
+navigation, and was the control method offering the most activation options for the NXT (5: forward, backward, stop, left and right turns). The
+advantage of the BCI as mouse control method is that it can offer infinite
+activation commands, being only limited by the number of UI buttons.
+BCI
+
+automatic navigation was the most usable and accurate method when
+
+applied to complex navigational requirements. It also offered faster navigation speed than the other methods. The disadvantage of this method
+however, is that it cannot navigate the NXT outside the field of view of
+the Kinect camera.
+
+5.7
+
+summary
+
+The principles of sensor fusion to assist in the navigation of a mobile
+robot with a BCI were applied and tested in this chapter. 4 navigation
+experiments were designed to test the navigation of a mobile robot with
+3 different BCI control methods. An automatic method, BCI automatic
+navigation was designed and tested successfully against other manual
+BCI
+
+control methods. The automatic navigation method was more effi-
+
+cient when used to navigate to complex locations. The BCI with control
+
+61
+
+5.7 summary
+
+flow and BCI as mouse were efficient when following set waypoints, but
+showed an increase in the required mental concentration with a generally
+slower navigation speed. The experiments illustrated that applying sensor fusion improved the general usability of a BCI application to navigate
+a mobile robot with a trained subject.
+
+62
+
+6
+
+CONCLUSION
+
+6.1
+
+conclusion
+
+Sensor fusion was shown to increase the general usability when navigating a mobile robot using a consumer-grade BCI solution and an external
+RGBD camera, as was shown in the conclusion to Chapter 5. A multimodal
+
+interface called BCIdrive, combining sensor technology and computer vision algorithms was created and interfaced with the Emotiv Epoc BCI solution. 3 control methods with different BCI mechanisms were used with
+the application, each one providing different advantages, depending on
+the user’s mobility and the navigation tasks. BCIdrive was tested by navigating a mobile robot across waypoints on a flat ground surface, using a
+BCI
+
+6.2
+
+headset as the input device.
+
+summary of contributions
+
+1. A new proof of concept approach combining sensor technology and
+computer vision algorithms to reduce the number of cognitive EEG
+inputs needed from a BCI user when navigating a mobile robot. This
+was shown to improve the navigation efficiency, reducing the time
+needed to move a mobile robot from point A to point B.
+2. A control flow navigation method using a combination of simple
+EEG
+
+and EMG activations to control a mobile robot. This was shown
+
+63
+
+6.3 future research
+
+to reduce the error rate and false-positives when sending multiple
+commands with a HCI.
+3. A navigation module that locates and moves a mobile robot on a
+ground floor using a Microsoft Kinect sensor and computer vision
+algorithms.
+
+6.3
+
+future research
+
+Paraplegic or users with reduced neck mobility would be unable to control the mouse cursor with the headset’s gyroscope. A future version of
+BCIdrive could integrate eye gaze recognition technology to control the
+mouse cursor and be more accessible for users limited in head motions.
+Combining more sensors would also improve on the detection and navigation of the mobile robot. Adding more external cameras would increase
+the range of the robot. Voice commands could be added as an additional
+input for additional commands (emergency stops, video recording, etc.).
+Also, a 3D augmented reality marker tag could be designed with specific
+orientation features. This would allow the detection of the orientation and
+position of the mobile robot in the depth image, negating the need for an
+RGB AR
+
+6.4
+
+marker and a source of light.
+
+final word
+
+New and better sensor technology will likely improve the detection and
+interpretation of EEG commands at the BCI level, as well as allow the
+creation of new sensor devices. This combination of improved EEG recog-
+
+64
+
+6.4 final word
+
+nition and better sensor fusion will hopefully make BCI a more common
+sight in the future.
+
+65
+
+A
+
+A P P E N D I X A - D E TA I L E D R E S U LT S O F T H E
+EXPERIMENTS
+
+a.1
+
+experiment - bci with direct eeg commands
+
+# of commands
+
+Command
+
+Avg time (s)
+
+Avg #
+false
+positives
+
+Success
+rate (%)
+
+1 EEG command recorded - Left
+5
+
+L
+
+4.6
+
+0
+
+100
+
+2 EEG command recorded - Left + Right
+5
+
+L
+
+4.8
+
+0
+
+100
+
+5
+
+L+R
+
+5.6
+
+0
+
+100
+
+3 EEG command recorded - Left + Right + Up
+5
+
+L
+
+7.8
+
+1.4
+
+60
+
+5
+
+L+R
+
+16
+
+2
+
+40
+
+5
+
+L+R+U
+
+27.6
+
+2.6
+
+40
+
+4 EEG command recorded - Left + Right + Up + Down
+5
+
+L
+
+15.8
+
+2.4
+
+20
+
+5
+
+L+R
+
+9.8
+
+0.8
+
+40
+
+5
+
+L+R+U
+
+33.4
+
+3
+
+20
+
+5
+
+L+R+U+D
+
+33.6
+
+3.4
+
+0
+
+Table 3: Results of the direct EEG commands experiment
+
+66
+
+A.2 control method 1 - bci with control flow
+
+a.2
+
+control method 1 - bci with control flow
+
+# commands
+
+time (s)
+
+# false positives
+
+Experiment 1 - Forward drive
+1
+
+14
+
+0
+
+1
+
+43
+
+0
+
+1
+
+22
+
+0
+
+1
+
+12
+
+0
+
+1
+
+12
+
+0
+
+Experiment 2 - Turn then drive
+4
+
+68
+
+0
+
+4
+
+105
+
+0
+
+4
+
+200
+
+0
+
+4
+
+56
+
+0
+
+4
+
+59
+
+0
+
+Experiment 3 - Square drive
+10
+
+384
+
+0
+
+12
+
+288
+
+1
+
+10
+
+420
+
+0
+
+10
+
+170
+
+0
+
+10
+
+270
+
+0
+
+Experiment 4 - Drive to destination then return
+N/A
+N/A
+N/A
+N/A
+N/A
+Table 4: Results of Control method 1
+
+67
+
+A.3 control method 2 - bci as mouse
+
+a.3
+
+control method 2 - bci as mouse
+
+# commands
+
+time (s)
+
+# false positives
+
+Experiment 1 - Forward drive
+1
+10
+0
+1
+10
+0
+1
+6
+0
+1
+8
+0
+1
+7
+0
+Experiment 2 - Turn then drive
+4
+21
+0
+4
+13
+0
+4
+31
+0
+4
+25
+0
+4
+26
+0
+Experiment 3 - Square drive
+12
+95
+1
+10
+75
+0
+10
+65
+0
+10
+55
+0
+10
+60
+0
+Experiment 4 - Drive to destination then return
+12
+147
+0
+10
+117
+0
+10
+104
+0
+13
+137
+1
+16
+136
+3
+Table 5: Results of Control method 2
+
+68
+
+A.4 control method 3 - bci as mouse with automatic navigation
+
+a.4
+
+control method 3 - bci as mouse with automatic navigation
+
+# commands
+
+time (s)
+
+# false positives
+
+Experiment 1 - Forward drive
+1
+23
+0
+1
+8
+0
+1
+11
+0
+1
+7
+0
+1
+13
+0
+Experiment 2 - Turn then drive
+1
+8
+0
+1
+13
+0
+1
+11
+0
+1
+15
+0
+1
+11
+0
+Experiment 3 - Square drive
+6
+100
+1
+5
+65
+1
+3
+32
+0
+3
+32
+0
+5
+107
+0
+Experiment 4 - Drive to destination then return
+2
+35
+0
+2
+23
+0
+2
+25
+0
+2
+25
+0
+2
+23
+0
+Table 6: Results of Control method 3
+
+69
+
+A.5 accuracy comparison
+
+a.5
+
+accuracy comparison
+
+Distance between NXT and waypoint at end of Experiment 4 (cm)
+BCI as mouse method
+10
+20
+24
+20
+16
+
+BCI as mouse with automatic drive
+16
+20
+10
+4
+16
+
+Table 7: Accuracy comparison between BCI as mouse and automatic drive
+
+70
+
+BIBLIOGRAPHY
+
+[1] R. C. Smith, Electroencephalograph based Brain Computer Interfaces.
+Dublin, Ireland: University College Dublin, 2004. (Cited on pages vii
+and 8.)
+[2] J. J. Vidal, Toward Direct Brain-Computer Communication. Annual Review of Biophysics and Bioengineering, 1973. (Cited on page 2.)
+[3] ——, Real-time detection of brain events in EEG.
+IEEE, 1977, vol. 65.5. (Cited on page 2.)
+
+Proceedings of the
+
+[4] C. Zickler, V. Di Donna, V. Kaiser, A. Al-Khodairy, S. Kleih, A. Kübler,
+D. Mattia, S. Mongardi, C. Neuper, M. Rohm, R. Rupp, P. StaigerSälzer, and E. Hoogerwerf, “Bci applications: User needs and requirements,” BBCI Workshop Berlin 2009, 2009. (Cited on page 2.)
+[5] J. R. Smith, R. P. N. Rao, M. Bryan, V. Thomas, G. Nicoll, and
+L. Chang, What You Think is What You Get: Brain-Controlled Interfacing for the PR2. San Francisco, USA: IROS 2011: The PR2 Workshop,
+2011. (Cited on pages 4 and 28.)
+[6] B. L. A. v. d. Laar, D. P. Bos, B. Reuderink, M. Poel, and A. Nijholt,
+How much control is enough? Optimizing fun with unreliable input. Enschede, NL: Centre for Telematics and Information Technology University of Twente, 2011. (Cited on pages 4 and 22.)
+[7] J. Gomez-Gil, I. San-Jose-Gonzalez, L. Nicolas-Alonso, and S. AlonsoGarcia, “Steering a tractor by means of an EMG-Based HumanMachine interface,” Sensors, vol. 11, no. 7, 2011. (Cited on pages 4
+and 23.)
+[8] V. Hinic, Brain Computer Interface System for Communication and Robot
+Control Based on Auditory Evoked Event-Related Potentials. Ottawa,
+Canada: University of Ottawa, 2008. (Cited on page 9.)
+[9] INRIA, “Bci and openvibe introduction video,” September
+2011.
+[Online].
+Available:
+http://openvibe.inria.fr/
+bci-and-openvibe-introduction-video/ (Cited on pages 10 and 22.)
+[10] R. Leeb, D. Friedman, G. R. Müller-Putz, R. Scherer, M. Slater,
+and G. Pfurtscheller, “Self-paced (asynchronous) bci control of a
+
+71
+
+bibliography
+
+wheelchair in virtual environments: a case study with a tetraplegic,”
+Intell. Neuroscience, pp. 7:1–7:12, 2007. (Cited on page 11.)
+[11] D. E. Duncan, “A little device that’s trying to read your thoughts,”
+The New York Times, pp. April 3, 2012, D2, 2012. (Cited on page 11.)
+[12] F. Sepulveda, Brain-actuated Control of Robot Navigation. United Kingdom: University Of Essex, 2011. (Cited on page 11.)
+[13] M. Fatourechi, R. K. Ward, and G. E. Birch, “Evaluating the performance of a Self-paced bci with a new movement and using a more
+engaging environment,” 30th Annual International IEEE EMBS Conference, August 2008. (Cited on page 12.)
+[14] J. Nielsen, Usability Engineering. San Francisco, USA: Morgan Kaufmann, 1993. (Cited on page 13.)
+[15] M. Fiala, “Artag revision 1, a fiducial marker system using digital techniques,” Computer Vision and Pattern Recognition, 2005. CVPR
+2005. IEEE Computer Society Conference on, 2005. (Cited on pages 16
+and 17.)
+[16] F. Rey, M. Leidi, and F. Mondada, Interactive Mobile Robotic Drinking
+Glasses. Tsukuba, Japan: Distributed Autonomous Robotic Systems
+2008, 2008. (Cited on page 17.)
+[17] J. Brown and J. P. Gray, Hands-Free, Heads-Up Control System for Unmanned Ground Vehicules. Dearborn, Michigan, USA: 2011 NDIA
+Ground Vehicle Systems Engineering and Technology Symposium,
+2011. (Cited on pages 19 and 20.)
+[18] L. L. Constantine and L. A. D. Lockwood, Software for use: A Practical
+Guide to the Models and Methods of Usage-Centered Design. AddisonWesley, 1999. (Cited on page 20.)
+[19] C. P. Shelton, “Human interface / human error,” 1999. (Cited on
+page 21.)
+[20] A. O. G. Barbosa, D. R. Achanccaray, and M. A. Marco, Activation of
+a Mobile Robot through a Brain Computer Interface. Anchorage, USA:
+IEEE International Conference on Robotics and Automation, 2010.
+(Cited on page 24.)
+[21] C. J. Bell, P. Shenoy, R. Chalodhorn, and R. P. N. Rajesh, Control of a
+Humanoid Robot by a Noninvasive Brain-Computer Interface in Humans.
+Journal of Neural Engineering, 2008, vol. 5. (Cited on page 24.)
+
+72
+
+bibliography
+
+[22] A. Vourvopoulos and F. Liarokapis, Brain-controlled NXT Robot: TeleOperating a Robot through Brain Electrical Activity. Athens, Greece:
+Games and Virtual Worlds for Serious Applications (VS-GAMES),
+2011 Third International Conference on, 2011. (Cited on page 24.)
+[23] D. Friedman, R. Leeb, G. Pfurtscheller, and M. Slater, Human Computer Interface Issues in Controlling Virtual Reality With Brain Computer
+Interface. Human Computer Interaction, 2010. (Cited on page 25.)
+[24] C. Escolano, J. M. Antelis, and J. Minguez, A Telepresence Mobile Robot
+Controlled with a Non-invasive Brain-Computer Interface. IEEE Transactions on Systems, Man, and Cybernetics-Part B: Cybernetics, 2011.
+(Cited on page 26.)
+[25] P. Chakravarty and R. Jarvis, External Cameras and A Mobile Robot:
+A Collaborative Surveillance System. Sydney, Australia: Australasian
+Conference on Robotics and Automation, December 2-4, 2009. (Cited
+on page 26.)
+[26] J. Cunha, E. Pedrosa, C. Cruz, A. J. R. Neves, and N. Lau, Using a
+Depth Camera for Indoor Robot Localization and Navigation. California,
+USA: Robotics Science and Systems conference 2011, RGB-D 2011,
+2011. (Cited on page 27.)
+[27] K. Lai, L. Bo, X. Ren, and D. Fox, “Sparse distance learning for object
+recognition combining rgb and depth information,” 2011. (Cited on
+page 27.)
+[28] D. Rao, Q. V. Le, T. Phoka, M. Quigley, A. Sudsang, and A. Y. Ng,
+Grasping Novel Objects with Depth Segmentation. Taipei, Taiwan: Intelligent Robots and Systems, 2010 IEEE/RSJ International Conference
+on, 2010. (Cited on page 27.)
+[29] K. Khoshelham and S. O. Elberink, “Accuracy and resolution of
+kinect depth data for indoor mapping applications,” Sensors, vol. 12,
+pp. 1437–1454, 2012. (Cited on page 41.)
+[30] V. Bento, L. Paula, A. Ferreira, N. Figueiredo, A. Tomé, F. Silva, J. P.
+Cunha, and P. Georgieva, “Advances in eeg-based brain-computer
+interfaces for control and biometry,” International Symposium on Computational Intelligence for Engineering Systems, 2009.
+[31] A. T. Campbell, T. Choudhury, S. Hu, H. Lu, M. K. Mukerjee,
+M. Rabbi, , and R. D. S. Raizada, “Neurophone: Brain-mobile phone
+interface using a wireless eeg headset,” MobiHeld ’10 Proceedings of
+
+73
+
+bibliography
+
+the second ACM SIGCOMM workshop on Networking, Systems, and Applications on Mobile Handhelds, 2010.
+[32] B. Caulfield, T. A. Conway, and S. Micera, “European study of research and development in mobility technology for persons with
+disabilities,” Journal of NeuroEngineering and Rehabilitation, pp. 9–23,
+2012.
+[33] H. Cecotti, “Spelling with non-invasive brain-computer interfaces current and future trends,” Journal of Physiology - Paris, vol. 105, pp.
+106–114, 2011.
+[34] L. Criveller, E. Menegatti, F. Piccione, and S. Silvoni, “Bcis and mobile robots for neurological rehabilitation: Practical applications of
+remote control,” Proceedings of SIMPAR 2010 Workshops, 2010.
+[35] E. T. Esfahani and V. Sundararajan, Using Brain-Computer Interfaces to
+Detect Human Satisfaction in Human-Robot Interaction. International
+Journal of Humanoid Robotics 8.1, 2010.
+[36] P. W. Ferrez and J. del R. Millan, “Simultaneous real-time detection
+of motor imagery and error-related potentials for improved bci accuracy,” 4th International Brain-Computer Interface Workshop and Training
+Course, 2008.
+[37] M. Fiala, ARTag Fiducial Marker System Applied to Vision Based Spacecraft Docking. Ottawa, Canada: IEEE IROS 2005 Workshop on Robot
+Vision for Space Applications, 2005.
+[38] N. Figueiredo, F. Silva, P. Georgieva, and A. Tomé, “Advances in noninvasive brain-computer interfaces for control and biometry,” Recent
+Advances in Brain-Computer Interface Systems, 2011.
+[39] W. O. Galitz, The Essential Guide to User Interface Design: An Introduction to GUI Design Principles and Techniques, 3rd Edition. Wiley, 2007.
+[40] P. Henry, M. Krainin, E. Herbst, X. Ren, and D. Fox, “Rgb-d mapping: Using depth cameras for dense 3d modeling of indoor environments,” The International Journal of Robotics Research, 2012.
+[41] L. Kauhanen, T. Palomäki, P. Jylänki, F. Aloise, M. Nuttin, and J. d. R.
+Millán, “Haptic feedback compared with visual feedback for bci,”
+Proceedings of the 3rd International Brain-Computer Interface Workshop
+& Training Course, 2006.
+
+74
+
+bibliography
+
+[42] P. Kortum, HCI Beyond the GUI Design for Haptic, Speech, Olfactory, and
+Other Nontraditional Interfaces, M. Kaufmann, Ed. Elsevier, 2008.
+[43] A. Kreilinger, V. Kaiser, C. Breitwieser, J. Williamson, C. Neuper,
+and G. Müller-Putz, “Switching between manual control and braincomputer interface using long term and short term quality measures,” Frontiers in Neuroscience, 2012.
+[44] A. Kreilinger, C. Neuper, and G. Müller-Putz, “Error potential detection during continuous movement of an artificial arm controlled
+by brain-computer interface,” Medical and Biological Engineering and
+Computing, 2012.
+[45] F. Lotte, “Brain-computer interfaces for 3d games: Hype or hope?”
+Foundations of Digital Games, 2011.
+[46] J. Malmivuo and R. Plonsey, Bioelectromagnetism - Principles and Applications of Bioelectric and Biomagnetic Fields. California, USA: Oxford
+University Press, 1995.
+[47] D. J. McFarl and J. R. Wolpaw, “Brain-computer interfaces for communication and control,” Communications of the ACM, vol. 54.5, p. 60,
+2011.
+[48] G. N. G. Molina, “Direct brain-computer communication through
+scalp recorded eeg signals,” Ph.D. dissertation, École Polytechnique
+Fédérale de Lausanne, 2004.
+[49] A. J. Portelli and S. J. Nasuto, “Toward construction of an inexpensive brain computer interface for goal oriented applications,”
+AISB 2008 Convention Communication Interaction and Social Intelligence,
+2008.
+[50] X.-b. Sun, S.-y. Ma, and M.-q. Song, “Research on the electric vehicle
+control system based on brain-computer interface,” ESEP 2011, 2011.
+[51] D. M. Taylor, S. I. H. Tillery, and A. B. Schwartz, “Information conveyed through brain-control: Cursor versus robot,” IEEE Transactions
+on Neural Systems and Rehabilitation Engineering, pp. VOL. 11, NO. 2,
+June 2003.
+[52] L. Tonin, T. Carlson, R. Leeb, and J. Millán, “Brain-controlled telepresence robot by motor-disabled people,” Proceedings of the 33rd Annual International Conference of the IEEE Engineering in Medicine and
+Biology Society IEEE, 2011.
+
+75
+
+bibliography
+
+[53] Y.-T. Wang, Y. Wang, and T.-P. Jung, “A Cell-Phone based BrainComputer interface for communication in daily life,” Journal of Neural Engineering, vol. J. Neural Eng. 8 (2011) 025018 (5pp), March 2011.
+
+76
+
+

@@ -1,0 +1,2762 @@
+sensors
+Article
+
+Fully Open-Access Passive Dry Electrodes BIOADC:
+Open-Electroencephalography (EEG) Re-Invented
+Gaetano D. Gargiulo 1,2, * , Paolo Bifulco 3 , Mario Cesarelli 3 , Alistair McEwan 4 ,
+Armin Nikpour 5 , Craig Jin 4 , Upul Gunawardana 2 , Neethu Sreenivasan 2 , Andrew Wabnitz 1
+and Tara J. Hamilton 6
+1
+2
+
+3
+4
+5
+6
+
+*
+
+The MARCS Institute, Western Sydney University, Milperra, NSW 2214, Australia; andywabnitz@gmail.com
+School of Computing, Engineering and Mathematics, Western Sydney University,
+Penrith, NSW 2747, Australia; u.gunawardana@westernsydney.edu.au (U.G.);
+N.Sreenivasan@westernsydney.edu.au (N.S.)
+Department of Electrical Engineering and Information Technologies, University “Federico II” of Naples,
+80121 Naples, Italy; pabifulc@unina.it (P.B.); cesarell@unina.it (M.C.)
+School of Electrical and Information Engineering, The University of Sydney,
+Camperdown, NSW 2006, Australia; alistair.mcewan@sydney.edu.au (A.M.); craig.Jin@sydney.edu.au (C.J.)
+Sydney Medical School, Central, Royal Prince Alfred Hospital, Camperdown, NSW 2006, Australia;
+armin@sydneyneurology.com.au
+School of Engineering, Macquarie University, Ryde, NSW 2113, Australia; tara.hamilton@mq.edu.au
+Correspondence: G.Gargiulo@westernsydney.edu.au
+
+Received: 19 November 2018; Accepted: 9 February 2019; Published: 13 February 2019
+
+
+
+
+Abstract: The Open-electroencephalography (EEG) framework is a popular platform to enable EEG
+measurements and general purposes Brain Computer Interface experimentations. However, the
+current platform is limited by the number of available channels and electrode compatibility. In this
+paper we present a fully configurable platform with up to 32 EEG channels and compatibility with
+virtually any kind of passive electrodes including textile, rubber and contactless electrodes. Together
+with the full hardware details, results and performance on a single volunteer participant (limited to
+alpha wave elicitation), we present the brain computer interface (BCI)2000 EEG source driver together
+with source code as well as the compiled (.exe). In addition, all the necessary device firmware, gerbers
+and bill of materials for the full reproducibility of the presented hardware is included. Furthermore,
+the end user can vary the dry-electrode reference circuitry, circuit bandwidth as well as sample rate
+to adapt the device to other generalized biopotential measurements. Although, not implemented
+in the tested prototype, the Biomedical Analogue to Digital Converter BIOADC naturally supports
+SPI communication for an additional 32 channels including the gain controller. In the appendix we
+describe the necessary modification to the presented hardware to enable this function.
+Keywords: dry electrodes; brain computer interface; electroencephalography; BCI; EEG; BCI2000
+
+1. Introduction
+Electroencephalography (EEG) recordings are increasingly being used in numerous applications,
+ranging from typical clinical applications, e.g., the diagnosis and treatment of brain function anomalies
+such as seizures, to experimental applications like brain computer interfaces (BCIs) and neurofeedback,
+which aim to either augment the effective pathways of the human brain by adding non-standard
+output channels via a computer program, or to increase the performances of a wearer, i.e., meditation
+feedback [1–11]. For these reasons, BCI/neurofeedback systems are becoming increasingly popular.
+There are many open-access/source BCI systems that allow those with neurological impairment to
+
+Sensors 2019, 19, 772; doi:10.3390/s19040772
+
+www.mdpi.com/journal/sensors
+
+Sensors 2019, 19, 772
+
+2 of 16
+
+have effective communication, as well as systems to aid able-bodied subjects who want to explore the
+benefits of direct brain to computer communication [12–16].
+A substantial difficulty with recording EEGs is that the signal itself is of a very small amplitude,
+usually in the order of a few tens of micro-Volts (smaller for evoked potentials used for some BCIs) and
+are easily corrupted by noise. This necessitates careful scalp/skin preparation, the use of conductive
+gel/paste, and ultimately, glues, to hold the electrodes firm to the skin and avoid the skidding of
+electrodes [3,17–19]. The use of gel/paste and glue can lead to additional problems, such as conductive
+gel desiccation, and a loss of adhesion leading to an increase in the contact impedance between the
+electrodes and scalp, which in turn may lead to a large reduction in the signal-to-noise ratio. Short
+circuits can also occur between neighboring electrodes due to sweat or smearing of the conductive
+gel [10,19].
+Many of these additional problems can be minimized by using dry electrode systems, and some
+recent studies have shown working prototypes also suitable for EEG [1,4,8,20–30]. Of course, the use
+of fully “loose” dry electrodes is not immune from artifacts. In previous studies we demonstrated
+a reduction in the effect of momentary loss of scalp contact due to movements and/or skin stretching
+by scalp muscle artifacts (i.g., blinking) by developing a lightweight custom-made dry electrode that,
+by being flat and flexible, was suitable for direct gluing onto the scalp using standard collodion glue
+cured with a brief oxygen application (readily available in the hospital prep room used for our clinical
+study) [4,10,19].
+Recently, gold plated or Ag/AgCl hair penetrative electrodes that look like small hair-combs,
+with rounded spikes capable of effectively penetrating hair to avoid hair matting under the
+electrode, have become commercially available (i.g. the gTEC Sahara electrodes http://www.
+gtec.at/Products/Electrodes-and-Sensors/g.SAHARA-Specs-Features and Ag/AgCl dry electrodes
+https://shop.openbci.com/); when these electrodes are paired with a suitable analogue front-end,
+they can measure EEG without the use of conductive gel/paste or glue. To hold the electrode in the
+designed places, either specialized EEG-caps or standard rubber tube “head nets” can be employed;
+connection to the electronic front-end is usually made with alligator or pop-fastener clips.
+To allow compatibility with both standard wet electrodes as well as commercially available and
+“home-brew” dry electrodes, such as ones made of spring-loaded pins, jacks, or other “Do It Yourself”
+solutions that are quite popular among OpenEEG users (http://openeeg.sourceforge.net/doc/hw/
+electrodes/passive/), we designed an 8-channel module (users can daisy-chain modules in multiples
+of eight channels) based upon our early passive dry electrode technology [4,22,31–35]. The front-end
+that we designed is immune to contact impedance imbalance, and in previous trials on animals it
+has been able to detect fetal electrocardiographic signals in pregnant dairy and beef cattle without
+the need to prepare/shave the cow using hair penetrative electrodes similar to the ones that now are
+commercially available for EEG purposes [36].
+Like our previous designs, the front-end exploits the peculiarity of the INA116 instrumentation
+amplifier [37] to enable reference electrode replication without additional hardware (see methods
+section) [4,20–23,31–33,36,38]. Although we previously implemented a modified voltage supply
+bootstrap to make the driven right leg electrode and/or body grounding unnecessary [39], in this
+design we also implemented a driven right leg connection as an optional aid for further improvement
+of the signal to noise ratio that could be of use in difficult EEG/BCI recordings that make use of
+evoked responses known to be among the faintest EEG signals, requiring signal averaging to be clearly
+measured [9,40–50].
+In order to process the acquired EEG signals, the analogue signals need to be digitized and sent to
+a computer that is the central processing unit of a BCI. For this purpose, we have selected BCI2000
+(www.bci2000.org), which is probably the most well-known, general purpose rapid prototyping BCI
+software [14]. In order to use BCI2000, a specialized bridge software is required to interface the
+digital converter of choice to the core of the software. Several commercial and popular hardware
+solutions (including the Open-EEG hardware http://openeeg.sourceforge.net/), are already included
+
+Sensors 2019, 19, 772
+
+3 of 16
+
+in BCI2000; in order to use our BIOADC we needed to write our own bridge software using the supplied
+code template [14,51,52]. The BIOADC is an open source, 32-channel analogue to digital converter
+(ADC) that supports programmable gain control for all the channels. In our original implementation,
+the system was intended to be stand-alone; hence, it was paired with a supporting ARM processor
+to record the data on an SD card. However, the device can be also connected (with galvanically
+isolated connection) to a standard USB port and hence to a standard computer [51]. To allow full
+reproduction of the hardware, all the production files and bill of materials for both boards, BIOADC,
+and the analogue electrodes’ front-end are included together with the firmware and the necessary
+BCI2000 device driver as both source code and compiled code.
+With this work, taking all the best features of our previous analogue front-end designs, we present
+a single module with ultra-high input impedance, suitable for virtually any dry electrode, that allows
+for simultaneous use of differential inputs, as well as unipolar inputs and user programmable gain
+when combined with the BIOADC, which is also fully compatible with BCI2000. Therefore, in this
+paper, we will briefly summarize the hardware design for the BIOADC limited to the board used—the
+original BIOADC used two (see Section 2.2)—as well as for the dry electrodes’ front-end that is a new
+design (see Section 2.1); we then present the validation bench tests employing suitable signal generators,
+as well as some EEG tests limited to alpha-wave elicitation that demonstrates the suitability of our
+proposed hardware for EEG measurements [49].
+2. Methods
+In this section we present the electronic hardware for both the BIOADC and the analogue
+front-end; we then explain, in detail, the manufacturing of the electrode cap used for our experiments
+together with all the necessary bench tests and alpha-wave elicitation tests. In appendix we also present
+an improvement to the proposed hardware to enable digital gain control as well as a comparison of
+our hardware with some commercially available devices.
+2.1. Analogue Front-End
+The analogue front-end is designed around the INA116 instrumentation amplifier by TI [37].
+The schematic for a single channel is depicted in Figure 1, where the INA116 is marked by the
+designator U1. As can be observed from the schematic, the front-end is fully differential. To enable
+reference to a single location on the head (e.g., linked mastoid, nose tip, or any arbitrary head electrode),
+we exploit the embedded “active-guard” [38,51,52] feature present inside the INA116. In other words,
+one of the channels is configured as fully differential; then the signal from the electrode connected
+to the inverting input once buffered by the internal guard amplifier is fed to all the other channels’
+inverting inputs. Although this design inherits several features from our previous designs [37,52], this
+implementation is new and purposely designed for modular EEG/BCI and to suit the BIOADC.
+In order to configure the selected channel to share the same reference signal, the jumper labeled
+“In-D” (see Figure 1) must be closed, R3 populated, and the jumper labeled “In-S” open. When In-D
+is closed, the signal at the output of the inverting input’s guard buffer can be used as a reference for
+all the other channels. When In-S is closed, the inverting input of that selected channel is connected
+to the reference signal, i.e., the one from an In-S of another channel. To prevent the general reference
+electrode from being accounted multiple times in the voltage supply bootstrap and/or in the Driven
+Right Leg (DRL), the resistor R3 should be populated only for the channel that is assumed as reference.
+The reference replication technique is depicted in Figure 2, limited to two channels.
+The weighted sum of all the connected electrodes is used to directly drive the battery common
+node, thereby avoiding the connection of other electrodes to the head/body. To achieve this
+configuration (modified voltage supply bootstrap that we successfully employed in other biopotential
+circuits [10,11,19,31–36,38,40,51,52]), the selector jumper labeled “RLD-S” (see Figure 3) must be switched
+to short pins one and two; then, the “RLD” header should be shorted using a jumper. In this configuration,
+a direct body ground is possible, but an in-line resistor of 100 kΩ should be used between the electrode
+
+Sensors 2019, 19, 772
+
+4 of 16
+
+Sensors 2019, 19, x FOR PEER REVIEW
+
+4 of 16
+
+Sensors
+2019, 19,
+x FOR PEER
+REVIEWthe circuitry from electrostatic discharge. Direct body grounding
+4 of 16 can
+and the
+return
+ground
+to protect
+be safely
+employed
+only when
+thebody
+circuit
+is batterycan
+powered
+andemployed
+connected
+to awhen
+galvanically
+insulated
+electrostatic
+discharge.
+Direct
+grounding
+be safely
+only
+the circuit
+is
+electrostatic discharge. Direct body grounding can be safely employed only when the circuit is
+battery
+powered
+and connected
+toBIOADC
+a galvanically
+insulated
+analogue
+to digital
+converter
+like the
+analogue
+to
+digital
+converter
+like
+the
+(see
+next
+section)
+[2,51,52].
+The
+same
+weighted
+sum
+battery powered and connected to a galvanically insulated analogue to digital converter like the of
+(seeelectrodes
+next section)
+The same
+weighted
+sum
+all the connected
+canwe
+be
+all theBIOADC
+connected
+can[2,51,52].
+be employed
+as base
+signal
+forof
+a proper
+DRL. Forelectrodes
+this reason,
+BIOADC
+(see next section)
+[2,51,52].
+The same
+weighted
+sum
+of
+all the connected
+electrodes
+can be have
+employed
+as amplifier
+base signalwith
+for a a
+proper
+DRL. Fordesign
+this reason,
+we
+have
+providedresistor
+a DRL amplifier
+with
+a
+provided
+a
+DRL
+split
+resistor
+(part
+of
+the
+limiting
+is
+inserted
+into
+employed as base signal for a proper DRL. For this reason, we have provided a DRL amplifier with a the
+split resistor design (part of the limiting resistor is inserted into the amplifier feedback loop),
+amplifier
+loop),(part
+designed
+to the specs
+present
+in reference
+[2]. feedback
+Please note
+that the
+split feedback
+resistor design
+of theaccording
+limiting resistor
+is inserted
+into
+the amplifier
+loop),
+designed according to the specs present in reference [2]. Please note that the value of resistance
+according
+present
+in reference
+[2].user
+Please
+note(e.g.,
+that power
+the value
+of resistance
+valuedesigned
+of resistance
+needstotothe
+bespecs
+adjusted
+according
+to the
+needs
+supply
+max patient
+needs to be adjusted according to the user needs (e.g., power supply max patient current, etc.). The
+needs
+to be
+adjusted
+needsto(e.g.,
+power
+max patient
+The
+current,
+etc.).
+The
+use ofaccording
+the DRL to
+is the
+welluser
+known
+reduce
+thesupply
+power-line
+noise current,
+captureetc.).
+via common
+use of the DRL is well known to reduce the power‐line noise capture via common mode coupling,
+use
+of
+the
+DRL
+is
+well
+known
+to
+reduce
+the
+power-line
+noise
+capture
+via
+common
+mode
+coupling,
+modee.g.,
+coupling,
+e.g.,ofirradiation
+of leads,
+etc.reduction
+The effective
+reduction
+of power-line
+irradiation
+leads, induction,
+etc.induction,
+The effective
+of power‐line
+noise
+capture is anoise
+e.g., irradiation of leads, induction, etc. The effective reduction of power-line noise capture is a
+capture
+is
+a
+function
+of
+the
+type
+of
+noise
+capture
+and
+body
+conditions;
+therefore,
+the
+user
+function of the type of noise capture and body conditions; therefore, the user should verifyshould
+that theverify
+function of the type of noise capture and body conditions; therefore, the user should verify that the
+that the
+calculated
+values
+of resistance
+are suitable
+the application
+calculated
+values
+of resistance
+are suitable
+for the for
+application
+[1–3,6]. [1–3,6].
+
+calculated values of resistance are suitable for the application [1–3,6].
+
+Figure 1. Analogue Front‐end schematic (screen capture from Altium Designer).
+Figure 1. Analogue Front-end schematic (screen capture from Altium Designer).
+
+Figure 1. Analogue Front-end schematic (screen capture from Altium Designer).
+Connected electrodes
+Connected electrodes
+average
+average
+
+100 kΩ
+100 kΩ
+
+INA116
+INA116
+
+Electrode 2
+Electrode 2
+100 kΩ
+100 kΩ
+
++
++
+
++ guard out
++ guard out
+
+100 kΩ
+100 kΩ
+
+INA116
+INA116
+
+Electrode 1
+Electrode 1
+100 kΩ
+100 kΩ
+
+- guard out
+- guard out
+
+‐
+-
+
++
++
+
++ guard out
++ guard out
+
+100 kΩ
+100 kΩ
+100 kΩ
+100 kΩ
+
+- guard out
+- guard out
+
+‐
+-
+
+Ref Electrode
+Ref Electrode
+
+Figure 2. Reference replication, limited to two channels (see text).
+
+Sensors 2019, 19, x FOR PEER REVIEW
+Sensors 2019, 19, 772
+
+Figure 2. Reference replication, limited to two channels (see text).
+
+5 of 16
+5 of 16
+
+Figure 3. Complete 8-channel design (screen capture from Altium Designer).
+Figure 3. Complete 8-channel design (screen capture from Altium Designer).
+
+For this design, all the operational amplifiers are OPA244 [53]. This particular operational
+For this
+allbecause
+the operational
+arethus
+OPA244
+[53].forThis
+particular
+operational
+amplifier
+wasdesign,
+selected
+it is lowamplifiers
+power and
+suitable
+battery
+powered
+devices.
+amplifier
+was
+selected
+because
+it
+is
+low
+power
+and
+thus
+suitable
+for
+battery
+powered
+devices.
+In
+In addition, it is immune to “phase inversion” and can thus be used in a non-inverting configuration.
+addition,
+it is immune
+tocharacteristic
+“phase inversion”
+and can
+be used
+in acell
+non-inverting
+configuration.
+The necessary
+band-pass
+is ensured
+by athus
+passive
+hi-pass
+(see C5 and R5
+in Figure 1),
+The
+necessary
+band-pass
+characteristic
+is
+ensured
+by
+a
+passive
+hi-pass
+cell
+(see
+C5
+and
+Figure
+whereas, the resistor R5 also ensures necessary biasing for the operational amplifier U2. U2R5is in
+mounted
+1),
+the resistor
+R5 also
+necessary
+biasing
+for100
+theV/V;
+operational
+amplifier
+U2. U2 is
+as awhereas,
+non-inverting,
+first order
+lowensures
+pass filter
+with a DC
+gain of
+the low-pass
+characteristic
+is
+mounted
+as
+a
+non-inverting,
+first
+order
+low
+pass
+filter
+with
+a
+DC
+gain
+of
+100
+V/V;
+the
+low-pass
+given by R7 and C7, thus fixing the theoretical low-pass cut-off frequency below 50 Hz. The final
+gain
+characteristic
+is given by R7 and C7, thus fixing the theoretical low-pass cut-off frequency below 50
+of the EEG front-end is fixed to 1000 V/V using a multi-turn potentiometer connected as an INA116
+Hz.
+The final gain of the EEG front-end is fixed to 1000 V/V using a multi-turn potentiometer
+gain resistor (see bench-test section). The necessary anti-aliasing filter is provided by the BIOADC (see
+next section).
+
+Sensors
+2019,
+19,19,
+772
+Sensors
+2019,
+x FOR PEER REVIEW
+
+of 16
+6 of 616
+
+connected as an INA116 gain resistor (see bench-test section). The necessary anti-aliasing filter is
+As it is by
+manufactured,
+module provides one channel (CH0 see Figure 3) as a reference
+provided
+the BIOADCthe
+(see8-channel
+next section).
+channelAs
+and
+a
+header
+connector
+(In-AUX)
+that
+allowsprovides
+the connection
+of a reference
+signal
+from
+it is manufactured, the 8-channel
+module
+one channel
+(CH0 see
+Figure
+3) another
+as a
+module.
+The
+reference
+from
+another
+modulethat
+is connected
+the In-S of
+of athe
+other modules.
+reference
+channel
+and asignal
+header
+connector
+(In-AUX)
+allows the to
+connection
+reference
+signal
+from another
+module.
+reference
+signal
+another module
+is connected
+to the
+In-S via
+of the
+Connection
+of the
+otherThe
+eight
+electrodes
+to from
+the averaging
+bootstrap
+is naturally
+made
+theother
+circuit
+modules.
+of use
+the any
+otherRLD
+eightcircuitry
+electrodes
+to theon
+averaging
+bootstrap is naturally made via
+ground,
+andConnection
+the user can
+present
+any module.
+the circuit ground, and the user can use any RLD circuitry present on any module.
+2.2. BIOADC
+2.2. BIOADC
+At the core of BIOADC there is a supporting processor (PIC18F46J50). This PIC, aside from being
+At thehas
+core
+of BIOADC
+is aitsupporting
+(PIC18F46J50).
+This
+PIC, aside
+low-power,
+been
+selected there
+because
+allows for processor
+direct USB
+connection to
+a master
+unitfrom
+(PC in
+being
+low-power,
+has
+been
+selected
+because
+it
+allows
+for
+direct
+USB
+connection
+to
+a
+master
+unit
+(PC
+this case, ARM processor for stand-alone applications [51]). This PIC microprocessor also
+includes
+in this
+case, ARM
+processor
+forcan
+stand-alone
+applications
+This
+PICfour
+microprocessor
+alsoa includes
+a dual
+SPI/I2C
+interface
+which
+be used to
+control, as[51]).
+in our
+case,
+SPI ADCs and
+number of
+a
+dual
+SPI/I2C
+interface
+which
+can
+be
+used
+to
+control,
+as
+in
+our
+case,
+four
+SPI
+ADCs
+and
+a
+number
+of
+SPI digital potentiometers or directly programmable gain amplifiers (PGAs). To enable this function,
+SPI
+digital
+potentiometers
+or
+directly
+programmable
+gain
+amplifiers
+(PGAs).
+To
+enable
+this
+function,
+up to 32 chip-select lines (CS) are supplied together with all the necessary digital communication
+up to 32 chip-select lines (CS) are supplied together with all the necessary digital communication
+lines to implement full SPI control via four connectors populated on the right-hand side of the board
+lines to implement full SPI control via four connectors populated on the right-hand side of the board
+(see Figure 4). Full galvanic insulation of the BIOADC board is achieved via a USB2.0 isolated HUB
+(see Figure 4). Full galvanic insulation of the BIOADC board is achieved via a USB2.0 isolated HUB
+(ADuM4160); Power for the BIOADC board is directly drawn from the USB via galvanically insulated
+(ADuM4160); Power for the BIOADC board is directly drawn from the USB via galvanically
+DC-DC converters (ADuM5000W) [51], see BIOADC bill of materials for full specifications and detailed
+insulated DC-DC converters (ADuM5000W) [51], see BIOADC bill of materials for full specifications
+part numbers.
+and detailed part numbers.
+
+Isolated area
+
+PGA- connections
+
+•32x PGA support
+•32x Analogue channels
+•User available isolated
+power supply (not used
+in this design)
+
+Analogue inputs
+
+BCI2000 EEG
+source
+USB-host
+driver running
+on PC
+
+PIC18F46J50 digital
+interface
+
+Isolated
+USB/power
+
+BIOADC
+board
+
+Figure
+4. BIOADC
+mainandboard
+and block
+diagram
+(adapted
+from [52]). EEG,
+Figure
+4. BIOADC
+main board
+block diagram
+(adapted
+from [52]).
+EEG, electroencephalography;
+electroencephalography;
+CS,
+chip-select
+lines;
+ADC,
+analogue
+to
+digital
+converter;
+CS, chip-select lines; ADC, analogue to digital converter; PGA, programmable gain
+amplifier.PGA,
+programmable gain amplifier.
+
+Necessary anti-aliasing low-pass filtering is embedded into the BIOADC for a sampling frequency
+low-pass
+filtering is embedded
+intoADC
+the BIOADC
+a sampling
+of 1000Necessary
+Hz. This isanti-aliasing
+simply made
+as per specification
+of the selected
+(LTC1859)for
+using
+a carefully
+frequency
+of
+1000
+Hz.
+This
+is
+simply
+made
+as
+per
+specification
+of
+the
+selected
+ADC
+(LTC1859)
+selected ceramic capacitor in parallel with each ADC input. These capacitors are populatedusing
+on the
+BIOADC board. Please note that the capacitors listed in the BIOADC bill of materials (see Supplementary
+Materials) should be taken as guidelines and their values adjusted for the selected maximum sample rate.
+
+this paper.
+2.3. Dry Electrodes
+For this project, we have selected the low-cost Ag/AgCl hair penetrative electrodes available for
+Sensors 2019, 19, 772
+7 of 16
+sale from https://shop.openbci.com/ (depicted in Figure 5). To take full advantage of the active
+shield, we decided to connect the electrodes using thin shielded cable normally used for portable
+The PC driver
+originally
+supplied
+BIOADC
+workstowith
+anyeasy
+Windows
+7/8 PC
+andprototype
+has been
+headphones
+and used
+a standard
+RCAwith
+shielded
+connector
+enable
+assembly
+of the
+usedFor
+to develop
+the necessary
+BCI2000
+EEG source.
+driver, as
+well as lengths
+the source
+code
+box.
+the assembly
+we employed
+sections
+of cableThe
+of compiled
+the same length.
+Different
+of cable
+and compiled
+version of however,
+the BCI2000
+is available
+download
+to
+(different
+capacitance),
+areEEG
+notsource,
+a problem
+for theforINA116,
+as as
+it additional
+is designedmaterial
+for high
+this paper. sensors (including capacitive). Most importantly, the parasitic capacitance of the dry
+impedance
+electrodes, because of the lack of smoothing conductive fluids, is known to be quite high and
+2.3. Dry Electrodes
+random
+[1,3,10], which would dominate the small additional parasitic capacitance of connecting
+cables.
+For this project, we have selected the low-cost Ag/AgCl hair penetrative electrodes available for
+To place
+the electrodes on the head,
+we simply
+re-used
+ventilation
+holesofnormally
+sale from
+https://shop.openbci.com/
+(depicted
+in Figure
+5). Tothe
+take
+full advantage
+the activepresent
+shield,
+on
+a
+standard
+baseball
+cap.
+To
+enable
+rough
+standardized
+position
+of
+our
+EEG
+cap
+on
+the
+head,
+we
+we decided to connect the electrodes using thin shielded cable normally used for portable headphones
+used
+the
+top
+button
+of
+the
+cap
+as
+a
+reference
+to
+be
+placed
+in
+correspondence
+with
+the
+standard
+EEG
+and used a standard RCA shielded connector to enable easy assembly of the prototype box. For the
+electrode
+Cz. The
+buttonofwas
+removed
+to enable
+visual
+localization
+Cz (different
+position,
+assembly position
+we employed
+sections
+cable
+of the same
+length.
+Different
+lengthsofofthe
+cable
+which
+should
+be
+marked
+on
+the
+head
+as
+per
+standard
+EEG
+preparation.
+Of
+course,
+the
+position
+of
+capacitance), however, are not a problem for the INA116, as it is designed for high impedance sensors
+electrodes
+not precise.
+However,
+for this
+we capacitance
+are not performing
+BCI taskbecause
+and only
+(including is
+capacitive).
+Most
+importantly,
+thepaper
+parasitic
+of the dryany
+electrodes,
+of
+recording
+wavesconductive
+to show the
+EEG is
+recording
+capabilities
+of our
+To[1,3,10],
+performwhich
+proper
+BCI,
+the lack ofalpha
+smoothing
+fluids,
+known to
+be quite high
+anddevice.
+random
+would
+electrode
+be carefully
+and/or
+a suitablecables.
+EEG cap should be used.
+dominate locations
+the smallshould
+additional
+parasiticidentified
+capacitance
+of connecting
+
+Standard electrode connection male stud
+
+5 mm
+
+10 mm
+
+Hair penetrative rounded tips
+Figure 5. Dry electrodes used for this project.
+Figure 5. Dry electrodes used for this project.
+
+To place the electrodes on the head, we simply re-used the ventilation holes normally present
+on a standard baseball cap. To enable rough standardized position of our EEG cap on the head, we
+used the top button of the cap as a reference to be placed in correspondence with the standard EEG
+electrode position Cz. The button was removed to enable visual localization of the Cz position, which
+should be marked on the head as per standard EEG preparation. Of course, the position of electrodes
+is not precise. However, for this paper we are not performing any BCI task and only recording alpha
+waves to show the EEG recording capabilities of our device. To perform proper BCI, electrode locations
+should be carefully identified and/or a suitable EEG cap should be used.
+3. Results
+As mentioned, before testing on a volunteer subject, each of the eight channels was calibrated
+to 1000 V/V using a differential signal generator (Function Generator Model 220 by MEDICAL
+Instruments, Columbus, Ohio), capable of generating precise sine waves of 1 mVpp at the EEG
+frequency range. For calibration the circuit reference ground was tied to the signal generator ground
+
+Sensors 2019, 19, x FOR PEER REVIEW
+
+8 of 16
+
+3. Results
+As mentioned, before testing on a volunteer subject, each of the eight channels was calibrated to
+1000
+using
+SensorsV/V
+2019, 19,
+772 a differential signal generator (Function Generator Model 220 by MEDICAL
+8 of 16
+Instruments, Columbus, Ohio), capable of generating precise sine waves of 1 mVpp at the EEG
+frequency range. For calibration the circuit reference ground was tied to the signal generator ground
+using aa flying
+to the
+shield
+of the
+connection.
+Noise level
+(input
+using
+flyinglead
+leadconnected
+connected
+to the
+shield
+ofDRL
+the electrode
+DRL electrode
+connection.
+Noise
+levelshorted)
+(input
+was
+measured
+and
+confirmed
+as
+less
+than
+3
+µV
+in
+the
+bandwidth
+0.1
+to
+10
+Hz.
+This
+value
+is in
+line
+pp 3 μVpp in the bandwidth 0.1 to 10 Hz. This
+shorted) was measured and confirmed as less than
+value
+with
+INA116
+OPA244
+The full summary
+electricalofcharacteristics
+appears in
+is
+in line
+withand
+INA116
+andspecifications.
+OPA244 specifications.
+The full of
+summary
+electrical characteristics
+Table
+1.
+appears in Table 1.
+Table 1. Summary of electrical characteristics.
+Table 1. Summary of electrical characteristics.
+of analogue channels
+8 per module, BIOADC supports 4 modules
+NumberNumber
+of analogue
+channels
+8 per module,
+BIOADC supports 4 modules
+Passive
+dry/wet
+up impedance
+to contact impedance
+unbalance
+Electrodes
+Passive dry/wet up
+to contact
+unbalance
+of 109 Ω
+Electrodescompatibility/electrodes
+compatibility/electrodes configuration
+of 109 Ω [4–11]/user defined i.e., clustered or 10–20
+configuration
+[4–11]/user defined i.e., clustered or 10–20
+Electrode
+montage
+Differential/unipolar
+selectable)
+Electrode montage
+Differential/unipolar
+(user (user
+selectable)
+Power supply
+Power supply
+Up toUp
+±18toV±18 V
+consumption
+mA when
+powered
+byV±9 V
+CurrentCurrent
+consumption
+8.5 mA8.5
+when
+powered
+by ±9
+15/2 Ω/pF
+15
+Input impedance
+>10
+Input impedance
+>10 /2 Ω/pF
+Input
+referred
+noise
+(shorted
+UpHz
+to 10
+Hz bandwidth
+Input referred noise (shorted inputs)
+Up to 10
+bandwidth
+3 μV3ppµVpp
+inputs)
+ADC resolution (BIOADC)
+16-bit (software span-able)
+ADC resolution (BIOADC)
+16‐bit (software span‐able)
+
+Without
+Without performing
+performing any
+any head
+head preparation,
+preparation, the
+the makeshift
+makeshift EEG
+EEG cap
+cap described
+described in
+in the
+the previous
+previous
+section
+was
+pushed
+onto
+the
+volunteer’s
+head.
+The
+recording
+was
+intentionally
+performed
+in
+section was pushed onto the volunteer’s head. The recording was intentionally performedthe
+inlate
+the
+afternoon
+(at
+least
+seven
+hours
+after
+the
+last
+showering),
+the
+hair
+was
+roughly
+two
+centimeters
+in
+late afternoon (at least seven hours after the last showering), the hair was roughly two centimeters
+length,
+and
+nono
+hairdressing
+products
+were
+used
+in length,
+and
+hairdressing
+products
+were
+usedsince
+sinceearly
+earlymorning.
+morning.As
+Asititisis possible
+possible to
+to observe
+observe
+from
+Figure
+6,
+two
+electrodes
+(represented
+with
+bold
+traces)
+were
+in
+intermittent
+skin
+contact.
+from Figure 6, two electrodes (represented with bold traces) were in intermittent skin contact. They
+They
+correspond
+correspond to
+to the
+the lateral
+lateral front
+front most
+most aerating
+aerating holes
+holes and
+and due
+due to
+to the
+the shape
+shape of
+of the
+the particular
+particular cap
+cap used,
+used,
+they
+they were
+were in
+in contact
+contact with
+with the
+the scalp
+scalp only
+only if
+if aa gentle
+gentle pressure
+pressure was
+was applied.
+applied. As
+As it
+it is
+is possible
+possible to
+to observe
+observe
+the
+jaw
+artifact
+(intentional),
+using
+the
+scalp
+muscle
+was
+enough
+to
+shift
+one
+of
+the
+electrodes
+the jaw artifact (intentional), using the scalp muscle was enough to shift one of the electrodes into
+into
+contact
+Figure 6).
+6). As
+we are
+are not
+not performing
+performing any
+any real
+real BCI/EEG
+BCI/EEG tests
+contact (see
+(see electrode
+electrode labeled
+labeled 33 in
+in Figure
+As we
+tests in
+in this
+this
+paper,
+during
+the
+alpha
+wave
+test
+we
+disregarded
+these
+electrodes.
+paper, during the alpha wave test we disregarded these electrodes.
+
+1
+2
+3
+4
+5
+6
+Scale
+
+7
+
+350 uV
+
+8
+71
+
++
+
+72
+
+73
+
+Time [Seconds]
+
+74
+
+75
+
+76
+
+Figure 6.
+6. EEG
+EEG data
+data excerpt
+excerpt including
+including aa jaw
+jaw artifact.
+artifact. Bold
+Bold traces
+traces mark
+mark the
+the two
+two electrodes
+electrodes not
+not in
+in good
+good
+Figure
+contact. Please
+Please note
+note how
+how the
+the scalp‐shifts
+scalp-shifts during
+during the
+the artifacts
+artifacts are
+are sufficient
+sufficient to
+to achieve
+achieve some
+some contact
+contact at
+at
+contact.
+least
+for
+channel
+3,
+which
+displays
+a
+physiological
+signal
+only
+during
+the
+artifact.
+least for channel 3, which displays a physiological signal only during the artifact.
+
+Like any biopotential, the EEG is affected by power-line noise; all the data presented are
+pre-processed to remove the power-line (50 Hz) and its harmonics up to the Nyquist frequency using
+Infinite Impulsive Response (IIR) notch filters. Baseline drift and further unwanted high frequencies
+
+frequencies are removed using an IIR band‐pass filter operating in the 0.6–35 [Hz] range. All filters
+have an order of fifty and are run in a non‐causal manner to zero any phase delay.
+The alpha wave test is shown in Figure 7 for both DRL (panel a) and direct grounding (panel b).
+In both cases, the reference electrode was at the left ear lobe while the grounding/DRL electrode was
+at the2019,
+right19,ear
+Sensors
+772lobe. Although alpha waves were visible over all the head, we selected an electrode
+9 of 16
+placed in the occipital region (see the red trace in Figure 8) corresponding to a position very close to
+O1 of the 10–20 system. As it is possible to see in Figure 8, this setup exhibited clear alpha wave
+are
+removed
+using
+IIR band-pass
+filter operating
+in the
+0.6–35
+[Hz]
+range.
+Allposition
+filters have
+order
+bursts;
+notably,
+thean
+electrode
+corresponding
+to channel
+2 was
+very
+close
+to the
+O2,an
+and
+like
+of
+fifty
+and
+are
+run
+in
+a
+non-causal
+manner
+to
+zero
+any
+phase
+delay.
+the red marked channel, also presented prominent alpha bursts. In both cases, we measured the
+The
+alpha wave
+is shown
+in Figure
+7 forof
+both
+(panel
+a) max
+and direct
+(panel
+power
+increase
+in thetest
+alpha
+bandwidth
+as a ratio
+the DRL
+inverse
+of the
+alpha grounding
+power divided
+by
+b).
+In
+both
+cases,
+the
+reference
+electrode
+was
+at
+the
+left
+ear
+lobe
+while
+the
+grounding/DRL
+electrode
+the power of the EEG at the same frequency. For the data depicted in Figure 7a, the ratio scores 1.30
+2/Hz)/10log
+2/Hz)];
+was
+at10the
+ear lobe.
+alphathe
+waves
+were in
+visible
+over all
+head, ratio
+we selected
+an
+[10log
+(μVright
+10(μVAlthough
+for
+data
+Figure
+7b,the the
+is 1.31
+2/Hz)/10log
+electrode
+placed
+in the10occipital
+region
+the red trace
+Figure
+8) corresponding
+to aplaces.
+position
+[10log10(μV
+(μV2/Hz)].
+Ratio(see
+calculations
+have in
+been
+rounded
+to two decimal
+As
+very
+close
+to
+O1
+of
+the
+10–20
+system.
+As
+it
+is
+possible
+to
+see
+in
+Figure
+8,
+this
+setup
+exhibited
+clear
+expected, the max power amplitude of the alpha wave activity is common and, in this case, is 11 Hz.
+alpha
+wavediscrepancy
+bursts; notably,
+the electrode
+corresponding
+to channel
+wasdifferent
+very close
+to the
+The small
+between
+the power
+increases is justified
+by2the
+levels
+of position
+baseline
+O2,
+and
+like
+the
+red
+marked
+channel,
+also
+presented
+prominent
+alpha
+bursts.
+In
+both
+cases,
+we
+activity that are expected when the subject has his or her eyes open [1–3].
+measured
+the
+power
+increase
+in
+the
+alpha
+bandwidth
+as
+a
+ratio
+of
+the
+inverse
+of
+the
+max
+alpha
+To fully evaluate the effect of the DRL, we also assessed the noise capture for the EEG data,
+power
+divided
+by the
+power of
+the EEG
+the same
+For thefiltering).
+data depicted
+in Figure
+7a,
+recorded
+directly,
+comparing
+several
+20 satsections
+offrequency.
+raw data (before
+Generally,
+limited
+2 /Hz)/10log (µV2 /Hz)]; for the data in Figure 7b, the ratio is 1.31
+the
+ratio
+scores
+1.30
+[10log
+(µV
+10 conditions (air‐conditioned
+10
+by the environmental test
+electronic lab with fluorescent lighting
+2
+2 /Hz)]. Ratio calculations have been rounded to two decimal places.
+[10log
+10 (µV /Hz)/10log
+10 (µV
+equipment),
+we found that
+the use
+of the DRL reduced the power‐line noise capture by at least 10 dB
+2/Hz)).
+As
+expected,asthe
+max10(μV
+power
+amplitude
+the alpha
+activity
+is common
+and, inAs
+thisitcase,
+is 11 Hz.
+(measured
+10log
+Figure of
+9 depicts
+anwave
+example
+of such
+comparisons.
+is possible
+to
+The
+small
+discrepancy
+between
+the
+power
+increases
+is
+justified
+by
+the
+different
+levels
+of
+baseline
+compare the height of the 50 Hz components, the DRL, as expected, is shown to reduce the noise
+activity
+capture.that are expected when the subject has his or her eyes open [1–3].
+
+Panel (a)
+
+Panel (b)
+Figure 7. Alpha wave test. Both panels compare 20 s of data selected as artifact-free for the same
+electrode (very close to the standard 10–20 O1 position) for both eyes open (dashed bold line) and eyes
+closed (solid bold line). Panel a: data recorded using the onboard Driven Right Leg (DRL), power of
+alpha increase of 1.30 [10log10 (µV2 /Hz)/10log10 (µV2 /Hz)] times with respect to the baseline; panel b:
+data recorded using direct grounding with the inline protection resistor, power of alpha increase of 1.31
+[10log10 (µV2 /Hz)/10log10 (µV2 /Hz)] times, with respect to the baseline.
+
+Figure 7. Alpha wave test. Both panels compare 20 s of data selected as artifact‐free for the same
+electrode (very close to the standard 10–20 O1 position) for both eyes open (dashed bold line) and
+eyes closed (solid bold line). Panel a: data recorded using the onboard Driven Right Leg (DRL),
+power of alpha increase of 1.30 [10log10(μV2/Hz)/10log10(μV2/Hz)] times with respect to the baseline;
+panel 2019,
+b: data
+using
+direct grounding with the inline protection resistor, power of alpha
+Sensors
+19, xrecorded
+FOR PEER
+REVIEW
+10 of 16
+Sensors 2019, 19, 772
+10 of 16
+increase of 1.31 [10log10(μV2/Hz)/10log10(μV2/Hz)] times, with respect to the baseline.
+
+Figure 7. Alpha wave test. Both panels compare 20 s of data selected as artifact‐free for the same
+electrode (very close to the standard 10–20 O1 position) for both eyes open (dashed bold line) and
+eyes closed (solid bold line). Panel a: data recorded using the onboard Driven Right Leg (DRL),
+power of alpha increase of 1.30 [10log10(μV2/Hz)/10log10(μV2/Hz)] times with respect to the baseline;
+panel b: data recorded using direct grounding with the inline protection resistor, power of alpha
+increase of 1.31 [10log10(μV2/Hz)/10log10(μV2/Hz)] times, with respect to the baseline.
+
+1
+2
+3
+4
+5
+6
+
+1
+
+7
+
+2
+
+8
+
+Scale
+150 uV
+
+3
+
++
+
+4
+
+105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125
+Time [Seconds]
+5
+
+Log Power Spectral Density 10*log10(V2/Hz)
+
+Figure
+In red
+red are
+are the
+the electrodes
+electrodesselected
+selectedfor
+forthe
+thespectra
+spectra
+analysis.
+In bold
+6Figure8.8.Alpha
+Alphawave
+wave test.
+test. In
+analysis.
+In bold
+are are
+electrodes
+electrodesnot
+notiningood
+goodcontact.
+contact.
+7
+
+Scale
+150 uV
+
+Log Power Spectral Density 10*log10(V2/Hz)
+
+To8 fully evaluate the effect of the DRL, we also assessed the noise capture for the EEG data,
+recorded directly, comparing several 20 s sections of raw data (before
+filtering).
+Direct
+groundingGenerally, limited by
+-20
+DRL
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120 121
+122 equipment),
+123 124 125
+the environmental test conditions (air-conditioned electronic lab with fluorescent
+lighting
+Time
+[Seconds]
+we found that the use of the DRL reduced the power-line noise capture by at least 10 dB (measured as
+-30
+2 /Hz)). Figure 9 depicts an example of such comparisons. As it is possible to compare the
+10log10 (µVFigure
+8. Alpha wave test. In red are the electrodes selected for the spectra analysis. In bold are
+height of the
+the DRL, as expected, is shown to reduce the noise capture.
+-40 50 Hz components,
+electrodes
+not in good contact.
+
++
+
+-50
+
+Direct grounding
+DRL
+
+-60 -20
+
+-305
+
+10
+
+15
+
+20
+
+25
+
+30
+35
+Frequency (Hz)
+
+40
+
+45
+
+50
+
+55
+
+60
+
+Figure 9. -40
+Power‐line noise capture comparison. Bold trace is with the use of the Driven Right Leg
+(DRL), which reduces the power‐line noise capture by at least 10 dB.
+-50
+
+4. Conclusions
+and Discussion
+-60
+We have presented a fully open access multi‐channel (up to 32 channels) alternative to the
+15 can 20
+25
+30any kind
+35
+45 electrodes.
+50
+55 The 60
+popular Open‐EEG.5 This10
+version
+use virtually
+of40passive
+proposed
+Frequency (Hz)
+embodiment is for EEG measurements; however, it can be modified via jumpers on the PCB to use
+Figure
+9. Power‐line
+capture
+comparison.
+Bold is
+trace
+is the
+with
+theofuse
+theMixing
+Driven
+Figure
+9. Power-line
+noise noise
+capture
+comparison.
+Bold trace
+use
+theof
+Driven
+Right Right
+Leg
+fully
+differential
+channels,
+thereby
+allowing
+recording
+of with
+other
+biopotentials.
+other Leg
+which
+reduces
+the power‐line
+noise capture
+by at10least
+(DRL),(DRL),
+which
+reduces
+the
+power-line
+noise capture
+at least
+dB. 10 dB.
+biopotentials
+with
+EEG
+enables
+implementation
+ofbyhuman‐computer
+interfaces that still use the
+popular BCI2000 software (providing that the user customizes the application and signal processing
+4. modules).
+Conclusions
+and Discussion
+Although limited, our EEG signal testing clearly shows that our device is capable of
+4. Conclusions
+and
+Discussion
+recording
+brain‐waves,
+using
+a make‐shift
+EEG cap(up
+built
+around
+a standard
+one‐size
+We
+have
+presented
+a even
+fully
+open access
+multi-channel
+to 32
+channels)
+alternative
+to thefits‐all
+popular
+baseball
+cap.
+While
+the
+use
+of
+makeshift
+EEG
+caps
+is
+attractive
+(as
+it
+could
+enhance
+the
+wear‐ability
+Open-EEG.We
+This
+version
+can usea virtually
+anyaccess
+kind of
+passive electrodes.
+proposed embodiment
+have
+presented
+fully open
+multi‐channel
+(up toThe
+32 channels)
+alternative to the
+device
+thus promoting
+mobileit BCIs),
+final user
+consider
+use
+a properly
+built
+is of
+forthe
+EEG
+measurements;
+however,
+can bethe
+modified
+viashould
+jumpers
+on thethe
+PCB
+toof
+use
+fully differential
+
+popular Open‐EEG. This version can use virtually any kind of passive electrodes. The proposed
+channels,
+thereby allowing
+of otherhowever,
+biopotentials.
+Mixing
+othervia
+biopotentials
+EEGto use
+embodiment
+is for EEGrecording
+measurements;
+it can be
+modified
+jumpers on with
+the PCB
+enables
+implementation
+of human-computer
+interfaces
+that still use
+the popular
+BCI2000 software
+fully
+differential channels,
+thereby allowing
+recording
+of other
+biopotentials.
+Mixing other
+(providing
+that
+the
+user
+customizes
+the
+application
+and
+signal
+processing
+modules).
+Although
+biopotentials with EEG enables implementation of human‐computer interfaces that limited,
+still use the
+our EEG
+signalBCI2000
+testing clearly
+shows
+that ourthat
+device
+is capable
+of recording
+brain-waves,
+using
+a
+popular
+software
+(providing
+the user
+customizes
+the application
+and even
+signal
+processing
+make-shift
+EEG cap
+built around
+a standard
+fits-all baseball
+cap. While
+of makeshift
+modules).
+Although
+limited,
+our EEGone-size
+signal testing
+clearly shows
+that the
+ouruse
+device
+is capable of
+EEG caps
+is attractive
+(as it could
+enhance
+the wear-ability
+of built
+the device
+thus
+promoting
+mobilefits‐all
+recording
+brain‐waves,
+even using
+a make‐shift
+EEG cap
+around
+a standard
+one‐size
+BCIs),baseball
+the finalcap.
+userWhile
+should
+the use of EEG
+a properly
+EEG cap
+allows
+precisethe
+electrode
+theconsider
+use of makeshift
+caps isbuilt
+attractive
+(as that
+it could
+enhance
+wear‐ability
+of the device thus promoting mobile BCIs), the final user should consider the use of a properly built
+
+Sensors 2019, 19, 772
+
+11 of 16
+
+placement, which will enable reproducibility of BCI tasks that are highly dependent from the specific
+brain area, e.g., P300 BCIs.
+Although precise micro-volts measurements of EEG potentials are normally used only in clinical
+practice, being able to increase/reduce the signal gain according to the experimental condition
+is a desirable feature. For this reason, the proposed hardware can be further modified to enable
+programmable gain amplifier (PGA) functions and software fine gain tuning (see Appendix A).
+As with every design, there are limits and drawbacks. The major limitation of this design is its size.
+One may note that many of the proposed functions, such as multiple channels, PGA functionality, and
+direct analogue to digital conversions, are presently implemented in integrated biopotential front-ends
+like the ADS1299 by TI (http://www.ti.com/product/ADS1299). However, fully integrated solutions,
+while they can be cost effective and size effective, may not be compatible with passive dry electrodes,
+and may come in packages (e.g., Ball Grid Array BGA) that are prohibitive for labs where electronic
+support is not available. For Instance, ADS1299 bias current is 300 pA; this value is due to a small input
+impedance that may not be suitable for dry passive electrodes. In addition, the proposed analogue
+front-end is not entirely dedicated to EEG electrodes, allowing unipolar channels to be mixed with
+differential channel, and enabling the full human interface paradigm within the popular BCI2000
+software. In Appendix B a comparison of our proposed hardware with some commercially available is
+detailed together with an example of BCI application.
+Supplementary Materials: The following are available online at http://www.mdpi.com/1424-8220/19/4/772/s1.
+All the Figures have been pasted into an editable Power-Point as Portable Network Graphic PNG format for ease
+of reading; PCB production files, together with the firmware and the necessary software to manufacture and use
+our hardware, have been collected into a single zipped file.
+Author Contributions: All authors contributed to the conceptualization of the study and approved the manuscript
+draft. Circuit design, programming, and testing was conducted by all authors. AN (Neurologist) also advised
+upon EEG signal quality.
+Funding: This research received no external funding.
+Acknowledgments: Authors gratefully acknowledge Texas Instruments and Analogue Devices that supplied
+micro-chip samples for the initial prototype via their “sample program”. The authors wish to thank the MARCS
+institute senior technical officer, Mr. Colin Symons, and the research assistant, Mr. Felipe Ulloa, for the technical
+help and assembly of the prototypes used for this project.
+Conflicts of Interest: The authors declare no conflict of interest.
+
+Appendix A. PGA Modification
+One way to transform each of the EEG front-ends into a programmable gain amplifier controlled
+by the BIOADC is to replace the gain potentiometers for the INA116 with a digitally controlled
+potentiometer. The BIOADC base firmware (source code available upon request) includes direct
+support for up to 32 SPI digital potentiometers (individually addressable chip select) AD5290 [54] that
+are capable to work with up to a 30 Vpp power supply. In this application, they can be used in their
+10 kΩ variant, which would allow a minimum nominal gain for the EEG front-end of 600 V/V and
+other larger 127 values. Please consult documentation for INA116 and AD5290.
+Appendix B. Comparison with Some Popular EEG Systems and BCI2000 Test Run
+A formal comparison with other systems would require a side by side serial or parallel recording
+(see [5,6,10,49]). However, such formal comparison is outside the scope of this paper for several reasons;
+principally, we should solve synchronization problems (many devices are wireless) as well as potential
+ground loops between different circuit groundings, particularly when a DRL is used (only for parallel
+recording [10]). Thus, we limited this comparison to the specifications as obtained by the manufacturer
+website. According to the specifications listed in Table A1, our hardware has a noise figure in line
+with the other EEG devices, but is the only one that with an impedance of >1015 /2 Ω/pF capable to
+withstand an unbalance impedance of 109 Ω [4–11], and is the only one truly compatible with passive
+
+Sensors 2019, 19, 772
+
+12 of 16
+
+electrodes. As it is possible to see from Table A1, many of the other front-ends, to enable dry electrodes,
+use active additional electrodes, or they are limited to wet (saline infuse pads) electrodes.
+In order to show how easy is to use our system, some of the authors and lab colleagues (six
+participants in total) agreed to run a proper Mu-Rhythm BCI task. The selected task is embedded in
+BCI2000 and consists of a single dimension (left/right) game, where the computer presents a random
+target and the user moves a ball imagining hands movements. The task uses electrodes C3 and
+C4, where the event related synchronizations and de-synchronizations due to the imaginary hands’
+movements are supposed to be maximal [1,4,10,14,15]. To avoid precise measurement of the head, our
+cap is been modified to cluster four electrodes in each of the areas where the targeted brain areas are.
+The four channels have been added together and passed to the BCI signal process module using the
+dedicated BCI2000 settings [14,32]. Set-up time was measured, and the quality of biopotential was
+checked by simply asking the participant to produce jaw artifacts, as visible in Figure 6. Except for one
+participant with bristly hair, set-up time was simply the time to wear the cap. For the participant with
+longer bristly hair, we had to twist each electrode to allow scalp contact, and this required about two
+minutes for the full set of eight electrodes.
+Each of the participants was asked to complete two runs; the first run was a familiarization task
+and was not used for BCI2000 performance analysis. Although a satisfactory EEG was recordable
+from all the participants, when assessing BCI performances of the second run, two participants did
+not perform better than random (~50%), while the other four showed a >63% correct target hit with
+a subject (past trained for these kind of BCIs), scoring >75%, even in the test run.
+
+Sensors 2019, 19, 772
+
+13 of 16
+
+Table A1. Summary of compared hardware, our hardware is in italics.
+System Name/Website
+
+EEG Channels
+
+Electrodes
+
+POWER SUPPLY
+
+Noise
+Characteristics
+
+Input Impedance
+
+ADC Resolution/
+Sample Rate
+
+BCI
+2000
+
+Other Features
+
+Our system/(see Supplementary
+Materials)
+
+Up to 32
+
+Dry/wet user
+defined montage
+
+Up to ±18 V /8.5
+mA @ ±9 V
+
+Input shorted, in
+the 0 to 10 Hz
+bandwidth: 3 µVpp
+
+>1015 /2
+Ω/pF/unbalance of
+109 Ω [4–11]
+
+16-bit software
+spannable/1 kHz
+
+yes
+
+Grounding
+configuration:
+user selectable
+
+Cognionics/www.cognionics.
+net/quick-20
+
+8 or 20
+
+Dry/wet (active
+electrodes) fixed
+montage
+
+NA
+
+Noise: 0.7 µV RMS
+from 1–50 Hz,
+shorted inputs
+
+NA
+
+24-bit/
+250/500/1k/2k SPS
+
+yes
+
+Inertial sensor
+
+Emotiv/https:
+//www.emotiv.com
+
+14
+
+wet
+
+NA
+
+NA
+
+NA
+
+14-bit/128 or 256 SPS
+
+no
+
+Inertial sensor
+
+wearablesensing/https:
+//wearablesensing.com
+
+7 (other
+configuration
+available
+
+Dry/wet
+(active)user defined
+montage
+
+NA (claimed 12 h
+battery life)
+
+Noise (1–50 Hz) < 3
+µVpp
+
+47 GΩ 25 pA bias
+current
+
+16-bit/300 SPS
+
+no
+
+Spring loaded
+
+ABM/www.
+advancedbrainmonitoring.com/
+
+9 or 20
+
+Wet fixed montage
+and reference
+
+~40 mA powered
+by 3.7 V
+
+~+2 µV @ 10 Hz
+and 50 kΩ
+impedance @ 256
+s/s
+
+100 GΩ
+
+16/256 SPS
+
+No
+
+Other caps
+available
+
+mBraintrain/https:
+//mbraintrain.com/
+
+Several options
+
+Flexible matrix,
+fixed configuration
+
+NA
+
+NA
+
+NA
+
+NA
+
+No
+
+NA
+
+OpenBCI/https:
+//openbci.com/
+
+8
+
+Wet/dry (see TI
+ADS1299)
+
+NA
+
+NA (see TI
+ADS1299)
+
+NA (see TI
+ADS1299)
+
+24-bit/up to 10k SPS
+
+No
+
+Arduino
+compatible
+
+Sensors 2019, 19, 772
+
+14 of 16
+
+References
+1.
+2.
+3.
+4.
+
+5.
+
+6.
+7.
+
+8.
+
+9.
+
+10.
+11.
+
+12.
+13.
+14.
+15.
+16.
+17.
+18.
+19.
+20.
+
+21.
+22.
+
+Prutchi, D.; Norris, M. Design and Development of Medical Electronic Instrumentation; Wiley: Hoboken, NJ,
+USA, 2005.
+Webster, J.G. (Ed.) Medical Instrumentation Application and Design; John Willey: Hoboken, NJ, USA, 2009.
+Malmivuo, J.; Plonsey, R. Bioelectromagnetism: Principles and Applications of Bioelectric and Biomagnetic Fields;
+Oxford University Press: Oxford, UK, 1995.
+Gargiulo, G.; Bifulco, P.; Calvo, R.A.; Cesarelli, M.; Jin, C.; Van Schaik, A. A Mobile EEG System with Dry
+Electrodes. In Proceedings of the 2008 IEEE Biomedical Circuits and Systems Conference, Baltimore, MD,
+USA, 20–22 November 2008.
+Gargiulo, G.; Bifulco, P.; Calvo, R.A.; Cesarelli, M.; Jin, C.; Van Schaik, A. Mobile biomedical sensing with
+dry electrodes. In Proceedings of the 2008 International Conference on Intelligent Sensors, Sensor Networks
+and Information Processing, Sydney, Australia, 15–18 December 2008.
+Gargiulo, G.; Bifulco, P.; Calvo, R.A.; Cesarelli, M.; Jin, C.; McEwan, A.; Van Schaik, A. Electronic Biosensor
+Circuits and Systems. In Intelligent and Biosensors; Somerset, V.S., Ed.; IntechOpen: London, UK, 2010.
+Gargiulo, G.; Bifulco, P.; Cesarelli, M.; Jin, C.; McEwan, A.; Van Schaik, A. Wearable dry sensors with
+Bluetooth connection for use in remote patient monitoring systems. In Studies in Health Technology and
+Informatics; Smith, A.C., Maeder, A.J., Eds.; IOS Press: Amsterdam, The Netherlands, 2010.
+Gargiulo, G.; Bifulco, P.; Cesarelli, M.; Ruffo, M.; Romano, M.; Calvo, R.A.; Jin, C.; Van Schaik, A. An
+Ultra-high Input Impedance ECG Amplifier for Long Term Monitoring of Athletes. Med. Devices 2010, 3, 1–9.
+[CrossRef]
+Gargiulo, G.; Bifulco, P.; McEwan, A.; Tehrani, J.N.; Calvo, R.A.; Romano, M.; Ruffo, M.; Shephard, R.;
+Cesarelli, M.; Jin, C.; et al. Dry electrode bio-potential recordings. In Proceedings of the 2010 Annual
+International Conference of the IEEE Engineering in Medicine and Biology Society (EMBC), Buenos Aires,
+Argentina, 31 August–4 September 2010.
+Gargiulo, G.; Calvo, R.A.; Bifulco, P.; Cesarelli, M.; Jin, C.; Mohamed, A.; Van Schaik, A. A new EEG recording
+system for passive dry electrodes. Clin. Neurophys. 2010, 121, 686–693. [CrossRef] [PubMed]
+Bifulco, P.; Cesarelli, M.; Fratini, A.; Ruffo, M.; Pasquariello, G.; Gargiulo, G. A wearable device for recording
+of biopotentials and body movements. In Proceedings of the 2011 IEEE International Symposium on Medical
+Measurements and Applications, Bari, Italy, 30–31 May 2011.
+Pregenzer, M.; Pfurtscheller, G. Frequency component selection for an EEG-based brain to computer interface.
+IEEE Trans. Rehabil. Eng. 1999, 7, 413–419. [CrossRef] [PubMed]
+Birbaumer, N.; Kübler, A. The thought translation device (TTD) for completely paralyzed patients. IEEE Trans.
+Rehabil. Eng. 2000, 8, 190–193. [CrossRef] [PubMed]
+Guger, C.; Schlogl, A.; Neuper, C.; Walterspacher, D.; Strein, T.; Pfurtscheller, G. Rapid prototyping of an
+EEG-based brain-computer interface (BCI). IEEE Trans. Neural Syst. Rehab. Eng. 2001, 9, 49–58. [CrossRef]
+Pfurtsheller, G.; Neuper, C. Motor Imagery and Direct Brain–Computer Communication. Proc. IEEE 2001, 89,
+1123–1134. [CrossRef]
+Wolpaw, J.R.; Birbaumer, N.; McFarland, D.J.; Pfurtscheller, G.; Vaughan, T.M. Brain–computer interfaces for
+communication and control. Clin. Neurophysiol. 2002, 113, 5. [CrossRef]
+Teplan, M. Fundamentals of eeg measurement. Meas. Sci. Rev. 2002, 2, 1–11.
+Waterhouse, E. New Horizons in Ambulatory Electroencephalography. IEEE Eng. Med. Biol. Mag. 2003, 22,
+74–80. [CrossRef] [PubMed]
+Gargiulo, G.; Bifulco, P.; Calvo, R.A.; Cesarelli, M.; Jin, C.; McEwan, A.; Van Schaik, A. Non-invasive
+electronic biosensor circuits and systems. In Intelligent and Biosensors; InTech: London, UK, 2010.
+Gargiulo, G.D.; Mohamed, A.; McEwan, A.L.; Bifulco, P.; Cesarelli, M.; Jin, C.T.; Ruffo, M.; Tapson, J.; Van
+Schaik, A. Investigating the role of combined acoustic-visual feedback in one-dimensional synchronous
+brain computer interfaces, a preliminary study. Med. Devices 2012, 5, 81. [CrossRef] [PubMed]
+Alizadeh-Taheri, B.; Smith, R.L.; Knight, R.T. An active microfabricated scalp electrode array for EEG
+recording. Sens. Actuators A Phys. 1996, 54, 606–611. [CrossRef]
+Popescu, F.; Fazli, S.; Badower, Y.; Blankertz, B.; Muller, K.-R. Single Trial Classification of Motor Imagination
+Using 6 Dry EEG Electrodes. PLoS ONE 2007, 2, 7. [CrossRef] [PubMed]
+
+Sensors 2019, 19, 772
+
+23.
+
+24.
+
+25.
+
+26.
+27.
+28.
+
+29.
+
+30.
+
+31.
+32.
+
+33.
+34.
+35.
+36.
+
+37.
+
+38.
+39.
+40.
+
+41.
+42.
+
+15 of 16
+
+Sullivan, T.J.; Deiss, S.R.; Jung, T.-P.; Cauwenberghs, G. A Brain-Machine Interface using Dry-Contact,
+Low-Noise EEG Sensors. In Proceeding of the 2008 IEEE International Symposium on Circuits and Systems,
+Seattle, WA, USA, 18–21 May 2008.
+Estepp, J.R.; Monnin, J.W.; Christensen, J.C.; Wilson, G.F. Validation of a Dry Electrode System for EEG.
+In Proceeding of the Human Factors and Ergonomics Society Annual Meeting, San Antonio, TX, USA,
+19–23 October 2009.
+Nga, W.C.; See, H.L.; Leea, K.S.; Ninga, N.; Tai, W.X.; Sutedja, M.; Fuha, J.Y.H.; Li, X.P. Micro-spike EEG
+electrode and the vacuum-casting technology for mass production. J. Mate. Proc. Technol. 2009, 209, 5.
+[CrossRef]
+Brunner, P.; Bianchi, L.; Guger, C.; Cincotti, F.; Schalk, G. Current trends in hardware and software for
+brain–computer interfaces (BCIs). J. Neural Eng. 2011, 8, 1–7. [CrossRef] [PubMed]
+Grozea, C.; Voinescu, C.D.; Fazli, S. Bristle-sensors—Low-cost flexible passive dry EEG electrodes for
+neurofeedback and BCI applications. J. Neural Eng. 2011, 8, 025008. [CrossRef] [PubMed]
+Mihajlovic, V.; Molina, G.G.; Peuscher, J. To what extent can dry and water-based EEG electrodes replace
+conductive gel ones?: A Steady State Visual Evoked Potential Brain-Computer Interface Case Study.
+In Proceedings of the 2011 International Conference on Biomedical Engineering, Venice, Italy, 23–25
+November 2011.
+Pour, P.A.; Gulrez, T.; AlZoubi, O.; Gargiulo, G.; Calvo, R.A. Brain-computer interface: Next generation
+thought controlled distributed video game development platform. In Proceedings of the 2018 IEEE
+Symposium On Computational Intelligence and Games, Perth, Australia, 15–18 December 2008.
+Gaetano, G.; Bifulco, P.; Calvo, R.A.; Van Schaik, A. Chapter 8. Giga-Ohm High-Impedance FET Input
+Amplifiers for Dry Electrode Biosensor Circuits and Systems. Available online: https://www.researchgate.
+net/profile/Gaetano_Gargiulo3/publication/260294087_Giga-ohm_high_impedance_FET_input_
+amplifiers_for_dry_electrode_biosensor_circuits_and_systems/links/5834a5cb08ae138f1c0d7eea.pdf
+(accessed on 9 February 2019).
+Gargiulo, G. System for sensing electrophysiological signals. U.S. Patent 13/002,904, 7 July 2011.
+Gargiulo, G.D.; Shephard, R.W.; Tapson, J.; McEwan, A.L.; Bifulco, P.; Cesarelli, M.; Jin, C.;
+Al-Ani, A.; Wang, N.; Van Schaik, A. Pregnancy detection and monitoring in cattle via combined foetus
+electrocardiogram and phonocardiogram signal processing. BMC Veterinary Res. 2012, 8, 164. [CrossRef]
+[PubMed]
+BurrBrown. INA116. Available online: http://www.ti.com/lit/ds/symlink/ina116.pdf (accessed on
+9 February 2019).
+Gargiulo, G. Portable Bio-Signals Devices for Brain Computer Interface and Long-Term Patient Monitoring.
+Ph.D. Thesis, University of Bologna, Bologna, Italy, 2010.
+Winter, B.B.; Webster, J.G. Reduction of Interference Due to Common Mode Voltage in Biopotential Amplifiers.
+IEEE Trans. Biomed. Eng. 1983, BME-30, 58–62. [CrossRef]
+Gargiulo, G.; McEwan, A.; Bifulco, P.; Cesarelli, M.; Jin, C.; Tapson, J.; Thiagalingam, A.; Van Schaik, A. Towards
+true unipolar ECG recording without the Wilson central terminal (preliminary results). Physiolog. Meas. 2013, 34,
+991. [CrossRef]
+Gargiulo, G.D.; Tapson, J.; Van Schaik, A.; McEwan, A.; Thiagalingam, A. Unipolar ECG circuits: Towards
+more precise cardiac event identification. In Proceedings of the 2013 IEEE International Symposium on
+Circuits and Systems (ISCAS), Beijing, China, 19–23 May 2013.
+Gargiulo, G.; Tapson, J.C.; Shephard, R.W. Non-invasively measuring physiological process. U.S. Patent
+8,652,063, 18 February 2014.
+Gargiulo, G.D. True unipolar ECG machine for Wilson Central Terminal measurements. BioMed Res. Int.
+2015, 2015, 586397. [CrossRef]
+Gargiulo, G.D.; Varaki, E.S.; Hamilton, T.J.; Bifulco, P.; Cesarelli, M.; Romano, M. A 9-independent-leads ECG
+system from 10 electrodes: A practice preserving WCT-less true unipolar ECG system. In Proceedings of the
+2015 IEEE Biomedical Circuits and Systems Conference (BioCAS), Atlanta, GA, USA, 22–24 October 2015.
+AMINOFF, M.J. Evoked Potentials in Clinical Medicine. Q. J. Med. 1986, 59, 345–362.
+Takei, K.; Nakano, H.; Hommura, S.; Iketani, N. Analysis of the Components of Electrically Evoked Response
+Using a Monopolar Recording Technique. Invest. Ophthalmol. Vis. Sci. 1993, 34, 1923–1929. [PubMed]
+
+Sensors 2019, 19, 772
+
+43.
+44.
+
+45.
+
+46.
+
+47.
+
+48.
+49.
+50.
+51.
+
+52.
+
+53.
+54.
+
+16 of 16
+
+Donchin, E.; Spencer, K.M.; Wijesinghe, R. The Mental Prosthesis: Assessing the Speed of a P300-Based
+Brain–Computer Interface. IEEE Trans. Rehabil. Eng. 2002, 8, 174–179. [CrossRef]
+Brigell, M.; Bach, M.; Barber, C.; Moskowitz, A.; Robson, J. Guidelines for calibration of stimulus and
+recording parameters used in clinical electrophysiology of vision. Doc. Ophthalmol. 2004, 107, 185–193.
+[CrossRef]
+Durka, P.J.; Zygierewicz, J.; Klekowicz, H.; Ginter, J.; Blinowska, K.J. On the Statistical Significance of
+Event-Related EEG Desynchronization and Synchronization in the Time-Frequency Plane. IEEE Trans.
+Biomed. Eng. 2004, 51, 1167–1175. [CrossRef] [PubMed]
+Wu, R.-C.; Liang, S.-F.; Lin, C.-T.; Hsu, C.-F. Applications of Event-Related-Potential-Based Brain Computer
+Interface to Intelligent Transportation Systems. In Proceedings of the 2004 IEEE International Conference on
+Networking, Sensing & Control, Taipei, Taiwan, 21–23 March 2004.
+Gargiulo, G.D.; Bifulco, P.; Cesarelli, M.; McEwan, A.; Wabnitz, A. Open platform, 32-channel, portable,
+data-logger with 32 PGA control lines for wearable medical device development. Electron. Lett. 2014, 50,
+1127–1129. [CrossRef]
+Aiello, O.; Gargiulo, G.; McEwan, A. Instrumented flexible active electrode matrix suitable for humancomputer interface applications. Biomed. Phys. Eng. Express 2016, 2, 035020. [CrossRef]
+Gargiulo, G.D.; Bifulco, P.; Cesarelli, M.; Fratini, A.; Romano, M. Problems in assessment of novel biopotential
+front-end with dry electrode: A brief review. Machines 2014, 2, 87–98. [CrossRef]
+Horowitz, P.; Hill, W. The Art Of Electronics; Cambridge University Press: Cambridge, UK, 2002.
+Ruffo, M.; Cesarelli, M.; Jin, C.; Gargiulo, G.; McEwan, A.; Sullivan, C.; Bifulco, P.; Romano, M.; Shephard, R.W.;
+Van Schaik, A. Non invasive foetal monitoring with a combined ECG-PCG system. In Biomedical Engineering,
+Trends in Electronics, Communications and Software; IntechOpen: London, UK, 2011.
+Gargiulo, G.D.; McEwan, A.L.; Bifulco, P.; Cesarelli, M.; Jin, C.; Tapson, J.; Thiagalingam, A.; Van Schaik, A.
+Towards true unipolar bio-potential recording: A preliminary result for ECG. Physiol. Meas. 2012, 34, N1.
+[CrossRef]
+BurrBrown. OPA244 series MicroPower, Single-Supply OPERATIONAL AMPLIFIERS MicroAmplifier™
+Series. Available online: http://www.ti.com/product/OPA244 (accessed on 9 February 2019).
+AnalogDevices. AD5290 Compact +30 V/±15 V 256-Position Digital Potentiometer. Available online:
+https://www.jameco.com/Jameco/Products/ProdDS/1778421.pdf (accessed on 9 February 2019).
+© 2019 by the authors. Licensee MDPI, Basel, Switzerland. This article is an open access
+article distributed under the terms and conditions of the Creative Commons Attribution
+(CC BY) license (http://creativecommons.org/licenses/by/4.0/).
+
+

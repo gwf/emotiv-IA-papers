@@ -1,0 +1,3215 @@
+sensors
+Article
+
+Investigating the Use of Pretrained Convolutional
+Neural Network on Cross-Subject and Cross-Dataset
+EEG Emotion Recognition
+Yucel Cimtay * and Erhan Ekmekcioglu
+Institute for Digital Technologies, Loughborough University London, London E20 3BS, UK;
+e.ekmekcioglu@lboro.ac.uk
+* Correspondence: yucel.cimtay@gmail.com
+Received: 14 February 2020; Accepted: 2 April 2020; Published: 4 April 2020
+
+
+
+
+Abstract: The electroencephalogram (EEG) has great attraction in emotion recognition studies due
+to its resistance to deceptive actions of humans. This is one of the most significant advantages of
+brain signals in comparison to visual or speech signals in the emotion recognition context. A major
+challenge in EEG-based emotion recognition is that EEG recordings exhibit varying distributions for
+different people as well as for the same person at different time instances. This nonstationary nature
+of EEG limits the accuracy of it when subject independency is the priority. The aim of this study is
+to increase the subject-independent recognition accuracy by exploiting pretrained state-of-the-art
+Convolutional Neural Network (CNN) architectures. Unlike similar studies that extract spectral
+band power features from the EEG readings, raw EEG data is used in our study after applying
+windowing, pre-adjustments and normalization. Removing manual feature extraction from the
+training system overcomes the risk of eliminating hidden features in the raw data and helps leverage
+the deep neural network’s power in uncovering unknown features. To improve the classification
+accuracy further, a median filter is used to eliminate the false detections along a prediction interval of
+emotions. This method yields a mean cross-subject accuracy of 86.56% and 78.34% on the Shanghai
+Jiao Tong University Emotion EEG Dataset (SEED) for two and three emotion classes, respectively.
+It also yields a mean cross-subject accuracy of 72.81% on the Database for Emotion Analysis using
+Physiological Signals (DEAP) and 81.8% on the Loughborough University Multimodal Emotion
+Dataset (LUMED) for two emotion classes. Furthermore, the recognition model that has been trained
+using the SEED dataset was tested with the DEAP dataset, which yields a mean prediction accuracy
+of 58.1% across all subjects and emotion classes. Results show that in terms of classification accuracy,
+the proposed approach is superior to, or on par with, the reference subject-independent EEG emotion
+recognition studies identified in literature and has limited complexity due to the elimination of the
+need for feature extraction.
+Keywords: EEG; emotion recognition; pretrained models; convolutional neural network; dense layer;
+subject independency; dataset independency; raw data; filtering on output
+
+1. Introduction
+The electroencephalogram (EEG) is the measurement of the electrical signals which are a result of
+brain activities. The voltage difference is measured between the actual electrode and reference electrode.
+There are several EEG measurement devices in the market such as Neurosky, Emotiv, Neuroelectrics
+and Biosemi [1] which provide different spatial and temporal resolutions. Spatial resolution is related
+to number of electrodes and temporal resolution is related to the number of EEG samples processed for
+unit time. Generally, EEG has high temporal but low spatial resolution. In terms of spatial resolution,
+
+Sensors 2020, 20, 2034; doi:10.3390/s20072034
+
+www.mdpi.com/journal/sensors
+
+Sensors 2020, 20, 2034
+
+2 of 20
+
+EEG electrodes can be placed on the skull according to the 10-20 or 10-10 and 10-5 positioning
+standards [2].
+EEG has lately been used as a powerful emotion prediction modality. It is reliable, portable and
+relatively inexpensive compared to other brain monitoring tools and technologies. EEG has many
+application areas. For the clinical applications, EEG is mostly used to investigate the patterns related to
+sleep [3] and epilepsy [4]. Some other applications of EEG analysis are consciousness and hyperactivity
+disorders [5,6], measurement of the affective components such as level of attention [7–9], mental
+workload [10], mood and emotions [11–14] and brain computer interfaces which involve the work of
+transforming brain signals into direct instructions [15–17].
+Human emotions have crucial effects on communication with others. Understanding the emotions
+of humans provides a way to control and regulate behaviors. The name of emotional recognition in
+the digital world is affective computing, which is the technique of emotion recognition using various
+sensors and computer-based environments. This concept was originated with Rosalind Picard’s
+paper [18] on affective computing in 1995. In the EEG context, affective computing is achieved by
+setting up brain computer interfaces (BCI) which includes sensors, machines and coding. In BCI,
+the operation of affective computing starts with presenting users with stimuli which induces specific
+emotions. These stimuli may be video, image, music, etc. During the session, EEG data are recorded
+with EEG devices. The next step is typically extracting features from the recorded EEG and training
+a classifier to predict emotion labels. The final step is testing the trained model with new EEG data
+which are not used in training session. Data collection and labelling are the most important aspects
+which has an impact on resulting recognition accuracy. The “Brouwer recommendations” about data
+collection given in [19] are crucial for handling accurate data and labelling.
+In relevant emotion recognition literature, emotions have been broadly represented in two ways.
+The first approach classifies emotions as discrete states such as the six basic emotions proposed by
+Ekman and Friesen [20]. The second approach defines emotion as a continuous 4-D space of valence,
+arousal, dominance and liking [21,22]. In most of the studies, this space is reduced to 2-D as valence
+and arousal dimensions [23,24]. The study conducted in [25] is very useful in the sense that it relates
+discrete and continuous approaches to each other. Discrete emotion states are mapped on to the
+valence-arousal circumplex model according to high number of blogposts. This study enables scientists
+to transform emotions from continuous space to discrete space.
+In EEG data channels, typical frequency domain analysis is used. In the frequency domain,
+the most important frequency bands are delta (1–3 Hz), theta (4–7 Hz), alpha (8–13 Hz), beta (14–30 Hz)
+and gamma (31–50 Hz) [26]. Fast Fourier Transform (FFT), Wavelet Transform (WT), eigenvector
+and autoregressive are the methods which transform EEG signal from time domain to frequency
+domain [27]. The study [28] extracts several frequency–domain features like Differential Entropy (DE)
+and Energy Spectrum (ES) in order to classify EEG data and [29] investigate the critical frequency
+bands and channels for EEG-based emotion recognition. One of the major problems we observed
+in the context of emotion classification based on the analysis of EEG channels was that the classifier
+performance fluctuates remarkably across persons as well as across dataset. Most of these approaches
+train their classifiers using a set of features derived using the frequency domain analysis. While the
+classifiers’ performances are sufficiently high on test data, which comprise samples belonging to the
+same subjects but excluded from training and validation, when the same classifier is applied on EEG
+data of other subjects or on data extracted from various other datasets, the performance is degraded
+significantly. The same problem in subject-independent analysis is not apparent in literature in the
+context of emotion recognition from facial expressions or other physiological data (e.g., heart rate
+variability, electro-dermal activity). This observation has led us to investigate classification approaches
+using raw EEG data, which preserves all information and prevents the risk of removing hidden features
+before training the classifier.
+
+Sensors 2020, 20, 2034
+
+3 of 20
+
+2. Literature Review
+For the classification of EEG signals, many machine learning methods such as K-Nearest Neighbor
+(KNN) [28], Support Vector Machine (SVM) [28–30], Decision Tree (DT) [31], Random Forest (RF) [32] and
+Linear Discriminant Analysis (LDA) [33] are applied. In the deep learning context, DBN (Deep Belief
+Network) [34] and AE (Auto Encoders) [35] are studied with promising results. Besides DBN and AE,
+Convolutional Neural Network (CNN) and Long-Short Term Memory (LSTM) structures are widely
+used [36–40]. Most of these models have shown good results for subject dependent analysis. In [41], KNN
+method is employed on the DEAP dataset [42] for different numbers of channels which show accuracy
+between 82% and 88%. The study conducted in [43] quadratic time-frequency distribution (QTFD) is
+employed to handle a high-resolution time-frequency representation of the EEG and the spectral variations
+over time. It reports mean classification accuracies ranging between 73.8% and 86.2%. In [44], four different
+emotional states (happy, sad, angry and relaxed) are classified. In that study, Discrete Wavelet Transform
+(DWT) is applied on the DEAP dataset. Wavelet features are classified using a Support Vector Machine
+(SVM) classifier with Particle Swarm Optimization (PSO) [45]. The overall accuracy of 80.63% is reported
+with valence and arousal accuracy of 86.25% and 88.125%, respectively.
+An important issue in EEG-based emotion detection is the non-linearity and non-stationarity
+EEG signals. Feature sets, such as the spectral band powers of EEG channels, extracted from different
+people against the same emotional states do not exhibit strong correlations. For example, galvanic
+skin response is a robust indicator of arousal state, where different people’s responses correlate with
+each other well. Training and testing data made of EEG channels’ spectral band powers and their
+derivatives have different distributions. And it is difficult to identify sets of features from the EEG
+recordings of different subjects, different sessions and different datasets that exhibit more commonality.
+This makes the classification difficult with traditional classification methods, which assume identical
+distribution. In order to address this problem and provide subject independency to EEG-based
+emotion recognition models, deeper networks, domain adaptation and hybrid methods have been
+applied [46,47]. Furthermore, various feature extraction techniques have been applied, and different
+feature combinations have been tried [48].
+Subject-independent EEG emotion recognition, as a challenging task, has gained high interest
+by many researchers recently. The method called Transfer Component Analysis (TCA) conducted
+in [46] reproduces Kernel Hilbert Space, on the assumption that there exists a feature mapping between
+source and target domain. A Subspace Alignment Auto-Encoder (SAAE), which uses non-linear
+transformation and consistency constraint method, is used in [47]. This study compares the results
+with TCA. It achieves a leave-one-out mean accuracy of 77.88% in comparison with TCA, which shows
+73.82% on the SEED dataset. Moreover, mean classification accuracy for session-to-session evaluation
+is 81.81%, an improvement of up to 1.62% compared to the best baseline TCA. In one of the studies,
+CNN with the deep domain confusion technique is applied on the SEED dataset [49] and achieves
+90.59% and 82.16 mean accuracy for conventional (subject-dependent) EEG emotion recognition and
+“leave one out cross validation”, respectively [50]. Variational Mode Decomposition (VMD) [51] is
+used as a feature extraction technique and Deep Neural Network as the classifier. It gives 61.25% and
+62.50% accuracy on the DEAP dataset for arousal and valence, respectively. Another study, [52], uses a
+deep convolutional neural network with changing numbers of convolutional layers on raw EEG data
+which are collected during music listening. It reports maximum 10-fold-validation mean accuracy of
+81.54% and 86.87% for arousal and valence, respectively. It also achieves 56.22% of arousal and 68.75%
+of valence accuracies for one-subject-out test. As can be seen, the reported mean accuracy levels drop
+considerable in one-subject-out tests due to the nature of the EEG signals.
+The study [48] extracts totally 10 different linear and nonlinear features from EEG signals.
+The linear features are Hjorth activity, Hjorth mobility, Hjorth complexity, the standard deviation,
+PSD-Alpha, PSD Beta, PSD-Gamma, PSD-Theta, and the nonlinear features are sample entropy and
+wavelet entropy. By using a method called Significance Test/Sequential Backward Selection and the
+Support Vector Machine (ST-SBSSVM), which is a combination of the significance test, sequential
+
+Sensors 2020, 20, 2034
+
+4 of 20
+
+backward selection, and the support vector machine, it achieves 72% cross subject accuracy for the
+DEAP dataset with high–low valence classification. It also achieves 89% maximum cross subject
+accuracy for the SEED dataset with positive–negative emotions. Another study [53] uses FAWT (Flexible
+Analytic Wavelet Transform) which decomposes EEG signals into sub bands. Random forest and SVM
+are used for classification. The mean classification accuracies are 90.48% for positive/neutral/negative
+(three classes) in the SEED dataset; 79.95% for high arousal (HA)/low arousal (LA) (two classes); 79.99%
+for the high valence (HV)/low valence (LV) (two classes); and 71.43% for HVHA/HVLA/LVLA/LVHA
+(four classes) in the DEAP dataset. In [54], the transfer recursive feature elimination (T-RFE) technique
+is used to determine a set of the most robust EEG features for stable distribution across subjects.
+This method is validated on DEAP dataset, the classification accuracy and F-score for arousal is 0.7867,
+0.7526 and 0.7875, 0.8077 for valence. A regularized graph neural network (RGNN) is applied in [55]
+for EEG-based emotion recognition, which includes inter-channel relations. The classification accuracy
+results on the SEED dataset are 64.88%, 60.69%, 60.84%, 74.96%, 77.50%, 85.30% for delta, theta, alpha,
+beta, gamma and all bands. Moreover, it achieves 73.84% of accuracy on the SEED [49] dataset.
+There are several studies which apply transfer learning, which aims to explore common stable
+features and apply to other subjects [56]. In terms of affective computing, the work is exploring
+some common and stable features which are invariant between subjects. This is also called domain
+adaptation. In [57], the scientists tried to find typical spatial pattern filters from various recording
+sessions and applied these filters on the following ongoing EEG samples. Subject-dependent spatial
+and temporal filters were derived from 45 subjects and a representative subset is chosen in [58].
+The study [59] uses compound common spatial patterns which are the sum of covariance matrices.
+The aim of this technique is to utilize the common information which is shared between different
+subjects. The other important studies which apply different domain adaptation techniques on the
+SEED dataset are [47,60–62]. The common properties of these domain adaptation techniques are the
+exploration of an invariant feature subspace which reduces the inconsistencies of EEG data between
+subjects or different sessions. In the study in [63], the domain adaptation technique is applied not only
+in cross-subject context but also for cross datasets. The trained model in SEED dataset is tested against
+the DEAP dataset and vice versa. It reports an accuracy improvement of 7.25–13.40% with domain
+adaptation compared to the one without domain adaptation. Scientists applied an adaptive subspace
+feature matching (ASFM) in [62] in order to integrate both the marginal and conditional distributions
+within a unified framework. This method achieves 83.51%, 76.68% and 81.20% classification accuracies
+for the first, second and third sessions of the SEED dataset, respectively. This study also conducts
+testing between sessions. For instance, it trains the model with the data of first session and test on
+the second session data. In the domain adaptation method, the conversion of features into a common
+subspace may lead to data loss. In order to avoid this, a Deep Domain Confusion (DDC) method
+based on CNN architecture is used [64]. This study uses adaptive layer and domain confusion loss
+based on Maximum Mean Discrepancy (MMD) to automatically learn a representation, jointly trained
+to optimize classification and domain invariance. The advantage of this is adaptive classification,
+retaining the original distribution information.
+Having observed that the distribution of commonly derived sets of features from EEG signals
+show differences between subjects, sessions and datasets, we anticipate that there could be some
+invariant feature sets that follow common trajectories across subjects, sessions and datasets. There is
+a lack of studies that investigate these additional feature sets in the EEG signals that can contribute
+to robust emotion recognition across subjects. The aim of this study is to uncover these kinds of
+features in order to achieve promising cross-subject EEG-based emotion classification accuracy with
+manageable processing loads. For this purpose, raw EEG channel recordings after normalization
+and a state-of-the-art pretrained CNN model are deployed. The main motivation behind choosing a
+pretrained CNN architecture is due to their superiority in feature extraction and inherent exploitation
+of the domain adaptation. To improve the emotion recognition accuracy, additionally in the test phase,
+a median filter is used in order to reduce the evident false alarms.
+
+Sensors 2020, 20, 2034
+
+5 of 20
+
+Contributions of the Work
+The contributions of this work to related literature in EEG-based emotion recognition can be
+summarized as follows:
+•
+
+•
+•
+•
+
+Feature extraction process is completely left to a pretrained state-of-the-art CNN model
+InceptionResnetV2 whose capability of feature extraction is shown as highly competent in
+various classification tasks. This enables the model to explore useful and hidden features
+for classification.
+Data normalization is applied in order to remove the effects of fluctuations in the voltage amplitude
+and protect the proposed network against probable ill-conditioned situations.
+Extra pooling and dense layers are added to the pretrained CNN model in order to increase its
+depth, so that the classification capability is enhanced.
+The output of the network is post-filtered in order to remove the false alarms, which may emerge
+in short intervals of time where the emotions are assumed to remain mostly unchanged.
+
+3. Materials
+The EEG datasets used in this work are SEED [49], the EEG data of DEAP [42] and our own EEG
+dataset [65] which is a part of the multimodal emotional database LUMED (Loughborough University
+Multimodal Emotion Database). All the datasets are open to public access.
+3.1. Overview of the SEED Dataset
+SEED dataset is a collection of EEG recordings prepared by the Brain-like Computing & Machine
+Intelligence (BCMI) laboratory of Shanghai Jiao Tong University. A total of 15 clips are chosen for
+eliciting (neutral, negative and positive) emotions. Each stimuli session is composed of 5 s of hint of
+movie, 4 min of clip, 45 s of self-assessment and 15 s of rest. There are 15 Chinese subjects (7 females
+and 8 males) participated in this study. Each participant had 3 sessions on different days. In total,
+45 sessions of EEG data was recorded. The labels are given according to the clip contents (−1 for
+negative, 0 for neutral and 1 for positive). The data were collected via 62 channels which are placed
+according to 10–20 system, down-sampled to 200 Hz, a bandpass frequency filter from 0–75 Hz was
+applied and presented as MATLAB “mat” files.
+3.2. Overview of the DEAP Dataset
+DEAP [22] is a multimodal dataset which includes the electroencephalogram and peripheral
+physiological signals of 32 participants. For 22 of the 32 participants, frontal face video was also
+recorded. Data were recorded while minute-long music videos were watched by participants. A total
+of 40 videos were shown to each participant. The videos were rated by the participants in terms of
+levels of arousal, valence, like/dislike, dominance and familiarity which changes between 1 and 9.
+EEG data are collected with 32 electrodes. The data were down-sampled to 128 Hz, EOG artefacts
+were removed, a bandpass frequency filter from 4.0–45.0 Hz was applied. The data were segmented
+into 60 s intervals and a 3 s baseline data were removed.
+3.3. Overview of the LUMED Dataset
+The LUMED (Loughborough University Multimodal Emotion Dataset) is a new multimodal
+dataset that was created in Loughborough University, London (UK), by collecting simultaneous
+multimodal data from 11 participants (4 females and 7 males). The modalities include visual data
+(face RGB), peripheral physiological signals (galvanic skin response, heartbeat, temperature) and EEG.
+These data were collected from participants while they were presented with audio–visual stimuli
+loaded with different emotional content. Each data collection session lasted approximately 16 min long
+that consists of short video clips playing one after the other. The longest clip was approximately 2.5 min
+and the shortest one was 1 min long. Between each clip, in order to provide the participant a refresh
+
+Sensors 2020, 20, 2034
+
+6 of 20
+
+and
+rest,
+a 20
+grayREVIEW
+screen was displayed. Although the emotional ground truth of each clip6was
+Sensors
+2020,
+20,s-long
+x FOR PEER
+of 20
+estimated based on the content, in reality, a range of different emotions might be triggered for different
+re-labelled the
+such after
+that each
+only session,
+2 classesthe
+were
+defined were
+as negative
+valence
+and
+positive
+participants.
+Forsamples,
+this purpose,
+participants
+asked to
+label the
+clips
+they
+valence.with
+Thisthe
+is done
+make a emotional
+fair comparison
+with
+other
+studies.
+Moreover,
+channel’s
+data
+watched
+most to
+dominant
+state they
+felt.
+In this
+current
+study, weeach
+exploited
+the EEG
+were filtered
+inLUMED
+the frequency
+0.5this
+Hzstudy,
+to 75 Hz
+attenuate
+the high
+frequency
+components
+modality
+of the
+datasetrange
+only. of
+For
+we to
+have
+re-labelled
+the samples,
+such
+that only
+arewere
+not defined
+believedasto
+be have
+a meaningful
+correlation
+withisthe
+emotion
+Normally,
+2that
+classes
+negative
+valence
+and positive
+valence. This
+done
+to makeclasses.
+a fair comparison
+captured
+EEG signals
+are noisy
+with EMG
+(electromyogram)
+EOG (electrooculogram)
+with
+other studies.
+Moreover,
+each channel’s
+data
+were filtered in theand
+frequency
+range of 0.5 Hz to 75type
+Hz
+artefacts.
+EMG
+artefacts
+are
+electrical
+noises
+resulting
+from
+facial
+muscle
+activities
+and
+EOG
+to attenuate the high frequency components that are not believed to be have a meaningful correlationis
+electrical
+noise due
+to eyeNormally,
+movements.
+For traditional
+classification
+analysis
+methods, in
+with
+the emotion
+classes.
+captured
+EEG signals
+are noisy and
+withdata
+EMG
+(electromyogram)
+order
+to prevent
+heavily skewed
+these
+kinds
+of artefacts
+shouldnoises
+be removed
+from
+thefacial
+EEG
+and
+EOG
+(electrooculogram)
+type results,
+artefacts.
+EMG
+artefacts
+are electrical
+resulting
+from
+channelactivities
+data through
+several
+filtering
+stages.
+an movements.
+example, theFor
+study
+in [66] classification
+removes theand
+eye
+muscle
+and EOG
+is electrical
+noise
+due As
+to eye
+traditional
+movement
+artefacts
+from
+byprevent
+applyingheavily
+ICA (Independent
+Component
+Analysis).
+The LUMED
+data
+analysis
+methods,
+in signal
+order to
+skewed results,
+these kinds
+of artefacts
+should
+dataset
+was from
+created
+with the
+purpose
+of training
+a deep-learning
+based
+be
+removed
+theinitially
+EEG channel
+data
+through
+several filtering
+stages. As
+an emotion
+example,recognition
+the study
+system,
+described
+4. Depending
+on the
+typeby
+and
+purpose
+of (Independent
+other supervised
+machine
+in
+[66] removes
+the in
+eyeSection
+movement
+artefacts from
+signal
+applying
+ICA
+Component
+learning systems,
+this dataset
+could
+more thorough
+for artefact
+removal. In
+Analysis).
+The LUMED
+dataset
+wasrequire
+createdainitially
+with thepre-processing
+purpose of training
+a deep-learning
+LUMED,
+EEG recognition
+data was captured
+on 10–20
+system
+Neuroelectrics
+8 [67],
+an 8-channel
+based
+emotion
+system,based
+described
+in Section
+4. by
+Depending
+on theEnobio
+type and
+purpose
+of other
+EEG devicemachine
+with a temporal
+of dataset
+500 Hz. could
+The used
+channels
+FP1, AF4,
+FZ, T7, C4, for
+T8,
+supervised
+learning resolution
+systems, this
+require
+a morewere
+thorough
+pre-processing
+P3, OZ,removal.
+which are
+over
+frontal,
+temporal
+andbased
+centeron
+lobes
+of system
+the brain.
+artefact
+Inspread
+LUMED,
+EEG
+data was
+captured
+10–20
+by Neuroelectrics Enobio
+8 [67], an 8-channel EEG device with a temporal resolution of 500 Hz. The used channels were FP1,
+4. Proposed
+Method
+AF4,
+FZ, T7, C4,
+T8, P3, OZ, which are spread over frontal, temporal and center lobes of the brain.
+
+In this work, the emotion recognition model works on raw EEG signals without pre-feature
+4. Proposed Method
+extraction. Feature extraction is left to a state-of-the-art CNN model: InceptionResnetV2. The success
+In pretrained
+this work, CNN
+the emotion
+recognition
+works was
+on raw
+EEG signals
+without
+pre-feature
+of this
+model on
+raw data model
+classification
+extensively
+outlined
+in [68].
+Since the
+extraction.
+Feature
+extraction
+is left
+to a state-of-the-art
+CNN
+model: session
+InceptionResnetV2.
+The
+success
+distribution
+of EEG
+data shows
+variations
+from person
+to person,
+to session and
+dataset
+to
+of
+this pretrained
+CNN
+onaraw
+data set
+classification
+was
+extensively
+in [68].
+the
+dataset,
+it is difficult
+tomodel
+identify
+feature
+that exhibits
+good
+accuracyoutlined
+every time.
+On Since
+the other
+distribution
+of EEG
+datamodels
+showsare
+variations
+from person
+to person,
+session
+to sessionthis
+andwork
+dataset
+to
+hand, pretrained
+CNN
+very competent
+in feature
+extraction.
+Therefore,
+makes
+dataset,
+it
+is
+difficult
+to
+identify
+a
+feature
+set
+that
+exhibits
+good
+accuracy
+every
+time.
+On
+the
+other
+hand,
+use of it.
+pretrained CNN models are very competent in feature extraction. Therefore, this work makes use of it.
+4.1. Windowing of Data
+4.1. Windowing of Data
+Data are split into fixed length (𝑁 ) windows with an overlapping size of 𝑁/6 as shown in
+Data
+are split into
+(N)channels).
+windows with
+overlapping
+of is
+N/6
+as shown
+in Figure
+1
+Figure
+1 (displayed
+forfixed
+threelength
+random
+One an
+window
+of EEGsize
+data
+given
+in Figure
+2 where
+(displayed
+for three
+One is
+window
+of EEG
+is given𝑎”.
+in Figure 2 where M is the
+𝑀 is the number
+of random
+selectedchannels).
+channels, 𝐶
+“𝑏 𝑡ℎ data
+pointdata
+of channel
+𝑎𝑏
+number of selected channels, Cab is “bth data point of channel a”.
+
+Figure1.1. Windowing
+Windowingwith
+withoverlapping
+overlappingon
+onraw
+rawelectroencephalogram
+electroencephalogram(EEG)
+(EEG)data.
+data.
+Figure
+
+Sensors 2020, 20, 2034
+
+7 of 20
+
+Sensors 2020, 20, x FOR PEER REVIEW
+
+7 of 20
+
+Figure
+2. Windowing,
+Reshaping
+and
+Normalizationon
+onEEG
+EEGdata.
+data.
+Figure
+2. Windowing,
+Reshaping
+and
+Normalization
+
+4.2. Data
+Reshaping
+4.2. Data
+Reshaping
+reshaped
+theinput
+inputlayer
+layer properties
+properties of
+which
+is shown
+in
+EEGEEG
+datadata
+areare
+reshaped
+to to
+fitfitthe
+ofInceptionResnetV2
+InceptionResnetV2
+which
+is shown
+Figure2.2.KERAS,
+KERAS, which
+which is
+library
+written
+in Python,
+is used
+for the
+in Figure
+is an
+an open-source
+open-sourceneural
+neuralnetwork
+network
+library
+written
+in Python,
+is used
+for
+training purpose.
+purpose. Since
+training purposes,
+the training
+Since KERAS
+KERAS is
+is used
+used for
+for training
+purposes, the
+the minimum
+minimuminput
+inputsize
+sizeshould
+shouldbe
+be
+3) for
+InceptionResnetV2where
+whereN1 ≥ 75,
+75,N ≥ 7575[69].
+[69].Depending
+Dependingon
+onthe
+the number
+number of
+(N1 , (N, ,3) ,for
+InceptionResnetV2
+of selected
+selected
+channels,
+channel
+data
+augmented
+creatingthe
+thenoisy
+noisycopies
+copiesof
+of it.
+it. For
+For instance,
+channels,
+eacheach
+channel
+data
+areare
+augmented
+bybycreating
+instance, ifif the
+the
+number
+of
+selected
+channels
+is
+,
+for
+each
+channel
+the
+number
+of
+noisy
+copies
+is
+calculated
+number of selected channels is S, for each channel the number of noisy copies is calculated according
+according
+to Equation
+(1) where
+operator
+rounds
+the number
+theinteger
+next integer
+(if the number
+is not
+to Equation
+(1) where
+ceil operator
+rounds
+the number
+to the to
+next
+(if the number
+is not integer)
+integer) and
+is number of noisy copies.
+and NNC is number of noisy copies.
+1,
+(1)
+
+
+N1
+NNC = ceil
+− 1,
+(1)
+S by adding random samples of a gaussian
+The noisy copies of each channel are created
+where and are chosen as 0 and 0.01, respectively. This
+distribution of mean and variance
+The noisy copies of each channel are created by adding random samples of a gaussian distribution
+process is given in Equation
+(2)
+where
+,
+,…,
+is the noisy copy of the original data
+2
+of mean µ and variance
+µ and σ
+chosen as 0 and 0.01, respectively. This process is given
+h σ where
+i are
+and
+is the noise vector.
+,
+,…,
+,
+,…,
+ea1 , C
+ea2 , . . . , C
+eaN is the noisy copy of the original data [Ca1 , Ca2 , . . . , CaN ] and
+in Equation (2) where C
+.
+,
+,
+…
+,
+,…,
+,
+,…,
+(2)
+[na1 , na2 , . . . , naN ] is the noise vector. ,
+
+i chosen, each noisy copy is different from each other.
+h
+Since the samples
+are randomly
+is
+ea1 , C
+ea2 , . . . , C
+eaN = [Ca1 , Ca2 , . . . , CaN ] + [na1 , na2 , . . . , naN ].
+C
+(2)
+related to the windowing
+size. Therefore,
+a window size
+greater than or equal to 75 is chosen.
+We chose
+as 300 in order to provide a standard window size for datasets. This corresponds to 1.5
+theSEED
+samples
+are randomly
+chosen,
+each
+noisy copy
+is DEAP
+different
+from each
+other.
+N isfor
+related
+sSince
+for the
+dataset,
+approximately
+two
+seconds
+for the
+dataset
+and 0.6
+s onds
+the
+to the
+windowing
+size.
+Therefore,
+a
+window
+size
+N
+greater
+than
+or
+equal
+to
+75
+is
+chosen.
+We
+chose
+LUMED dataset. Moreover, we chose
+as 80 for all datasets. The augmentation process is repeated
+N asthree
+300 in
+order
+to provide
+a standard
+window
+size input
+for datasets.
+corresponds
+1.5 s for the
+times
+in order
+to make
+the data fit
+the KERAS
+size. ThisThis
+work
+does not usetointerpolation
+SEED
+dataset,
+approximately
+two
+seconds
+for
+the
+DEAP
+dataset
+and
+0.6
+s
+onds
+for
+the
+LUMED
+dataset.
+between channels because EEG is a nonlinear signal. The reason for adding noise is mainly for
+data
+Moreover,
+we choseThere
+N1 asare
+80 for
+all datasets.
+repeatedshifting
+three times
+order
+augmentation.
+several
+ways of The
+dataaugmentation
+augmentationprocess
+such asisrotation,
+and in
+adding
+to make
+the KERAS
+input
+size. This
+workshifting,
+does not
+use interpolation
+between
+channels
+noise.the
+Indata
+the fit
+image
+processing
+context,
+rotation,
+zooming
+and adding
+noise are
+used.
+because
+EEG
+is
+a
+nonlinear
+signal.
+The
+reason
+for
+adding
+noise
+is
+mainly
+for
+data
+augmentation.
+However, we only use noise addition for EEG data augmentation in order to both keep the channel’s
+original
+data ways
+and create
+new
+augmented data
+limitedshifting
+gaussian
+noise.
+Thisnoise.
+is as if
+was
+There
+are several
+of data
+augmentation
+such with
+as rotation,
+and
+adding
+Inthere
+the image
+anothercontext,
+electroderotation,
+very close
+the electrode,
+which
+augmented
+additional
+noise. We
+processing
+shifting,
+zooming
+andisadding
+noisewith
+are used.
+However,
+we use
+onlydata
+use
+augmentation
+instead
+of
+data
+duplication
+in
+order
+to
+make
+the
+network
+adapt
+to
+the
+noisy
+data
+and
+noise addition for EEG data augmentation in order to both keep the channel’s original data and create
+new augmented data with limited gaussian noise. This is as if there was another electrode very close
+
+Sensors 2020, 20, 2034
+
+8 of 20
+
+2020, 20,
+x FORis
+PEER
+REVIEW with additional noise. We use data augmentation instead of
+8 ofdata
+20
+the Sensors
+electrode,
+which
+augmented
+duplication in order to make the network adapt to the noisy data and increase the prediction capability
+increase the prediction capability of it. This also prevents the network from overfitting due to data
+of it. This also prevents the network from overfitting due to data repetition. This technique was
+repetition. This technique was similarly applied in [70].
+similarly applied in [70].
+
+4.3. Normalization
+4.3. Normalization
+Following windowing, augmentation and reshaping, each channel data are normalized by
+Following windowing, augmentation and reshaping, each channel data are normalized by
+removing mean of each window from each sample. This is repeated for all channels and the noisy
+removing mean of each window from each sample. This is repeated for all channels and the noisy
+copies. The aim of removing the mean is to equate the mean value of each window to 0. This protects
+copies. The aim of removing the mean is to equate the mean value of each window to 0. This protects
+the proposed network against probable ill-conditioned situations. In MATLAB, this process is
+the applied
+proposed
+network against
+ill-conditioned
+situations.
+Inthis
+MATLAB,
+this
+process
+applied
+automatically
+on theprobable
+input data.
+In KERAS, we
+performed
+manually
+just
+beforeis
+training
+automatically
+on
+the
+input
+data.
+In
+KERAS,
+we
+performed
+this
+manually
+just
+before
+training
+the
+the network. Each dimension is created separately so they are different from each other.
+network. Each dimension is created separately so they are different from each other.
+4.4. Channel Selection
+4.4. Channel Selection
+In this work, we concentrated on the frontal temporal lobes of the brain. As it is stated in [71,72],
+In this work,
+we concentrated
+frontal
+temporal
+of the
+As itlobes.
+is stated
+in [71,72],
+emotional
+changes
+mostly affecton
+thethe
+EEG
+signals
+on thelobes
+frontal
+andbrain.
+temporal
+A different
+emotional
+mostly
+signalsand
+on increasing
+the frontal the
+andnumber
+temporal
+A different
+numberchanges
+of channels
+areaffect
+triedthe
+in EEG
+this work,
+oflobes.
+channels
+does notnumber
+help
+of channels
+in this
+work,
+and increasing
+the including
+number ofthe
+channels
+notmodel,
+help improve
+the
+improve are
+the tried
+accuracy.
+This
+is because,
+technically,
+channelsdoes
+in the
+which are
+accuracy.
+This
+is
+because,
+technically,
+including
+the
+channels
+in
+the
+model,
+which
+are
+not
+correlated
+not correlated with the emotion changes, does not help and on the contrary can adversely affect the
+with
+the emotion
+changes,
+notelectrical
+help and
+on the contrary
+can adversely
+affect the
+It is
+accuracy.
+It is also
+knowndoes
+that the
+relations
+between asymmetrical
+channels
+areaccuracy.
+determining
+arousal
+and
+hence
+the emotion
+[73,74].
+Therefore,channels
+we choseare
+four
+asymmetrical
+of
+alsothe
+known
+that
+thevalence,
+electrical
+relations
+between
+asymmetrical
+determining
+thepairs
+arousal
+electrodes:
+AF1,
+F3,
+F4,
+F7,
+T7,
+AF2,
+F5,
+F8
+and
+T8
+from
+frontal
+and
+temporal
+lobes
+which
+are
+equally
+and valence, hence the emotion [73,74]. Therefore, we chose four asymmetrical pairs of electrodes:
+spread
+onF7,
+theT7,
+skull.
+The
+arrangement
+of these
+channels
+the window
+AF1, AF2,
+F3, F4, F5,
+F6, F7,on
+AF1,
+F3, F4,
+AF2,
+F5,
+F8 and T8 from
+frontal
+and in
+temporal
+lobesiswhich
+are equally
+spread
+T8. The arrangement of these channels in the window is AF1, AF2, F3, F4, F5, F6, F7, T7, T8.
+the T7,
+skull.
+Network
+Structure
+4.5.4.5.
+Network
+Structure
+thiswork
+work aa pretrained
+network,
+InceptionResnetV2,
+is used as
+Following
+In In
+this
+pretrainedCNN
+CNN
+network,
+InceptionResnetV2,
+is base
+usedmodel.
+as base
+model.
+InceptionResnetV2,
+Global Global
+Average
+PoolingPooling
+layer islayer
+added
+for decreasing
+the data
+and
+Following
+InceptionResnetV2,
+Average
+is added
+for decreasing
+thedimension
+data dimension
+extra
+dense
+layers
+(fully
+connected
+layers)
+are
+added
+in
+order
+to
+increase
+the
+depth
+and
+success
+and extra dense layers (fully connected layers) are added in order to increase the depth and successfor
+for
+classifying
+complex
+overall
+network
+structure
+is given
+in Figure
+3, the
+andproperties
+the properties
+the
+classifying
+complex
+data.data.
+TheThe
+overall
+network
+structure
+is given
+in Figure
+3, and
+of theoflayers
+layers following the CNN is described in Table 1. The training parameters are specified in Table 2. In
+following the CNN is described in Table 1. The training parameters are specified in Table 2. In Figure 3,
+Figure 3, Dense Layer-5 determines the number of output classes and
+selects the one with
+Dense Layer-5 determines the number of output classes and argMax selects the one with the maximum
+the maximum probability. We use the “relu” activation function to cover the interaction effects and
+probability. We use the “relu” activation function to cover the interaction effects and non-linearities. This is
+non-linearities. This is very important in our problem, while using a deep learning model. Relu is one
+very important in our problem, while using a deep learning model. Relu is one of the most widely used
+of the most widely used and successful activation functions in the field of artificial neural networks.
+andMoreover,
+successfulat
+activation
+functions
+in the
+of artificial
+neural
+networks.
+Moreover,
+at the the
+last class
+dense
+the last dense
+layer,
+we field
+use the
+“softmax”
+activation
+in order
+to produce
+layer,
+we
+use
+the
+“softmax”
+activation
+in
+order
+to
+produce
+the
+class
+probabilities.
+probabilities.
+
+Figure
+3. 3.The
+Figure
+Thestructure
+structureofofproposed
+proposednetwork
+network model.
+model.
+
+Sensors 2020, 20, x FOR PEER REVIEW
+
+9 of 20
+
+Sensors 2020, 20, 2034
+Table 1. The properties of Layers following InceptionResnetV2 base model.
+
+9 of 20
+
+Layer (Type)
+Output Shape
+Connected to
+Activation Function
+Table 1. The properties
+of Layers following
+InceptionResnetV2 base model. Global_Average_Pooling
+(None, 1536)
+convolution
+Dense 1
+(None, 1024)
+Global_Average_Pooling
+Relu
+Layer (Type)
+Output Shape
+Connected to
+Activation Function
+Dense 2
+(None, 1024)
+Dense 1
+Relu
+Global_Average_Pooling
+(None, 1536)
+convolution
+Dense 3
+(None, 1024)
+Dense 2
+Relu
+Global_Average_Pooling
+Relu
+Dense 1
+(None, 1024)
+Dense
+4 2
+(None,
+512)
+Dense
+3 1
+Relu
+Dense
+(None,
+1024)
+Dense
+Relu
+Dense
+5 3
+(None,
+z 11024)
+)
+Dense
+4 2
+Softmax
+Dense
+(None,
+Dense
+Relu
+Dense 4
+Dense 5
+
+1
+
+(None, 512)
+z is set according
+to the number ofDense
+output3 classes.
+Dense 4
+(None, z 1 )
+
+Relu
+Softmax
+
+1 z is set according to the number of output classes.
+Table
+2. The training parameters of network.
+
+Property
+Value
+Table 2. The training parameters of network.
+Base model
+InceptionResnetV2
+Additional
+layers
+Global Average
+Property
+Value Pooling, 5 Dense Layers
+Regularization
+L2
+Base model
+InceptionResnetV2
+Optimizer
+Additional layers
+Global Average Pooling,Adam
+5 Dense Layers
+L2
+Regularization
+Loss
+Categorical
+cross entropy
+Adam
+Max. Optimizer
+# Epochs
+100
+Loss
+Categorical cross entropy
+Shuffle
+Max.
+# Epochs
+100 True
+BatchShuffle
+size
+64
+True
+Batch size
+64
+Environment
+Win 10, 2 Parallel
+GPU(s), TensorFlow
+Environment
+
+# Output
+classes
+# Output
+classes
+
+Win 10, 2 Parallel GPU(s), TensorFlow
+2 (Pos-Neg)
+or 3 (Pos-Neu-Neg)
+2 (Pos-Neg)
+or 3 (Pos-Neu-Neg)
+
+4.6.
+4.6.Filtering
+FilteringononOutput
+OutputClasses
+Classes
+Since
+SinceEEG
+EEGisisvery
+veryprone
+pronetotonoise
+noiseand
+anddifferent
+differenttype
+typeofofartifacts,
+artifacts,filtering
+filteringofofEEG
+EEGsignals
+signalsisiswidely
+widely
+studied
+in
+EEG
+recognition
+context.
+The
+study
+conducted
+in
+[75]
+compares
+three
+types
+studied in EEG recognition context. The study conducted in [75] compares three typesofofsmoothing
+smoothing
+filters
+filters(smooth
+(smoothfilter,
+filter, median
+medianfilter
+filterand
+andSavitzky–Golay)
+Savitzky–Golay)on
+onEEG
+EEGdata
+datafor
+forthe
+themedical
+medicaldiagnostic
+diagnostic
+purposes.
+The
+authors
+concluded
+that
+the
+most
+useful
+filter
+is
+the
+classical
+Savitzky–Golay
+purposes. The authors concluded that the most useful filter is the classical Savitzky–Golaysince
+sinceitit
+smooths
+the
+data
+without
+distorting
+the
+shape
+of
+the
+waves.
+smooths the data without distorting the shape of the waves.
+Another
+AnotherEEG
+EEGdata
+datafiltering
+filteringstudy
+studyisisprovided
+providedin
+in [76].
+[76]. This
+Thisstudy
+studyemploys
+employsaamoving
+movingaverage
+average
+filtering
+on
+extracted
+features
+and
+then
+classifies
+the
+signal
+by
+using
+an
+SVM.
+It
+very
+filtering on extracted features and then classifies the signal by using an SVM. It achieves achieves
+very promising
+promising
+accuracy
+results
+with
+limited
+processing
+time
+compared
+to
+similar
+studies.
+accuracy results with limited processing time compared to similar studies.
+Emotions
+Emotionschange
+changequicker
+quickerthan
+thanmoods
+moodsfor
+forhealthy
+healthypeople
+people [77].
+[77]. However,
+However,ininvery
+veryshort
+shorttime
+time
+intervals
+(in
+the
+range
+of
+few
+seconds),
+the
+emotions
+show
+lesser
+variance
+in
+healthy
+individuals
+intervals (in the range of few seconds), the emotions show lesser variance in healthy individualswith
+with
+good
+goodemotion
+emotionregulation.
+regulation.Different
+Differentfrom
+fromthe
+thestudies
+studies[75,76],
+[75,76],the
+thefiltering
+filteringisisapplied
+appliedon
+onthe
+theoutput
+outputinin
+our
+small-time
+interval
+ourmethod.
+method.ItItisisassumed
+assumedthat
+thatinina adefined
+defined
+small-time
+interval Tthe
+theemotion
+emotionstate
+statedoes
+doesnot
+notchange.
+change.
+Therefore,
+we
+apply
+a
+median
+filter
+on
+the
+output
+data
+inside
+a
+specific
+time
+interval
+with
+Therefore, we apply a median filter on the output data inside a specific time interval withan
+anaim
+aimofof
+removing
+the
+false
+alarms
+and
+increase
+the
+overall
+emotion
+classification
+accuracy.
+This
+process
+removing the false alarms and increase the overall emotion classification accuracy. This processisis
+shown
+shownininFigure
+Figure44where
+whereAAand
+andBBstands
+standsfor
+fordifferent
+differentclasses.
+classes.
+
+Figure 4. Filtering on Output.
+Figure 4. Filtering on Output.
+
+Sensors 2020, 20, 2034
+Sensors 2020, 20, x FOR PEER REVIEW
+
+10 of 20
+10 of 20
+
+Finally,
+process
+thatthat
+describes
+howhow
+model
+training
+and testing
+is carried
+out is visually
+Finally,the
+theoverall
+overall
+process
+describes
+model
+training
+and testing
+is carried
+out is
+depicted
+in
+Figure
+5.
+visually depicted in Figure 5.
+
+Figure
+Overall training
+training and
+and testing
+Figure 5.
+5. Overall
+testing process
+process of
+of the
+the EEG-based
+EEG-based emotion
+emotion recognition
+recognition model.
+model.
+
+5. Results and Discussions
+5. Results and Discussions
+In this work, for SEED dataset, classification tests are conducted for two categories of classification:
+In this work, for SEED dataset, classification tests are conducted for two categories of
+two-classes: Positive–Negative valence (Pos–Neg) and three-classes: Positive–Neutral–Negative
+classification: two-classes: Positive–Negative valence (Pos–Neg) and three-classes: Positive–Neutral–
+valence (Pos–Neu–Neg). SEED dataset provides the labels as negative, neutral and positive.
+Negative valence (Pos–Neu–Neg). SEED dataset provides the labels as negative, neutral and positive.
+DEAP dataset labels the valence and arousal between one and nine. The valence values above
+DEAP dataset labels the valence and arousal between one and nine. The valence values above 4.5 are
+4.5 are taken as positive and the values smaller than 4.5 are taken as negative. For the LUMED dataset,
+taken as positive and the values smaller than 4.5 are taken as negative. For the LUMED dataset,
+classification is completed as either positive or negative valence. One-subject-out classifications
+classification is completed as either positive or negative valence. One-subject-out classifications for
+for each dataset are conducted and the results are compared to several reference studies, which
+each dataset are conducted and the results are compared to several reference studies, which provide
+provide cross-subject and cross-dataset results. In one-subject-out tests, one subject’s data are excluded
+cross-subject and cross-dataset results. In one-subject-out tests, one subject’s data are excluded
+completely from the training set. The remaining training set is divided into training and validation
+completely from the training set. The remaining training set is divided into training and validation
+sets. In this work, during training, when we do not see improvement on validation accuracy for six
+sets. In this work, during training, when we do not see improvement on validation accuracy for six
+consecutive epochs, we stopped the training and applied the test data on the final model. An example
+consecutive epochs, we stopped the training and applied the test data on the final model. An example
+is shown in Figure 6. For each user, Table 3 depicts one-subject-out tests for the SEED dataset based on
+is shown in Figure 6. For each user, Table 3 depicts one-subject-out tests for the SEED dataset based
+all sessions together, with and without normalization and with and without output filtering. We also
+on all sessions together, with and without normalization and with and without output filtering. We
+obtained the accuracy results without pooling and dense layers. The mean accuracies dropped by 8.3%
+also obtained the accuracy results without pooling and dense layers. The mean accuracies dropped
+and 11.1% without pooling and dense layers, respectively. Applying the median filter on the predicted
+by 8.3% and 11.1% without pooling and dense layers, respectively. Applying the median filter on the
+output improves the mean accuracy by approximately 4% for the SEED dataset. The filter size is
+predicted output improves the mean accuracy by approximately 4% for the SEED dataset. The filter
+empirically and set to five. This corresponds approximately to six seconds of data. In this time interval
+size is empirically and set to five. This corresponds approximately to six seconds of data. In this time
+it is assumed that the emotion state remains unchanged. It can be seen in Table 3 that the accuracy
+interval it is assumed that the emotion state remains unchanged. It can be seen in Table 3 that the
+for some users is high and for some users it is relatively lower. This is based on the modeling of the
+accuracy for some users is high and for some users it is relatively lower. This is based on the modeling
+network with the remaining training data after excluding the test data. However, standard deviation is
+of the network with the remaining training data after excluding the test data. However, standard
+still acceptable. Another issue is that when the number of classes is increased from two (Pos–Neg) to
+deviation is still acceptable. Another issue is that when the number of classes is increased from two
+three (Pos–Neg–Neu), the prediction accuracies drop. This is because some samples labelled as neutral
+(Pos–Neg) to three (Pos–Neg–Neu), the prediction accuracies drop. This is because some samples
+might fall into the negative or the positive classes.
+labelled as neutral might fall into the negative or the positive classes.
+One of the most important characteristics of our work in this paper is that we provide the accuracy
+One of the most important characteristics of our work in this paper is that we provide the
+scores for each subject separately. This is not observed in most of the other reference studies that tackle
+accuracy scores for each subject separately. This is not observed in most of the other reference studies
+EEG-based emotion recognition.
+that tackle EEG-based emotion recognition.
+
+Sensors 2020, 20, 2034
+Sensors 2020, 20, x FOR PEER REVIEW
+
+11 of 20
+11 of 20
+
+Figure 6.
+6. An example
+example of
+of network
+network training.
+training.
+Figure
+Table
+Table3.
+3. “One
+“One subject
+subject out”
+out” classification
+classification accuracies
+accuraciesfor
+forthe
+theSEED
+SEEDdataset.
+dataset.
+
+Users
+
+Accuracy
+Accuracy
+Accuracy
+Accuracy
+Accuracy
+(without
+Accuracy
+(without
+Accuracy
+Accuracy (with
+Accuracy
+1
+(with(Pos-Neu-Neg)2 Normalization)
+Accuracy
+(Pos-Neg)
+Normalization)
+(Pos(without Filtering)
+(without
+(Pos-Neg)
+(Pos-Neg)
+(Pos-Neu-Neg)
+Filtering)
+(Pos-
+
+Accuracy
+Accuracy
+(with Filtering)
+(with
+(Pos-Neu-Neg)
+
+Filtering)
+NeuNormalization)
+Normalization)
+74.2
+88.5 (Pos73.3
+55.2
+78.2
+(Pos-NeuNeg)2
+(Pos-Neg) 86.7
+(Pos-Neu-Neg)
+76.3
+72.8
+57.4
+78.5
+Neg)
+Neg)
+56.7
+74.3
+61.6
+53.9
+67.7
+74.2
+88.5
+73.3
+55.2
+78.2
+69.4
+96.1
+83.4
+72.4
+88.3
+70.1 76.3
+83.2 86.7
+74.172.8
+54.3
+76.5
+57.4
+78.5
+81.8 56.7
+96.4 74.3
+85.361.6
+67.7
+89.1
+53.9
+67.7
+56.2
+77.7
+64.4
+53.5
+70.3
+69.4
+96.1
+83.4
+72.4
+88.3
+49.3
+75.2
+62.9
+51.3
+69.2
+61.5 70.1
+90.5 83.2
+79.274.1
+64.8
+82.7
+54.3
+76.5
+70.1 81.8
+82.7 96.4
+69.385.3
+56.0
+74.5
+67.7
+89.1
+65.7
+83.1
+73.0
+59.9
+78.1
+53.5
+70.3
+72.0 56.2
+85.7 77.7
+75.664.4
+63.2
+78.4
+51.3
+69.2
+80.2 49.3
+94.2 75.2
+81.362.9
+73.1
+84.9
+72.3 61.5
+91.8 90.5
+73.979.2
+61.1
+78.5
+64.8
+82.7
+73.9
+92.3
+75.4
+60.3
+80.3
+56.0
+74.5
+68.64 70.1
+86.56 82.7
+73.769.3
+60.27
+78.34
+59.9
+78.1
+8.88 65.7
+6.94 83.1
+6.8073.0
+6.59
+6.11
+1 Pos–Neg: Positive–Negative,
+2 Pos–Neu–Neg:
+User 12
+81.6
+72.0
+85.7
+75.6
+63.2
+78.4
+Positive–Neutral–Negative.
+User 13
+91.2
+80.2
+94.2
+81.3
+73.1
+84.9
+Table
+comparison73.9
+of several top61.1
+studies, which78.5
+provides
+User
+14 4 shows
+86.4the cross-subject
+72.3 accuracy 91.8
+the User
+results
+for
+2-classes
+(Pos–Neg)
+or
+3-classes
+(Pos–Neu–Neg).
+For
+Pos–Neg,
+the
+proposed
+method
+15
+89.2
+73.9
+92.3
+75.4
+60.3
+80.3
+achieves
+86.5% accuracy
+which 68.64
+is slightly lower86.56
+than ST-SBSSVM
+has far
+Average
+82.94
+73.7 [48]. However,
+60.27 our method
+78.34
+lessStd.Dev.
+complexity, since
+depend on pre-feature
+8.32 it does not 8.88
+6.94 extraction
+6.80 and associated
+6.59 complex calculations.
+6.11
+1 Pos–Neg:
+2 Pos–Neu–Neg:
+Furthermore, it is
+not clearPositive–Negative,
+in [48] if the reported
+maximum
+accuracy of ST-SBSSVM corresponds
+Positive–Neutral–Negative.
+to the mean prediction accuracy of all subjects, or the maximum prediction accuracy of any subject
+Table 4 shows the cross-subject accuracy comparison of several top studies, which provides the
+amongst all.
+results for 2-classes (Pos–Neg) or 3-classes (Pos–Neu–Neg). For Pos–Neg, the proposed method
+Another issue is that many reference cross-subject studies use the excluded users’ data for
+achieves 86.5% accuracy which is slightly lower than ST-SBSSVM [48]. However, our method has far
+validation during the training process. In domain adaptation methods, target domain is also used
+less complexity, since it does not depend on pre-feature extraction and associated complex
+with source domain to convert data into an intermediate common subspace that makes distributions
+calculations. Furthermore, it is not clear in [48] if the reported maximum accuracy of ST-SBSSVM
+of target and source domain closer. Similar approach with adding an error function is used in [50].
+corresponds to the mean prediction accuracy of all subjects, or the maximum prediction accuracy of
+Using the target domain with source domain can increase the cross-subject [50,62] accuracy because
+any subject amongst all.
+of that the distributions between labelled and unlabeled data are controlled by some cost functions
+Another issue is that many reference cross-subject studies use the excluded users’ data for
+empirically. However, these kinds of approaches are not well-directed, as we should know that we
+validation during the training process. In domain adaptation methods, target domain is also used
+with source domain to convert data into an intermediate common subspace that makes distributions
+Users
+
+User 1
+User 2
+User 3
+User
+User 41
+User 52
+User
+User 63
+User
+User 7
+User
+User 84
+User 95
+User
+User
+User106
+User 11
+User127
+User
+User138
+User
+User
+User149
+User 15
+User
+10
+Average
+User
+11
+Std.Dev.
+
+85.7
+Neg)1
+83.6
+69.2
+85.7
+95.9
+78.4
+83.6
+95.8
+69.2
+72.9
+95.9
+69.2
+88.6
+78.4
+77.8
+95.8
+78.6
+72.9
+81.6
+69.2
+91.2
+86.4
+88.6
+89.2
+77.8
+82.94
+78.6
+8.32
+
+Sensors 2020, 20, 2034
+
+12 of 20
+
+only have the source domain in cross-subject and/or cross-dataset classification. We aim to generate a
+model and feature set only from source domain which will be tested with unused target data (either
+labelled or unlabeled). Validation and training data should be clearly split, where excluded subjects’
+data should not be used in the validation. After reaching the furthest epoch, where overfitting does
+not kick in yet, training should be stopped. Then, the final trained model should be tested with the
+excluded subjects’ data. In our study, we respected this rule.
+Table 4. “One-subject-out” prediction accuracies of reference studies using the SEED dataset.
+Work
+
+Accuracy
+(Pos-Neg)
+
+Accuracy
+(Pos-Nue-Neg)
+
+89.0
+86.5
+-
+
+85.3
+78.3
+82.1
+80.4
+77.8
+71.6
+67.5
+62.4
+72.4
+
+ST-SBSSVM [48]
+RGNN [55]
+Proposed
+CNN-DDC [50]
+ASFM [62]
+SAAE [47]
+TCA [46]
+GFK [78]
+KPCA [79]
+MIDA [80]
+
+Table 5 shows the accuracy results of proposed model for the DEAP database for two-classes
+(Pos-Neg). Generally, the reported accuracies are lower than the ones achieved in the SEED dataset.
+This may be due to the poorer labelling quality of the samples in the DEAP dataset. Some reference
+studies employ varying re-labelling strategies on the samples of the DEAP dataset to revise class labels.
+This automatically increases the reported prediction accuracy levels. However, we decided not to alter
+and respect the original labelling strategy used in that dataset. We only set the threshold in the exact
+midpoint of the scale of one to nine to divide the samples into two classes, positive and negative. It is
+acceptable to achieve slightly lower accuracy values than some others as shown in Table 6. To reiterate,
+post median filtering improves the mean prediction accuracy by approximately 4%.
+Table 5. “One-subject-out” prediction accuracies for DEAP dataset using two-classes (Pos-Neg).
+Users
+
+Accuracy
+
+Accuracy
+(with Median Filtering)
+
+User 1
+User 2
+User 3
+User 4
+User 5
+User 6
+User 7
+User 8
+User 9
+User 10
+User 11
+User 12
+User 13
+User 14
+User 15
+User 16
+User 17
+User 18
+User 19
+User 20
+
+65.1
+71.2
+67.8
+61.7
+73.1
+82.5
+75.5
+67.6
+62.8
+61.9
+68.8
+64.3
+69.1
+64.3
+65.6
+68.7
+65.6
+75.8
+66.9
+70.4
+
+69.2
+73.4
+69.1
+65.3
+75.9
+85.4
+77.2
+71.3
+67.9
+66.6
+72.5
+69.8
+74.9
+68.8
+70.2
+72.1
+70.7
+78.3
+72.1
+73.2
+
+Sensors 2020, 20, 2034
+
+13 of 20
+
+Table 5. Cont.
+Users
+
+Accuracy
+
+Accuracy
+(with Median Filtering)
+
+User 21
+User 22
+User 23
+User 24
+User 25
+User 26
+User 27
+User 28
+User 29
+User 30
+User 31
+User 32
+Average
+Std. Dev.
+
+64.5
+61.6
+80.7
+62.5
+64.9
+69.7
+82.7
+68.9
+61.7
+72.9
+73.1
+63.6
+68.60
+5.85
+
+68.8
+68.3
+83.6
+69.4
+70.1
+72.9
+85.3
+73.8
+69.9
+77.7
+78.4
+68.1
+72.81
+5.07
+
+Table 6 shows the prediction accuracies of several studies that use the DEAP dataset for two classes
+(Pos-Neg). Our proposed method yields promising accuracy results with only limited complexity
+(e.g., without any pre-feature extraction cycle) when compared to others. For all eight incoming EEG
+data channels, the windowing, reshaping, normalization and classification processes take on average
+0.34 sec on the test workstation (Core i-9, 3.6 GHz, 64 Gb RAM). This is the computational time used by
+the Python script and KERAS framework. Hence, the data classification can be achieved with roughly
+a delay of half a second, rendering our method usable in real-time systems.
+Table 6. One-subject-out accuracy comparison of several studies for the DEAP dataset (Pos-Neg).
+Work
+
+Accuracy
+
+FAWT [53]
+T-RFE [54]
+Proposed
+ST-SBSSVM [48]
+VMD-DNN [51]
+MIDA [80]
+TCA [46]
+SA [81]
+ITL [82]
+GFK [78]
+KPCA [79]
+
+79.9
+78.7
+72.8
+72
+62.5
+48.9
+47.2
+38.7
+40.5
+46.5
+39.8
+
+Table 7 shows the accuracy results of our proposed model on the LUMED dataset for two-classes
+(Pos-Neg). It produces a mean prediction accuracy of 81.8% with a standard deviation of 10.9.
+Post media filtering increases the mean accuracy by approximately 4.5%.
+In this work, cross-dataset tests are also conducted between the SEED–DEAP, SEED–LUMED and
+DEAP–LUMED datasets for positive and negative labels. Table 8 shows the cross-dataset accuracy
+results between the SEED and DEAP. Our model is trained using the data in the SEED dataset and
+tested on the DEAP dataset separately. It yields 58.10% mean prediction accuracy, which is promising
+in this context. The comparison of the cross-dataset performance of our proposed model with the
+other cross-dataset studies is shown in Table 9. The cross-dataset accuracy of our model is consistently
+superior to other studies. Table 10 shows the cross-dataset results between SEED–LUMED and
+DEAP–LUMED. Since LUMED is a new dataset, we cannot give any benchmark results with other
+studies. However, the mean accuracy results and standard deviations are promising.
+
+Sensors 2020, 20, 2034
+
+14 of 20
+
+Table 7. One-subject-out prediction accuracies for the LUMED dataset.
+Users
+
+Accuracy
+
+Accuracy
+(with Filtering)
+
+User 1
+User 2
+User 3
+User 4
+User 5
+User 6
+User 7
+User 8
+User 9
+User 10
+User 11
+Average
+Std. Dev.
+
+85.8
+56.3
+82.2
+73.8
+92.1
+67.8
+66.3
+89.7
+86.3
+89.1
+58.9
+77.11
+12.40
+
+87.1
+62.7
+86.4
+78.5
+95.3
+74.1
+71.4
+93.5
+89.9
+93.4
+67.6
+81.80
+10.92
+
+Table 8. Cross-dataset prediction accuracy results (Trained on SEED and Tested on DEAP).
+
+Users
+
+Accuracy
+(Pos-Neg)
+
+Accuracy
+(with Median Filtering)
+(Pos-Neg)
+
+User 1
+User 2
+User 3
+User 4
+User 5
+User 6
+User 7
+User 8
+User 9
+User 10
+User 11
+User 12
+User 13
+User 14
+User 15
+User 16
+User 17
+User 18
+User 19
+User 20
+User 21
+User 22
+User 23
+User 24
+User 25
+User 26
+User 27
+User 28
+User 29
+User 30
+User 31
+User 32
+Average
+Std. Dev.
+
+50.5
+61.7
+43.3
+46.0
+68.9
+45.3
+73.4
+51.9
+62.3
+63.8
+48.6
+46.4
+50.1
+70.4
+58.8
+59.7
+46.6
+64.7
+47.9
+39.1
+62.1
+45.6
+61.4
+54.0
+50.8
+40.8
+39.2
+42.4
+46.2
+41.7
+61.4
+53.8
+53.08
+9.54
+
+54.9
+63.7
+47.3
+51.5
+71.9
+49.4
+77.2
+56.3
+67.9
+68.6
+53.6
+51.3
+57.1
+76.9
+62.8
+66.3
+53.1
+68.5
+53.3
+44.6
+68.8
+51.3
+69.9
+59.2
+56.3
+44.7
+45.3
+48.4
+50.3
+46.2
+65.7
+57.1
+58.10
+9.51
+
+Sensors 2020, 20, 2034
+
+15 of 20
+
+Table 9. One-subject-out cross-dataset prediction accuracy and standard deviation comparison of
+several studies (Trained on the SEED and tested on the DEAP).
+Work
+
+Accuracy (Pos-Neg)
+
+Standard Deviation
+
+Proposed
+MIDA [80]
+TCA [46]
+SA [81]
+ITL [82]
+GFK [78]
+KPCA [79]
+
+58.10
+47.1
+42.6
+37.3
+34.5
+41.9
+35.6
+
+9.51
+10.60
+14.69
+7.90
+13.17
+11.33
+6.97
+
+Table 10. Cross-dataset prediction accuracy results (Trained on the SEED/DEAP and tested on
+the LUMED).
+Trained on SEED
+Users
+(LUMED)
+User 1
+User 2
+User 3
+User 4
+User 5
+User 6
+User 7
+User 8
+User 9
+User 10
+User 11
+Average
+Std. Dev.
+
+Trained on DEAP
+
+Accuracy
+(Pos-Neg)
+
+Accuracy
+(with Median Filtering)
+(Pos-Neg)
+
+Accuracy
+(Pos-Neg)
+
+Accuracy
+(with Median Filtering)
+(Pos-Neg)
+
+68.2
+54.5
+54.3
+59.6
+44.8
+67.1
+53.2
+64.5
+48.6
+64.9
+57.1
+57.89
+7.33
+
+72.3
+61.7
+59.6
+64.1
+53.7
+73.5
+60.8
+71.2
+50.9
+76.3
+64.8
+64.44
+7.82
+
+42.7
+50.4
+49.7
+51.3
+87.1
+52.6
+53.8
+46.0
+84.7
+51.5
+63.8
+57.6
+14.23
+
+48.3
+56.8
+54.1
+57.9
+89.7
+58.4
+59.2
+49.3
+85.6
+58.8
+67.1
+62.29
+12.91
+
+6. Conclusions
+In many recognition and classification problems, the most time and resource consuming aspect
+is the feature extraction process. Many scientists focus on extracting meaningful features from the
+EEG signals either in time and/or frequency domains in order to achieve successful classification
+results. However, the derived feature sets, which can be useful in the classification problem for one
+subject, recording session or dataset can fail for different subjects, recording sessions and datasets.
+Furthermore, since the feature extraction process is a complex and time-consuming process, it is not
+particularly suitable for online and real-time classification problems. In this study, we do not rely on a
+separate pre-feature extraction process and shift this task to the deep learning cycle that inherently
+employs this process. Hence, we do not manually remove any potentially useful information from
+the raw EEG channels. Similar approaches, where deep neural networks are utilized for recognition,
+were applied in different domains, such as in [83] where electromagnetic sources can be recognized.
+The success of CNNs has already been shown as highly competent in various classification tasks,
+especially in the image classification context. Therefore, we deploy of a pretrained CNN architecture
+called InceptionResnetV2 to classify the EEG data. We have taken the necessary steps to reshape the
+input data to feed into and train this network.
+One of the most important issues, which influences the success of deep learning approaches
+is the data themselves and the quality and reliability of the labels of the data. The “Brouwer
+recommendations” about data collection given in [19] are very useful for handling accurate data and
+labelling. Particularly during the EEG data recording process, these recommendations should be
+double-checked due to the EEG recording device’s sensitivity to noise.
+
+Sensors 2020, 20, 2034
+
+16 of 20
+
+EEG signals are non-stationary and nonlinear. This makes putting forth a general classification
+model and a set of features based on the well-studied spectral band powers difficult. It is important to
+be able to identify stable feature sets between subjects, recording sessions and datasets. Since CNN is
+very successful at extracting not-so-obvious features from the input data for complex classification
+problems, we exploit a state-of-the-art pretrained CNN model called InceptionResnetV2, and do not
+filter out any information from the raw EEG signals. For robustness, we further enrich this deep
+network by adding fully connected dense layers. This increases the depth and prevents the network
+from falling into probable ill-conditions and overfitting problems.
+In this work, we applied the model successfully on three different EEG datasets: SEED, DEAP
+and LUMED. Furthermore, we tested our model in a cross-dataset context. We trained our model with
+the SEED dataset, tested on the DEAP and LUMED datasets. Moreover, we trained our model with
+the DEAP dataset and tested on the LUMED dataset. We showed that the results are promising and
+superior to most of the reference techniques. Once we generate the fully pretrained model, we can feed
+any online raw data directly as inputs to get the output class immediately. Since there is no dedicated
+pre-feature extraction process, our model is more suitable to be deployed in real-time applications.
+Author Contributions: Conceptualization, Y.C.; methodology, Y.C.; software, Y.C.; validation, Y.C.; formal
+analysis, Y.C., E.E.; investigation, Y.C.; resources, Y.C.; data curation, Y.C.; writing—original draft preparation,
+Y.C., E.E.; writing—review and editing, Y.C, E.E.; visualization, Y.C., E.E.; supervision, E.E.; project administration,
+Y.C., E.E.; funding acquisition, E.E. All authors have read and agreed to the published version of the manuscript.
+Funding: This work was supported by an Institutional Links grant, ID 352175665, under the Newton-Katip
+Celebi partnership between the UK and Turkey. The grant is funded by the UK Department of Business, Energy
+and Industrial Strategy (BEIS) and The Scientific and Technological Research Council of Turkey (TUBITAK) and
+delivered by the British Council. For further information, please visit www.newtonfund.ac.uk.
+Acknowledgments: We would like to thank the creators of DEAP and SEED datasets for openly sharing them with
+us and the wider research community. The authors would also like to thank all volunteering staff and students in
+Loughborough University London for participating in the recording sessions to generate the LUMED dataset.
+Conflicts of Interest: The authors declare no conflict of interest.
+
+References
+1.
+2.
+3.
+4.
+5.
+
+6.
+7.
+8.
+
+9.
+
+10.
+
+Top 14 EEG Hardware Companies. Available online: https://imotions.com/blog/top-14-eeg-hardwarecompanies-ranked/ (accessed on 9 February 2020).
+Jurcak, V.; Tsuzuki, D.; Dan, I. 10/20, 10/10, and 10/5 systems revisited: Their validity as relative
+head-surface-based positioning systems. NeuroImage 2007, 34, 1600–1611. [CrossRef] [PubMed]
+Aboalayon, K.A.I.; Faezipour, M.; Almuhammadi, W.S.; Moslehpour, S. Sleep Stage Classification Using EEG
+Signal Analysis: A Comprehensive Survey and New Investigation. Entropy 2016, 18, 272. [CrossRef]
+Acharya, U.; Sree, S.V.; Swapna, G.; Martis, R.J.; Suri, J.S. Automated EEG analysis of epilepsy: A review.
+Knowl. Based Syst. 2013, 45, 147–165. [CrossRef]
+Engemann, D.; Raimondo, F.; King, J.-R.; Rohaut, B.; Louppe, G.; Faugeras, F.; Annen, J.; Cassol, H.;
+Gosseries, O.; Slezak, D.F.; et al. Robust EEG-based cross-site and cross-protocol classification of states of
+consciousness. Brain 2018, 141, 3179–3192. [CrossRef]
+Arns, M.; Conners, C.K.; Kraemer, H.C. A decade of EEG theta/beta ratio research in ADHD: A meta-analysis.
+J. Atten. Disord. 2013, 17, 374–383. [CrossRef]
+Liu, N.-H.; Chiang, C.-Y.; Chu, H.-C. Recognizing the Degree of Human Attention Using EEG Signals from
+Mobile Sensors. Sensors 2013, 13, 10273–10286. [CrossRef]
+Shestyuk, A.; Kasinathan, K.; Karapoondinott, V.; Knight, R.T.; Gurumoorthy, R. Individual EEG measures
+of attention, memory, and motivation predict population level TV viewership and Twitter engagement.
+PLoS ONE 2019, 14, e0214507. [CrossRef]
+Mohammadpour, M.; Mozaffari, S. Classification of EEG-based attention for brain computer interface.
+In Proceedings of the 3rd Iranian Conference on Intelligent Systems and Signal Processing (ICSPIS),
+Shahrood, Iran, 20–21 December 2017; pp. 34–37. [CrossRef]
+So, W.K.Y.; Wong, S.; Mak, J.N.; Chan, R.H.M. An evaluation of mental workload with frontal EEG. PLoS ONE
+2017, 12. [CrossRef]
+
+Sensors 2020, 20, 2034
+
+11.
+12.
+
+13.
+14.
+15.
+16.
+17.
+18.
+19.
+20.
+
+21.
+22.
+
+23.
+24.
+25.
+26.
+27.
+28.
+
+29.
+30.
+
+31.
+32.
+33.
+
+34.
+
+17 of 20
+
+Thejaswini, S.; Ravikumar, K.M.; Jhenkar, L.; Aditya, N.; Abhay, K.K. Analysis of EEG Based Emotion
+Detection of DEAP and SEED-IV Databases Using SVM. Int. J. Recent Technol. Eng. 2019, 8, 207–211.
+Liu, J.; Meng, H.; Nandi, A.; Li, M. Emotion detection from EEG recordings. In Proceedings of the 12th
+International Conference on Natural Computation, Fuzzy Systems and Knowledge Discovery (ICNC-FSKD),
+Changsha, China, 13–15 August 2016; pp. 1722–1727.
+Gómez, A.; Quintero, L.; López, N.; Castro, J. An approach to emotion recognition in single-channel EEG
+signals: A mother child interaction. J. Phys. Conf. Ser. 2016, 705, 12051. [CrossRef]
+Xing, X.; Li, Z.; Xu, T.; Shu, L.; Hu, B.; Xu, X. SAE+LSTM: A New Framework for Emotion Recognition From
+Multi-Channel EEG. Front. Neurorobot. 2019, 13, 37. [CrossRef] [PubMed]
+Müller-Putz, G.; Peicha, L.; Ofner, P. Movement Decoding from EEG: Target or Direction. In Proceedings of
+the 7th Graz Brain-Computer Interface Conference, Graz, Austria, 18–22 September 2017. [CrossRef]
+Padfield, N.; Zabalza, J.; Zhao, H.; Masero, V.; Ren, J. EEG-Based Brain-Computer Interfaces Using
+Motor-Imagery: Techniques and Challenges. Sensors 2019, 19, 1423. [CrossRef] [PubMed]
+Mondini, V.; Mangia, A.L.; Cappello, A. EEG-Based BCI System Using Adaptive Features Extraction and
+Classification Procedures. Comput. Intell. Neurosci. 2016, 2016, 1–14. [CrossRef] [PubMed]
+Picard, R.W. Affective Computing; MIT Media Laboratory, Perceptual Computing: Cambridge, MA, USA, 1995.
+Alarcao, S.M.; Fonseca, M.J. Emotions Recognition Using EEG Signals: A Survey. IEEE Trans. Affect. Comput.
+2019, 10, 374–393. [CrossRef]
+Ekman, P.; Friesen, W.V.; O’Sullivan, M.; Chan, A.; Diacoyanni-Tarlatzis, I.; Heider, K.; Krause, R.;
+Lecompte, W.A.; Pitcairn, T.; Ricci-Bitti, P.E.; et al. Universals and cultural differences in the judgments of
+facial expressions of emotion. J. Pers. Soc. Psychol. 1987, 53, 712–717. [CrossRef] [PubMed]
+Scherer, K.R. What are emotions? And how can they be measured? Soc. Sci. Inf. 2005, 44, 695–729. [CrossRef]
+Koelstra, S.; Muhl, C.; Soleymani, M.; Lee, J.-S.; Yazdani, A.; Ebrahimi, T.; Pun, T.; Nijholt, A.; Patras, I. DEAP:
+A Database for Emotion Analysis; Using Physiological Signals. IEEE Trans. Affect. Comput. 2011, 3, 18–31.
+[CrossRef]
+Russell, J.A. A circumplex model of affect. J. Pers. Soc. Psychol. 1980, 39, 1161–1178. [CrossRef]
+Aydin, S.G.; Kaya, T.; Guler, H. Wavelet-based study of valence-arousal model of emotions on EEG signals
+with LabVIEW. Brain Inform. 2016, 3, 109–117. [CrossRef]
+Paltoglou, G.; Thelwall, M. Seeing Stars of Valence and Arousal in Blog Posts. IEEE Trans. Affect. Comput.
+2012, 4, 116–123. [CrossRef]
+The McGill Physiology Virtual Lab. Available online: https://www.medicine.mcgill.ca/physio/vlab/biomed_
+signals/eeg_n.htm (accessed on 9 February 2020).
+Al-Fahoum, A.S.; Al-Fraihat, A.A. Methods of EEG Signal Features Extraction Using Linear Analysis in
+Frequency and Time-Frequency Domains. ISRN Neurosci. 2014, 2014, 1–7. [CrossRef] [PubMed]
+Duan, R.-N.; Zhu, J.-Y.; Lu, B.-L. Differential entropy feature for EEG-based emotion classification.
+In Proceedings of the 6th International IEEE/EMBS Conference on Neural Engineering (NER), San Diego,
+CA, USA, 5–8 November 2013; pp. 81–84.
+Zheng, W.-L.; Lu, B.-L. Investigating Critical Frequency Bands and Channels for EEG-Based Emotion
+Recognition with Deep Neural Networks. IEEE Trans. Auton. Ment. Dev. 2015, 7, 162–175. [CrossRef]
+George, F.P.; Shaikat, I.M.; Hossain, P.S.F.; Parvez, M.Z.; Uddin, J. Recognition of emotional states using EEG
+signals based on time-frequency analysis and SVM classifier. Int. J. Electr. Comput. Eng. 2019, 9, 1012–1020.
+[CrossRef]
+Soundarya, S. An EEG based emotion recognition and classification using machine learning techniques, I.
+J. Emerg. Technol. Innov. Eng. 2019, 5, 744–750.
+Swati, V.; Preeti, S.; Chamandeep, K. Classification of Human Emotions using Multiwavelet Transform based
+Features and Random Forest Technique. Indian J. Sci. Technol. 2015, 8, 1–7.
+Bono, V.; Biswas, D.; Das, S.; Maharatna, K. Classifying human emotional states using wireless EEG based
+ERP and functional connectivity measures. In Proceedings of the IEEE-EMBS International Conference on
+Biomedical and Health Informatics (BHI), Las Vegas, NV, USA, 24–27 February 2016; pp. 200–203. [CrossRef]
+Nattapong, T.; Ken-ichi, F.; Masayuki, N. Application of Deep Belief Networks in EEG, based Dynamic
+Music-emotion Recognition. In Proceedings of the 2016 International Joint Conference on Neural Networks
+(IJCNN), Vancouver, BC, Canada, 25–29 July 2016.
+
+Sensors 2020, 20, 2034
+
+35.
+36.
+
+37.
+
+38.
+39.
+40.
+
+41.
+42.
+43.
+44.
+
+45.
+46.
+47.
+
+48.
+49.
+50.
+51.
+52.
+
+53.
+54.
+55.
+56.
+57.
+
+18 of 20
+
+Prieto, L.A.B.; Oplatková, Z.K. Emotion Recognition using AutoEncoders and Convolutional Neural
+Networks. MENDEL 2018, 24, 113–120. [CrossRef]
+Chen, J.X.; Zhang, P.W.; Mao, Z.J.; Huang, Y.F.; Jiang, D.M.; Zhang, Y.N. Accurate EEG-Based Emotion
+Recognition on Combined Features Using Deep Convolutional Neural Networks. IEEE Access 2019, 7,
+44317–44328. [CrossRef]
+Tripathi, S.; Acharya, S.; Sharma, R.D.; Mittal, S.; Bhattacharya, S. Using deep and convolutional neural
+networks for accurate emotion classification on DEAP Dataset. In Proceedings of the Thirty-First AAAI
+Conference on Artificial Intelligence, San Francisco, CA, USA, 4–9 February 2017; pp. 4746–4752.
+Salama, E.S.; El-Khoribi, R.A.; Shoman, M.E.; Shalaby, M.A. EEG-based emotion recognition using 3D
+convolutional neural networks. Int. J. Adv. Comput. Sci. Appl. 2018, 9, 329–337. [CrossRef]
+Alhagry, S.; Fahmy, A.A.; El-Khoribi, R.A. Emotion Recognition based on EEG using LSTM Recurrent Neural
+Network. Int. J. Adv. Comput. Sci. Appl. 2017, 8, 355–358. [CrossRef]
+Jeevan, R.K.; Kumar, P.S.; Srivikas, M.; Rao, S.V.M. EEG-based emotion recognition using LSTM-RNN
+machine learning algorithm. In Proceedings of the 1st International Conference on Innovations in Information
+and Communication Technology (ICIICT), Chennai, India, 25–26 April 2019; pp. 1–4.
+Li, M.; Xu, H.; Liu, X.; Lu, S. Emotion recognition from multichannel EEG signals using K-nearest neighbor
+classification. Technol. Health Care 2018, 26, 509–519. [CrossRef]
+DEAP Dataset.
+Available online: https://www.eecs.qmul.ac.uk/mmv/datasets/deap/ (accessed on
+9 February 2020).
+Alazrai, R.; Homoud, R.; Alwanni, H.; Daoud, M.I. EEG-Based Emotion Recognition Using Quadratic
+Time-Frequency Distribution. Sensors 2018, 18, 2739. [CrossRef] [PubMed]
+Nivedha, R.; Brinda, M.; Vasanth, D.; Anvitha, M.; Suma, K.V. EEG based emotion recognition using SVM
+and PSO. In Proceedings of the International Conference on Intelligent Computing, Instrumentation and
+Control Technologies (ICICICT), Kannur, India, 6–7 July 2017; pp. 1597–1600.
+Particle Swarm Optimization. Available online: https://www.sciencedirect.com/topics/engineering/particleswarm-optimization (accessed on 9 February 2020).
+Pan, S.J.; Tsang, I.W.; Kwok, J.T.; Yang, Q. Domain Adaptation via Transfer Component Analysis. IEEE Trans.
+Neural Netw. 2010, 22, 199–210. [CrossRef] [PubMed]
+Chai, X.; Wang, Q.; Zhao, Y.; Liu, X.; Bai, O.; Li, Y. Unsupervised domain adaptation techniques based on
+auto-encoder for non-stationary EEG-based emotion recognition. Comput. Boil. Med. 2016, 79, 205–214.
+[CrossRef] [PubMed]
+Yang, F.; Zhao, X.; Jiang, W.; Gao, P.; Liu, G. Multi-method Fusion of Cross-Subject Emotion Recognition
+Based on High-Dimensional EEG Features. Front. Comput. Neurosci. 2019, 13, 53. [CrossRef]
+SEED Dataset. Available online: http://bcmi.sjtu.edu.cn/~{}seed/ (accessed on 9 February 2020).
+Zhang, W.; Wang, F.; Jiang, Y.; Xu, Z.; Wu, S.; Zhang, Y. Cross-Subject EEG-Based Emotion Recognition with
+Deep Domain Confusion. ICIRA 2019 Intell. Robot. Appl. 2019, 11740, 558–570.
+Pandey, P.; Seeja, K. Subject independent emotion recognition from EEG using VMD and deep learning.
+J. King Saud Univ. Comput. Inf. Sci. 2019, 53–58. [CrossRef]
+Keelawat, P.; Thammasan, N.; Kijsirikul, B.; Numao, M. Subject-Independent Emotion Recognition During
+Music Listening Based on EEG Using Deep Convolutional Neural Networks. In Proceedings of the IEEE
+15th International Colloquium on Signal Processing & Its Applications (CSPA), Penang, Malaysia, 8–9 March
+2019; pp. 21–26. [CrossRef]
+Gupta, V.; Chopda, M.D.; Pachori, R.B. Cross-Subject Emotion Recognition Using Flexible Analytic Wavelet
+Transform From EEG Signals. IEEE Sens. J. 2018, 19, 2266–2274. [CrossRef]
+Yin, Z.; Wang, Y.; Liu, L.; Zhang, W.; Zhang, J. Cross-Subject EEG Feature Selection for Emotion Recognition
+Using Transfer Recursive Feature Elimination. Front. Neurorobot. 2017, 11, 200. [CrossRef]
+Zhong, P.; Wang, D.; Miao, C. EEG-Based Emotion Recognition Using Regularized Graph Neural Networks.
+arXiv 2019. in Press.
+Pan, S.J.; Yang, Q. A Survey on Transfer Learning. IEEE Trans. Knowl. Data Eng. 2009, 22, 1345–1359.
+[CrossRef]
+Krauledat, M.; Tangermann, M.; Blankertz, B.; Müller, K.-R. Towards Zero Training for Brain-Computer
+Interfacing. PLoS ONE 2008, 3, e2967. [CrossRef] [PubMed]
+
+Sensors 2020, 20, 2034
+
+58.
+59.
+60.
+
+61.
+
+62.
+
+63.
+
+64.
+65.
+66.
+
+67.
+68.
+69.
+70.
+
+71.
+72.
+73.
+
+74.
+
+75.
+
+76.
+
+77.
+
+19 of 20
+
+Fazli, S.; Popescu, F.; Danóczy, M.; Blankertz, B.; Müller, K.-R.; Grozea, C. Subject-independent mental state
+classification in single trials. Neural Netw. 2009, 22, 1305–1312. [CrossRef] [PubMed]
+Kang, H.; Nam, Y.; Choi, S. Composite Common Spatial Pattern for Subject-to-Subject Transfer. IEEE Signal
+Process. Lett. 2009, 16, 683–686. [CrossRef]
+Zheng, W.-L.; Zhang, Y.-Q.; Zhu, J.-Y.; Lu, B.-L. Transfer components between subjects for EEG-based emotion
+recognition. In Proceedings of the 2015 International Conference on Affective Computing and Intelligent
+Interaction (ACII), Xi’an, China, 21–24 September 2015; pp. 917–922.
+Zheng, W.-L.; Lu, B.-L. Personalizing EEG-based affective models with transfer learning. In Proceedings of
+the Twenty-Fifth International Joint Conference on Artificial Intelligence, New York, NY, USA, 9–15 July
+2016; pp. 2732–2738.
+Chai, X.; Wang, Q.; Zhao, Y.; Li, Y.; Wang, Q.; Liu, X.; Bai, O. A Fast, Efficient Domain Adaptation Technique for
+Cross-Domain Electroencephalography (EEG)-Based Emotion Recognition. Sensors 2017, 17, 1014. [CrossRef]
+[PubMed]
+Lan, Z.; Sourina, O.; Wang, L.; Scherer, R.; Müller-Putz, G.R. Domain Adaptation Techniques for EEG-Based
+Emotion Recognition: A Comparative Study on Two Public Datasets. IEEE Trans. Cogn. Dev. Syst. 2019, 11,
+85–94. [CrossRef]
+Tzeng, E.; Hoffman, J.; Zhang, N.; Saenko, K.; Darrell, T. Deep domain confusion: Maximizing for domain
+invariance. arXiv 2014, arXiv:1412.3474. preprint.
+Loughborough University EEG based Emotion Recognition Dataset. Available online: https://www.dropbox.
+com/s/xlh2orv6mgweehq/LUMED_EEG.zip?dl=0 (accessed on 9 February 2020).
+Plöchl, M.; Ossandón, J.P.; König, P. Combining EEG and eye tracking: Identification, characterization,
+and correction of eye movement artifacts in electroencephalographic data. Front. Hum. Neurosci. 2012, 6.
+[CrossRef]
+Enobio 8.
+Available online:
+https://www.neuroelectrics.com/solutions/enobio/8/ (accessed on
+9 February 2020).
+Pretrained Deep Neural Networks. Available online: https://uk.mathworks.com/help/deeplearning/ug/
+pretrained-convolutional-neural-networks.html (accessed on 9 February 2020).
+Keras Applications. Available online: https://keras.io/applications/#inceptionresnetv2 (accessed on
+9 February 2020).
+Wang, F.; Zhong, S.-H.; Peng, J.; Jiang, J.; Liu, Y. Data Augmentation for EEG-Based Emotion Recognition with
+Deep Convolutional Neural Networks. In MultiMedia Modeling, Proceedings of the 24th International Conference,
+MMM 2018, Bangkok, Thailand, 5–7 February 2018; Schoeffmann, K., Chalidabhongse, T.H., Ngo, C.W.,
+Aramvith, S., O’Connor, N.E., Ho, Y.-S., Gabbouj, M., Elgamma, A., Eds.; Springer: Cham, Germany, 2018;
+Volume 10705, p. 10705.
+Salzman, C.D.; Fusi, S. Emotion, cognition, and mental state representation in amygdala and prefrontal
+cortex. Annu. Rev. Neurosci. 2010, 33, 173–202. [CrossRef]
+Zhao, G.; Zhang, Y.; Ge, Y. Frontal EEG Asymmetry and Middle Line Power Difference in Discrete Emotions.
+Front. Behav. Neurosci. 2018, 12, 225. [CrossRef]
+Bos, D.O. EEG-based Emotion Recognition: The influence of Visual and Auditory Stimuli. 2006.
+Available online: http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.226.8188&rep=rep1&type=pdf
+(accessed on 3 April 2020).
+Alnafjan, A.; Hosny, M.; Al-Wabil, A.; Alohali, Y.A. Classification of Human Emotions from
+Electroencephalogram (EEG) Signal using Deep Neural Network. Int. J. Adv. Comput. Sci. Appl.
+2017, 8, 419–425.
+Kawala-Sterniuk, A.; Podpora, M.; Pelc, M.; Blaszczyszyn, M.; Gorzelanczyk, E.J.; Martinek, R.; Ozana, S.
+Comparison of Smoothing Filters in Analysis of EEG Data for the Medical Diagnostics Purposes. Sensors
+2020, 20, 807. [CrossRef] [PubMed]
+Tang, C.; Wang, D.; Tan, A.-H.; Miao, C. EEG-Based Emotion Recognition via Fast and Robust Feature
+Smoothing. In Proceedings of the 2017 International Conference on Brain Informatics, Beijing, China,
+16–18 November 2017; pp. 83–92.
+Beedie, C.; Terry, P.; Lane, A. Distinctions between emotion and mood. Cogn. Emot. 2005, 19, 847–878.
+[CrossRef]
+
+Sensors 2020, 20, 2034
+
+78.
+
+79.
+80.
+81.
+
+82.
+
+83.
+
+20 of 20
+
+Gong, B.; Shi, Y.; Sha, F.; Grauman, K. Geodesic flow kernel for unsupervised domain adaptation.
+In Proceedings of the 2012 IEEE Conference on Computer Vision and Pattern Recognition, Providence, RI,
+USA, 16–21 June 2012; pp. 2066–2073.
+Schölkopf, B.; Smola, A.; Müller, K.-R. Nonlinear Component Analysis as a Kernel Eigenvalue Problem.
+Neural Comput. 1998, 10, 1299–1319. [CrossRef]
+Yan, K.; Kou, L.; Zhang, D. Learning Domain-Invariant Subspace Using Domain Features and Independence
+Maximization. IEEE Trans. Cybern. 2018, 48, 288–299. [CrossRef] [PubMed]
+Fernando, B.; Habrard, A.; Sebban, M.; Tuytelaars, T. Unsupervised Visual Domain Adaptation Using
+Subspace Alignment. In Proceedings of the 2013 IEEE International Conference on Computer Vision, Sydney,
+Australia, 1–8 December 2013; pp. 2960–2967.
+Shi, Y.; Sha, F. Information-Theoretical Learning of Discriminative Clusters for Unsupervised Domain
+Adaptation. In Proceedings of the 2012 International Conference on Machine Learning (ICML), Edinburgh,
+Scotland, 26 June–1 July 2012; pp. 1275–1282.
+Matuszewski, J.; Pietrow, D. Recognition of electromagnetic sources with the use of deep neural networks.
+In Proceedings of the XII Conference on Reconnaissance and Electronic Warfare Systems, Oltarzew, Poland,
+19–21 November 2018. [CrossRef]
+© 2020 by the authors. Licensee MDPI, Basel, Switzerland. This article is an open access
+article distributed under the terms and conditions of the Creative Commons Attribution
+(CC BY) license (http://creativecommons.org/licenses/by/4.0/).
+
+

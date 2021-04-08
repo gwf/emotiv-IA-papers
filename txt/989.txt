@@ -1,0 +1,596 @@
+Biomedical Signal Processing and Control 15 (2015) 67–79
+
+Contents lists available at ScienceDirect
+
+Biomedical Signal Processing and Control
+journal homepage: www.elsevier.com/locate/bspc
+
+Removal of EOG artefacts by combining wavelet neural network and
+independent component analysis
+Christiaan Burger ∗ , David Jacobus van den Heever 1
+Department of Mechanical and Mechatronic Engineering, Private Bag X1, Matieland 7602, South Africa
+
+a r t i c l e
+
+i n f o
+
+Article history:
+Received 5 June 2014
+Received in revised form 14 August 2014
+Accepted 23 September 2014
+Available online 14 October 2014
+
+a b s t r a c t
+Eye activity has larger electrical potential than the average electroencephalogram (EEG) recording, thus
+making it one of the major sources of artefacts. Ocular artefacts (OA) must be removed as completely
+as possible with little or no loss of EEG to obtain a higher quality EEG. Using independent component
+analysis (ICA), the EEG is separated into independent components (IC) and the contaminated component
+is removed, thus removing the OA. However, ICA does not separate the sources completely and some of
+the meaningful EEG is lost. In this paper, a new method combining ICA and wavelet neural networking
+(WNN) is proposed. In this method, WNN is applied to the contaminated ICs, correcting the OA and thus
+lowering the data lost. The method was evaluated using simulated and real datasets and the results show
+that the OA are successfully removed with very little data loss.
+© 2014 The Authors. Published by Elsevier Ltd. This is an open access article under the CC BY-NC-ND
+license (http://creativecommons.org/licenses/by-nc-nd/3.0/).
+
+1. Introduction
+There exist many signal sources known as artefacts that lower
+the quality of electroencephalography (EEG). Among all the artefacts, ocular artefacts (OA) are the most dominant. OA exist through
+eye movements and blinks which generates a signal greater in
+magnitude than EEG signals, allowing it to travel throughout the
+scalp, masking and distorting EEG signals [1–4]. In order to obtain
+higher quality EEG signals, these artefacts must be removed without distorting or removing any of the underlying EEG data. There
+are numerous methods to restrict OA. One of the simpler methods
+is restricting the eye movements and blinking of the subject by ﬁxating on a stable point. However, during experiments it is difﬁcult
+for the subject to perform this task especially for infants or persons
+with certain disabilities. Also, the effort of performing the task can
+have a signiﬁcant impact on the acquired EEG data [5]. Another
+method is to recognize and remove contaminated trials from the
+study. Contaminated trials are recognized by detecting spike like
+signals with magnitudes greater than the EEG signal. The removal
+of these contaminated trials will however lead to loss of EEG data.
+Many complex methods for detecting and removing artefacts
+have been proposed. One such method, known as independent
+component analysis (ICA), makes use of blind source separation
+
+∗ Corresponding author. Tel.: +27 825705754.
+E-mail addresses: cburger@sun.ac.za (C. Burger), dawie@sun.ac.za
+(D.J. van den Heever).
+1
+Tel.: +27 835568311.
+
+[4,6] to determine the original sources (or an estimate of the
+sources) of a set of signals where each signal is assumed to be a
+linear mixture of the sources. There exist different assumptions,
+such as non-Gaussian (NG), non-stationary (NS), spectral density
+(SD), and hybrid for the static model of the sources [7]. For this
+article an assumption was made that the signals are NG (sources
+are independent processes) and from [7,8] it was determined that
+INFOMAX, NG ICA tool, produces the best results assisting with OA
+removal and source separation thus it will be used throughout this
+article.
+ICA has become a popular method in removing artefacts from
+EEG data. This is accomplished through removal of the component
+(source) containing the artefact and remixing remaining sources.
+The disadvantage of ICA is that the components do not necessarily
+only contain artefact data, but also contains underlying EEG data
+[2]. Removing the contaminated component will thus lead to loss
+of EEG data. Addressing this issue, Wang et al. [4] combined ICA
+and a system identiﬁcation technique to correct the contaminated
+component. The system identiﬁcation technique, auto-regressive
+exogenous (ARX) uses a short period of clean EEG before the contamination as reference EEG for correction.
+Another method known as wavelet thresholding, based on
+wavelet transform, uses wavelets or wavelet packets to decompose
+a signal into sets of coefﬁcients which represents the original signal
+in time and frequency domains. In the low-frequency sub-bands,
+large coefﬁcients are produced if an OA is present in the original
+signal. These large coefﬁcients are then decreased by a linear or
+nonlinear threshold to remove the OA [9]. The decomposition of
+the signal into detailed coefﬁcients is a great advantage because
+
+http://dx.doi.org/10.1016/j.bspc.2014.09.009
+1746-8094/© 2014 The Authors. Published by Elsevier Ltd. This is an open access article under the CC BY-NC-ND license (http://creativecommons.org/licenses/by-nc-nd/3.0/).
+
+68
+
+C. Burger, D.J. van den Heever / Biomedical Signal Processing and Control 15 (2015) 67–79
+
+it can isolate all types of waveform structure in time and space.
+Using this property, methods have been developed to automatically
+detect and label OAs [1,3,10].
+Neural networks (modelled after biological nervous system) are
+computational models that consist of an input layer, hidden layers
+and an output layer. The hidden layers consist of processing elements called neurons that are interconnected. These elements can
+be trained for speciﬁc functions such as signal correction or classiﬁcation by changing the weights of the elements to obtain a speciﬁc
+input–output relationship. Neural network have been trained to
+
+detect and remove OA that are present in EEG [11,12]. Nguyen et al.
+[9] developed a wavelet neural network (WNN) algorithm, combining the powerful estimation characteristics of neural networks and
+the time–frequency properties of wavelet transforms. Experimental results on real and simulated EEG datasets proved promising.
+In this paper, an ocular artefact removal method is introduced
+that combines ICA and WNN. EEG data is decomposed into ICs and
+wavelet transform is used to detect contaminated ICs. Wavelet
+coefﬁcients are generated from the detected OA and the lowest frequency band outlier coefﬁcients are corrected by a trained
+
+Fig. 1. The ﬂow diagram for detecting ocular artefacts. There are 4 primary steps: (a) decompose EEG signals; (b) reconstruct approximate coefﬁcients; (c) compare maximum
+values against threshold and (c) centre OA in 1 s segment data.
+
+C. Burger, D.J. van den Heever / Biomedical Signal Processing and Control 15 (2015) 67–79
+
+69
+
+Fig. 2. The ﬂow diagram for ICA-WNN ocular atifact correction. There are 5 steps: (a) ICA decomposition; (b) contaminated IC determined; (c) OA detection; (d) WNN
+correction and (e) EEG reconstructed.
+
+neural network. Patterns related only to OA will be rejected and
+the underlying EEG data will be unaltered.
+2. Materials and methods
+2.1. Materials
+In this paper the simulated data was used to test the performance of the ICA-WNN correction whereas the EEG dataset was
+used to validate it.
+2.1.1. Simulated EEG
+The EEG signal generator model utilized in [13] was originally
+designed for research on the effects caused by drugs such as anaesthetics on humans and focuses on 3 areas. Firstly the EEG simulation
+assists with understanding the brain and how it functions. Secondly EEG simulation provides a means for which algorithms and
+equipment can be tested. Lastly EEG simulation can be used for
+educational or training purposes [13]. The EEG simulation model
+was used to simulate artefact free EEG data.
+In order to contaminate the simulated EEG data, OA had to be
+recorded. Contaminated EEG data was recorded for 5760-points
+(45 s) by a 14 channel Emotiv epoc (Emotiv, San Francisco, USA)
+system at a sampling rate of 128 Hz. Markers were placed at each
+
+instant an OA occurred. Considering that OA are situated in the
+lower frequency band, the recorded data was reﬁned by applying
+a band-pass ﬁlter (FIR, 0-4 Hz) and then broken into ICs using infomax, a blind source separation method [8]. OA at each marker was
+extracted from the ICs that were identiﬁed for containing OA.
+Contaminated simulated EEG were generated by randomly mixing the extracted OA from ICs with the artefact free simulated EEG.
+Using the clean and contaminated simulated EEG the WNN were
+trained and its performance was quantitatively evaluated.
+
+2.1.2. EEG dataset
+The ICA-WNN method was validated using data recorded in
+a motor imagery test [14]. The EEG data was recorded from 7
+healthy subjects that took part in 11 different experiments. The
+data was collected using 128 channels sampled at 1000 Hz and
+band-passed ﬁltered between 0.05 and 200 Hz. Subjects were
+seated in a comfortable chair with arms relaxed on the armrest.
+During the experiment, for 3 s, 2, 3 or 6 letters appeared on a
+computer screen indicating to the subject what action they should
+imagine i.e., imagining a left hand movement action or an auditory
+sensation. Two types of visual stimulations were used to indicate
+the required action. Firstly the letters were indicated at a stable,
+ﬁxed point, minimizing OA. Secondly the letters were indicated at
+random points on the screen inducing OA. Due to the lack of OA,
+
+70
+
+C. Burger, D.J. van den Heever / Biomedical Signal Processing and Control 15 (2015) 67–79
+
+Fig. 3. Clean, contaminated and correct simulated signal for (a) training and (b)
+testing of the WNN. The blue circles represents the original simulated signal, the
+green crosses represents the contaminated simulated signal, and the red solid line
+represents the corrected signal. (For interpretation of the references to color in this
+ﬁgure legend, the reader is referred to the web version of the article.)
+
+datasets that were recorded using the ﬁrst stimulus method were
+not used in validating the WNN.
+2.2. Methods
+2.2.1. Independent component analysis in ocular artefact removal
+The goal of ICA is to determine the independent source signals
+from a mixture of signals that have been mixed linearly by a full
+ranked mixing matrix [4,15–17]:
+x(t) = As(t)
+
+(1)
+
+where s(t) represents the source signals, x(t) represents the mixture of source signals and A is the full ranked mixing matrix. To
+determine the source signals or the full ranked mixing signals information is required of either one to determine the other, as seen in
+equation Eq. (1), but this information is unknown. To overcome this
+obstacle, ICA uses blind source separation to determine the unmixing matrix W, which in turn decomposes the mixed signals into
+temporally independent components, as seen in Eq. (2).
+s(t) = Wx(t)
+
+(2)
+
+Fig. 4. PSD of clean, contaminated and correct simulated signal for (a) training and
+(b) testing of the WNN. The blue circles represents the original simulated signal, the
+green crosses represents the contaminated simulated signal, and the red solid line
+represents the WNN corrected signal. (For interpretation of the references to color
+in this ﬁgure legend, the reader is referred to the web version of the article.)
+
+As mentioned in Section 1, INFOMAX is based on the assumption
+that all sources are NG but further assumptions are made such as
+the neural electrical recordings are stationary, the sources are independent, and the number of sources match the number of recording
+channels [17]. Using INFOMAX, the independent components are
+determined from the recorded data and the components containing the artefacts are removed (zeroed). Using the mixing matrix
+(A) and the corrected components (s) the recorded data is recreated free of any artefacts using (1). However this is not the true
+EEG data. As mentioned previously, the independent sources are
+not the true sources but are still a mixture of sources. Thus completely removing components will lead to a loss in underlying EEG
+data.
+2.2.2. Detecting ocular artefacts using wavelet transform
+Wavelet transform is the decomposition of a signal using
+wavelets, which consists of functions known as mother wavelets,
+into a set of coefﬁcients which represents the signal in time and frequency domains. These coefﬁcients are determined by expanding,
+contracting and shifting the mother wavelet over the desired signal
+and creating basic functions. During the decomposition of the signal the coefﬁcients are generated in sets, high and low frequency.
+
+C. Burger, D.J. van den Heever / Biomedical Signal Processing and Control 15 (2015) 67–79
+
+71
+
+Fig. 5. Simulated contaminated component of 10 s and the corrected component using WNN. The green crosses represent the contaminated component and the solid red
+line represents the WNN corrected component. (For interpretation of the references to color in this ﬁgure legend, the reader is referred to the web version of the article.)
+
+Fig. 6. PSD of the simulated component, contaminated component, and the corrected component using WNN. The blue circles represents the original simulated component,
+the green crosses represents the contaminated component and the solid red line represents the WNN corrected component. (For interpretation of the references to color in
+this ﬁgure legend, the reader is referred to the web version of the article.)
+
+For example, if a 0–30 Hz signal is decomposed into 3 levels there
+will be coefﬁcients representing 0–10 Hz, 10–20 Hz and 20–30 Hz.
+Using wavelet transform, Krishnaveni et al. [3] detects OA by
+decomposing EEG using the Haar wavelet (up to level 6) and reconstructing the approximate coefﬁcients at level 6 which results in step
+functions. This paper uses the same method up to and including the
+reconstruction. As seen in Fig. 1, after the coefﬁcients are reconstructed, the pattern of rising and then falling edges are labelled
+as possible artefacts and the time range of the occurrence is noted.
+
+The maximum value of the original EEG signal within the time range
+is compared against a threshold. If the maximum value is greater
+than the threshold, the OA is centred in a 1 s window and labelled
+as an OA. The threshold was determined from the recorded data in
+Section 2.1.1 by
+
+1
+TH =
+3
+
+ m
+1
+
+OAMAX
+m
+
+
+(3)
+
+72
+
+C. Burger, D.J. van den Heever / Biomedical Signal Processing and Control 15 (2015) 67–79
+
+Fig. 7. Frequency correlation between (a) original simulated component and the WNN corrected component and (b) contaminated component and the WNN corrected
+component.
+
+where OAMAX represents the maximum amplitude of the blink, m
+represents the maximum number of blinks in the contaminated
+IC, and TH is the threshold value. The average maximum OA value
+was reduced by a third due to some outlier OAs that were present.
+During testing it was observed that the current threshold did not
+produce accurate results thus the threshold had to be determined
+for each dataset using Eq. (3).
+2.2.3. Correcting ocular artefacts with wavelet neural network
+Nguyen et al. [9] introduced a new method to correct OA in
+online EEG data with very little time delay and processing power
+needed. By combining the advantages of both neural networks
+and wavelet transforms they introduced the WNN. In order to
+train the WNN, artefact free simulated EEG signals were generated
+
+and contaminated signals were produced by adding real ﬁlterextracted artefacts to the simulated EEG signals. Both signals were
+then decomposed up to level 8 using coif3 mother wavelet. The
+low-frequency sets were then interpolated, to ensure same vector
+length, and combined as a training dataset. Using a weight optimization backpropagation algorithm and the training dataset, the
+WNN was trained to correct OA.
+Using the trained WNN they decomposed the signals using a
+coif3 mother wavelet and depending on the dataset, the level of
+decomposition was determined through experimentation due to
+the unknown number of OA that will be present. After decomposing the signal into its coefﬁcients, the neural network corrects
+these outlier coefﬁcients in the low frequency band thus removing the OA. The WNN does not only remove the OA but also over
+
+C. Burger, D.J. van den Heever / Biomedical Signal Processing and Control 15 (2015) 67–79
+
+73
+
+Fig. 8. Identiﬁed components containing EOG artefacts for (a) subject 1 and (b) subject 2. The solid green line represents the contaminated component and the solid red line
+represents the WNN corrected component. (For interpretation of the references to color in this ﬁgure legend, the reader is referred to the web version of the article.)
+
+corrects the low frequency band, thus low frequency EEG data is
+lost.
+In this paper, artefact free and contaminated signals were generated using the same methods as described in [9]. OAs and their
+artefact free counterparts were extracted in 1 s windows (Section
+2.2.2). Both were decomposed up to level 8 using a coif3 mother
+wavelet and the lowest frequency band was interpolated to generate more training data. The interpolated data of both signals are
+combined as the training dataset for each OA. Because only one OA
+is present in the window, it is forced into the lowest frequency band
+thus a 1-6-1 (1 input unit, 6 hidden layer, and 1 output unit) is used.
+Using a backpropagation algorithm the WNN was trained with each
+
+OA training dataset until desired performance was accomplished.
+OAs has small differences from subject to subject such as duration and amplitude but the shape of the OA stays constant, a large
+spike like activity. This allows the WNN to be trained with only one
+dataset with numerous OAs thus determining the average values
+of the coefﬁcients and decreasing the preparation time.
+2.2.4. Correction of IC by applying WNN
+It is apparent that using ICA or WNN for artefact correction,
+underlying EEG or low frequency cerebral data may be lost. In order
+to reduce the data loss of each method, they are combined in an
+artefact removal procedure. As seen in Fig. 2, the contaminated
+
+74
+
+C. Burger, D.J. van den Heever / Biomedical Signal Processing and Control 15 (2015) 67–79
+
+Fig. 9. PSD of the identiﬁed components containing EOG artefacts and the WNN corrected components for (a) subject 1 and (b) subject 2. The green crosses represents the
+contaminated component and the solid red line represents the WNN corrected component. (For interpretation of the references to color in this ﬁgure legend, the reader is
+referred to the web version of the article.)
+
+EEG data is decomposed into ICs using ICA. Using visual inspection the contaminated IC is determined and the method in Section
+2.2.2 is used to mark the OAs and extracts a 1 s window with the OA
+in the centre. All the extracted windows containing OAs are then
+corrected one at a time by the WNN. The marked OAs in the contaminated IC are then replaced with the 1 s window of corrected
+data. Finally all the ICs are recombined to create an OA free EEG.
+2.2.5. Performance metrics
+In order to determine whether the method is successful at
+removing OA from EEG, the performance is assessed using power
+spectral density (PSD), root mean square error (RMSE), and frequency correlation.
+
+PSD is used to evaluate the frequency content of a signal. In
+this paper, PSD of the EEG signals are computed using a nonparametric method known as the Welch method. The method is based
+on averaging a periodogram spectrum data over overlapping data
+segments.
+Jung [18] states that the correlation in the time domain before
+and after ﬁltering is equivalent to the correlation in the frequency
+domain before and after artefact removal. Frequency correlation
+between x̃ and ỹ can be determined by
+
+w2
+c = 0.5 ∗
+
+
+
+w1
+
+(x̃∗ ỹ + ỹ∗ x̃)
+
+w2
+x̃x̃∗
+w1
+
+∗
+
+w2
+w1
+
+ỹỹ∗
+
+(4)
+
+C. Burger, D.J. van den Heever / Biomedical Signal Processing and Control 15 (2015) 67–79
+
+75
+
+Fig. 10. Frequency correlation between the identiﬁed contaminated component and the WNN corrected component for (a) subject 1 and (b) subject 2.
+
+where x̃∗ and ỹ∗ are the conjugate complex of x̃ and ỹ, w1 and w2
+are the lower and upper limits of the interested spectrum region
+and c is the correlation value. The value of c will be between 0 and
+1 if x̃ and ỹ are not identical but if they are c will obtain a 1. For
+computational efﬁciency the window size (w2 − w1 ) was chosen as
+2.
+RMSE represents the difference between two signals. The
+smaller the difference is between two signals the smaller the RMSE
+value becomes. The RMSE will be used to determine the accuracy
+of the ICA-WNN method and is deﬁned as
+
+
+
+1
+RMSE = 
+
+Nv
+
+Nv
+
+(EEGAR − EEGAF )2
+1
+
+(5)
+
+where EEGAR and EEGAF are artefact removed EEG and artefact free
+EEG and Nv is the length of the contaminated EEG signal.
+3. Results
+In the section below the results that were obtained during training and testing of only the WNN are presented. Afterwards, in
+Section 3.2, the ICA-WNN results are shown.
+3.1. Simulated EEG
+As mentioned, the WNN corrects OA in IC by correcting a 1 s
+segment of data containing the OA. Using an EEG signal generator, different 1 s (256-points) artefact free segments was generated
+
+76
+
+C. Burger, D.J. van den Heever / Biomedical Signal Processing and Control 15 (2015) 67–79
+
+Fig. 11. Contaminated channel Fp1 and ICA-WNN corrected channel FP1 for (a) subject 1 and (b) subject 2. The solid green line represents the contaminated channel and the
+solid red line represents the ICA-WNN corrected channel. (For interpretation of the references to color in this ﬁgure legend, the reader is referred to the web version of the
+article.)
+
+at a sampling rate of 256 Hz. OA were recorded using the Emotiv Epoc system at a sampling rate of 128 Hz. Different OAs were
+extracted, resampled and inserted into each segment of data. Data
+in Fig. 3(a) were used to train the WNN using a resilient backpropagation algorithm. Fig. 3(b) shows the segment testing data that was
+chosen from the different segments generated as well as the corrected testing signal. Fig. 4 shows the PSD of clean, contaminated
+and corrected data segments for training and testing and Table 1
+shows the RMSE values.
+After the WNN corrects the 1 s data segment, it replaces the contaminated OA segment in the IC. To test the accuracy of the method,
+a 10 s (2560-points) single IC was generated at a sampling rate of
+256 Hz. OAs that were resampled were inserted into the signal and
+
+thus contaminating it. The contaminated and corrected testing signal is shown in Fig. 5. Fig. 6 shows the PSD of clean, contaminated
+and corrected data segments of the testing signal. The frequency
+correlation among the simulated data for testing is shown in Fig. 7
+and the difference between the clean and corrected signals are
+shown in Table 1 as an RMSE value.
+Table 1
+The RMSE values for both 1 s and 10 s segments.
+RMSE
+
+1 s segment
+
+10 s segment
+
+Training
+Testing
+
+8.6605
+9.0746
+
+NA
+5.3731
+
+C. Burger, D.J. van den Heever / Biomedical Signal Processing and Control 15 (2015) 67–79
+
+77
+
+Fig. 12. PSD of the contaminated channel Fp1 and ICA-WNN corrected channel FP1 for (a) subject 1 and (b) subject 2. The green crosses represent the contaminated channel
+and the solid red line represents the ICA-WNN corrected channel. (For interpretation of the references to color in this ﬁgure legend, the reader is referred to the web version
+of the article.)
+
+3.2. EEG dataset
+The motor imagery test collected data using 128 channels at
+a sampling rate of 1000 Hz. Two data sets (subjects 1 and 4)
+were chosen to evaluate the system due to its abundance of OA
+present. These two data sets were then divided into 30 s (30,000point) data segments to improve computational efﬁciency. Channel
+AFp1 from subject 1 s data was rejected due to it having a bad
+connection.
+ICA was applied to determine the ICs and afterwards visual
+inspection, based on waveform and topographic information, was
+conducted to determine the contaminated IC. It was concluded that
+
+IC 1 was contaminated with OA for both subjects. Fig. 8 shows the
+contaminated IC1 and its correction for both subjects. The PSD of
+the contaminated and corrected IC for both subjects is shown in
+Fig. 9 and their frequency correlation in Fig. 10.
+Electrodes located in the prefrontal lobe are the most effected by
+OA due to its location so close to the eyes. Taking this into account,
+channel Fp1 is chosen to monitor the effects ICA correction has
+on the EEG data. Fig. 11 shows a channel Fp1 contaminated and
+corrected signal for both subjects. The PSD of the contaminated
+and corrected channel for both subjects is shown in Fig. 12 and
+their frequency correlation in Fig. 13.
+
+78
+
+C. Burger, D.J. van den Heever / Biomedical Signal Processing and Control 15 (2015) 67–79
+
+Fig. 13. Frequency correlation between the contaminated channel Fp1 and the ICA-WNN corrected channel Fp1 for (a) subject 1 and (b) subject 2.
+
+4. Discussion
+The present paper introduced a method in OA removal by combining ICA and WNN. The aim of the method is to correct OA that
+are present in IC, thus eliminating OA from the EEG data with very
+little data loss of underlying cerebral activity.
+Simulated signals are used to evaluate the method on a quantitative level because it is unknown what the true artefact free
+EEG is when dealing with contaminated datasets. Fig. 3 shows that
+the WNN successfully corrects the OA segment. However, sometimes the low frequency range can be overcorrected, as seen in
+Fig. 4. The cause of this phenomenon originates from the extraction of the OA from the IC. The OA extracted still contained some
+low frequency data after ﬁltering. The same observation was made
+
+by Nguyen et al. [9] thus to minimize the overcorrection effect,
+small segments of data containing the OA are corrected using the
+WNN.
+Fig. 5 shows that only the OA and small extra segments of data
+is changed thus preserving most of the original signal. Figs. 6 and 7
+show that the overcorrection of the low frequency band has
+decreased a substantial amount when comparing it to Fig. 4.
+Nguyen et al. [9] applied both wavelet thresholding technique and
+the WNN to a 5 s signal containing 3 OAs. The wavelet threshold
+technique dramatically reduced the low frequency band (almost
+30 dB drop) from the clean simulated signal. The WNN, applied to
+the entire signal, slightly overcorrected the signal (almost 10 dB
+drop). From Fig. 6 it is clear that the WNN applied to small segments of data improves the overall performance having almost the
+
+C. Burger, D.J. van den Heever / Biomedical Signal Processing and Control 15 (2015) 67–79
+
+exact PSD as that of the clean simulated signal thus preserving the
+signal in all frequencies.
+Nguyen et al. [9] reported that the RMSE during training and
+testing of the WNN were determined to be 11.2389 and 12.2473.
+As seen in Table 1 for training and testing of both 1 s and 10 s data
+segments RMSE were decreased. The 10 s signal, where only segments were corrected, has the lowest RMSE which shows that this
+method increases the accuracy of the WNN. An issue that occurs
+and can change the results presented is the mother wavelet used
+to decompose the signal. If correct mother wavelet not chosen it
+can decrease the accuracy of the system when applied to EEG data.
+After the simulation study the ICA-WNN method was tested
+on data consisting of 7 healthy subjects. Similar to the simulation
+results, the results show that all OA are correct in the IC (Fig. 8).
+Figs. 9 and 10 reinforce the results obtained for the simulation data.
+It is clear that applying WNN to small segments of data that contains
+an OA preserves the low frequency cerebral activity and preserves
+all other frequencies, thus reducing the amount of data loss.
+After reconstruction of the corrected IC it is shown in Fig. 11
+that the OA have been removed from the EEG. Figs. 12 and 13
+indicate that the OA have been removed from the EEG data while
+preserving the low frequency cerebral activity as well as underlying activity present in the contaminated IC. The ICA-WNN method
+is an improvement because only applying ICA [9] changes the signals PSD over the entire frequency spectrum whereas applying only
+WNN overcorrects the low frequency band. Note that in the range
+of 0–1 Hz there still exist a peak. This peak is due to the large low
+frequency activity present in Fig. 11. Thus, the ICA-WNN method
+successfully removes OA from EEG data with minimal data loss due
+to minimizing the overcorrection of low frequency data as well as
+correcting IC instead of completely removing the IC.
+The WNN overcorrection of low frequency data allows it to correct eye movements without the need to train it. This is only true
+when the entire signal is corrected with the WNN. In the future, OA
+detection algorithms must be reﬁned to detect not only eye blinks
+but eye movement artefacts as well. WNN must then be trained for
+both eye blinks and eye movement artefacts.
+5. Conclusions
+An IC correction method using a WNN was proposed in order
+to remove OA. A combination of ICA, neural network and wavelet
+transform was used to detect and remove OA. The results from the
+simulation and motor imagery data set show that the OA can be
+successfully removed with minimal data loss.
+
+79
+
+Acknowledgements
+This project was funded by NRF. The authors would like to thank
+Dornhege et al [14] for making their EEG data publicly available.
+References
+[1] S. Ramanan, N. Kalpakam, J. Sahambi, A Novel Wavelet Based Technique for
+Detection and De-noising of Ocular Artifact in Normal and Epileptic Electroencephalogram, 2004, pp. 180–183.
+[2] C. Joyce, I. Gorodnitsky, M. Kutas, Automatic removal of eye movement and
+blink artifacts from EEG data using blind component separation, Psychophysiology 41 (2004) 313–325.
+[3] V. Krishnaveni, S. Jayaraman, S. Aravind, V. Hariharasudhan, K. Ramadoss, Automatic Identiﬁcation and Removal of Ocular Artifacts from EEG using Wavelet
+Transform, Meas. Sci. Rev. 6 (4) (2006) 45–57.
+[4] Z. Wang, P. Xu, T. Liu, Y. Tian, X. Lei, D. Yao, Robust removal of ocular artifacts by combining independent component analysis and system identiﬁcation,
+Biomed. Signal Process. Control 10 (March) (2014) 250–259.
+[5] M. Garcia, M. Thomlinson, J. Lopez, B. Jervis, C. Mair, Residual ocular artefact subsequent to ocular artefact removal from the electroencephalogram, IEE
+Proc. – Sci. Meas. Technol. 146 (November) (1999) 293–298.
+[6] M.a. Klados, C. Papadelis, C. Braun, P.D. Bamidis, REG-ICA: a hybrid methodology combining blind source separation and regression techniques for the
+rejection of ocular artifacts, Biomed. Signal Process. Control 6 (July) (2011)
+291–300.
+[7] M. Kirkove, C. François, J. Verly, Comparative evaluation of existing and new
+methods for correcting ocular artifacts in electroencephalographic recordings,
+Signal Process. 98 (2014) 102–120.
+[8] A. Delorme, J. Plamer, R. Oostenveld, Comparing Results of Algorithms Implementing Blind Source Separation of EEG Data, Swartz Foundation and NIH,
+2007.
+[9] H.-A.T. Nguyen, J. Musson, F. Li, W. Wang, G. Zhang, R. Xu, C. Richey, T. Schnell,
+F.D. McKenzie, J. Li, EOG artifact removal using a wavelet neural network, Neurocomputing 97 (November) (2012) 374–389.
+[10] M. Kiamini, S. Alirezaee, B. Perseh, M. Ahmadi, A wavelet based algorithm
+for ocular artifact detection in the EEG signals, in: IEEE INMIC 2008: 12th
+IEEE International Multitopic Conference – Conference Proceedings, 2008, pp.
+165–168.
+[11] B. Chambayil, R. Singla, R. Jha, EEG eye blink classiﬁcation using neural network,
+Proc. World Congr. Eng. I (2010) 2–5.
+[12] V. Krishnaveni, Automatic removal of ocular artifacts using JADE algorithm and
+neural network, Int. J. Biomed. Sci. 2 (2007) 1110–1121.
+[13] N.A. de Beer, W.L. van Meurs, M.B. Grit, M.L. Good, D. Gravenstein, Educational
+simulation of the electroencephalogram (EEG), Technol. Health Care: Off. J. Eur.
+Soc. Eng. Med. 9 (January) (2001) 237–256.
+[14] J. Donoghue, B. Blankertz, G. Curio, K. Muller, Boosting bit rates in non-invasive
+EEG single trial classiﬁcation by feature combination and multi class paradigm,
+IEEE Trans. Biomed. Eng. 51 (2004) 993–1002.
+[15] H. Ghandeharion, A. Erfanian, A fully automatic ocular artifact suppression
+from EEG data using higher order statistics: improved performance by wavelet
+analysis, Med. Eng. Phys. 32 (2010) 720–729.
+[16] A. Hyvärinen, E. Oja, Independent component analysis: algorithms and applications, Neural Netw. 13 (2000) 411–430.
+[17] S. Sanei, J. Chambers, EEG Signal Processing, 2008.
+[18] A. Jung, Statistical Analysis of Biomedical Data, 2004.
+
+

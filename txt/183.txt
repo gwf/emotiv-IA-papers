@@ -1,0 +1,812 @@
+Brain-Swarm Interface (BSI): Controlling a Swarm of Robots
+with Brain and Eye Signals from an EEG Headset
+
+arXiv:1612.08126v1 [cs.RO] 24 Dec 2016
+
+Aamodh Suresh1 and Mac Schwager2
+Abstract— This work presents a novel marriage of Swarm
+Robotics and Brain Computer Interface technology to produce
+an interface which connects a user to a swarm of robots. The
+proposed interface enables the user to control the swarm’s size
+and motion employing just thoughts and eye movements. The
+thoughts and eye movements are recorded as electrical signals
+from the scalp by an off-the-shelf Electroencephalogram (EEG)
+headset. Signal processing techniques are used to filter out noise
+and decode the user’s eye movements from raw signals, while a
+Hidden Markov Model technique is employed to decipher the
+user’s thoughts from filtered signals. The dynamics of the robots
+are controlled using a swarm controller based on potential
+fields. The shape and motion parameters of the potential fields
+are modulated by the human user through the brain-swarm
+interface to move the robots. The method is demonstrated
+experimentally with a human controlling a swarm of three
+M3pi robots in a laboratory environment, as well as controlling
+a swarm of 128 robots in a computer simulation.
+
+I. INTRODUCTION
+In this paper we present a new brain machine interface for
+a human user to control a swarm of robots, which we call
+a Brain-Swarm Interface (BSI). The BSI uses an off-theshelf Electroencephalogram (EEG) headset to record brain
+and muscle activity from the user’s scalp. We use both signals
+from brain neuron activity, as well as signals from contracting muscles due to eye movement, to generate control
+signals for the robot swarm. We allow the user to control the
+dispersion/aggregation of the swarm, as well as the direction
+of motion of the swarm. The dispersion/aggregation is determined from the user’s brain neuronal signals, and is decoded
+using an HMM-based method. The direction of motion is
+decoded from the user’s eye movements with a multi-step
+signal processing algorithm. The robots maintain a cohesive
+swarm using a potential-field based swarm controller, and the
+dispersion/aggregation and direction of motion commands
+influence the motion of the robots through parameters in their
+swarm controller.
+Brain Computer Interfaces hold great promise for enabling
+people with various forms of disabilities, from restricted
+motion due to injury or old age, to severe disabilities like
+the ALS (Locked-in syndrome), Tetraplegia, and paralysis.
+Several works have investigated using BCIs for controlling
+prosthetics [5], [6], and for medical rehabilitation. If implemented effectively, BCI technology may allow people with
+1 A. Suresh is with the Department of Mechanical Engineering, Boston
+University, Boston, MA 02215, USA aamodh@bu.edu
+2 M. Schwager is with the Department of Aeronautics and
+Astronautics, Stanford University, Stanford, CA 94305, USA
+
+schwager@stanford.edu
+This work was supported in part by NSF grants IIS-1350904 and CNS1330036. We are grateful for this support.
+
+disabilities the power to manipulate their environment, and to
+move themselves within their environment [1]. Researchers
+have also developed brain interfaces for controlling single
+mobile robot platforms. For example Bin He et al. [2] have
+demonstrated 3D control of a quadcopter, and Tim Bredtl et
+al. [3] have remotely teleoperated a UAV, both using motor
+imagery BCI. C J Bell et al. [4] have controlled a humanoid
+with a non invasive BCI using P300 signals. However, brain
+computer interfaces for controlling swarms have received
+little attention in the literature.
+Whereas the motivation for a BCI operated prosthetic or
+wheelchair is evident, the applications for a brain swarm
+interface may be less obvious. We envision several applications for this technology. Firstly, people who are mobilityimpaired may use a swarm of robots to manipulate their
+environment using a brain-swarm interface. Indeed, a swarm
+of robots may offer a greater range of possibilites for
+manipulation than what is afforded by a single mobile robot
+or manipulator. For example a swarm can reconfigure to suit
+different sizes or shapes of objects, or to split up and deal
+with multiple manipulation tasks at once. Another motivation
+for our work is that using a brain interface may unlock a new,
+a more flexible, way for people to interact with swarms.
+Currently human swarm interfaces are largely restricted to
+gaming joysticks with limited degrees of freedom. However,
+swarms typically have many degrees of freedom, and the
+brain has an enormous potential to influence those degrees
+of freedom beyond the confines of a traditional joystick.
+We envision that the brain can eventually craft shapes and
+sizes for swarm, split a swarm into sub swarms, aggregate or
+disperse the swarm, and perhaps much more. In this work,
+we take a small step toward this vision.
+The brain is arguably the most complex organ in the
+human body. Brain activity occurs mainly in the chemical
+and electromagnetic domain. Different areas of the brain
+are responsible for different thoughts and actions. The EEG
+is one of the few ways in which brain activity can be
+monitored in a non-invasive manner. An EEG measures the
+electrical signals generated by the brain, but it also measures
+electrical noise and artifacts generated by eye movements and
+other muscle activity. We use the concept of Hybrid BCI or
+hBCI popularized by Pfurtscheller et al. [7] and utilize the
+”artifacts” generated by eye movements, which are usually
+discarded in BCI systems, as control input to modulate the
+position and size of a robotic swarm. A survey of other hBCI
+systems, which do not include application to robotic swarms,
+can be found in [8].
+One of the key components of a typical BCI paradigm
+
+Fig. 2.
+
+Fig. 1. Key components the system and their interaction. i). The user
+generates brain and eye movement signals. ii). The Emotiv Epoc headset
+records these signals from the scalp and wirelessly transmits them to the
+computer. iii). The computer receives the pose of the robots. iv). The
+computer decodes the eye movements and thoughts, and transmits control
+signals to the robots. v). The Optitrack captures pose of robots. vi). The
+user receives visual feedback.
+
+is the machine learning and pattern recognition pipeline. A
+survey by F Lotte et al. [9] surveys the various types of
+classifiers that have been used in the literature. In our work,
+we adopt a Hidden Markov Model (HMM) technique to
+estimate the user’s thought state, as the dynamic nature of
+the technique is well-suited to online estimation and control
+input generation. We use outputs from an Emotiv Epoc
+EEG headset as observations for the HMM algorithm. The
+HMM algorithm then maps these continuous observations to
+discrete thought states which in turn generate the control
+inputs for the swarm. The control inputs are converted
+to motor speeds for the respective robots and transmitted
+through zigbee protocol wirelessly. The user receives visual
+feedback from the ground robots, either by directly observing
+the robots, or from a live visual feed rendered on a video
+screen. The main interacting components in our system are
+illustrated in Fig. 1.
+The rest of this paper is organized as follows. In Section
+II we introduce notation and formally state the problem. In
+Section III we describe the signal processing and control
+components that go into our system. Section IV presents
+the results of simulation and hardware experiments, and
+conclusions are given in Section V.
+II. PROBLEM FORMULATION
+Let the position of the swarm be described by the vecT (t)]T ∈ RnM where M denotes the
+tor x(t) = [x1T (t), . . . , xM
+number of agents in an n dimensional Euclidean space.
+The position of the ith individual at time t is described by
+xi (t) ∈ Rn . Suppose the user has an intended trajectory for
+the swarm, which we denote x∗ (t). When thinking about
+this trajectory, the user’s EEG headset produces signals at
+time t, denoted by U(t) ∈ RN , where N is the number of
+sensors on the EEG headset. Let Θ be a vector of control
+parameters of the system given by Θ(t) = (a(t), b(t), v(t))
+where a(t), b(t) ∈ R denote the attraction and repulsion
+gains, respectively, which are used to control the size of
+the swarm, and v(t) ∈ Rn denotes the displacement vector
+
+Process Flow from left to right.
+
+for controlling the movement of the swarm. We state our
+problem as follows.
+Problem 1 (Brain-Swarm Interface): Design a signal processing pipeline to determine the swarm control parameters
+Θ(t) from the EEG signals U(t), so that the swarm trajectory
+approaches the user’s intended swarm trajectory, x(t) →
+x∗ (t).
+To control the swarm, we adapt a potential field based
+swarm controller of a type that is common in controlling
+swarms of ground robots [15], [16], [17]. With this type of
+controller, the system dynamics are given by
+M
+
+ẋi =
+
+∑
+
+fa,b (xi , x j ) + v,
+
+(1)
+
+j=1, j6=0
+
+where i = 1, 2, . . . , M and fi j : Rn → Rn is a function which
+depends on pairwise interactions between agents i and j, and
+has parameters a, b, and v.
+In our proposed solution, we first train an HMM, and use
+it to determine the “thought state” of the user Q(t) ∈ {1, 2},
+where for example, Q = 1 indicates “aggregation” and Q = 2
+indicates “dispersion.” Then we map this though state Qt to
+values for {a(t), b(t)} to control the aggregation/dispersion
+of the swarm. Secondly, we design an eye movement classifier which takes EEG signals u(t) ⊂ U(t), where u(t) ∈ Rk
+with k < N, as input to determine the user’s intended motion
+of the swarm, producing a control parameter v(t) for the
+swarm. This pipeline is shown graphically in Fig. 2, and its
+components are described in more detail in the following
+section.
+III. SYSTEM DESCRIPTION
+In the previous section we stated the problem, and introduced the main elements of our solution as shown in
+Fig 2. The following paragraphs will describe the HMM,
+eye movement detection, and formation control strategies in
+detail.
+A. Decoding Thoughts Using an HMM
+Based on a survey by F. Lotte et al. [9] we adopted Hidden
+Markov Models to train and classify EEG data. Previously,
+researchers have used HMMs for BCIs. Pfurtscheller et al.
+[12] used an HMM to classify EEG data, and HMMs have
+been used in conjunction with other techniques [13], as well.
+Our novel HMM implementation uses performance metrics
+generated by the Emotiv software suite as observations and
+maps them to discrete thoughts. We observe that each thought
+will corresponds to different signatures of these metrics.
+
+However, these signatures vary greatly across different trials
+and experimental conditions, so a heuristic approach to
+classify them is not effective.
+Instead we implement a training phase to train the HMM
+to detect the users though signatures and transition probabilities. Using standard terminology and notation for HMMs,
+[10], [11], here we will describe our system in detail.
+1) HMM: An Overview: A Hidden Markov Model is a
+joint probabilistic model of a collection of discrete random
+variables O1 , ..., OT , Q1 , ..., QT described by:
+T
+
+T
+
+P(O, Q) = P(Q0 ) ∏ P(Qt |Qt−1 ) ∏ P(Ot |Qt )
+t=1
+
+(2)
+
+t=0
+
+Many algorithms exist for both learning the transition probabilities and observation probabilities of such a system from
+data, and determining a likely sequence of states hidden {Qt }
+from data. The observations of these states Ot ∈ Rl can be
+discrete or continuous.
+The main components of the model from Equation 2 are:
+• P(Q0 ) which is the initial state probability distribution and is represented by πi = P(Q1 = i) where i ∈
+{1, ..., m},
+• P(Qt |Qt−1 ) is the state transition probability represented
+by the matrix X = {xi j } = P(Qt = j|Qt−1 = i) where
+i, j ∈ {1, ..., m}
+• P(Ot |Qt ) is the observation probability represented by
+the gaussian distribution Bi (ot ) = P(Ot = ot |Qt = i) =
+exp{−1/2(ot −µi )T R−1
+i (ot −µi )}
+√
+det 2πRi
+
+with means µi ∈ Rl and covariance matrix R = {ri, j } ∈ Rl×l .
+The model can be completely described by parameters
+θ = {πi , X, µi , R}. The initial phase involves learning these
+parameters θ to generate the model using training data
+consisting of observations of the expected state space. We
+employ the Baum-Welch algorithm (a version of Expectation
+Maximization (EM)) to train the model parameters. After the
+training phase we use the Forward Algorithm to estimate the
+state of the model online using the current observations.
+We are use a two state HMM which represents two
+distinct thoughts of the user, so m = 2 in our case. The
+observation space consists of the EEG output U(t). In this
+case, the signal U(t) is derived from performance metrics
+provided by the manufacturer of the EEG headset, Emotiv.
+Emotiv provides six metrics: “Engagement”, “Meditation”,
+“Excitement”, “Frustration”, “Valence” and “Long-Term Excitement” out of which we use the first three metrics, which
+makes l = 3 and also Ot ∈ [0, 1] for all metrics.
+2) The Training Phase with Baum-Welch Algorithm:
+Training data consisting of the three metrics mentioned
+before is recorded in a single trial. During the training period
+the user repeats two thoughts through a pre-defined switching
+sequence. We enforced this thought sequence using a timed
+slide presentation which the user observed during training.
+This training data is fed into the Baum-Welch algorithm
+which estimates the parameters θ for the system.
+The EM Algorithm is a two step iterative process (Expectation followed by Maximization), which can be expressed
+
+in the single expression
+θc+1 = argmax EP(Q,O|θc ) [L (Q, θ )],
+
+(3)
+
+θ
+
+where L (Q, θ ) = ln P(Q, O|θ ) is the log likelihood function,
+Q is the unobserved state, θ is the unknown parameters of the
+model, and O is the observed variable. The expectation step
+can be summarized by calculating the following quantities:
+αi (t) = P(O1 = o1 , ..., Ot = ot , Qt = i|θ ),
+
+(4)
+
+where αi (t) is known as the forward variable, and is the probability of ending in state i and seeing the partial observations
+{o1 , ..., ot } given the model parameters θ , and
+βi (t) = P(Ot+1 = ot+1 , ..., OT = oT |Qt = i, θ ),
+
+(5)
+
+where βi (t) is known as the backward variable, and is
+the probability of observing partial sequences {ot+1 , ..., oT }
+given the model parameters and state at time t. With α and
+β we can compute
+γi (t) = P(Qt = i|O, θ ) =
+
+αi (t)βi (t)
+,
+m
+∑ j=1 α j (t)β j (t)
+
+(6)
+
+where γi (t) is the probability of being in state i given the
+model parameters and observations, as well as
+P(Qt = i, Qt+1 = j, O|θ )
+P(O|θ )
+αi (t)xi j B j (ot+1 )β j (t + 1)
+= m m
+,
+∑i=1 ∑ j=1 αi (t)xi j B j (ot+1 )β j (t + 1)
+
+ζi j (t) =
+
+(7)
+
+where ζi j (t) is the probability of being in state i at time t
+and state j at time t + 1.
+Using the above defined quantities in the expectation step
+we can estimate the parameters θ in the maximization step
+of our system as follows :
+
+µip+1 =
+Rip+1 =
+
+T
+γip (t)ot
+∑t=0
+T
+γip (t)
+∑t=0
+
+T
+γip (t)(ot − µip+1 )(ot − µip+1 )T
+∑t=0
+T
+γip (t)
+∑t=0
+p
+T
+ζi j (t − 1)
+∑t+1
+XTp+1 = T p
+∑t=1 γ j (t − 1)
+
+πip+1 = γip (0).
+
+(8)
+(9)
+(10)
+(11)
+
+Naturally, for this procedure to start we need θ0 which
+is the set of initial model parameters from which recursion
+begins according to Eqn. (3). We adopt a K-means clustering
+approach to initialize the model parameters, specifically the
+mean matrix µ. We used a two class K-means approach with
+the observations O as inputs, which give us the centroids
+of the two classes that we used to initialize µ. The other
+parameters of θ are initialized randomly. We stop the iterative process when we observe only minute changes (order
+of 10−4 ) in the estimated parameters from their previous
+estimations. A typical training signal from our experiments
+is shown in Fig. 3(a) and the resulting state sequence after
+
+signal arrives from the EEG. All we need for this phase is to
+calculate the value of αi (t) from Eqn.4 for the current time
+t for all the states i and determine the most probable state
+at that time. So we can describe the control output from the
+HMM at time t given by h(t) ∈ {1, .., m} as
+h(t) = argmax αi (t).
+
+(12)
+
+i
+
+(a) Observation data over training period
+
+The output h is used to determine the the control parameters
+(a(t), b(t)) for aggregation and dispersion of the swarm, as
+described in Sec. III-C below.
+B. Tracking Eye Movements
+
+(b) State estimation of the training data
+Fig. 3. (a) Shows the 3 metrics from the EEG signal (red for ’Meditation’,
+green for ’Excitement’ and blue for ’Engagement’) during the training
+period of 60 seconds. (b) Shows the estimated state of the HMM during the
+training period by plotting the color map of γ. The lower state corresponds
+to a “disperse” thought by the user, and the upper to an “aggregate” thought
+by the user.
+
+training is shown in Fig. 3(b). The user visited the two states
+(thoughts) twice each during the training period. From Fig.
+3(b) one can see that the Baum-Welch algorithm detects the
+switching sequence between the thoughts, since at each all
+times the state is found to be decisively in either one or the
+other state with high probability. That is, at all times one
+state is red (meaning the probability that the user is in that
+thought state is nearly one), while the other is blue (meaning
+probability that the user is in that thought state is almost
+zero).
+3) Online Estimation with the Forward Algorithm: After
+the model parameters θ have been estimated we can employ
+the HMM for online estimation of the state. However, we
+cannot immediately proceed to online estimation. First, we
+have to relate the HMM states back to the original thoughts.
+Specifically, we do not know whether Q = 1 means an
+“aggregate” thought and Q = 2 means a “disperse” thought,
+or visa versa. We assign the abstract states to meaningful
+thoughts by examining the order of thoughts visited by the
+user during training to the γ(t) value calculated during the
+training. Which ever assignment makes the γ sequence best
+match the thought sequence is the chosen assignment.
+Online estimation of state is now a straightforward application of the Forward algorithm for HMMs using the learn
+parameters from the training phase. This allows us to find the
+most likely sequence of thought states on line as a streaming
+
+In traditional EEG research, Eye Movement signals are
+considered as artifacts and are removed. In contrast, we
+use these signals as inputs for our system to command the
+direction of travel for the robots. There are various available
+methods in the literature for detecting and tracking eye movements, which vary considerably [14]. These methods can be
+broadly categorized into (i) Contact based tracking which
+offer high accuracy and sophistication, (ii) Non-contact based
+optical tracking methods which measure relative positioning
+remotely with sensors such as cameras, and (iii) measuring
+surface electrical potentials from skin, also known as Electrooculogram (EOG), near the eyes. Our EEG headset detects
+these EOG signals related to eye movement, hence we can
+detect eye movement with no additional hardware.
+1) EOG : An Overview: The human eye can be modeled
+as an electrical dipole whose axis is roughly collinear to the
+axis of the human eye. The electrical dipole rotates with the
+rotation of the eye causing small differences (in microvolts)
+between the electrical potential at the skin surface depending
+on eye position. The order of magnitude of these signals are
+much larger than signals due to brain activity evident from
+Fig. 6 and Fig.5, hence they can be measured and contrasted
+easily.
+EOG typically uses exclusive electrodes around the eyes
+to measure movements. But our electrode positions are
+fixed so we employ the four closest electrodes to the eyes:
+‘AF3’,‘AF4’,‘F7’ and ‘F8’, according to the 10-20 EEG
+sensor placement system, as shown in the diagram in Fig.
+4. Previous methods to detect eye motion have relied on
+complex classification based algorithms. In contrast, our
+method uses a simple statistical calculation.
+The spatio-temporal signals from these electrodes near
+the eyes can be described by ui (t) ∈ R where i ∈
+{AF3, AF4, F7, F8} denoting the electrodes used. We first
+normalize the signal by subtracting its mean for each electrode to center the signals about zero. This can be described
+by
+ui (t) −
+
+τ
+ui
+∑t=0
+,
+τ
+
+where τ denotes the number of samples used for the baseline
+removal.
+
+2) Horizontal Eye Movement Detection: Electrodes ’F7’
+and ’F8’ are chosen for horizontal eye movement detection as
+they are the farthest apart in the horizontal plane while being
+closest to the eyes. Our algorithm for decoding horizontal
+directional movement depicted in Fig. 5 is described in
+Algorithm 1. In Fig. 5 the green ellipses indicate the signal
+for leftward eye movement and the blue ellipses indicate
+rightward eye movement. The red ellipse represents blinks
+which are filtered out.
+Algorithm 1 Horizontal Eye Movement Detection
+1: Remove Baseline with τ = 640 samples.
+2: Window the data with window size w ∈ I+
+uηi (t) = ηui (w)
+
+(13)
+
+where η represents the window number. We use w =
+128 samples corresponding to 1 second of data with no
+overlap.
+3: Apply 8th order 4 Hz low pass Butterworth filter to the
+windowed data to isolate the eye movement signals.
+4: Subtract the resulting signals from both electrodes
+uηF7−F8 (t) = uηF7 (t) − uηF8 (t)
+
+(14)
+
+Detect peaks and troughs with threshold magnitude of
+200µV and minimum seperation of w − 1 samples in
+uηF7−F8 (t).
+η
+6: Assign Peaks to eye movements to the left el ∈ Z+ and
+η
+troughs to eye movements to the right er ∈ Z+ .
+5:
+
+3) Vertical Eye movement Detection: Electrodes ’AF3’
+and ’AF4’ are chosen for vertical eye movement detection.
+The method used is different from horizontal eye movement
+detection since we do not have any electrode below the eyes
+to detect the dipoles in the vertical plane of the head. Eye
+movement upwards results in a positive deflection in both
+electrodes whereas eye movement downwards has negative
+deflection for both electrodes. Our algorithm for decoding
+vertical eye movement is depicted in Fig 6 and described
+in Algorithm 2. In Fig 6, the green ellipses indicate the
+signal for vertical eye movement, and the blue ellipses
+indicate horizontal movement. The red ellipse represents
+blinks which are filtered out. It should be noted that both
+
+C. Formation Control
+We described the general form of the potential field based
+formation controller above in Sec II. We refer the reader
+to [16], [15], [17] for details and proofs about stability and
+convergence properties. Here we describe how we control
+the size and motion of the swarm through the parameters
+(a, b, v).
+1) Controlling Size: Recall that the system is described
+by the two dimensional state space equation for the ith agent
+ẋi =
+
+∑ fab (xi , x j ) + v.
+
+(16)
+
+j=1
+
+We let the interaction between robots i and j be given by
+(15)
+
+Find peaks and troughs with minimum seperation of
+w − 1 and a signal level of 150µV - 250µV from
+uηAF3+AF4 (t).
+η
+6: Assign Peaks to upward eye movements eu ∈ Z+ and
+η
+troughs to downward eye movements ed ∈ Z+ .
+5:
+
+the algorithms above also filter out blinks, which look quite
+similar to the eye movements (see Figs. 6 and 5). In the
+case of horizontal eye movements, the F7 and F8 electrodes
+both record blinks with almost equal magnitude since they
+are located approximately at the same distance from the
+eyes. Hence the signal uηF7−F8 (t) is automatically devoid
+of blinks (Eqn 15), as evident from Fig 5. For the vertical
+eye movement detection, we introduce an upper threshold to
+filter out the blinks, which typically are much larger than
+eye movement signals, as can be seen in Fig. 6. Hence, our
+algorithm effectively discards blinks and measures only the
+user’s intentional eye movements.
+Finally, after the left-right and up-down signals have been
+extracted form the user’s eye movements, these signals are
+used to control the left-right and forward-backward motion
+of the robot swarm through the control parameter v(t), as
+described below in Sec. III-C
+
+M
+
+Algorithm 2 Vertical Eye Movement Detection
+1: Remove Baseline with τ = 640 samples.
+2: Window the data similar to Equation 13
+3: Same as step 3 in Algorithm 1.
+4: Add the signals from both the electrodes to get
+uηAF3+AF4 (t) = uηAF3 (t) + uηAF4 (t)
+
+Fig. 4. EEG sensor placement on the human scalp using the 10-20 system.
+The locations highlighted in orange depict the locations used by the Emotiv
+Epoc headset (http://www.emotiv.com). We specifically read the red
+circled locations to get EOG signals for eye movement.
+
+fab (xi , x j ) =
+
+b(x j − xi )
+a(x j − xi )
+−
+(kx j − xi k − 2r)2 (kx j − xi k − 2r)3
+
+(17)
+
+Where r is the radius of the robot. We can see that the left
+term provides the attracting field, and the right the repelling
+field. The r term introduces a safety region around the robots
+so collision can be avoided.
+There is an equilibrium inter-robot distance for this system, in which attraction and repulsion forces balance. Let
+
+that equilibrium distance be denoted δ , so that ga (kδ k) =
+gr (kδ k). This δ is governed by the attraction and repulsion
+gains a and b respectively. In our method we vary the gains
+to achieve different equilibrium formation. We map the two
+state output from the HMM to two distinct sets of gains in
+order to achieve the aggregation and dispersion of the swarm.
+2) Controlling size and motion: Now to control the motion of the swarm we rely on the output from the eye
+movement detection which gives us four possible motion
+commands: Forward, Backward, Left, and Right. We use
+these command to assign values to the vector v, which drives
+every robot in the swarm in the same direction 17. Depending
+on the eye movement the vector v is assigned preset values
+which makes all the agents in the swarm move locally in
+the direction of v independent of the swarms aggregation or
+dispersion.
+IV. SIMULATIONS AND HARDWARE
+EXPERIMENTS
+
+Fig. 5. Horizontal Eye Movement Tracking. The main steps in Algorithm
+1 are shown graphically from top to bottom. The bottom plots show the
+final extracted left and right eye movements.
+
+Fig. 6. Vertical Eye Movement Tracking. The main steps in Algorithm 2
+are shown graphically from top to bottom. The bottom plots show the final
+extracted up and down eye movements.
+
+To demonstrate our brain-swarm interface, we developed a
+simulation environment in Matlab. We chose a section of the
+Boston University campus, with a rectangular path around a
+campus building, as shown in 8. The path is divided into
+4 edges and the swarm has to be driven starting from the
+left of edge 1 and end on the top of edge 4 following a
+clockwise motion. At edge 3 (purple path) due to the narrow
+passageway, the user has to make the swarm aggregate into
+a tighter swarm by switching thoughts, while in edges 1, 2
+and 4 (Blue path) the user makes the swarm disperse.
+For the training phase, the user switched between two
+thoughts at least twice over a period of 60 seconds, during
+which the EEG signals were recorded and fed into the BaumWelch Algorithm (Fig. 3) to get the model parameters as
+described in Sec. III-A. The thoughts used for simulations
+and experiment were distinct and repeatable: the disperse
+state was invoked with a relaxed neutral thought, while
+the aggregate state was invoked by a mentally challenging
+task (in this case calculating the Fibonacci series). Then
+EEG signals were streamed live and processed as discussed
+previously to generate the control inputs Θ.
+The simulated swarm consisted of 128 point sized holonomic robots. The attraction gain a was fixed at 1 and
+the repulsion gain b was calculated according to b(t) =
+h(t) ∗ M/2.625, where h(t) is the estimated state sequence
+from (12). In our 2 state HMM case according to the previous
+formula the user’s thought corresponding to state 1 causes
+the robots to disperse and increase swarm size, and for state
+2 causes the robots to converge and aggregate to a smaller
+size. The swarm reaches its equilibrium size for a particular
+thought state and stays at that size until the user switches
+thoughts.
+The results of the simulation exercise is summarized in
+Figs. 7 and 8. Fig. 7 shows the time history of eye movement
+detection and the mental thought estimation during the
+motion of the swarm along the 4 legs of the path. It can
+be seen that the thought estimation remains mostly in the
+disperse state during legs 1, 2, and 4, and is mostly in the
+
+(a) State estimation using α during (b) Horizontal Eye movement estisimulation
+mation
+
+Fig. 9.
+
+M3pi Robots in the Optitrack Arena.
+
+(c) Vertical Eye movement estimation
+Fig. 7. Simulation Results. a) Shows the color map of the variable α
+during the forward procedure. b) Shows the horizontal eye movement. c)
+Shows the vertical eye movement.
+Fig. 10.
+
+Fig. 8. Path of the swarm (blue) along with its centroid (red) traveling in
+a simulated environment with 128 robots.
+
+aggregate state in Sector 3, as intended. Minor inaccuracies
+can be attributed not only to the stochastic nature of the
+HMM, but also to the quality of user’s thoughts and noise
+in the EEG headset. From Fig. 8 which shows the path of
+the centroid of the swarm, we can see the Eye Movement
+detection is successful in steering the swarm, with a few
+misclassifications due to the nature of the noisy EEG signals
+and non-intentional eye movements. We refer the reader to
+the accompanying video.
+For the hardware experiments we used the m3pi platform
+with an Mbed controller for mobile swarming robots, and
+Zigbee radios for communication. The experiments were
+carried out in an environment with an Optitrack motion
+capture system to track the motion of the robots (see Fig. 9).
+The control parameters used were a = 4 and b = 80 for
+aggregation, and a = 2 and b = 80 for dispersion. These two
+wheeled differential drive robots receive individual motor
+speeds as control inputs from the computer. A proportional
+point-offset controller is used to generate the motor speeds
+from the potential function controller (the details of which
+
+Experimental area and setup.
+
+can be found in [18]). The control commands for the robots
+were computed off board the robots, and set to the robots
+over Zigbee at an update rate of 30 Hz. Due to computational
+and hardware complexities the computations were divided
+among 3 computers (one for Optitrack data acquisition,
+one for controller implementation, and another other for
+EEG signal processing and video recording) as shown in
+the experimental setup in Fig. 10. The tcp/ip protocol was
+used for communication among them. The experimental area
+(Fig. 12 ) was chosen to be a rectangular area divided into
+4 legs, similarly to the simulation. In sector 3 the user
+again must make the swarm aggregate, and in the other legs
+the swarm should disperse, while navigating in a clockwise
+manner starting from sector 1. The user obtained visual
+feedback of the position of the swarm by viewing a live
+feed of the experimental area from a GoPro camera on a
+mobile device.
+The experimental results are summarized in Figs. 11 and
+12. Fig. 11 shows the time history of eye movement detection
+and the thought state estimation throughout the motion of
+the swarm along the 4 legs. From Fig. 8 which shows the
+path of the robots and their centroid, we can see the eye
+movement detection is successful in steering the swarm. The
+color map for the thought state estimation again shows that
+the HMM is able to reliably determine the user’s intention.
+The system remains in the disperse state with high confidence
+during legs 1, 2, and 4, and in the aggregate state with high
+confidence during sector 3. We again refer the reader to the
+accompanying experiment video.
+The biggest challenge in this work is in the integration of
+this complex system with interacting hardware, communication, software, and human components. We used holonomic
+dynamics during simulation whereas The M3pis are nonholonomic robots with inefficient actuation and communication.
+In addition, it was quite a mental challenge for the user to
+concentrate on thoughts, eye movement, and system monitor-
+
+plan to extend the algorithm to control a swarm of quadrotors
+robots in 3 dimensional space.
+ACKNOWLEDGMENTS
+We thank Alyssa Pierson for her help in developing the
+point offset controller to control individual M3pi robots.
+(a) State estimation using α during (b) Horizontal Eye movement estiexperiment
+mation
+
+(c) Vertical Eye movement estima- (d) Distances from the swarm cention
+troid
+Fig. 11. Experiment Results. a) Shows the color map of the variable α
+during the forward procedure. b) Shows the horizontal eye movement. c)
+Shows the vertical eye movement. d) Shows the distance from centroid of
+the three robots in centimeter.
+
+Fig. 12. Position of the swarm of 3 robots along with their centroid during
+the experiment.
+
+ing simultaneously. Despite these challenges, we were able
+to successfully demonstrate the proposed method.
+V. CONCLUSIONS
+In this paper we propose and successfully demonstrate an
+online Brain Swarm Interface to control a swarm of ground
+vehicles in simulation and experiments using off-the-shelf
+hardware. We integrate a variety of engineering and scientific techniques in neuroscience, signal processing, machine
+learning, control theory, and swarm robotics to construct
+and implement our system. We successfully navigate a robot
+swarm in simulation and experiment on a given path. The
+techniques developed in this paper are a proof of concept
+to demonstrate that a swarm of robots can be controlled by
+the thoughts and eye movements of a human user. These
+techniques can be applied to create an intuitive interface
+especially for people to control multiple objects in their
+environment simultaneously. However, there is significant
+room for improvement. In the future we plan to develop a
+richer HMM algorithm that can detect a larger range of user
+intentions for the swarm, including the ability to induce a
+range of different shapes and motions for the swarm. We also
+
+R EFERENCES
+[1] Niels Birbaumer, “Breaking the silence: Braincomputer interfaces
+(BCI) for communication and motor control”,Psychophysiology, 43
+(2006), 517532.
+[2] Karl LaFleur et al., “Quadcopter control in three-dimensional space
+using a noninvasive motor imagery-based braincomputer interface”, J.
+Neural Eng.10(2013) 046003 (15pp).
+[3] Abdullah Akce, Miles Johnson and Timothy Bretl,“Remote Teleoperation of an Unmanned Aircraft with a Brain-Machine Interface: Theory
+and Preliminary Results” IEEE International Conference on Robotics
+and Automation,2010,Alaska, USA.
+[4] Christian J Bell, Pradeep Shenoy, Rawichote Chalodhorn,and Rajesh
+PN Rao“Control of a humanoid robot by a noninvasive braincomputer
+interface in humans”,Journal of Neural Engineering (2008) 214220.
+[5] Robert Leeb, Doron Friedman, Gernot R. Muller-Putz, Reinhold
+Scherer, Mel Slater, Gert Pfurtscheller, “Self-Paced (Asynchronous)
+BCI Control of a Wheelchair in Virtual Environments: A Case
+Study with a Tetraplegic” Computational Intelligence and Neuroscience,Volume 2007, Article ID 79642,Hindawi Publishing Corporation.
+[6] Gernot R. Muller-Putz and Gert Pfurtscheller,“Control of an Electrical Prosthesis With an SSVEP-Based BCI”,IEEE Transactions on
+Biomedical Engineering,VOL. 55, NO. 1, January 2008.
+[7] Pfurtscheller G, Allison BZ, Brunner C, Bauernfeind G, SolisEscalante T, Scherer R, Zander TO, Mueller-Putz G, Neuper C,
+Birbaumer N,“The Hybrid BCI”,Frontiers in Neuroscience, 2010.
+[8] Setare Amiri, Reza Fazel-Rezai, and Vahid Asadpour,“A Review
+of Hybrid Brain-Computer Interface Systems”,Advances in HumanComputer Interaction,Hindawi Publishing Corporation,Volume 2013,
+Article ID 187024.
+[9] Fabien Lotte, Marco Congedo, Anatole Lecuyer, Fabrice Lamarche,
+Bruno Arnaldi, “A review of classification algorithms for EEGbased braincomputer interfaces,” Journal of Neural Engineering,IOP
+Publishing, 2007.
+[10] L. R. Rabiner ,“A Tutorial on Hidden Markov Models and Selected
+Applications in Speech Recognition,” Proceedings of the IEEE, vol
+77, no 2, 257–287.
+[11] J.A Bilmes, “A Gentle Tutorial of the EM Algorithm and its Application to Parameter Estimation for Gaussian Mixture and Hidden
+Markov Models,”ICSI UC Berkeley CA TR-97-021.
+[12] B Obermaier, C Guger, C Neuper, G Pfurtscheller.“Hidden Markov
+models for online classification of single trial EEG data”, Pattern
+Recognition Letters, vol. 22, no. 12, pp. 12991309,2001.
+[13] H. Lee and S. Choi, “PCA+HMM+SVM for EEG pattern classification,”Proceedings of 7th International Symposium on Signal Processing and Its Applications, Vol. 1, 2003, pp. 541544.
+[14] Thomas Eggert, “Eye Movement Recordings: Methods”,NeuroOpthalmology, Neuronal Control of Eye Movements, Karger, 2007,
+vol 40, pp 1534.
+[15] Gazi and Passino(2004) : A class of attractions/repulsion functions for stable swarm aggregations , International Journal of Control,2004,VOL. 77, NO. 18, 15671579.
+[16] Olfati-Saber, R., and Murray, R. M., Distributed cooperative control
+of multiple vehicle formations using structural potential functions.
+Proceedings of IFAC World Congress, 2002,Barcelona, Spain.
+[17] A. Howard and M. J. Matarić and G. S. Sukhatme, “Mobile Sensor
+Network Deployment using Potential Fields: A Distributed, Scalable
+Solution to the Area Coverage Problem,” Proceedings of the 6th
+International Symposium on Distributed Autonomous Robotic Systems
+(DARS02), Fukuoka, Japan, June 2002.
+[18] Alyssa Pierson and Mac Schwager, “Bio-Inspired Non Cooperative
+Herding”,Proc IEEE ICRA 2015,May 2015, 1843-1869.
+
+

@@ -1,0 +1,1505 @@
+Gesture Interpretation Control System
+Using Convolutional Neural Networks
+
+Benedikt Jón Baldursson
+
+Electrical and Computer Engineering
+University of Iceland
+2019
+
+Gesture Interpretation Control System
+Using Convolutional Neural Networks
+
+Benedikt Jón Baldursson
+
+20 ECTS thesis submitted in partial fulfilment of a
+Baccalaureus Scientiarum degree in Mechatronic Engineering
+
+Advisors
+Behnood Rasti
+Karl Sölvi Guðmundsson
+
+Faculty of Electrical and Computer Engineering
+School of Engineering and Natural Science
+University of Iceland
+Reykjavík, December 2019
+
+Gesture Interpretation Control System Using Convolutional Neural Networks
+20 ECTS thesis submitted in partial fulfilment of a Baccalaureus Scientarium degree in
+Mechatronics Engineering Technology
+Copyright © 2019 Benedikt Jón Baldursson
+All rights reserved
+
+Faculty of Electrical and Computer Engineering
+Engineering and Natural Sciences
+University of Iceland
+Skólabraut 3
+220 Hafnarfjörður
+Phone: 578 4000
+
+Bibliographic Information:
+Benedikt Jón Baldursson, 2019, Gesture Interpretation Control System Using
+Convolutional Neural Networks, BSc thesis, School of Engineering and Natural Sciences,
+University of Iceland, pp. 38.
+
+Printing: Háskólaprent ehf., Fálkagata 2, 107 Reykjavík
+Reykjavík, December 2019
+
+Abstract
+This thesis proposes a non-invasive control system for electrical wheelchairs utilizing facial
+gestures of individuals captured by a real-time monocular camera. The images are
+interpreted with a convolutional neural network that achieves up to ~99.6% overall accuracy.
+The control system uses an embedded system with a graphics processing unit for predicting
+real-time throughput with fast classification time. This solution offers excellent versatility,
+where the user can make a gesture to depict a command of his choice.
+Keywords—non-invasive, gestures, real-time, convolutional neural network, machine
+learning.
+
+Útdráttur
+Þessi ritgerð leggur fram inngriplausan stjórnbúnað fyrir rafmagnshjólastóla sem nemur
+andlitshreyfingar einstaklinga sem fangaðar eru með eineygis myndavél. Myndirnar eru
+síðan túlkaðar með feðmingar-djúptauganeti sem nær að 99.6% nákvæmni. Stjórnkerfið
+notast við ígreypt kerfi með skjákorti til að greina myndir í rauntíma með skjótum
+rökleiðslutíma. Lausnin býður upp á mikla fjölbreyttni í notkun þar sem notandi notar
+andlitslátbragð til að lýsa skipun að eigin vali.
+
+To the love of my life Þórdís Dröfn
+who has supported me throughout this study.
+
+Table of Contents
+Figures ............................................................................................................................... viii
+Tables ................................................................................................................................... ix
+Acknowledgements ............................................................................................................. xi
+1 Introduction ..................................................................................................................... 1
+1.1 Common Electrical Wheelchair Controllers ........................................................... 1
+1.2 Goals of this Research ............................................................................................. 2
+1.3 Organization ............................................................................................................ 3
+2 State of the Art ................................................................................................................ 5
+2.1 Smart Wheelchairs .................................................................................................. 5
+2.2 Neural Networks...................................................................................................... 6
+3 Requirement Analysis..................................................................................................... 9
+4 Implementation and Methods ...................................................................................... 11
+4.1 Class Definition ..................................................................................................... 11
+4.2 Dataset Definition.................................................................................................. 11
+4.3 Dataset Pre-processing .......................................................................................... 13
+4.4 Convolutional Neural Network ............................................................................. 14
+4.5 Interfacing of the Control System ......................................................................... 20
+5 Results ............................................................................................................................ 21
+5.1 CNN Experiments ................................................................................................. 21
+5.2 Classification Speed .............................................................................................. 25
+6 Conclusion ..................................................................................................................... 27
+6.1 Future Work .......................................................................................................... 27
+References........................................................................................................................... 29
+Appendix A......................................................................................................................... 33
+1.
+Code for Training CNN 1 ............................................................................ 33
+2.
+
+Keras to TensorRT Conversion Code .......................................................... 35
+
+Appendix B ......................................................................................................................... 37
+1.
+Sample of Expression Variance in Dataset .................................................. 37
+2.
+
+Misclassified Images - CNN 1 ..................................................................... 38
+a.
+
+Misclassifications in Stop Class................................................................... 38
+
+b.
+
+Misclassifications in Left Class ................................................................... 38
+
+vii
+
+Figures
+Figure 1. Cost vs. Complexity chart. ..................................................................................... 1
+Figure 2. Mock-up of the proposed system. .......................................................................... 2
+Figure 3. Difference in occlusion mixing, and lighting conditions. .................................... 12
+Figure 4. Images before and after pre-processing. ............................................................. 13
+Figure 5. Visualized convolution operation. ....................................................................... 14
+Figure 6. ReLu operation visualized. .................................................................................. 15
+Figure 7. Pooling layer visualized. ..................................................................................... 16
+Figure 8. Input feature map flattened. ................................................................................ 16
+Figure 9. Dense layer visualized. ........................................................................................ 17
+Figure 10. Neurons temporarily dropped randomly. .......................................................... 17
+Figure 11. Abstract overview of the CNN. .......................................................................... 18
+Figure 12. Components of the learning pattern box. .......................................................... 18
+Figure 13. Components of the weight tuning box. .............................................................. 19
+Figure 14. The flowchart proposed for the control system. ................................................ 20
+Figure 15. Sample of different expressions in dataset. ....................................................... 37
+Figure 16. Stop misclassified as Forward. ......................................................................... 38
+Figure 17. Stop misclassified as Backward. ....................................................................... 38
+Figure 18. Left misclassified as Forward. .......................................................................... 38
+
+viii
+
+Tables
+Table 1. Comparison between embedded systems. ................................................................ 9
+Table 2. Commands corresponding to the classes. ............................................................. 11
+Table 3. The confusion matrix for CNN 1 on the test samples. ........................................... 22
+Table 4. The confusion matrix for CNN 2 on the test samples. ........................................... 22
+Table 5. Only 32 output filters used. ................................................................................... 23
+Table 6. Only 64 output filters used. ................................................................................... 23
+Table 7. First convolutional layer with 32 output filters. .................................................... 24
+Table 8. First convolutional layer with 64 output filters. .................................................... 24
+Table 9. Classification speed comparison for Jetson TX1. ................................................. 25
+
+ix
+
+Acknowledgements
+I want to express my gratitude and appreciation to my instructor Behnood Rasti, as well as
+Karl S. Guðmundsson who gave me the excellent opportunity to do this project and also
+present it at the Biomedical Innovations and Applications IEEE conference, that experience
+has been invaluable to me and enabled me to finalize this thesis.
+Secondly, I would also like to thank my parents, Baldur and María, and my fiancée, Þórdís,
+that have supported me throughout my studies. I could not have done this without them.
+
+xi
+
+1 Introduction
+Current solutions for people with tetraplegia are invasive and insufficient for any form of
+mobility. Independence in moving about without caretakers help is impossible. This can
+decrease the quality of the life of an impaired person.
+
+1.1 Common Electrical Wheelchair Controllers
+The most frequent used controller is the joystick controller (JC). However, it is not suitable
+for every electrical wheelchair user. The most common controller for people with tetraplegia
+is the sip-and-puff switch (SnP). The function of the sip-and-puff switch requires the user to
+suck and blow for executing essential functions. Therefore, it limits the number of
+commands to perform. A relatively new method for disabled people is implanting a magnetic
+stud into the tongue of the user. This allows the tongue muscle to be used as a joystick for
+controlling the wheelchair. This is called Tongue-Drive System (TDS)[1]. A Cost vs.
+Complexity graph can be seen in Figure 1 below. The figure shows only the most common
+controllers used and where the proposed system, Gesture Interpretation (GI) system, is
+relative to these conventional control systems.
+
+TDS
+10
+8
+
+Cost
+
+6
+GI
+4
+SnP
+2
+
+JC
+
+0
+0
+
+2
+
+4
+
+6
+
+8
+
+10
+
+Complexity
+
+Figure 1. Cost vs. Complexity chart.
+The joystick controller is the most inexpensive and not complicated in setting up. The sipand-puff switch is also inexpensive but more complex in implementation than the joystick
+controller. The Tongue-Drive System requires invasive surgery and is complex to set up,
+making it an expensive system. The proposed Gesture Interpretation system is relatively
+complex to implement and relatively inexpensive.
+1
+
+There is a need to improve the mobility of tetraplegic people to increase their independence
+and quality of life. A device or system which makes it possible for an individual to move
+from one room to another, going to the park or the grocery store independently is needed.
+This can be accomplished with a Gesture Interpretation control system. The Gesture
+Interpretation control system proposed in this thesis is a system comprising an imaging
+device and artificial intelligence using a combination of deep learning convolutional neural
+network (CNN) and obstacle avoidance algorithms.
+
+1.2 Goals of this Research
+The goal of this research work is to develop a non-invasive control system for mobile
+devices. The system monitors real-time gesture images from the user. Subsequently, the
+system translates the gesture images into commands using a CNN. The proposed solution
+offers the flexibility to adapt data to the gestures of any individual.
+
+Figure 2. Mock-up of the proposed system.
+This thesis reports on the results of a student’s final project in BSc in Mechatronic
+Engineering at the University of Iceland. The project is limited to 5 basic commands using
+Jetson TX1 Development Kit™ from NVIDIA and Keras™ with TensorFlow™ backend for
+the CNN.
+
+2
+
+1.3 Organization
+The thesis is structured as follows: Chapter 2 describes the state of the art. Chapter 3 shows
+the requirement analysis. Chapter 4 discusses in detail the method and implementation
+developed in this research. Chapter 5 presents the results of the experiments. Finally, chapter
+6 concludes this thesis and gives directions for future work.
+
+3
+
+2 State of the Art
+Most of the standard control mechanisms are limited by their input data allowing only a few
+commands. The first wheelchair designed in 1986 for people with impaired mobility was a
+self-navigating wheelchair that uses an onboard microcomputer, camera, and an ultrasonic
+sensor [2]. The chair was limited by the environment. Another novel design was the
+NavChair™ [3] assistive wheelchair navigation system designed in 1999. NavChair™ uses
+algorithms for general obstacle avoidance, automatic wall following, and door passages.
+Eye tracking methods or the absolute point of gaze (POG) methods are used in many
+wheelchair designs for physically challenged people. The three dominant and widely used
+eye tracking methods are video-oculography (VOG), pupil-cornea reflection (PCR), and
+electro-oculography (EOG). VOG methods use video cameras as data input that is stored in
+and interpreted by a computer. These systems can be head-mounted or put on a wheelchair.
+PCR method gathers highly accurate data from the user’s gaze. PCR systems utilize artificial
+infrared (IR) light source. The PCR method is widely used in the scientific domain. EOG
+solution offers high temporal accuracy in measuring relative movements of the eyes. Two
+electrodes are situated around the orbit of the eye that can be measured. The EOG method
+requires wearable goggles that attach to the skin around the eyes [4].
+
+2.1 Smart Wheelchairs
+M. A. Eid et al. proposed a system in “A Novel Eye-Gaze-Controlled Wheelchair System
+for Navigating Unknown Environments: Case Study with a Person with ALS” [5] that
+enables people with limited movement to control a wheelchair with eye gaze in unknown
+environments. The control system of their proposed method allows the user to move around.
+The system uses 3D geometry data of the ambient environment collected by a 3D camera.
+The geometric data is then articulated with an algorithm that identifies obstacles, plans
+routes, and navigates through unknown environments. The system uses an adaptable N-cell
+grid-based graphical user interface (GUI). The calibration method used for the eye tracking
+algorithm is minimal, making setup for new users simple. A participant with ALS
+(amyotrophic lateral sclerosis) was involved in a case study, showing that this system is
+feasible as a controller.
+In “A multimodal wheelchair control system based on EEG signals and Eye tracking fusion”
+[6], F. B. Taher et al. propose a control system based on a fusion of electroencephalography
+(EEG) and eye tracking techniques. The eye tracking technique uses a webcam for detecting
+the gaze of both eyes. Viola and Jones proposed an algorithm in “Robust Real-Time Face
+Detection” [7] for extracting regions of each eye individually. For face detection in the
+proposed control system, F. B. Taher et al. use the algorithm presented by Viola and Jones.
+After face detection and isolation of the eyes, an adaptive threshold algorithm locates the
+pupils. The location of the pupils is stationed in a 3x3 matrix that depicts direction. EEG
+signals are acquired via off-the-shelf headset Emotiv EPOC™. The EEG signals are then
+interpreted by a computer into commands. The system is tested on control performance by
+
+5
+
+eye tracking, EEG signals, and EEG/eye tracking fusion. F. B. Taher et al. show that using
+the EEG signals as the central controller is the most accurate, but it is too power consuming.
+Therefore, the fusion of eye tracking and EEG is proposed.
+In their research, “Head Gesture Controlled Wheelchair for Quadriplegic Patients” [8],
+Machangpa and Chingtham designed a robotic wheelchair that uses head gestures as
+commands. The obstacle avoidance control system is used in conjunction with the head
+gesture control system. Cost-effective accelerometer and gyroscope sensors are used for
+head gesture monitoring. The sensors measure pitch, roll, and yaw data. Movement
+commands are acquired from this data. For obstacle avoidance, an ultrasonic sensor is used
+to detect obstacles. The system is centred on a raspberry pi computer for data processing and
+controlling the wheelchair.
+
+2.2 Neural Networks
+T. Chan et al. [9] proposed PCANet, a very simple deep learning network. This network can
+be used as a simple baseline for image classification. It is based on block-wise histograms,
+binary hashing, and cascaded principal component analysis (PCA). Multistage filter banks
+are learnt firstly by using the PCA method. These PCA convolutional filters reduce
+dimensionality, which significantly speeds up feature learning. For the indexing and pooling,
+a simple block histogram and binary hashing are used. Benchmarking on visual datasets for
+different tasks shows that the proposed network is on par with state-of-the-art networks⁠.
+There are four crucial steps in face recognition process: Detect, align, represent, and classify.
+In [10]⁠, alignment and representation are at the forefront. The location of the face is fixed at
+the pixel level after alignment. The faces are 3D modelled on a generic 3D model face.
+Modelling uses 67 fiducial points, from the aligned image, for deriving the 3D facial
+representation. The 3D model data is then passed into a deep neural network (DNN). This
+method is highly accurate on large datasets, 97.5% accuracy on the LFW dataset. However,
+it takes 0.23 seconds to classify one image.
+A Deep learning based face recognition attendance system using CNN is proposed by M.
+Arsenovic et al. [11]. The CNN has a few essential steps, which are highly advanced
+techniques: CNN cascade for detecting a face and generating facial embedding with a CNN.
+A small dataset is used, CNNs usually require big datasets to achieve good results. Image
+augmentation is proposed, which generates artificial noise and occlusions to enlarge the
+dataset. The first step of the proposed algorithm is detecting a face using the CNN cascade
+method proposed by H. Li et al. [12]. In the second step, M. Arsenovic et al. use 68 facial
+landmarks for alignment. Thirdly, the face is embedded onto Euclidean space for measuring
+face similarities. The network is trained with a support vector machine (SVM) classifier. The
+proposed system achieves over 95% accuracy.
+Detection of facial landmarks is a big part of pre-processing the data for more accurate
+training with DNNs. In [13], two types of deep convolutional neural networks (DCNNs) are
+used in conjunction. Combining these two DCNNs shows good results. One type detects
+components constrained on facial landmarks. The other type detects components constrained
+on the facial contour. The former DCNN branches out to higher layers by capturing features
+of intricate local facial landmarks (eyes, eyebrows, nose, nose-bridge, and mouth) and
+
+6
+
+treating it as a regression problem. The latter DCNN exploits the relationship between facial
+landmarks and facial contour landmarks. This relationship is used due to difficulty in the
+detection of the pose, subject appearance, and background noise. The two DCNN are
+separately trained, which improves the detection of components in the facial landmarks.
+Different poses, illumination, expression, age, and occlusion create significant problems in
+face recognition tasks. Y. Sun et al. propose a system⁠ for solving that problem by reducing
+intrapersonal variations while enlarging interpersonal differences [14]. Using deep learning
+and utilizing signals of face identification and verification as supervision for feature
+representation. Identification classifies input images into identity classes. Verification
+classifies pairs of images that belong to the same identity or not (i.e., binary classification).
+Carefully designed DCNNs are used for learning the deep identification-verification features
+(DeepID2). The network, proposed by Y. Sun et al., achieves an accuracy of 99.15% on
+LFW dataset for face verification.
+Y. Sun et al. [15]⁠ use a high-performance deep convolutional network (DeepID2+) for face
+recognition. Using the supervisory signal identification-verification method, presented in
+[14] by Y. Sun et al. The difference lies in more dimensions of hidden representations for
+convolutional layers. The training dataset is enlarged, from 160.000 to 290.000 images.
+Supervision to first convolutional layers is added with identification-verification supervisory
+signals. DeepID2+ achieves 99.47% accuracy on the LFW dataset.
+
+7
+
+3 Requirement Analysis
+A motorized wheelchair, under consideration, can travel at speed (s) of approximately 1.8
+m/s. Therefore, the control system must have enough processing power to respond quickly
+and smoothly to a change in user command. The onboard camera module is the limiting
+factor of the proposed system. The camera is capable of grabbing frames at 30 frames per
+second (FR). To estimate the approximate granularity (g) of travel per frame, we use
+Equation (1).
+𝑔=
+
+𝑠
+𝐹𝑅
+
+(1)
+
+Therefore, the granularity of travel per frame is calculated by g = 1.8/30 = 0.06 m. This gives
+us a precision of 6 cm of distance travelled between frames at the maximum speed of
+wheelchairs.
+As a result, the control system requires computational power to acquire and process at least
+30 frames per second.
+For the present project, the NVIDIA™ Jetson TX1 development board [16] is available for
+use. However, it is essential for the completeness of the project to evaluate the processing
+requirements and compare a few different available systems from NVIDIA in Table 1.
+Table 1. Comparison between embedded systems.
+Specifications
+
+Jetson NANO
+
+Jetson TX1
+
+Jetson TX2
+
+GPU
+
+128-core Maxwell
+
+256-core Maxwell
+
+256-cores Pascal
+
+CPU
+
+4x1.43GHz
+
+4x1.73GHz
+
+4x2GHz + 2x2GHz
+
+Memory
+
+4GB
+
+4GB
+
+8 GB
+
+Storage
+
+MicroSD
+
+16GB eMMC
+
+32GB eMMC
+
+Performance
+
+472 GFLOPS
+
+1 TFLOPS
+
+1.3 TFLOPS
+
+Power
+
+5-10W
+
+10-15W
+
+7.5W
+
+Power Supply
+
+5V DC
+
+5.5-19.6V DC
+
+5.5-19.6V DC
+
+Size
+
+69.6mm x 45mm
+
+87mm x 50mm
+
+87mm x 50mm
+
+Price
+
+$99.00
+
+$259.00
+
+$399.00
+
+9
+
+The camera accompanying the TX1 development board captures 640 x 480 x 10-bit
+monochromatic images. Assuming the same camera module is available and applicable for
+the three versions of the Jetson family given in Table 1, we can compare which module
+would be the most cost-effective option.
+All of the embedded systems in Table 1 are suitable for fast classification time, due to the
+GPU integration. However, Jetson TX1 is used to implement this project since that was
+available.
+
+10
+
+4 Implementation and Methods
+4.1 Class Definition
+As mention before, any individual can utilize this solution. The flexibility of the system
+allows the user to choose any set of gestures, with distinction in mind. The dataset created
+contains five classes for five basic commands; forward, backward, stop, right, and left.
+Gestures chosen for the classes in this project are shown in Table 2.
+Table 2. Commands corresponding to the classes.
+Command
+
+Gesture
+
+Go forward (FWD)
+
+Tilt head forward
+
+Go backward (BWD)
+
+Tilt head backward
+
+Stop
+
+Close eyes
+
+Go right
+
+Turn head clockwise
+
+Go left
+
+Turn head anti-clockwise
+
+The control system is not limited to this set of gestures. This set is chosen because it is
+descriptive, distinct, and appropriate for proof of concept (POC) project.
+
+4.2 Dataset Definition
+The dataset used in this research has images of one subject. Each class has approximately
+500 images; 250 images for training, 35 images for validation, and ~215 images for testing.
+Images are captured with a webcam. The dataset has few occlusions present, three different
+lighting conditions, and variable facial expressions. Occlusions presented in images are a
+hat, glasses, hood, and a mix of those objects. Variance in the mixing of occlusion and
+lighting is shown in Figure 3.
+
+11
+
+Figure 3. Difference in occlusion mixing, and lighting conditions.
+The objects used for occlusion purposes were worn in an orderly fashion. The following
+three steps are used for describing how the wearable items were used. Step 1: No wearable
+item used, then glasses added. Step 1 is shown in the first row of images in Figure 3. Step 2:
+Hat is worn, then glasses added. Step 2 is shown in the second row of images in Figure 3.
+Step 3: Hood put up, then glasses added. Step 3 is shown in the third row of images in Figure
+3. The images are taken while steps 1-3 are carried out. While taking the images, various
+random expressions were made. Appendix B shows samples of expressions used. The
+lighting conditions were changed after Steps 1-3 were finished, then Steps 1-3 were repeated
+for the next lighting conditions. The first lighting conditions can be seen in row 1-3 in Figure
+3. The second and third lighting conditions can be seen in row 4 in Figure 3.
+
+12
+
+4.3 Dataset Pre-processing
+The dataset is pre-processed using the method proposed in “Joint Face Detection and
+Alignment Using Multitask Cascaded Convolutional Networks“ [18] by Zhang et al., called
+Multitask Cascaded Neural Network (MTCNN) method. The MTCNN method detects facial
+landmarks and crops the face out of the picture, minimizing background noise. The code
+used resizes images to 182x182 pixels with 24-bit depth. Figure 4 compares the raw and preprocessed images.
+
+Before
+
+After
+
+FWD
+
+BWD
+
+Right
+
+Stop
+
+Left
+
+Figure 4. Images before and after pre-processing.
+
+13
+
+4.4 Convolutional Neural Network
+The CNNs are implemented with Keras™ API with TensorFlow™ backend. The CNNs train
+on data using the SGD (Stochastic Gradient Descent) optimizer. The SGD optimizer reduces
+computation needed allowing faster training. By single randomly picked examples, each
+iteration estimates the gradient instead of computing the gradient, explained by Bottou in
+“Stochastic Gradient Descent Tricks” [18].
+The first layer in the proposed algorithm is a two-dimensional convolution (Conv2D). This
+layer uses convolutional methods on the input image. When an image has passed through
+the first layer, the image is regarded as an intermediate feature map. The feature map is then
+passed on to the next layer. This method is a linear filtering operation which produces a
+tensor of outputs by doing spatial convolution on the input image with a created convolution
+kernel given by Equation (2).
+𝑔(𝑥, 𝑦) = 𝑓(𝑥, 𝑦)⨂ℎ(𝑥, 𝑦) = ∑ ∑ 𝑓(𝜏1 , 𝜏2 )ℎ(𝑥 − 𝜏1 , 𝑦 − 𝜏2 )
+𝜏1
+
+(2)
+
+𝜏2
+
+Where f is the input image or feature map, h is the convolution kernel, and g is the output
+feature map of the convolution operation. The convolution kernel, h, slides over the input
+image, f. At each location, matrix multiplication is performed and summed up into the output
+feature map, g. Figure 5 shows the visualized representation of the convolutional operation.
+
+Figure 5. Visualized convolution operation [19].
+The spatial dimension of the input image or feature map can decrease, depending on the
+padding and stride hyperparameters. Padding is applied to keep the spatial dimension
+constant. Stride signifies the steps taken by the filter over the input image or feature map.
+Another significant hyperparameter is the filter output. The filter output is the number of
+patterns that the convolutional layer outputs. These hyperparameters are handcrafted while
+the weights that are hidden within the layer change (i.e., adjust) when training on images.
+14
+
+The weights are essential for solving target problems such as classifying images. The
+visualized representation of the convolution operation in Figure 5 uses; 1x1 padding, stride
+1, input size 8x8x1 with kernel size 3x3x1, and output filter size 8x8x1. The input feature
+map spatial dimension is 10x10x1 when padding has been applied. Therefore, the spatial
+dimension for the output feature map is 8x8x1.
+The second layer, Rectified Linear unit (ReLu), is a non-linear activation function. The
+function sets all negative values to zero with no change in spatial or depth information of the
+input data. That allows cheaper computation and faster convergence. The ReLu function can
+be described with Equation (3).
+𝑦 = max(0, 𝑥)
+
+(3)
+
+The input feature map, x, is passed through function max(), which returns values less than
+zero as zero. The ReLu operation is visualized in Figure 6.
+
+Figure 6. ReLu operation visualized [20].
+Figure 6 shows a line plot of ReLu operation for negative and positive inputs. The slope is
+the function derivative. Negative inputs have slope 0, and positive inputs have slope 1. The
+linear behaviour of the ReLu operation output makes the network easier to optimize.
+The third layer is max pooling (MaxPooling2D). This operation reduces the spatial
+information and the number of parameters, which decreases the computational cost. It
+subsamples the input feature map, so little spatial information is lost when performing this
+operation. Figure 7 shows how the max pooling function decreases the spatial size of the
+input feature map.
+
+15
+
+Figure 7. Pooling layer visualized [21].
+The input feature map of size 4x4 is decreased to size 2x2 by using 2x2 filter and stride 2,
+seen in Figure 7.
+The next layer (called Flatten) flattens the input feature map into a 1D vector for passing
+into a fully connected layer. Figure 8 depicts the flattening operation.
+
+Figure 8. Input feature map flattened [22].
+The flattening operation takes in input feature map of size 3x3 and returns a 1x9 feature map,
+seen in Figure 8.
+The fully connected layer is called the Dense layer. This layer connects every neuron with
+each neuron from the previous layer. These neurons are trainable and get updated during
+backpropagation. The Dense layer has one hyperparameter, the number of units (i.e.,
+neurons). Figure 9 shows how the neurons all connect to each neuron in the previous layer.
+
+16
+
+Figure 9. Dense layer visualized [23].
+The number of units, h, is set to 5 in Figure 9. These units are considered as neurons in
+machine learning applications. The number of units in the last Dense layer in a neural
+network must be set to the corresponding number of classes.
+The next layer (Dropout layer) temporarily removes inputs to a layer which prevents
+overfitting. Units are randomly dropped along with their connections during the training of
+neural networks proposed by Srivastava et al. in “Dropout: A Simple Way to Prevent Neural
+Networks from Overfitting” [24]. The Dropout layer has one hyperparameter, the fraction of
+units dropped. The Dropout layer is visualized in Figure 10.
+
+Figure 10. Neurons temporarily dropped randomly [24].
+Figure 10 shows how the neurons and their connections are temporarily dropped. In column
+1, 40% of the units are dropped. In column 2, 60% of the units are dropped. In column 3,
+40% of the units are dropped. Units are dropped randomly. Therefore, the units dropped in
+Figure 10 will not be the same for the next image.
+
+17
+
+The final layer (SoftMax layer) is an activation function that takes in tensor input and applies
+SoftMax normalization. The function outputs the probability distribution for each class. The
+SoftMax function can be described by Equation (4).
+𝑆(𝜃𝑖 ) =
+
+𝑒 𝜃𝑖
+∑ 𝑗 𝑒 𝜃𝑗
+
+(4)
+
+The sum of Equation (4) is always 1, where 𝑆(𝜃𝑖 ) is the score for each class for a given input
+image.
+The building blocks of the CNNs are explained in Figures 11-13. Figure 11 illustrates a highlevel abstraction of the CNNs.
+
+Figure 11. Abstract overview of the CNN.
+First, image is received, then patterns are learnt (Learning Patterns) from the input image.
+That is followed by tuning the weights of the neurons (Weight Tuning), then classification
+accuracy is acquired. The classification is distributed accordingly for each class, depending
+on the image anomalies. Figure 12 shows the layers used in the Learning Patterns box.
+
+Figure 12. Components of the learning pattern box.
+
+18
+
+The convolution, ReLu, and max pooling operations are performed inside the Learning
+Patterns box. Here specific patterns are learnt from the input image or feature map. The
+spatial dimension of the input image or feature map is decreased, which consequently
+decreases the number of parameters. This box can be repeated for experimental purposes in
+getting different results in classification accuracy. The output filter hyperparameter of the
+convolution operation can also be changed for different results.
+The rest of the operations used in the CNNs are inside the Weight Tuning box, Figure 13.
+This box fine-tunes neurons in the network. The classification probabilities are also acquired
+from this box.
+
+Figure 13. Components of the weight tuning box.
+The operations that are performed in the Weight Tuning box are Flatten, Dense, ReLu,
+Dropout, and SoftMax. This box is not repeated. The hyperparameters for Dense and
+Dropout layers can be changed, which consequently changes the number of parameters. The
+last Dense layer has to be set to the corresponding number of classes.
+
+19
+
+4.5 Interfacing of the Control System
+The General-Purpose Input and Output (GPIO) of the Jetson TX1 will be used for this project
+for outputting commands to a DC (direct current) motor controller. The onboard camera
+module on the Jetson TX1 will be used for the video input.
+Figure 14 depicts the flowchart of the control system. First, a frame is captured from video
+input. Then, the frame is processed by cropping face. Classification is then done on the
+cropped face. If classification accuracy is above 99%, then the command is executed, and
+the next frame is grabbed. If classification accuracy is less than 99%, then no command is
+executed, and the next frame is grabbed.
+
+Figure 14. The flowchart proposed for the control system.
+
+20
+
+5 Results
+5.1 CNN Experiments
+In this thesis, we experiment with several different CNNs. First, two different CNNs are
+tested, called CNN 1 and CNN 2. The difference is in the hyperparameters for convolution,
+Dense, and Dropout layers. There is also a difference in the number of layers used for these
+two CNNs. The rest of CNN experimentations are implemented with CNN 1 as the base
+model. CNN 1 and CNN 2 are explained in detail below.
+Experimental setup for CNN 1.
+In this experiment, 3 convolutional layers are used. The number of epochs is set to 50, and
+the batch size is set to 32. The first and second Conv2D layers have 32 output filters that use
+kernel size 3x3 with stride 1 along height and width, the third Conv2D layer has 64 output
+filters that use kernel size 3x3 with stride 1 along height and width. ReLu is followed by
+each Conv2D layer and the first Dense layer. The MaxPooling2D operations have size 2 in
+both spatial dimensions. The first Dense layer has 64 in dimensionality of the output space.
+The second Dense layer has 5 in dimensionality of the output space, corresponding to the
+output classes. The Dropout layer drops 0.5 fractions of the input units. SoftMax is the last
+layer, and the total number of layers in CNN 1 is 15.
+Experimental setup for CNN 2.
+Here 4 convolutional layers are used. The number of epochs is set to 50, and the batch size
+is set to 32. The first and second Conv2D layers have 32 output filters that use kernel size
+3x3 with stride 1 along height and width. The third and fourth Conv2D layers have 64 output
+filters that use kernel size 3x3 with stride 1 along height and width. ReLu is followed by
+each Conv2D layer and the first Dense layer. The MaxPooling2D operations have size 2 in
+both spatial dimensions. The first Dense layer has 256 in dimensionality of the output space.
+The second Dense layer has 5 in dimensionality of the output space, corresponding to the
+output classes. The first and second Dropout layer drops 0.25 fractions of the input units,
+and the third Dropout layer drops 0.5 fractions of the input units. SoftMax is the last layer,
+and the total number of layers in CNN 2 is 18.
+A PC is used to speed up the training process. The PC used has 8GB 2432 CUDA core GPU
+(GTX1070Ti), 4 core CPU (Intel i7-2600), and DDR3 32GB 1600MHz RAM with Ubuntu
+18.04LTS. Training CNN 1 on the dataset takes 7 minutes and 38 seconds, with 50 epochs,
+processing 154 images per second. Training for CNN 2 on the dataset takes 7 minutes and
+45 seconds, with 50 epochs, processing 154 images per second. Trained models are then
+transferred to the development board for doing classification.
+The confusion matrices obtained from the test images for CNN 1 and CNN 2 are given,
+respectively, in Tables 3 and 4. As can be seen in Table 3, CNN 1 has 100% accuracy in
+
+21
+
+Forward, Backward, and Right classes. In the Stop class one sample is misclassified as Right
+and two samples misclassified as Backward. In the Left class, one sample is misclassified as
+Forward. The overall accuracy for CNN 1 is 99.6%, and the average accuracy (the average
+over the accuracies of the five classes) is 99.7%.
+Table 3. The confusion matrix for CNN 1 on the test samples.
+Class
+
+FWD
+
+BWD
+
+Right
+
+Stop
+
+Left
+
+Accuracy
+
+FWD
+
+207
+
+0
+
+0
+
+0
+
+0
+
+1
+
+BWD
+
+0
+
+205
+
+0
+
+0
+
+0
+
+1
+
+Right
+
+0
+
+0
+
+197
+
+0
+
+0
+
+1
+
+Stop
+
+1
+
+2
+
+0
+
+229
+
+0
+
+~0.9871
+
+Left
+
+1
+
+0
+
+0
+
+0
+
+281
+
+~0.9965
+
+CNN 2 has 100% accuracy in Forward and Backward classes. In the Right class, three
+samples are misclassified as Forward, four samples as Backwards, and two samples as Stop.
+In the Stop class, six samples are misclassified as Forward and three samples as Backwards.
+In the Left class, only two samples are misclassified as Backwards. The overall accuracy for
+CNN 2 is 98.3%, and the average accuracy is 98.2%. CNN 1 has higher accuracies than CNN
+2 in all classes, and CNN 1 is also smaller with fewer parameters. Therefore, CNN 1 is the
+more applicable network for the proposed control system in terms of speed and accuracy.
+Table 4. The confusion matrix for CNN 2 on the test samples.
+Class
+
+FWD
+
+BWD
+
+Right
+
+Stop
+
+Left
+
+Accuracy
+
+FWD
+
+207
+
+0
+
+0
+
+0
+
+0
+
+1
+
+BWD
+
+0
+
+205
+
+0
+
+0
+
+0
+
+1
+
+Right
+
+3
+
+4
+
+188
+
+2
+
+0
+
+~0.9543
+
+Stop
+
+6
+
+3
+
+0
+
+223
+
+0
+
+~0.9612
+
+Left
+
+0
+
+2
+
+0
+
+0
+
+280
+
+~0.9929
+
+More experiments were implemented with CNN 1 as a base model. The experiments were
+done with the difference in repetitions of the Learning Patterns box (convolution, ReLu, and
+max pooling operations) and output filters of the convolutional layers. Therefore, CNNs are
+explained in terms of the number of convolutional layers and their number of output filters.
+
+22
+
+The epochs were set to 20. Tables 5-8 show the overall accuracy of every CNN from these
+experiments. In Table 5, CNNs using only 32 output filters for convolution layers are shown.
+Table 5. Only 32 output filters used.
+Convolutional Layers
+
+Output Filters
+
+Accuracy
+
+1
+
+32
+
+~99.1986%
+
+2
+
+32-32
+
+~96.2600%
+
+3
+
+32-32-32
+
+~96.4381%
+
+Using only 32 output filters, we get over 99% overall accuracy with only 1 convolutional
+layer, which is the best result for a 1 layer CNN. Using 2 layers with 32 output filters, we
+get over 96% overall accuracy. Using 3 layers with 32 output filters, we get over 96% overall
+accuracy. With less 32 output filter layers, the better the accuracy gets. When fewer layers
+are used, we get more parameters in the network with the CNN setup in this project. That
+makes the network computationally more expensive. Therefore, we get faster classification
+speed with more layers. That is due to the max pooling operation. Which subsequently gives
+fewer connections in the Dense layer. Table 6 shows CNNs using only 64 output filters for
+each convolutional layer.
+Table 6. Only 64 output filters used.
+Convolutional Layers
+
+Output Filters
+
+Accuracy
+
+1
+
+64
+
+~91.5405%
+
+2
+
+64-64
+
+~92.9653%
+
+3
+
+64-64-64
+
+~97.2395%
+
+Using only 64 output filters, we get the best results when 3 layers are used, over 97% overall
+accuracy. Using 1 layer with 64 output filters, we get over 91% overall accuracy. Using 2
+layers with 64 output filters, we get over 92% overall accuracy. The more convolutional
+layers using 64 output filters, the better the accuracy gets. Using 64 output filters means
+more parameters in the network, making it computationally more expensive. Therefore,
+using 32 output filters would be wanted. CNNs using combinations of 32 and 64 output
+filters with 32 output filters in first convolutional layer are shown in Table 7.
+
+23
+
+Table 7. First convolutional layer with 32 output filters.
+Convolutional Layers
+
+Output filters
+
+Accuracy
+
+2
+
+32-64
+
+~94.8353%
+
+3
+
+32-32-64
+
+~99.6438%
+
+3
+
+32-64-32
+
+~94.9243%
+
+3
+
+32-64-64
+
+~96.7943%
+
+The best results are gotten from using the 32-32-64 output filter combination, ~99.6438%
+overall accuracy. Using 2 layers with the 32-64 output filter combination, we get over 94%
+accuracy. Using 3 layers with the 32-64-32 output filter combination, we get over 94%
+overall accuracy. Using 3 layers with the 32-64-64 output filter combination, we get over
+96% overall accuracy. Table 8 shows CNNs using combinations of 32 and 64 output filters
+with 64 output filters in the first convolutional layer.
+Table 8. First convolutional layer with 64 output filters.
+Convolutional Layers
+
+Output filters
+
+Accuracy
+
+2
+
+64-32
+
+~98.4862%
+
+3
+
+64-32-32
+
+~96.0819%
+
+3
+
+64-32-64
+
+~91.8967%
+
+3
+
+64-64-32
+
+~97.5957%
+
+Here we get the best results from using 2 layers with the 64-32 output filter combination,
+over 98% overall accuracy. This 64-32 output filter combination is the best result for a 2
+layer CNN. Using 3 layers with the 64-32-32 output filter combination, we get over 96%
+overall accuracy. Using 3 layers with the 64-32-64 output filter combination, we get over
+91% overall accuracy. Using 3 layers with the 64-64-32 output filter combination, we get
+over 97% overall accuracy.
+Some classes had perfect accuracy in the experimental setup where CNN 1 is used as the
+base model. Classification for Forward and Backward classes are 100% accurate. The
+networks only misclassify images in Right, Left, and Stop classes. Right, and Left classes
+are very similar classes. Stop class has the least anomalies in the images, with only change
+in the eye region. Therefore, making Right, Left, and Stop classes harder to classify.
+
+24
+
+5.2 Classification Speed
+The classification speed is tested with TensorRT models on the embedded system, Jetson
+TX1. Three CNN models were tested, chosen with the best accuracy and difference in the
+number of convolutional layers in mind. The networks chosen were; CNN with 1 layer using
+32 output filters, CNN with 2 layers using the 64-32 output filter combination, and CNN
+with 3 layers using the 32-32-64 output filter combination. Additionally, a fourth CNN with
+3 layers using the 32-32-32 output filter combination was chosen for testing. The fourth
+CNN is also tested because it has the fewest parameters, 922,949 parameters. That would
+make it the fastest CNN out of experiments. These models were trained using Keras. The
+models were then ported to the Jetson TX1. The converted TensorRT model could not be
+ported to the Jetson TX1. Therefore, the same Keras model had to be converted to a
+TensorRT model on the Jetson TX1 with the same code. That is due to different versions of
+packages installed on the PC and Jetson TX1. Then each TensorRT model was tested against
+the Keras model counterpart yielding the same classification results. The frames per second
+for each model are shown in Table 9.
+Table 9. Classification speed comparison for Jetson TX1.
+Convolution Layers
+
+Output Filters
+
+Frames per Second
+
+1
+
+32
+
+29
+
+2
+
+64-32
+
+47
+
+3
+
+32-32-64
+
+80
+
+4
+
+32-32-32
+
+90
+
+The CNN with 1 layer using 32 output filters has 16,590,085 parameters. The overall
+accuracy of this model is ~99.1986%. The speed of classification on the Jetson TX1 for the
+TensorRT model is 29 frames per second. That would give the system a granularity of g =
+1.8/29 = ~0.062 m = ~6.2 cm, using Equation (1).
+The CNN with 2 layers using the 64-32 combination of output filters has 3,985,573
+parameters. The overall accuracy of this model is ~98.4862%. The speed of classification on
+the Jetson TX1 for the TensorRT model is 47 frames per second. That would give the system
+a granularity of g = 1.8/47 = ~0.038 m = ~3.8 cm, using Equation (1).
+The CNN with 3 layers using the 32-32-64 combination of output filters has 1,835,365
+parameters. The overall accuracy of this model is ~99.6438%. The speed of classification on
+the Jetson TX1 for the TensorRT model is 80 frames per second. That would give the system
+a granularity of g = 1.8/80 = ~0.023 m = ~2.3 cm, using Equation (1).
+The CNN with 3 layers using the 32-32-32 combination of output filters has 922,949
+parameters. The overall accuracy of this model is ~97.2395%. The speed of classification on
+the Jetson TX1 for the TensorRT model is 90 frames per second. That would give the system
+a granularity of g = 1.8/90 = ~0.02 m = ~2 cm, using Equation (1).
+
+25
+
+When we compare the 3 layer CNN using the 32-32-64 combination of output filters with
+the 3 layer CNN using the 32-32-32 combination of output filters, we get the following
+results. The granularity difference is 0.3 cm, and an overall accuracy difference is ~2.4043%.
+The speed of classification should not be chosen over this difference in accuracy. Therefore,
+the best performing CNN is the 3 layers CNN with the 32-32-64 combination of output
+filters.
+
+26
+
+6 Conclusion
+In this thesis, a non-invasive control system is proposed for controlling an electric
+wheelchair. The control task was performed by interoperating the facial gestures of the users
+into five classes of commands. Sixteen convolutional neural networks have been
+experimented with and used to classify the facial gestures. The experimental results show
+that the 3 layer CNN using the 32-32-64 combination of output filters achieves the best
+results.
+This system can make life easier for people with physical limitations. By taking a few
+pictures of the user and training with them on proposed CNN, the system is highly
+customizable. It can work on any given tasks, e.g., use commands to call for help. It is
+lightweight and does not require much power to operate.
+The speed of classification is more than what is required for the embedded system, which
+can only grab 30 frames per second. Therefore, in terms of speed and accuracy, the CNN
+with 3 layers using the 32-32-64 combination of output filters has proven optimal for this
+system.
+
+6.1 Future Work
+For future work, the GPIOs need to be connected to a DC motor controller, e.g., on a
+wheelchair. It will first be tested on a RC car for POC. Additionally, for performing realtime experiments from video input, which should be the system’s end goal, the image
+classification code needs to be adapted to use video as input.
+The CNN currently uses three channel images; changing to grayscale images would be a
+logical step for more experimentation. The onboard camera module can be set to grayscale
+image grabbing. It would be interesting to compare results using grayscale images with
+results from this thesis.
+Other camera modules should be tested for grabbing more frames per second. That would
+increase the granularity of the proposed system capabilities. The granularity is 6 cm with the
+current onboard camera module. The granularity can be 2.3 cm with another camera module.
+For safety purposes, a fail-safe needs to be added to the system to make it safer. An example
+would be voice commands for initiating and terminating the workflow of the proposed
+control system. If no command is registered three times in a row, the system needs to do
+something to prevent accidents. For the user to not drive into things, there needs to be an
+obstacle avoidance control system in conjunction with the proposed control system, such as
+ultrasonic sensors with a novel algorithm that overrides the Gesture Interpretation control
+system.
+
+27
+
+References
+[1]
+
+J. Kim et al., “Assessment of the Tongue-Drive System Using a Computer , a
+Smartphone , and a Powered-Wheelchair by People With Tetraplegia,” IEEE Trans.
+Neural Syst. Rehabil. Eng., vol. 24, no. 1, pp. 68–78, 2016.
+
+[2]
+
+R. L. Madarasz, L. C. Heiny, R. F. Cromp, and N. M. Mazur, “The Design of an
+Autonomous Vehicle for the Disabled,” IEEE J. Robot. Autom., vol. 2, no. 3, pp. 117–
+126, 1986.
+
+[3]
+
+S. P. Levine, D. A. Bell, L. A. Jaros, R. C. Simpson, Y. Koren, and J. Borenstein,
+“The NavChair Assistive Wheelchair Navigation System,” IEEE Trans. Rehabil.
+Eng., vol. 7, no. 4, pp. 443–451, 1999.
+
+[4]
+
+P. Majaranta and A. Bulling, “Eye Tracking and Eye-Based Human--Computer
+Interaction,” in Advances in Physiological Computing, S. H. Fairclough and K.
+Gilleade, Eds. London: Springer London, 2014, pp. 39–65.
+
+[5]
+
+M. A. Eid, N. Giakoumidis, and A. El Saddik, “A Novel Eye-Gaze-Controlled
+Wheelchair System for Navigating Unknown Environments: Case Study with a
+Person with ALS,” IEEE Access, vol. 4, pp. 558–573, 2016.
+
+[6]
+
+F. Ben Taher, N. Ben Amor, and M. Jallouli, “A multimodal wheelchair control
+system based on EEG signals and Eye tracking fusion,” INISTA 2015 - 2015 Int.
+Symp. Innov. Intell. Syst. Appl. Proc., pp. 1–8, 2015.
+
+[7]
+
+P. Viola and M. J. Jones, “Robust Real-Time Face Detection,” Int. J. Comput. Vis.,
+vol. 57, no. 2, pp. 137–154, May 2004.
+
+[8]
+
+J. W. Machangpa and T. S. Chingtham, “Head Gesture Controlled Wheelchair for
+Quadriplegic Patients,” Procedia Comput. Sci., vol. 132, no. Iccids, pp. 342–351,
+2018.
+
+[9]
+
+J. Lu, T.-H. Chan, Z. Zeng, Y. Ma, S. Gao, and K. Jia, “PCANet: A Simple Deep
+Learning Baseline for Image Classification?,” IEEE Trans. Image Process., vol. 24,
+no. 12, pp. 5017–5032, 2015.
+
+[10]
+
+Y. Taigman, M. Yang, M. Ranzato, and L. Wolf, “DeepFace: Closing the gap to
+human-level performance in face verification,” Proc. IEEE Comput. Soc. Conf.
+Comput. Vis. Pattern Recognit., pp. 1701–1708, 2014.
+
+[11]
+
+M. Arsenovic, S. Sladojevic, A. Anderla, and D. Stefanovic, “FaceTime - Deep
+29
+
+learning based face recognition attendance system,” SISY 2017 - IEEE 15th Int. Symp.
+Intell. Syst. Informatics, Proc., pp. 53–57, 2017.
+[12]
+
+H. Li, Z. Lin, X. Shen, J. Brandt, and G. Hua, “A convolutional neural network
+cascade for face detection,” Proc. IEEE Comput. Soc. Conf. Comput. Vis. Pattern
+Recognit., vol. 07-12-June-2015, pp. 5325–5334, 2015.
+
+[13]
+
+W. J. Baddar, J. Son, D. H. Kim, S. T. Kim, and Y. M. Ro, “A deep facial landmarks
+detection with facial contour and facial components constraint,” Proc. - Int. Conf.
+Image Process. ICIP, vol. 2016-Augus, pp. 3209–3213, 2016.
+
+[14]
+
+Y. Sun, X. Wang, and X. Tang, “Deep Learning Face Representation by Joint
+Identification-Verification,” pp. 1–9, 2014.
+
+[15]
+
+Y. Sun, X. Wang, and X. Tang, “Deeply learned face representations are sparse,
+selective, and robust,” Proc. IEEE Comput. Soc. Conf. Comput. Vis. Pattern
+Recognit., vol. 07-12-June, pp. 2892–2900, 2015.
+
+[16]
+
+“Jetson TX1 Module | NVIDIA Developer.” [Online]. Available:
+https://developer.nvidia.com/embedded/jetson-tx1. [Accessed: 10-Oct-2019].
+
+[17]
+
+“Pascal
+GPU
+Architecture
+|
+NVIDIA.”
+[Online].
+Available:
+https://www.nvidia.com/en-us/data-center/pascal-gpu-architecture/. [Accessed: 24Apr-2019].
+
+[18]
+
+K. Zhang, Z. Zhang, Z. Li, and Y. Qiao, “Joint Face Detection and Alignment Using
+Multitask Cascaded Convolutional Networks,” IEEE Signal Process. Lett., vol. 23,
+no. 10, pp. 1499–1503, 2016.
+
+[19]
+
+“An intuitive guide to Convolutional Neural Networks.” [Online]. Available:
+https://www.freecodecamp.org/news/an-intuitive-guide-to-convolutional-neuralnetworks-260c2de0a050/. [Accessed: 21-Nov-2019].
+
+[20]
+
+“A Gentle Introduction to the Rectified Linear Unit (ReLU).” [Online]. Available:
+https://machinelearningmastery.com/rectified-linear-activation-function-for-deeplearning-neural-networks/. [Accessed: 21-Nov-2019].
+
+[21]
+
+“Understanding Convolutional Neural Networks for NLP – WildML.” [Online].
+Available:
+http://www.wildml.com/2015/11/understanding-convolutional-neuralnetworks-for-nlp/. [Accessed: 21-Nov-2019].
+
+[22]
+
+“Convolutional Neural Networks (CNN): Step 3 - Flattening - Blogs
+SuperDataScience - Big Data | Analytics Careers | Mentors | Success.” [Online].
+Available: https://www.superdatascience.com/blogs/convolutional-neural-networkscnn-step-3-flattening. [Accessed: 21-Nov-2019].
+
+30
+
+[23]
+
+“Layers
+—
+Slugnet
+0.0.1
+documentation.”
+[Online].
+https://slugnet.jarrodkahn.com/layers.html. [Accessed: 21-Nov-2019].
+
+Available:
+
+[24]
+
+“TikZ/Dropout at master · PetarV-/TikZ · GitHub.” [Online]. Available:
+https://github.com/PetarV-/TikZ/tree/master/Dropout. [Accessed: 21-Nov-2019].
+
+31
+
+Appendix A
+1. Code for Training CNN 1
+'''
+CNN_script_1.py
+Lokaverkefni Mekatróník Hátæknifræði (BS) Háskóli Íslands
+Codes used partly from "Building powerful image classification models
+using very little data" from www.blog.keras.io, and candlewill's "Keras
+model examples - VGG-like convnet" www.gist.github.com editeded by
+Benedikt Jón Baldursson
+Tauganetið
+'''
+from
+from
+from
+from
+from
+from
+
+keras.preprocessing.image import ImageDataGenerator
+keras.models import Sequential
+keras.layers import Conv2D, MaxPooling2D
+keras.layers import Activation, Dropout, Flatten, Dense
+keras.optimizers import SGD
+keras import backend as K
+
+img_width, img_height = 182, 182
+train_data_dir = './data/train'
+validation_data_dir = './data/validation'
+nb_train_samples = 5*250
+nb_validation_samples = 5*35
+epochs = 50
+batch_size = 32
+if K.image_data_format() == 'channels_first':
+input_shape = (3, img_width, img_height)
+else:
+input_shape = (img_width, img_height, 3)
+model = Sequential()
+model.add(Conv2D(32, (3, 3), input_shape=input_shape))
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(32, (3, 3)))
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(64, (3, 3)))
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Flatten())
+model.add(Dense(64))
+model.add(Activation('relu'))
+
+33
+
+model.add(Dropout(0.5))
+model.add(Dense(5))
+model.add(Activation('softmax'))
+sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+model.compile(loss='categorical_crossentropy',
+optimizer=sgd,
+metrics=['accuracy'])
+train_datagen = ImageDataGenerator(
+rescale=1. / 255,
+shear_range=0.2,
+zoom_range=0.2,
+horizontal_flip=True)
+test_datagen = ImageDataGenerator(rescale=1. / 255)
+train_generator = train_datagen.flow_from_directory(
+train_data_dir,
+target_size=(img_width, img_height),
+batch_size=batch_size,
+class_mode='categorical')
+validation_generator = test_datagen.flow_from_directory(
+validation_data_dir,
+target_size=(img_width, img_height),
+batch_size=batch_size,
+class_mode='categorical')
+print("BEGINNING OF TRAINING SEQUENCE\n")
+model.fit_generator(
+train_generator,
+steps_per_epoch=nb_train_samples // batch_size,
+epochs=epochs,
+validation_data=validation_generator,
+validation_steps=nb_validation_samples // batch_size)
+print("TRAINING SUCCESSFULLY FINSISHED\n")
+model.save('./fchollet model/fchollet_3l-64-64-32_1811.h5')
+
+34
+
+2. Keras to TensorRT Conversion Code
+'''
+Keras2TF2TRT.py
+Lokaverkefni Mekatróník Hátæknifræði (BS) Háskóli Íslands
+Code partly used from Chengwei https://www.dlology.com
+Edited by Benedikt Jón Baldursson
+Keras to TensorRT model conversion
+'''
+import tensorflow as tf
+from tensorflow.python.framework import graph_io
+from tensorflow.keras.models import load_model
+tf.keras.backend.clear_session()
+save_pb_dir = './models'
+model_fname = './models/CNN1_3l-32-32-64_1811.h5'
+def freeze_graph(graph, session, output, save_pb_dir='.',
+save_pb_name='frozen_model.pb', save_pb_as_text=False):
+with graph.as_default():
+graphdef_inf =
+tf.graph_util.remove_training_nodes(graph.as_graph_def())
+graphdef_frozen =
+tf.graph_util.convert_variables_to_constants(session, graphdef_inf,
+output)
+graph_io.write_graph(graphdef_frozen, save_pb_dir, save_pb_name,
+as_text=save_pb_as_text)
+return graphdef_frozen
+tf.keras.backend.set_learning_phase(0)
+model = load_model(model_fname)
+session = tf.keras.backend.get_session()
+input_names = [t.op.name for t in model.inputs]
+output_names = [t.op.name for t in model.outputs]
+print(input_names, output_names)
+frozen_graph = freeze_graph(session.graph, session, [out.op.name for out
+in model.outputs], save_pb_dir = save_pb_dir)
+import tensorflow.contrib.tensorrt as trt
+trt_graph = trt.create_inference_graph(
+input_graph_def = frozen_graph,
+outputs = output_names,
+max_batch_size = 1,
+max_workspace_size_bytes = 1 << 25,
+precision_mode = 'FP16',
+minimum_segment_size = 50
+)
+graph_io.write_graph(trt_graph, "./models/",
+"trt_graph.pb", as_text = False)
+
+35
+
+Appendix B
+1. Sample of Expression Variance in Dataset
+
+Figure 15. Sample of different expressions in dataset.
+
+37
+
+2. Misclassified Images - CNN 1
+a. Misclassifications in Stop Class
+
+Figure 16. Stop misclassified as Forward.
+Image from Stop class in the test dataset, Figure 16, was misclassified as Forward.
+
+Figure 17. Stop misclassified as Backward.
+Image from Stop class in the test dataset, Figure 17, was misclassified as Backward.
+b. Misclassifications in Left Class
+
+Figure 18. Left misclassified as Forward.
+Image from Left class in the test dataset, Figure 18, was misclassified as Forward.
+38
+
+

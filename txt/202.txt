@@ -1,0 +1,1836 @@
+39
+
+arXiv:1711.06149v1 [cs.HC] 16 Nov 2017
+
+MindID: Person Identification from Brain Waves through Attention-based
+Recurrent Neural Network
+XIANG ZHANG, University of New South Wales
+LINA YAO, University of New South Wales
+SALIL S. KANHERE, University of New South Wales
+YUNHAO LIU, Tsinghua University
+TAO GU, RMIT University
+KAIXUAN CHEN, University of New South Wales
+Person identification technology recognizes individuals by exploiting their unique, measurable physiological and behavioral
+characteristics. However, the state-of-the-art person identification systems have been shown to be vulnerable, e.g., antisurveillance prosthetic masks can thwart face recognition, contact lenses can trick iris recognition, vocoder can compromise
+voice identification and fingerprint films can deceive fingerprint sensors. EEG (Electroencephalography)-based identification,
+which utilizes the user’s brainwave signals for identification and offers a more resilient solution, draw a lot of attention
+recently. However, the accuracy still requires improvement and very little work is focusing on the robustness and adaptability
+of the identification system. We propose MindID, an EEG-based biometric identification approach, achieves higher accuracy
+and better characteristics. At first, the EEG data patterns are analyzed and the results show that the Delta pattern contains
+the most distinctive information for user identification. Then the decomposed Delta pattern is fed into an attention-based
+Encoder-Decoder RNNs (Recurrent Neural Networks) structure which assigns varies attention weights to different EEG
+channels based on the channel’s importance. The discriminative representations learned from the attention-based RNN are
+used to recognize the user’ identification through a boosting classifier. The proposed approach is evaluated over 3 datasets
+(two local and one public). One local dataset (EID-M) is used for performance assessment and the result illustrate that our
+model achieves the accuracy of 0.982 which outperforms the baselines and the state-of-the-art. Another local dataset (EID-S)
+and a public dataset (EEG-S) are utilized to demonstrate the robustness and adaptability, respectively. The results indicate that
+the proposed approach has the potential to be largely deployment in practice environment.
+CCS Concepts: •Security and privacy → Biometrics; •Computing methodologies → Machine learning algorithms;
+Additional Key Words and Phrases: EEG, biometric identification, EEG pattern decomposition, deep learning
+ACM Reference format:
+Xiang Zhang, Lina Yao, Salil S. Kanhere, Yunhao Liu, Tao Gu, and Kaixuan Chen. 2017. MindID: Person Identification from
+Brain Waves through Attention-based Recurrent Neural Network. ACM J. Comput. Cult. Herit. 9, 4, Article 39 (March 2017),
+20 pages.
+DOI: 0000001.0000001
+
+1
+
+INTRODUCTION
+
+Over the past decade, biometric information have been widely used in identification and have gained more
+acceptance due to their reliability and adaptability. Existing biometric identification systems are mainly based on
+ACM acknowledges that this contribution was authored or co-authored by an employee, or contractor of the national government. As such,
+the Government retains a nonexclusive, royalty-free right to publish or reproduce this article, or to allow others to do so, for Government
+purposes only. Permission to make digital or hard copies for personal or classroom use is granted. Copies must bear this notice and the
+full citation on the first page. Copyrights for components of this work owned by others than ACM must be honored. To copy otherwise,
+distribute, republish, or post, requires prior specific permission and/or a fee. Request permissions from permissions@acm.org.
+© 2017 ACM. XXXX-XXXX/2017/3-ART39 $15.00
+DOI: 0000001.0000001
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+39:2
+
+• Xiang Zhang, Lina Yao, Salil S. Kanhere, Yunhao Liu, Tao Gu, and Kaixuan Chen
+
+individuals’ unique intrinsic physiological features (e.g., face [10], iris [18], retina [25], voice [11], and fingerprint
+[31]). However, the state-of-the-art person identification systems have been shown to be vulnerable, e.g., antisurveillance prosthetic masks can thwart face recognition, contact lenses can trick iris recognition, vocoder can
+compromise voice identification and fingerprint films can deceive fingerprint sensors.
+The EEG (Electroencephalography) signal-based system is an emerging approach in physiological biometrics.
+Such systems measure an individualfis brain response to a number of stimuli in the form of EEG signals, which
+record the electromagnetic, invisible, and untouchable electrical neural oscillations. These characteristics enable
+EEG-based identification highly attack-resilient and escape from the threat of being deceived which is often
+faced by other identification techniques. For example, people can easily trick a fingerprint-based identification
+system by using a fake fingerprint film1 or a face-recognition-based identification system by simply wearing a
+200 dollars’ worth anti-surveillance mask2 . EEG signals, compared with other biometrics, have the following
+significant inherent advantages [8, 27]:
+• Attack-Resilience. EEG data is invisible and untouchable and is impossible to be cloned and duplicated.
+Therefore, an EEG-based identification system is strengthened to verify human ID and robust against
+faked identities.
+• Universality. One’s EEG signals are typically associated with the subject all the time and hence security
+can be enforced anywhere and anytime.
+• Uniqueness. Each individual processes his/her EEG signals which are unique, independent and different
+from other’s [12]. This can potentially achieve high identification accuracy.
+• Accessibility. We have seen an increasing effort in recent years in the development of low-cost and
+easy-to-wear EEG headsets. For example, the behind-the-ear EEG collection equipment[15] can be easily
+attached to the ear (similar to wireless earphone).
+We put up a table showing the comparison of EEG with other biometric information on several key characteristics
+in Table 1. EEG signals stand out in a number of aspects, and hence attract many research work in EEG-based
+biometric identification. For instance, Chuang et al. [8] propose a single-channel EEG-based identification system
+and Sarineh Keshishzadeh et al. [14] employ a statistical model for analyzing EEG signals.
+Despite the efforts done recently, the research work in EEG-based identification is still in its early stage, and
+several key challenges exist. One of the most significant challenges is poor stability (the identification system
+may work well at one time but fail another time due to the EEG signals are easy to be interfered). This may due
+to the user’s physiological and psychological states such as fatigue and angry [30, 33]. Intuitively, the states
+shift brought by the fluctuation of user states can be divided into two categories: the dramatically shift (e.g.,
+hysterical, drunk, or under threaten) and the slight shift (e.g., headache or exciting). On one hand, the EEG signals
+divergence bought by the former can help to enhance the robustness of the identification system. For example,
+the phenomena could enhance the security of the identification system that it fails to recognize the subject who
+is under threatening (e.g., Hijacked by kidnapper). On the other hand, however, the latter will reduce the signal
+quality but more commonly occurred in the real world. For instance, the identification system could identify the
+user when s/he is happy but fail when upset. Thus the slight shift should be overcome for its negative effect. To
+eliminate the interference of the slight shift brought by the daily physical and mental states, we attempt to learn
+the robust and reliable representation via EEG pattern decomposition. Pattern decomposition is to decompose the
+full-frequency EEG signals into a specific pattern (Delta, Theta, Alpha, Beta, and Gamma). Pattern decomposition
+of EEG signals has been employed on EEG signal classification (e.g., movement task classification [23]) for a long
+time. However, few attentions are paid to the Delta pattern. In this paper, we discover that the Delta pattern is
+the most discriminative and efficient pattern through our analysis in Section 3.
+1 http://www.instructables.com/id/How-To-Fool-a-Fingerprint-Security-System-As-Easy-/
+2 http://www.urmesurveillance.com/urme-prosthetic/
+
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+MindID: Person Identification from Brain Waves through Attention-based Recurrent Neural Network • 39:3
+Another challenge is performance issue such as accuracy, robustness, and adaptability. The most recent
+identification systems can achieve a range from 80% to 95% [6, 14, 17, 21, 29], which is not enough for practical
+deployment in many confidential scenarios. Also, the identification algorithms rely much on the EEG collecting
+environment. The shifting of application environment (e.g., the number of channels, the sampling rate, and the
+training data size) may lead to the decrease of accuracy3 . This refers to that the existing EEG-based identification
+model may work well under one kind of application environment (e.g., 64 channels and 160 Hz), but could not
+handle another application environment (e.g., 14 channels and 128 Hz). So far, we have not seen a universal
+EEG-based identification algorithm which can performance good in a variety of real environments. To address
+this challenge, we introduce the attention-based RNNs (Recurrent Neural Networks) [4] which can automatically
+detect the most useful information from input data no matter what the environment is. More importantly,
+the attention mechanism4 would automatically re-allocate the weights to extract most discriminative features
+according to the change of environmental factors. The efficiency of attention-based RNN framework has been
+demonstrated by the studies in areas such as speech recognition [4], NLP (Natural Language Processing) [3], and
+computer version [20].
+To address the aforementioned problems, we propose MindID, a Delta pattern EEG-based person identification
+algorithm through an attention-based recurrent neural network. Our main contributions of this paper are
+highlighted as follows:
+• We present an EEG-based identification approach, MindID, which adopts a novel attention-based EncoderDecoder RNN framework for learning discriminative features among the user’s brainwaves and utilizes
+the learned features to identify user ID through a boosting classifier. The attention mechanism enables
+our approach to automatically search the most discriminative features for identification, consequently, to
+operate robust and adaptive over different datasets and collecting environment.
+• We analyze the EEG pattern decomposition and propose that the Delta pattern is the most steady and
+distinguishable pattern for user identification. Moreover, we design and conduct a set of experiments to
+verify the proposed hypothesis.
+• We design and conduct an EEG experiment along with collecting two real-world local dataset (EID-M
+and EID-S) which are separately collected under single-trial and multi-trial5 .
+• We evaluate the proposed approach on 3 datasets (2 local and 1 public). The results illustrate that
+our model achieves an accuracy of 0.982 which outperforms the state-of-the-art and baselines. We
+demonstrate the robustness and adaptability by the comparison between 3 datasets.
+Note that all the necessary reusable codes and datasets in this paper have been open-sourced for reproduction,
+please refer to this link 6 .
+The remainder of this paper is organized as follows. Section 2 introduces the literature related to this paper.
+Section 3 analyzes the characteristics of EEG patterns. Section 4 details the methodology of the MindID identification system. Section 5 evaluates the proposed approach on the local and public dataset and provides analysis
+of the experimental results. Section 6 discussed the limitation of our work and the future research potentials.
+Finally, Section 7 summarizes this paper and gives the conclusion.
+3 This
+
+statement can be demonstrated in Section 5.6.
+attention mechanism refers to select the most pertinent piece of information rather than using all available information. Attention
+Mechanisms in Neural Networks are based on the visual attention mechanism found in humans, and has been applied in computer version,
+NLP areas.
+5 Single trial refers to that the dataset is collected in one session (the period from one subject putting the EEG headset on until all the
+experiment are finished then putting off). Multi-trials represents the EEG data is collected from different trials, which considered the effect
+on EEG data quality caused by the headset position errors.
+6 https://drive.google.com/open?id=1t6tL434ZOESb06ZvA4Bw1p9chzxzbRbj
+
+4 Simply,
+
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+39:4
+
+• Xiang Zhang, Lina Yao, Salil S. Kanhere, Yunhao Liu, Tao Gu, and Kaixuan Chen
+
+Table 1. Comparison of various biometrics. EEG have considerable rttack-resilient which is the most significant character of
+identification systems. ↑ denotes the higher the better while ↓ denotes the lower the better.
+Biometrics
+Face/Vedio
+Fingerprint/Palmprint
+Iris
+Retina
+Signature
+Voice
+face
+Gait
+EEG
+
+2
+
+Attack-Resilient ↑
+Medium
+Low
+Medium
+High
+Low
+Low
+Medium
+High
+High
+
+Universality ↑
+Medium
+High
+High
+Medium
+High
+Medium
+High
+Medium
+High
+
+Uniqueness ↑
+Low
+High
+High
+High
+Low
+Low
+Medium
+High
+High
+
+Stability ↑
+Low
+High
+High
+Medium
+Low
+Low
+Medium
+Medium
+Low
+
+Accessibility ↑
+High
+Medium
+Medium
+Low
+High
+Medium
+Medium
+Medium
+Medium
+
+Performance ↑
+Low
+High
+High
+High
+Low
+Low
+Medium
+High
+High
+
+Computational cost ↓
+High
+Medium
+High
+High
+Medium
+Low
+High
+Low
+Low
+
+RELATED WORK
+
+In this section, we separately present literature on three aspects: the EEG-based person identification models, the
+EEG pattern decomposition, and the attention-based RNN application.
+
+2.1
+
+EEG-based person identification
+
+Since EEG can be gathered in a safe and non-intrusive way, researchers have paid great attention to exploring
+this kind of brain signals. For person identification, EEG is promising for being confidential and attack-resilient
+but on the other hand, complex and hard to be analyzed. Marcel and Millán [21] use Gaussian Mixture Models
+and train client models with Maximum A Posteriori (MAP). Ashby et al. [2] extract five sets of features from EEG
+electrodes and inter-hemispheric data, combine them together, and process the final features with support vector
+machine (SVM). The study shows that EEG identification is also feasible with less-expensive devices. Altahat et
+al. [1] select Power Spectral Density (PSD) as the feature instead of the widely used autoregressive (AR) models
+to get higher accuracy. They also conduct channel selection to determine contributing channels among all 64
+channels. Thomas and Vinod [29] take advantage of individual alpha frequency (IAF) and delta band signals to
+compose specific feature vector. They also prefer PSD features but only perform the extraction merely on gamma
+band. Most of the identification algorithms are concentrating on a specific application environment. Few studies
+attempt to build a universal EEG-based identification model.
+
+2.2
+
+EEG pattern decomposition
+
+Generally, the EEG data could be decomposed into several patterns (delta, theta, alpha, beta, and gamma)
+corresponding to various brain states [19]. So far, the majority of user ID identification studies are exploiting the
+features of Alpha and Beta pattern[17, 27]. In particular, most EEG based identification models are work on the
+situation that the subject keeps rest/relax (under Alpha pattern) or concentrating state (under Beta pattern) for
+the high data quality. The rest and relax states are represented by the Alpha wave, therefore, a number of studies
+decompose EEG raw signals into the Alpha pattern for future analysis. Sohankar et al. [27] extract Alpha pattern
+features for identification and authentication. Bashar et al. [6] use the filtered signals with frequency ranges
+from 0.5 − 59Hz (including Delta, Theta, Alpha, Beta and part of Gamma patterns) and calculate the statistics for
+user ID classification. Kumari and Vaish [17] employ wavelet analysis to decompose original EEG signals into 5
+patterns and extract statistical measures of each pattern. Thomas and Vinod [29] take Alpha peak frequency and
+peak power and Delta band power as recognition features and achieves the highest recognition rate as 0.9. To
+our best knowledge, this paper is the very first work which specialized focus on the decomposition and analysis
+of Delta pattern and studies the person identification based on it (the justification is given in Section 3).
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+MindID: Person Identification from Brain Waves through Attention-based Recurrent Neural Network • 39:5
+Table 2. EEG patterns and corresponding characters. Awareness Degree denotes the awareness the degree of being aware of
+an external world.
+Patterns
+Delta
+Theta
+Alpha
+Beta
+Gamma
+
+2.3
+
+Frequency (Hz)
+0.5-4
+4-8
+8-12
+12-30
+30-100
+
+Amplitude
+Higher
+High
+Medium
+Low
+Lower
+
+Brain State
+Awareness Degree
+Deep sleep pattern
+Lower
+Light sleep pattern
+Low
+Closing the eyes, relax state
+Medium
+Active thinking, focus, high alert, anxious High
+During cross-modal sensory processing
+Higher
+
+Produced Location
+Frontally and posteriorly
+Entorhinal cortex, hippocampus
+Posterior regions of head
+Most evident frontally
+Somatosensory cortex
+
+Attention-based RNN Model
+
+Attention-based RNN model [20] refers to introduce attention mechanism to the RNN framework. The attention
+mechanism enables RNN algorithm to allocate different weights to different parts of the input, and consequently,
+improve the exploration of the corresponding relationship between the input sequence and the output sequence.
+Generally, attention module is added to the original RNN framework as an external module, however, the attention
+module is trained instantaneously with the RNN structure [32]. Attention-based RNN model has achieves success
+in speech recognition [4], NLP (Natural Language Processing) [3], and computer version [20]. Bahdanau et al.
+[4] attempt to build a Large Vocabulary Continuous Speech Recognition (LVCSR) Systems by attention-based
+RNN and demonstrate this approach, compared with traditional methods, requires fewer training stages, less
+auxiliary data, and less domain expertise. Luong et al. [3] explore the architecture of attention-based neural
+machine translation and exam the effects of two attentional mechanism (attends to all source words and attends
+to a subset of words) on the WMT translation tasks between English and German in both directions. Ba et al. [20]
+present an attention-based RNN model for recognizing multiple objects in images, which is attempts to recognize
+multiple objects despite being given only class labels during training. The results show that the attention-based
+RNN is more accurate and uses less computation than the state-of-the-art. However, few work is taken based
+on attention mechanism in EEG related area. To our best knowledge, we are the very first work employing
+attention-based RNN model on the EEG-based user identification topic.
+
+3
+
+EEG PATTERN ANALYSIS
+
+In this section, we first introduce the basic knowledge of EEG patterns and then analyze the relationship between
+EEG patterns and individual states. Moreover, we propose a hypothesis to capture the most distinctive features
+to distinguish the subject’s identity.
+In practical EEG data analysis, the assembled EEG signals can be divided into several different frequency
+patterns (delta, theta, alpha, beta, and gamma) based on the strong intra-band correlation with a distinct behavioral
+state [5, 19, 28]. Each decomposed EEG pattern contains signals associated with particular brain information. The
+EEG frequency patterns and the corresponding characters are listed in Table 2. The awareness degree denotes the
+perception of individuals while facing outside stimuli. Each EEG patterns represents a specific active situation of
+brain state and a qualitative assessment of awareness. More specifically,
+• Delta pattern (0.5 − 4 Hz) is associated with deep sleep while the subject has lower awareness.
+• Theta pattern (4 − 8 Hz) being presented during light sleep, is the realm of the low awareness state.
+• Alpha pattern (8 − 12 Hz) mainly occurs during eye closed and deeply relax state, lies at the medium
+awareness.
+• Beta pattern (12 − 30 Hz) is the dominant rhythm while the subject keeps eye-opening and claims high
+awareness. Most of the human daily activities (such as eating, walking, and talking) are under Beta
+pattern.
+• Gamma pattern (30 − 100 Hz) representing the co-work of several brain areas to carry out a specific
+motor and cognitive function. This pattern is associated with higher awareness.
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+39:6
+
+• Xiang Zhang, Lina Yao, Salil S. Kanhere, Yunhao Liu, Tao Gu, and Kaixuan Chen
+
+Table 3. The inter-subject correlation coefficients. Full denotes the un-decomposed full-frequency band data. The lower
+coefficients indicate that the subject’s EEG data is easier to be distinguished. The data come from the EID-M dataset (detailed
+in Section 5.1).
+Subject
+
+Patterns
+
+Subject 1
+Delta
+0.137
+Theta
+0.447
+Alpha
+0.387
+Beta
+0.249
+Gamma 0.528
+full
+0.333
+
+Subject 2
+0.428
+0.671
+0.629
+0.487
+0.692
+0.329
+
+Subject 3
+0.246
+0.552
+0.615
+0.329
+0.538
+0.408
+
+Subject 4
+0.179
+0.31
+0.377
+0.308
+0.362
+0.304
+
+Subject 5
+0.221
+0.387
+0.299
+0.281
+0.521
+0.297
+
+Subject 6
+0.119
+0.207
+0.306
+0.307
+0.667
+0.621
+
+Subject 7
+0.187
+0.199
+0.283
+0.238
+0.428
+0.302
+
+Subject 8
+0.239
+0.386
+0.457
+0.441
+0.537
+0.447
+
+STD
+0.089554
+0.151929
+0.128653
+0.083224
+0.102288
+0.104231
+
+Average
+0.219
+0.395
+0.419
+0.33
+0.534
+0.38
+
+We claim that the EEG patterns are internally related with the awareness degree. As shown in Table 2: with the
+increase of band frequency (from Delta pattern, Theta pattern, Alpha pattern, Beta pattern to Gamma pattern),
+the awareness degree is increasing. The above statement can be inferred by the following two factors. First, EEG
+pattern is relevant to brain neuron activity. In essence, EEG signals are measured by the voltage fluctuations
+which are resulted from the ionic current within the neuron activity of the brain [22]. Second, the awareness
+degree is associated with the brain neuron activity. Intuitively, the higher awareness the subject has, the more
+neurons are activated. In particular, more and more brain areas are activated while the subject’s awareness is
+higher and higher (the brain state changes from deep sleep, light sleep, to normal awake). At the same time, more
+neural cells are aroused and more function are attached. As a result, more complex and blend EEG signals are
+produced by the brain.
+Additionally, we know that the awareness of human is naturally connected with individuals’ mental and physical
+states (organics and systems) [9, 24]. For example, while the subject is under lower awareness situation (like deep
+sleep, Delta pattern), the most parts of physical functions of the body (such as sensing, thinking, even dreaming)
+are completely detached. Only the very essential life-support organs and systems (such as breathing, heart
+beating, and digesting) keep working. While the subject is under medium awareness state (like eye relaxation,
+Alpha pattern), the subject has more activated functions such as imaging, visualizing and concentrating. Also,
+more brain functions like hearing, touching, and thinking are attached, which means that more physical brain
+areas (such as frontal lobe, temporal lobe, and parietal lobe) are activated.
+According to the above two statements, it can be inferred that the EEG patterns are associated with individuals’ mental and physical states (organics and systems). Note, under the medium awareness situation,
+the life-support systems which worked under lower awareness situation are still working. Which means that
+while the subject has high-degree awareness, his or her EEG signals contain both high-degree and low-degree
+awareness at the same time. The pattern (with low-degree awareness) is not replaced by another pattern (with
+high-degree awareness) but included by the latter. Specifically, Delta pattern is not replaced but included in
+other patterns. In other word, Delta pattern exists in all the brain states7 (e.g., deep sleep, light sleep, relax, and
+focus).
+For identification techniques, the EEG signals feature should satisfy two demands: steady and distinguishable.
+The steady means that the system should be robustness enough to identify the user even when the user’s mental
+or physical states have tiny fluctuation (such as tired). The distinguishable refers that the EEG signals should vary
+with the different subject. Based on the analyzed conclusion, we claim a hypothesis that Delta pattern contains
+the most steady and distinctive information for user identification. This hypothesis will be demonstrated
+both qualitatively and quantitatively.
+Here we attempt to qualitatively demonstrate the hypothesis based on the relationship between EEG patterns
+and human states. At first, Delta pattern naturally keeps steady under different situations since it is produced by
+7 For
+
+example, the deep sleep EEG signals contain only Delta pattern wile the light sleep EEG signals contain both Delta and Theta patterns.
+
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+MindID: Person Identification from Brain Waves through Attention-based Recurrent Neural Network • 39:7
+
+Fig. 1. Flowchart of the proposed approach. In the beginning of identification, EEG raw data E is collected from the user and
+then be transmitted to preprocessing stage. The preprocessed data E 0 is decomposed to Delta pattern δ which is regarded as
+the input of the attention-based RNN. The encoder compresses the input sequence X 1 into an intermediate coder C and
+0 at the same time. The attention-based module accepts both C and W 0 from the LSTM layer X i 0 ,
+produces the weights Wat
+t
+at t
+0
+processes Wat t through a softmax layer, and calculates the attention-based code Cat t . Assess the representation ability of
+Cat t via the decoder and utilize it to identify the user ID in the identification step.
+
+and only related with the basic life-support systems. Comparatively, other EEG patterns like the Alpha pattern is
+unsteady and it could be easily influenced by subject states and environmental factors (such as fatigue, emotion,
+and noise). The higher consciousness, the easier to be influenced by the noise. In addition, the life-support
+systems are associated with the physiological characteristics of different subjects, which enables Delta pattern
+distinguishing. Then we present the quantitative demonstration. To find the best pattern for user ID recognition,
+we analyze the inter-subject correlations of EEG decomposed pattern. The inter-subject correlations, measured
+by the correlation coefficient, denotes that the connection of the same pattern but from different subjects. For
+example, the inter-subject Alpha pattern correlations of subject 1 are calculated by the Pearson correlation
+coefficient between the Alpha signal (belong to subject 1) and another Alpha signal (belong to another subject). In
+practical, we select a set of samples and measure the average level. The correlation coefficient analysis results are
+shown in Table 3. In which, we can observe that the Delta pattern has the lowest correlation coefficients compared
+with other patterns. This consequence indicates that Delta pattern is enabled to achieve the best performance
+for the user identification. Furthermore, the comparative experiment between different EEG patterns will be
+reported in Section 5.6.
+
+4
+
+METHODOLOGY
+
+In this section, we first give an overview of the proposed MindID system and then present the technical details
+for each component, namely, Preprocessing, EEG pattern decomposition, Attention-based RNN, and Classification.
+
+4.1
+
+Overview
+
+Figure 1 outlines the specific steps of the proposed MindID system. The brainwave is collected by the portable
+EEG acquisition equipment while the user closed his/her eyes and keep relaxation. Under relaxation mental and
+physical states, the EEG signals are supposed to be more stable and reliable. Each EEG data is a numerical feature
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+39:8
+
+• Xiang Zhang, Lina Yao, Salil S. Kanhere, Yunhao Liu, Tao Gu, and Kaixuan Chen
+
+vector with N dimensions which corresponding to the N channels of the wearable EEG headset. The EEG samples
+are first preprocessed to remove the Direct Current (DC) offset and normalize the signals (Section 4.2). Next,
+we employ EEG pattern decomposition to isolate the Delta waves from preprocessed data since they contain
+the most distinctive information which can be used to identify the subject (as outlined in Section 3). The delta
+waves are fed to an attention-based Encoder-Decoder RNN model, which identifies the most distinctive channels
+and adjusts the weights accordingly. The attention-based RNN model accepts Delta pattern signals and explores
+the deep correlations between Delta pattern. The learned deep representations are fed into a statistical boosting
+classifier (Section 4.5) to recognize the user ID.
+
+4.2
+
+Preprocessing
+
+The raw EEG samples are pre-processed to remove the DC offset and normalize the signals.
+Eliminating DC offset is necessary because EEG collection headsets invariably introduce a constant noise
+component in the recorded signals. The specific headset used in our experiments (details in Section 5) introduces
+a DC offset of 4200 muV8 . In the preprocessing stage, this constant DC offset is first subtracted from the raw
+signal E.
+Normalization also plays a crucial role in a knowledge discovery process for handling different units and
+scales of features. For example, given one raw data dimension ranges from 0 to 1 while another dimension
+ranges from 0 to 100, the analysis results will be dominated by the latter. Generally, there are three widely used
+normalization methods: Min-Max Normalization, Unity Normalization, and Z-score Scaling Normalization [34].
+Our experiments (not shown for brevity) indicated that Z-score scaling is the most suited for the EEG data. In
+summary, the preprocessed data E 0 can be calculated by
+(E − DC) − µ
+σ
+where DC denotes the Direct Current which is 4200 muV, µ denotes the mean of E − DC and σ denotes the
+standard deviation.
+E0 =
+
+4.3
+
+EEG Pattern Decomposition
+
+In Section 3, we used empirical EEG data to show that the part of the EEG signals that belong to the Delta
+frequency band (0.5 − 4Hz) is particularly well-suited to identify user’s ID accurately and steady. To isolate the
+signals in the Delta band, we use a Butterworth band-pass filter of order 3 with the frequency range of 0.5Hz to
+4Hz. The designed filter has following specifications: the order is three, the low cut is 0.5Hz, and the high cut
+is set as 4Hz. All dimensions of the preprocessed E 0 are fed into the band-pass filter in turn and finally get the
+decomposed Delta pattern δ .
+
+4.4
+
+Attention-based RNN
+
+After EEG pattern decomposition, the composed Delta pattern δ is fed into an attention-based Encoder-Decoder
+RNN structure [32] aims to learn more representable features for user identification. The general Encoder-Decoder
+RNN framework regards all the feature dimensions of input sequence has the same weights, no matter how
+important the dimension is for the output sequence. In our research, the different feature dimensions of the
+EEG data are corresponding to the different nodes of the EEG equipment. For example, the first dimension (first
+channel) collects the EEG data from the AF 39 node which located at the frontal lobe of the scalp while the 7-th
+dimension is gathered from O1 node at the occipital lobe. To assign varies weights to different dimensions of
+the brainwave data, we introduce the attention mechanism to the Encoder-Decoder RNN model. The proposed
+8 https://www.bci2000.org/mediawiki/index.php/Contributions:Emotiv
+9 Both
+
+AF 3 and O 2 are EEG measurement positions in the International 10-20 Systems.
+
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+MindID: Person Identification from Brain Waves through Attention-based Recurrent Neural Network • 39:9
+Table 4. Notation
+
+Parameters
+E
+E0
+δ
+Xi
+I
+Ni
+Y
+Y0
+K
+T (·)
+C
+L(·)
+L 0(·)
+f i , f f , f o , fm
+Wat0 t
+Wat t
+Cat t
+nit er
+XD
+xd
+m
+M
+ID
+
+Explanation
+EEG raw data
+Preprocessed EEG data
+Delta pattern of E 0
+Data in the i-th layer in attention-based RNN
+The number of layers in attention-based RNN
+The number of dimensions of X i
+The one-hot label of user ID
+The attention-based RNN predicts user ID
+The number of user ID categories
+The linear function
+The intermediate code
+The output calculation procedure of LSTM cell
+The final hidden state calculation procedure of LSTM cell
+The input, forget, output, and input modulation gate
+The unnormalized attention weights
+The normalized attention weights
+The attention-based intermediate code
+The iteration threshold of attention-based RNN
+The learned deep feature from attention-based RNN
+A single sample in X D
+The m-th tree
+The number of XGB trees
+The final identified user ID of MindID approach
+
+attention-based Encoder-Decoder RNN is consists of three components (as shown in Figure 1): the encoder, the
+attention module, and the decoder. The encoder is designed to compress the input Delta δ wave into a single
+intermediate code C; the attention module helps the encoder to calculate a better intermediate code Cat t by
+generating a sequence of the weights Wat t of different dimensions; the decoder accepts the attention-based code
+Cat t and decode it to the user ID. Note, this user ID is predicted by the attention-based RNN instead of MindID,
+and the final identified ID of MindID approach will be introduced in Section 4.5.
+Suppose the data in i-th layer could be denoted by X i = (X ji ; i ∈ [1, 2, · · · , I ], j ∈ [1, 2, · · · , N i ]) where j denotes
+the j-th dimension of X i . I represents the number of neural network layers in the proposed attention based RNN
+model while N i denotes the number of dimensions in X i . Take the first layer as an example, we have X 1 = δ
+which indicates the input sequence is the Delta pattern. Let the output sequence be Y = (Yk ; k ∈ [1, 2, · · · , K])
+where K denotes the number of user ID categories. In this paper, the user ID is represented by the one-hot label
+with length K. For simplicity, let’s define the operation T (·) as:
+T (X i ) = X iW + b
+Further more, we have
+i
+i
+T (X ji−1 , X j−1
+) = X ji−1 ∗ W 0 + X j−1
+∗ W 00 + b 0
+
+where W , b, W 0, W 00, b 0 denote the corresponding weights and biases parameters.
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+39:10
+
+•
+
+Xiang Zhang, Lina Yao, Salil S. Kanhere, Yunhao Liu, Tao Gu, and Kaixuan Chen
+
+The the encoder component contains several non-recurrent fully-connected neural network layers and one
+recurrent Long Short-Term Memory (LSTM) layer. The non-recurrent layers are employed to construct and
+fit a non-linear function to purify the input Delta pattern, the necessity is demonstrated by the preliminary
+experiments10 . The data flow in these non-recurrent layers could be calculated by
+X i+1 = T (X i )
+The LSTM layer is adopted to compress the output of non-recurrent layers to a length-fixed sequence which is
+regarded as the intermediate code C. Suppose LSTM is the i 0-th layer, the code equals to the output of LSTM,
+0
+0
+which is C = X ji . The X ji can be measured by
+0
+
+0
+
+0
+
+i
+X ji = L(c ij−1 , X ji−1 , X j−1
+)
+
+(1)
+
+i0
+
+where c j−1 denotes the hidden state of the (j − 1)-th LSTM cell. The operation L(·) denotes the calculation process
+of the LSTM structure, which can be inferred from the following equations
+0
+
+0
+
+X ji = fo
+0
+
+c ij = f f
+
+tanh(c ij )
+0
+
+c ij−1 + fi
+
+fm
+
+0
+i0
+fo = siдmoid(T (X ji −1 , X j−1
+))
+i 0 −1
+i0
+f f = siдmoid(T (X j , X j−1 ))
+0
+i0
+fi = siдmoid(T (X ji −1 , X j−1
+))
+i0
+i 0 −1
+fm = tanh(T (X j , X j−1 ))
+
+where fo , f f , fi and fm represent the output gate, forget gate, input gate and input modulation gate11 , separately,
+and denotes the element-wise multiplication.
+The attention module accepts the final hidden states as the unnormalized attention weights Wat0 t which can be
+measured by the mapping operation L 0(·) (similar with Equation 1)
+0
+
+0
+
+i
+Wat0 t = L 0(c ij−1 , X ji−1 , X j−1
+)
+
+and calculate the normalized attention weights Wat t
+Wat t = so f tmax(Wat0 t )
+The softmax function is employed to normalize the attention weights into the range of [0, 1]. Therefore, the
+weights can be explained as the probability that how the code C is relevant to the output results. Under the
+attention mechanism, the code C is weighted to Cat t
+Cat t = C
+
+Wat t
+
+Note, C and Wat t are trained instantaneously. The decoder receives the attention-based code Cat t and decode it
+to predict the user ID Y 012 . Since Y 0 is predicted at the output layer of the attention based RNN model (Y 0 = X I ),
+we have
+Y 0 = T (Cat t )
+At last, we employ the cross-entropy function to calculate the prediction cost between the predicted ID Y 0 and
+the ground truth Y . `2 -norm (with parameter λ) is selected to prevent overfitting. The cost is optimized by the
+AdamOptimizer algorithm [16]. The iterations threshold of attention-based RNN is set as nit er . The weighted code
+10 Some
+
+optimal designs like the neural network layers are validated by the preliminary experiments but the validation procedure will not be
+reported in this paper for space limitation
+11 http://colah.github.io/posts/2015-08-Understanding-LSTMs/
+12 Note, Y 0 is not the identification results of MindID model. The final identified user ID is I calculated in Section 4.5
+D
+
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+MindID: Person Identification from Brain Waves through Attention-based Recurrent Neural Network
+
+•
+
+39:11
+
+ALGORITHM 1: The MindID User Identification Algorithm
+Input: EEG raw data E
+Output: Identification results I D
+1: Initialization;
+2: Preprocessing: E 0 ← E;
+3: EEG pattern decomposition: δ ← E 0 ;
+4: if iteration < nit er then
+5:
+for i = 1, 2, · · · , I do
+6:
+X1 = δ
+0
+i0 )
+7:
+C ← X 1 , L(c ij−1 , X ji−1 , X j−1
+8:
+9:
+10:
+11:
+12:
+13:
+14:
+15:
+16:
+17:
+18:
+
+0
+
+0
+
+i )
+Wat t ← C, L 0 (c ij−1 , X ji−1 , X j−1
+Cat t = C Wat t
+X D = Cat t
+end for
+else
+Return X D
+end if
+for X D do
+ID ← X D
+end for
+return I D
+
+Cat t has a directly linear relationship with the output layer and the predict results. If the model is trained well
+and get low cost, we could regard the weighted code as a high-quality representation of the user ID. We set the
+learned deep feature X D equals to Cat t , X D = Cat t , and use it to recognize the final user ID in the identification
+stage.
+
+4.5
+
+Identification
+
+In this section, we employ Extreme Gradient Boosting classifier (XGB) [7] to classify the learned deep feature X D
+for user ID identification. The XGB classifier fuses a set of classification and regression trees (CART) and tries to
+exploit as detailed as possible the information from the input data. It builds multiple trees and each tree has its
+leaves and corresponding scores. Moreover, it proposes a regularized model formalization to prevent over-fitting
+and it is widely used for its accurate prediction power.
+The learned deep feature X D is taken to train a list of the CART (set there are M trees) and predict a set of
+user’s IDs. Suppose xd ∈ X D is a single sample of the deep feature. The finally identification result of the input
+xd is calculated as
+ym = f (xd )
+ID = F (
+
+M
+Õ
+
+ym ), m = 1, 2, · · · , M
+
+1
+
+where f denotes the classify function of a single tree, ym denotes the predicted ID of the m-th tree and F denotes
+the mapping from single tree prediction space to the final prediction space. The I D is the final identified user
+ID based on EEG data. The overall procedure of the proposed approach is summarized in Algorithm 1. All the
+parameters mentioned in this section are listed in Table 4.
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+39:12
+
+•
+
+Xiang Zhang, Lina Yao, Salil S. Kanhere, Yunhao Liu, Tao Gu, and Kaixuan Chen
+
+Fig. 2. EEG collection and the collected raw data. The EEG raw data is gathered by the EEG headset and transmitted to the
+collector through bluetooth. The EEG data with the user keep relaxation and eye-closed is recorded.
+Table 5. Datasets details. In Trial column, M denotes multi-trials and S demotes single-trial. EID-M is used to compare
+with the state-of-the-arts and baselines; the comparison between EID-M and EID-S are used to verify the robustness; the
+comparison between EID-S and EEG-S are used to verify the adaptability.
+
+Name Source
+EID-M Local
+EID-S
+Local
+EEG-S Public
+
+5
+
+Channels
+14
+14
+64
+
+Trial
+M
+S
+S
+
+Frequency
+128 Hz
+128 Hz
+160 Hz
+
+Subjects
+8
+8
+8
+
+Comparison Robustness
+X
+X
+X
+-
+
+Adaptability
+X
+X
+
+EXPERIMENTS AND RESULTS
+
+We first outline the experimental settings in Section 5.1. Next, we systematically investigate the following
+questions:
+•
+•
+•
+•
+•
+
+5.1
+
+How does MindID compare with state-of-the-art methods and other baselines (Section 5.2)?
+How efficient is MindID (Section 5.3)?
+Is MindID robust under a multi-trial setting (Section 5.4)?
+Does MindID exhibit consitent results when tested with different datasets (Section 5.5)?
+Is the Delta pattern exactly works better than other patterns (Section 5.6)?
+
+Experimental settings
+
+5.1.1 Datasets. The proposed MindID system is evaluated by three datasets: a multi-trial local dataset (EID-M),
+a single-trial dataset (EID-S), and a public dataset (eegmmidb). The details of datasets are introduced in Table 5. All
+the datasets are measured the EEG raw data from the subject’s scalp while the subject keeps relax and eye-closed.
+EID-M EID-M denotes EEG based ID recognition with the training set comes from the multi-trial collection.
+Since multi-trial scenarios are mostly happed in the practical applications, EID-M dataset is taken to report a
+comparison with the state-of-the-art methods and baselines. The EID-M dataset is gathered in the experiment
+which is carried on by 8 subjects (5 males and 3 females) aged from 24 to 28. During the experiment, the subject
+wearing the Emotiv Epoc+13 EEG collection headset, keeping relax and eye-closed (shown in Figure 2). The Emotiv
+Epoc+ contains 14 channels and the sampling rate is set as 128 Hz. In the experiment, each subject takes three
+13 https://www.emotiv.com/product/emotiv-epoc-14-channel-mobile-eeg/
+
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+MindID: Person Identification from Brain Waves through Attention-based Recurrent Neural Network
+
+•
+
+39:13
+
+trials and each trial produce 7,000 EEG samples. Summarily, each subject has 21,000 samples and the whole
+EID-M dataset contains 168,000 samples.
+EID-S EID-S is collected under the same situation with EID-M (5 males, 3 females, 14 channels, and 128 Hz).
+The main difference between them is the former dataset are belonged single trial. EID-S totally contains 56,000
+samples belong to 8 subjects (7,000 samples belong to each subject).
+EEG-S EEG-S is a subset of the widely used online public dataset eegmmidb (EEG motor movement/imagery
+database)14 . It is collected with the BCI2000 (Brain Computer Interface) instrumentation system 15 [26] (64
+channels and 160 Hz sampling rate). EEG-S contains 8 subjects with each subject owns 7,000 samples which are
+collected in single trial.
+To assess the performance of the proposed MindID model, we employ several widely-used evaluation metrics
+such as accuracy, precision, recall, F1 score, ROC (Receiver Operating Characteristic) curve, support, and AUC
+(Area Under the Curve).
+
+5.2
+
+Fig. 3. Confusion matrix of EID-M
+
+Fig. 4. Confusion matrix of EID-S
+
+Fig. 5. Confusion matrix of EEG-S
+
+Fig. 6. ROC and AUC of EID-M
+
+Fig. 7. ROC and AUC of EID-S
+
+Fig. 8. ROC and AUC of EEG-S
+
+Overall comparison
+
+In this section, we firstly report our model’s performance evaluated on EID-M dataset and then compare the
+proposed approach with the state-of-the-art approaches and baselines. Our approach extract Delta wave through
+pattern decomposition fed it into an attention-based Encoder-Decoder RNN model, and predict the user’s ID
+via a boosting classifier. We randomly select 147,000 samples from EID-M to train the model and the residual
+14 https://www.physionet.org/pn4/eegmmidb/
+15 http://www.schalklab.org/research/bci2000
+
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+39:14
+
+•
+
+Xiang Zhang, Lina Yao, Salil S. Kanhere, Yunhao Liu, Tao Gu, and Kaixuan Chen
+
+Table 6. Evaluation report of EID-M dataset. The overall accuracy achieves 0.982 of 21000 testing samples. The support is the
+number of samples of each class.
+
+Precision
+Recall
+F1-score
+Support
+
+0
+1
+2
+3
+4
+5
+6
+7
+0.9723 0.9789 0.9777 0.9894 0.989 0.9814 0.9898 0.9774
+0.9822 0.9885 0.9945 0.9711 0.9808 0.9821 0.9742 0.9834
+0.9772 0.9837 0.9860 0.9802 0.9849 0.9818 0.9820 0.9804
+2674
+2554
+2601
+2650
+2639
+2634
+2636
+2612
+
+Average/Total
+0.982
+0.9821
+0.982
+21000
+
+Table 7. The accuracy comparison with baselines and the state-of-the-art methods over EID-M dataset. The result shows
+that our approach achieves the highest accuracy of 0.982.
+
+Index
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+
+Method
+Jayarathne[13]
+Bashar et al. [6]
+Keshishzadeh et al. [14]
+Gui et al.[12]
+Thomas and Vinod [29]
+Kumari and Vaish [17]
+RF
+KNN
+RNN
+RNN+XGB
+PD+RNN
+AR+RNN
+XGB
+PD+XGB
+Ours (EID-M)
+
+Acc
+0.919
+0.873
+0.815
+0.833
+0.859
+0.875
+0.795
+0.849
+0.815
+0.808
+0.853
+0.811
+0.815
+0.965
+0.982
+
+Recall F1-Sore AUC
+0.914
+0.9165
+0.946
+0.898
+0.8853
+0.907
+0.843
+0.8288
+0.859
+0.811
+0.8219
+0.842
+0.869
+0.8640
+0.888
+0.872
+0.8735
+0.901
+0.813
+0.8039
+0.827
+0.836
+0.8424
+0.847
+0.803
+0.8090
+0.821
+0.789
+0.7984
+0.803
+0.821
+0.8367
+0.844
+0.798
+0.8044
+0.831
+0.811
+0.8130
+0.853
+0.959
+0.9620
+0.977
+0.9821 0.9820
+0.999
+
+21,000 samples are used to test the performance. Through tuning, the hyper-parameters used in our approach
+are listed following. In EEG pattern decomposition, we employ a 3 order butter-worth band-pass filter and the
+passband is [0.5Hz, 4Hz]. In the attention-based RNN structure, the encoder consists of 1 input layer (14 nodes),
+3 non-recurrent fully-connected hidden layers (164 nodes) and 1 recurrent LSTM layer (164 cells); the decoder
+includes 1 fully-connected hidden layer (164 nodes) and 1 output layer (8 nodes). The learning rate is 0.001; the
+parameter of ` − 2 norm is set as 0.001; the encoder and decoder separately have 6 and 2 layers; training dataset
+is divided into 7 batches with the batch size of 21,000; the number of training iterations is 2000. In the classifier:
+the learning rate is 0.7; the sub-sampling rate is 0.9; the max depth is set as 6; the training iterations is 500. The
+ground truth (from 0 to 7) is represented as a one-hot label which corresponding to the ID of subjects.
+The proposed approach achieves the identification accuracy as 0.982. The detailed confusion matrix, evaluation
+report, and ROC curves (with AUC scores) are illustrated in Figure 3, Table 6, and Figure 6, respectively. The
+above evaluation metrics illustrate that our approach obtains higher than 0.97 precision of each class.
+In addition, the accuracy comparison between our method and other state-of-the-art and baselines are listed in
+Table 7. RF denotes Random Forest, AdaBoost denotes Adaptive Boosting, LDA denotes Linear Discriminant
+Analysis, PD denotes for Pattern Decomposition, AR denotes AutoRegressive method, and XGB denotes for
+X-Gradient Boosting classifier (the classifier used in our approach). In addition, the key parameters of the
+baselines are listed here: Linear SVM (C = 1), RF (n = 200), KNN (k=3), and AR (13 order autoregressive from 40
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+MindID: Person Identification from Brain Waves through Attention-based Recurrent Neural Network
+
+•
+
+39:15
+
+samples). The setting up of PD, RNN and XGB classifier are same as the hyper-parameters mentioned above. The
+methods used in the state-of-the-art are introduced as follows:
+• Jayarathne et al. [13] focus on the 8 to 30 Hz Alpha and Beta combined frequency band across all
+EEG channels and extract the Common Spatial Patterns (CSP) values as classification features. LDA is
+employed as the classifier.
+• Bashar et al. [6] first remove noise and artifacts using Bandpass FIR filter. Then learning the features
+through multi-scale shape description (MSD), multi-scale wavelet packet statistics (WPS) and multi-scale
+wavelet packet energy statistics (WPES). These features are finally used to train a support vector machine
+(SVM) classifier.
+• Keshishzadeh et al. [14] investigates the Autoregressive (AR) coefficients as the feature set which is
+identified by an SVM classifier.
+• Gui et al.[12] propose to reduce the noise level through a low-pass filter, extract frequency features using
+wavelet packet decomposition, and perform classification based on a deep neural network.
+• Thomas and Vinod [29] combines subject-specific alpha peak frequency, peak power, and delta band
+power values to form discriminative feature vectors and templates.
+• Kumari and Vaish [17] apply discrete wavelet analysis to decompose EEG raw signal corresponding to
+EEG sub-band frequency (0-59Hz). The extracted statistical measures and energy calculation of each
+decomposed wave are classified by neural network structure.
+All the approaches are working on the preprocessed EID-M dataset. The results show that our method achieves
+the highest accuracy of 0.982 compared with other methods.
+
+5.3
+
+Efficiency Evaluation
+
+In this section, the efficiency refers to the required identification time. The low efficiency may limit the suitability
+for practical deployment. To assess the efficiency of the proposed approach, we focus on the algorithm running
+time and compared it with the widely used baselines and other classification methods. In this paper, we run the
+experiments on a GPU-accelerated machine with Nvidia Titan X pascal GPU, 768G memory, and 145 TB PCIe
+based SSD.
+The time required to train the identification model is firstly given in Figure 9(the X-axis label denotes the
+index of algorithms shown in Table 7), which illustrates that our approach (PD+RNN+XGB) and the RNN+XGB
+approach take much more training time than other methods. The reasons are in two aspects. On one hand, the
+algorithm loops take a considerable amount of time (RNN run for 2000 iterations and XGB run for 500 loops). On
+the other hand, the deep learning structure and the boosting trees have much more parameters and complex
+structures than other classification models. Compared to the training time, however, for practical considerations,
+the execution time of an algorithm during testing is more important. Figure 10 presents that the testing time of
+our model is less than 1 second, which is shorter than most of the state-of-the-arts and baselines. Summarily, our
+model takes only tiny testing time although it requires more time to train the model, which is acceptable and
+reasonable in the real world implement.
+In the practical deployment, the data size used to train the model generally is one important impact factor
+of the model’s performance. We conduct a set of experiments to investigate the accuracy influence brought by
+training data size. We run the experiments for 5 times and report the error-bar of results in Figure 11, which
+shows that our approach could achieve the accuracy around 0.9 even when only 12.5% of the available dataset is
+used for training. This presents that the proposed approach has a low dependency on the training data size.
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+39:16
+
+•
+
+Xiang Zhang, Lina Yao, Salil S. Kanhere, Yunhao Liu, Tao Gu, and Kaixuan Chen
+12
+
+1
+
+12000
+
+0.98
+10
+
+10000
+
+0.96
+
+6000
+
+0.92
+
+Accuracy
+
+Testing Time (s)
+
+Training Time (s)
+
+0.94
+
+8
+
+8000
+
+6
+
+0.9
+0.88
+
+4
+
+4000
+
+0.86
+0.84
+
+2
+
+2000
+
+0.82
+0
+
+0
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+9
+Methods Index
+
+10
+
+11
+
+12
+
+13
+
+14
+
+15
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10
+
+11
+
+12
+
+13
+
+14
+
+15
+
+0.8
+10
+
+20
+
+30
+
+40
+
+Methods Index
+
+50
+
+60
+
+70
+
+80
+
+90
+
+Training Data Proportion
+
+Fig. 9. Training time. The index cor- Fig. 10. Testing time. The index cor- Fig. 11. The accuracy change trend
+responding the index in Table 7.
+responding the index in Table 7.
+with training data size
+Table 8. Evaluation report of EID-S dataset. The overall accuracy achieves 0.9882 of 7000 testing samples.
+
+Precision
+Recall
+F1-score
+Support
+
+5.4
+
+0
+1
+2
+3
+4
+5
+6
+7
+0.9897 0.9881 0.9944 0.9837 0.9895 0.9844 0.9866 0.9897
+0.992 0.9924 0.9944 0.9712 0.986 0.9939 0.9789 0.9977
+0.9908 0.9903 0.9944 0.9774 0.9878 0.9891 0.9827 0.9937
+872
+927
+892
+857
+857
+831
+893
+871
+
+Average/Total
+0.9882
+0.9883
+0.9883
+7000
+
+Robustness evaluation
+
+In practical scenarios and real-world deployment, the identification system is applied to the multi-trial situation.
+The data used to train the system and the test data used to identify the user come from different trials (different
+placements of the device). For example, the user wears the EEG headset and collect the first trial data; then
+collect the second trial data after he/she removes the headset and puts it back again. There maybe some difference
+between two trials data, which is caused by the different placement position or other internal equipment reasons.
+Therefore, The divergence of the training data and testing data should be considered when the identification
+system is designed.
+In this section, we evaluate the robustness of the proposed approach by analyzing how the single-trial/multitrial affect the identification accuracy. Two datasets, which respectively contain single-trial identification data
+(EID-S) and multi-trial identification data (EID-M), are employed to assess our method. More details about the
+datasets are provided in Section 5.1.
+The evaluations of EID-S is shown in Table 8, through which we can observe that our approach achieves the
+overall accuracy of 0.9882% on EID-S and the precisions of all classes are higher than 0.98. To take a closer look
+at the result, confusion matrix (Table 4) and ROC curves (Figure 7) are provided. The performances of EID-M are
+reported in Section 5.2 (Figure 3, Table 6, and Figure 6). Through the comparison of the performances of EID-M
+and EID-S, we could know that the identification overall accuracy has a slight decrease (from 0.9882 to 0.982)
+with the increase of data trials. The inter-trial divergence only contributes a slight fluctuation (0.062) on the
+identification accuracy. This fact illustrates that the proposed approach has potential on the real world implement
+and large-scale application.
+
+5.5
+
+Adaptability evaluation
+
+To examine the adaptability and consistency, our model is evaluated on another dataset which is more precisely
+but difficult-to-operate. According to the principle of single variable, both the local dataset (EID-S) and the public
+dataset (EEG-S) are collected from single-trial and contains 56,000 samples belong to 8 subjects. The details of
+EID-S and EEG-S can be found in Section 5.1. Compared with the Emotiv headset used in EID-S, the BCI 2000
+system used in EEG-S is more accurately but inconvenient.
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+MindID: Person Identification from Brain Waves through Attention-based Recurrent Neural Network
+
+•
+
+39:17
+
+Table 9. Evaluation report of EEG-S dataset. The overall accuracy achieves 0.9989 of 7000 testing samples.
+
+Precision
+Recall
+F1-score
+Support
+
+0
+1
+2
+3
+4
+5
+6
+7
+1
+0.9988 0.9988 0.9957 1
+1
+0.9988 0.9989
+1
+0.9988 0.9988 0.9989 1
+0.9988 0.9964 0.9989
+1
+0.9988 0.9988 0.9973 1
+0.9994 0.9976 0.9989
+872 869
+848
+939
+880 864
+842
+886
+
+Average/Total
+0.9989
+0.9988
+0.9989
+7000
+
+The experiment report (Table 9) of EEG-S illustrates our model gains the accuracy of 0.9989 and all the
+evaluation metrics (precision, recall, and F1-score) are higher than 0.995. The confusion matrix and ROC curves
+are given in Figure 5 and Figure 8, respectively. The accurate classification of EEG-S demonstrates that our
+approach has good adaptability and ables to handle different situations (like various EEG equipment).
+Recall the results of EID-S (Figure 4, Table 8, and Figure 7), EEG-S performs better and achieves an accuracy
+of around 0.01 improvement. The reason is that EEG-S has more channels (64 vs 14) and higher sampling rate
+(160Hzvs128Hz) which encloses more useful information for the identification.
+This section and the previous section illustrate that our approach has the potential to be largely deployment in
+practice environment from different aspects (robustness and adaptability).
+
+5.6
+
+EEG pattern decomposition effects
+
+This section designs a set of comparison experiments to validate the hypothesis proposed in Section 3, which
+claims that the Delta pattern signals takes the most distinguishable information for identification. To demonstrate
+the priority of Delta pattern, we decompose the EEG data into 6 patterns: Delta pattern, Theta pattern, Alpha
+pattern, Beta pattern, Gamma pattern, and Full-frequency pattern. The Full-frequency pattern contains full
+frequency bands from 0 to 128 Hz. Note that the sampling rate in the local datasets is 128 Hz, which means that
+the maximum filtering range of butter-worth filter is 0-64 Hz. Therefore, the Gamma pattern used in this study is
+set as 30-63 Hz.
+Our approach and other widely used classifiers are evaluated all of the EID-M, EID-S, and EEG-S datasets over
+6 different patterns. The experiments results are shown in Table 10. The primary conclusions are listed as follows:
+• Our approaches achieves the highest accuracy on all of the three datasets (with different trials, collection
+equipment, and sampling precision), which proofs that our model has outstanding robustness and
+adaptability.
+• Delta pattern signals provide higher identification accuracy compared with other 5 categories of patterns
+over all datasets. This fact presents that Delta pattern contains the most discriminative information for
+identification and demonstrates the hypothesis proposed in Section 3 is appropriate.
+• Several statistic based classification models (such as RF, KNN, and XGB) work well on the low-frequency
+patterns (Delta and Theta) but cannot handle high-frequency band signals (Alpha, Beta, and Gamma).
+• The deep learning algorithm can extract deep relationships between samples from complicated and high
+fluctuate situations. This conclusion can be inferred from the observations that RNN has lower accuracy
+than RF/KNN/XGB in Delta and Theta patterns but performs better in other patterns. The above two
+attributes inspire the combination of the attention-based RNN structure and the tree-boosting classifier.
+• The baselines and the state-of-the-art methods can gain acceptable identification accuracy on highquality EEG dataset but fails on the low-quality dataset. Take the Full-frequency pattern as an example,
+RF/XGB/RNN achieves the accuracy of more than 0.95 on EEG-S but lower than 0.82 on EID-M. However,
+our approach keeps consistently high accuracy no matter the data quality. This phenomenon promotes the
+future deployment in practical of our approach.
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+39:18
+
+•
+
+Xiang Zhang, Lina Yao, Salil S. Kanhere, Yunhao Liu, Tao Gu, and Kaixuan Chen
+Table 10. EEG Pattern Decomposition Analysis
+
+Dataset
+
+EID-M
+
+EID-S
+
+EEG-S
+
+6
+
+Methods
+Delta
+SVM
+0.143
+RF
+0.936
+KNN
+0.941
+AdaBoost 0.251
+LDA
+0.148
+XGB
+0.965
+RNN
+0.917
+0.982
+Ours
+SVM
+0.135
+RF
+0.947
+KNN
+0.953
+AdaBoost 0.278
+LDA
+0.14
+XGB
+0.981
+RNN
+0.9425
+0.9882
+Ours
+SVM
+0.216
+RF
+0.972
+KNN
+0.974
+AdaBoost 0.32
+LDA
+0.186
+XGB
+0.9972
+RNN
+0.9981
+Ours
+0.9989
+
+Theta
+0.157
+0.707
+0.804
+0.13
+0.154
+0.665
+0.709
+0.713
+0.162
+0.771
+0.824
+0.29
+0.16
+0.785
+0.7568
+0.821
+0.167
+0.885
+0.865
+0.32
+0.17
+0.982
+0.9667
+0.972
+
+EEG Patterns
+Alpha Beta
+0.137
+0.135
+0.677
+0.489
+0.618
+0.35
+0.15
+0.15
+0.135
+0.135
+0.69
+0.495
+0.708
+0.518
+0.73
+0.513
+0.181
+0.152
+0.719
+0.587
+0.714
+0.472
+0.162
+0.2
+0.183
+0.152
+0.791
+0.599
+0.8175 0.6331
+0.8259 0.612
+0.148
+0.169
+0.819
+0.823
+0.781
+0.559
+0.27
+0.23
+0.28
+0.168
+0.967
+0.959
+0.964
+0.947
+0.968
+0.961
+
+Best Level
+Gamma
+0.138
+0.435
+0.313
+0.171
+0.129
+0.414
+0.411
+0.423
+0.132
+0.377
+0.495
+0.16
+0.122
+0.489
+0.5141
+0.517
+0.186
+0.87
+0.743
+0.22
+0.162
+0.953
+0.952
+0.955
+
+Full
+0.2745
+0.7935
+0.819
+0.24
+0.28
+0.815
+0.813
+0.822
+0.408
+0.863
+0.853
+0.3
+0.41
+0.893
+0.9045
+0.913
+0.652
+0.957
+0.936
+0.34
+0.6618
+0.989
+0.9886
+0.99
+
+0.982
+(Delta)
+
+0.9882
+(Delta)
+
+0.9989
+(Delta)
+
+DISCUSSION AND FUTURE WORK
+
+In this paper, we propose an EEG-based identification approach and evaluate the robustness and adaptability
+over three datasets. In this section, we discuss the challenges and potential future work of our research.
+First of all, the impaction of multi-trial worth to attract more attention although we have investigated a
+preliminary study on this topic. Limited by the local experimental conditions, our study only gathered EEG data
+from 8 subjects with few trials. The dataset is only divided into two categories (Multi and Single), which is not
+enough to explore the change trend of the identification accuracy with the increase of data trials. The accuracy
+trend is supposed to be investigated over the dataset with enough trials.
+Moreover, the pre-trained model should be updated for a period of time since the user’s EEG data is gradually
+changed with the environmental factors such as age, mental state, and living style. One of our future work is to
+develop an online learning system which is enabled to automatically update the training dataset based on the
+testing data which is collected during the operating period.
+In addition, the emotional threshold is one potential challenge faced by user identification. It is well known
+that the EEG signals are associated with user’s emotion. Therefore, an emotional threshold is required to tolerate
+the slight emotion fluctuation which may be caused by routine factors such as fatigue and temporal emotion
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+MindID: Person Identification from Brain Waves through Attention-based Recurrent Neural Network
+
+•
+
+39:19
+
+shift. At the same time, the threshold is demanded to detect the out-of-bound emotions which may be occurred
+in dangerous situations such as being hacked by a terrorist.
+
+7
+
+CONCLUSION
+
+Taking the advantages of EEG-based techniques for attack-resilient, we propose a biometric EEG-based identification approach, to overcome the limitations of traditional biometric identification methods. We analyzed the
+EEG data pattern characteristics and capture the Delta pattern which takes the most distinguishable features
+for user identification. Based on the pattern decomposition analysis, we report the structure of the proposed
+approach. In the first step of identification, the preprocessed EEG data is decomposed into Delta pattern. Then
+an attention-based RNN structure is employed to extract deep representations of Delta wave. At last, the deep
+representations are used to directly identify the user’ ID. The proposed approach is evaluated over 3 datasets
+(two local and one public dataset). The experiments results illustrate that our model achieves the accuracy of
+0.982, 0.9882, and 0.9989 over three datasets, separately. The results also infer the robustness and adaptability of
+our model. Moreover, a set of experiments are conducted and verified that the Delta pattern is the most reliable
+and dominant pattern in EEG-based identification.
+
+ACKNOWLEDGMENTS
+REFERENCES
+[1] Salahiddin Altahat, Girija Chetty, Dat Tran, and Wanli Ma. 2015. Analysing the Robust EEG Channel Set for Person Authentication. In
+International Conference on Neural Information Processing. Springer, 162–173.
+[2] Corey Ashby, Amit Bhatia, Francesco Tenore, and Jacob Vogelstein. 2011. Low-cost electroencephalogram (eeg) based authentication. In
+Neural Engineering (NER), 2011 5th International IEEE/EMBS Conference on. IEEE, 442–445.
+[3] Jimmy Ba, Volodymyr Mnih, and Koray Kavukcuoglu. 2014. Multiple object recognition with visual attention. arXiv preprint
+arXiv:1412.7755 (2014).
+[4] Dzmitry Bahdanau, Jan Chorowski, Dmitriy Serdyuk, Philemon Brakel, and Yoshua Bengio. 2016. End-to-end attention-based large
+vocabulary speech recognition. In Acoustics, Speech and Signal Processing (ICASSP), 2016 IEEE International Conference on. IEEE,
+4945–4949.
+[5] Erol Başar. 1980. EEG-brain dynamics: relation between EEG and brain evoked potentials. Elsevier-North-Holland Biomedical Press.
+[6] Md Khayrul Bashar, Ishio Chiaki, and Hiroaki Yoshida. 2016. Human identification from brain EEG signals using advanced machine
+learning method EEG-based biometrics. In Biomedical Engineering and Sciences (IECBES), 2016 IEEE EMBS Conference on. IEEE, 475–479.
+[7] Tianqi Chen and Carlos Guestrin. 2016. Xgboost: A scalable tree boosting system. In Proceedings of the 22Nd ACM SIGKDD International
+Conference on Knowledge Discovery and Data Mining. ACM, 785–794.
+[8] John Chuang, Hamilton Nguyen, Charles Wang, and Benjamin Johnson. 2013. I think, therefore i am: Usability and security of
+authentication using brainwaves. In International Conference on Financial Cryptography and Data Security. Springer, 1–16.
+[9] AM Edwards and RCJ Polman. 2013. Pacing and awareness: brain regulation of physical activity. Sports Medicine 43, 11 (2013),
+1057–1064.
+[10] Geof H Givens, J Ross Beveridge, Yui Man Lui, David S Bolme, Bruce A Draper, and P Jonathon Phillips. 2013. Biometric face recognition:
+from classical statistics to future challenges. Wiley Interdisciplinary Reviews: Computational Statistics 5, 4 (2013), 288–308.
+[11] Steven Goldstein. 2016. Methods and systems for voice authentication service leveraging networking. (March 8 2016). US Patent
+9,282,096.
+[12] Qiong Gui, Zhanpeng Jin, and Wenyao Xu. 2014. Exploring EEG-based biometrics for user identification and authentication. In Signal
+Processing in Medicine and Biology Symposium (SPMB), 2014 IEEE. IEEE, 1–6.
+[13] Isuru Jayarathne, Michael Cohen, and Senaka Amarakeerthi. 2016. BrainID: Development of an EEG-based biometric authentication
+system. In Information Technology, Electronics and Mobile Communication Conference (IEMCON), 2016 IEEE 7th Annual. IEEE, 1–6.
+[14] Sarineh Keshishzadeh, Ali Fallah, and Saeid Rashidi. 2016. Improved EEG based human authentication system on large dataset. In
+Electrical Engineering (ICEE), 2016 24th Iranian Conference on. IEEE, 1165–1169.
+[15] Preben Kidmose, David Looney, Michael Ungstrup, Mike Lind Rank, and Danilo P Mandic. 2013. A study of evoked potentials from
+ear-EEG. IEEE Transactions on Biomedical Engineering 60, 10 (2013), 2824–2830.
+[16] Diederik Kingma and Jimmy Ba. 2014. Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980 (2014).
+[17] Pinki Kumari and Abhishek Vaish. 2015. Brainwave based user identification system: A pilot study in robotics environment. Robotics
+and Autonomous Systems 65 (2015), 15–23.
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+39:20
+
+•
+
+Xiang Zhang, Lina Yao, Salil S. Kanhere, Yunhao Liu, Tao Gu, and Kaixuan Chen
+
+[18] Neal S Latman and Emily Herb. 2013. A field study of the accuracy and reliability of a biometric iris recognition system. Science &
+Justice 53, 2 (2013), 98–102.
+[19] xiaoli Li. 2016. Signal Processing in Neuroscience. Springer, 8–12.
+[20] Minh-Thang Luong, Hieu Pham, and Christopher D Manning. 2015. Effective approaches to attention-based neural machine translation.
+arXiv preprint arXiv:1508.04025 (2015).
+[21] Sebastien Marcel and José del R Millán. 2007. Person authentication using brainwaves (EEG) and maximum a posteriori model adaptation.
+IEEE transactions on pattern analysis and machine intelligence 29, 4 (2007).
+[22] Giuseppe Moruzzi and Horace W Magoun. 1949. Brain stem reticular formation and activation of the EEG. Electroencephalography and
+clinical neurophysiology 1, 1 (1949), 455–473.
+[23] Johannes Müller-Gerking, Gert Pfurtscheller, and Henrik Flyvbjerg. 1999. Designing optimal spatial filters for single-trial EEG
+classification in a movement task. Clinical neurophysiology 110, 5 (1999), 787–798.
+[24] Timothy David Noakes. 2011. Time to move beyond a brainless exercise physiology: the evidence for complex regulation of human
+exercise performance. Applied physiology, nutrition, and metabolism 36, 1 (2011), 23–35.
+[25] Fahreddin Sadikoglu and Selin Uzelaltinbulat. 2016. Biometric Retina Identification Based on Neural Network. Procedia Computer
+Science 102 (2016), 26–33.
+[26] Gerwin Schalk, Dennis J McFarland, Thilo Hinterberger, Niels Birbaumer, and Jonathan R Wolpaw. 2004. BCI2000: a general-purpose
+brain-computer interface (BCI) system. IEEE Transactions on biomedical engineering 51, 6 (2004), 1034–1043.
+[27] Javad Sohankar, Koosha Sadeghi, Ayan Banerjee, and Sandeep KS Gupta. 2015. E-bias: A pervasive eeg-based identification and
+authentication system. In Proceedings of the 11th ACM Symposium on QoS and Security for Wireless and Mobile Networks. ACM, 165–172.
+[28] Mircea Steriade. 1991. Alertness, quiet sleep, dreaming. In Normal and Altered States of Function. Springer, 279–357.
+[29] Kavitha P Thomas and A Prasad Vinod. 2016. Utilizing individual alpha frequency and delta band power in EEG based biometric
+recognition. In Systems, Man, and Cybernetics (SMC), 2016 IEEE International Conference on. IEEE, 004787–004791.
+[30] Leonard J Trejo, Karla Kubitz, Roman Rosipal, Rebekah L Kochavi, and Leslie D Montgomery. 2015. EEG-based estimation and
+classification of mental fatigue. Psychology 6, 05 (2015), 572.
+[31] JA Unar, Woo Chaw Seng, and Almas Abbasi. 2014. A review of biometric technology along with trends and prospects. Pattern
+recognition 47, 8 (2014), 2673–2688.
+[32] Feng Wang and David MJ Tax. 2016. Survey on the attention based RNN model and its applications in computer vision. arXiv preprint
+arXiv:1601.06823 (2016).
+[33] Hong Wang, Chi Zhang, Tianwei Shi, Fuwang Wang, and Shujun Ma. 2015. Real-time EEG-based detection of fatigue driving danger for
+accident prediction. International journal of neural systems 25, 02 (2015), 1550002.
+[34] Xiang Zhang, Lina Yao, Dalin Zhang, Xianzhi Wang, Quan Z Sheng, and Tao Gu. 2017. Multi-person brain activity recognition via
+comprehensive eeg signal analysis. In Proceedings of the 13th International Conference on Mobile and Ubiquitous Systems: Computing,
+Networking and Services (Mobiquitous,2017). ACM.
+
+ACM J. Comput. Cult. Herit., Vol. 9, No. 4, Article 39. Publication date: March 2017.
+
+

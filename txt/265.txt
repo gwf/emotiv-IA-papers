@@ -1,0 +1,788 @@
+C ONSUMER W EARABLES AND A FFECTIVE C OMPUTING FOR
+W ELLBEING S UPPORT
+
+arXiv:2005.00093v2 [cs.HC] 1 Sep 2020
+
+A P REPRINT
+Stanisław Saganowski, Przemysław Kazienko, Maciej Dzieżyc
+Patrycja Jakimów, Joanna Komoszyńska, Weronika Michalska
+Department of Computational Intelligence
+Faculty of Computer Science and Management
+Wrocław University of Science and Technology
+Wrocław, Poland
+stanislaw.saganowski@pwr.edu.pl
+Anna Dutkowiak, Adam Polak
+Faculty of Electronics
+Wrocław University of Science and Technology
+Wrocław, Poland
+
+Adam Dziadek, Michał Ujma
+Capgemini
+Wrocław, Poland
+
+September 2, 2020
+
+A BSTRACT
+Wearables equipped with pervasive sensors enable us to monitor physiological and behavioral signals
+in our everyday life. We propose the WellAff system able to recognize affective states for wellbeing
+support. It also includes health care scenarios, in particular patients with chronic kidney disease
+(CKD) suffering from bipolar disorders. For the need of a large-scale field study, we revised over 50
+off-the-shelf devices in terms of usefulness for emotion, stress, meditation, sleep, and physical activity
+recognition and analysis. Their usability directly comes from the types of sensors they possess as
+well as the quality and availability of raw signals. We found there is no versatile device suitable
+for all purposes. Using Empatica E4 and Samsung Galaxy Watch, we have recorded physiological
+signals from 11 participants over many weeks. The gathered data enabled us to train a classifier that
+accurately recognizes strong affective states.
+Keywords wellbeing support · wearables · affective computing · wellaff system · affect recognition · sleep · physical
+activity · meditation · stress · smart watch · wristband · armband · fitband
+
+1
+
+Introduction
+
+Each iteration of modern smart watches, wristbands, armbands, fitbands, headbands, chest straps, and patches is more
+powerful, precise, comfortable, and useful. At the same time, wearables are more affordable and easily available,
+ultimately becoming pervasive. Therefore, they may be applied in more and more domains. Their portability and low
+costs enable us to perform not only research in the lab but also large-scale field studies.
+Consequently, consumer wearables connected with smartphones are a perfect instrument for various wellbeing-related
+solutions. In particular, they may monitor our affective states and accordingly support decision making like environment
+adaptation (calming lighting if you are over-excited), alerting parents when a distant child is experiencing difficult
+times, warning very overweight people not to eat when they are having strong emotions or reporting to nephrologists
+about frequent changes in mood in patients with chronic kidney disease (CKD) or after kidney transplantation in order
+to adjust treatment or drug dosing.
+
+A PREPRINT - S EPTEMBER 2, 2020
+
+To enable the aforementioned applications, we propose the WellAff system, Section 4. Its primary purpose is to monitor
+and recognize affective states like emotions as well as their changes in everyday life based on physiological sensor
+signals provided by off-the-shelf devices.
+For that purpose, we revised consumer wearables. The existing literature has focused on usefulness of commercially
+available devices in one [1] or two domains [2], or on validity of wearable sensors [3]. In this work, however, we
+evaluate over 50 off-the-shelf wearable devices in terms of their usefulness and applicability in emotion and stress
+recognition, as well as sleep, meditation, and activity monitoring, Section 3. We focus on the sensors built into the
+device, the signals they provide, and the availability of the raw data recorded or extracted with these sensors. This survey
+enabled us to select the most suitable devices for our further studies within the WellAff system: auxiliary Samsung
+Galaxy Watch and Empatica E4, as well as the target - Samsung Galaxy Watch 3.
+An essential component of every machine learning-based recognition system is annotated data. There are only a few
+studies about emotion recognition in the field [4]. Therefore, we decided to perform a large-scale real life study. It
+was split into three phases, Fig. 1: (1) data accumulation and a reasoning system about strong affective states, (2)
+recognition of these strong states and their more detailed self-annotations, and (3) final application of complex states
+recognition and change detection for wellbeing support.
+One of the main challenges to overcome was: how to gather data about affect experienced in real life without a
+significant impact of the questioning procedure on experiencing itself? Hence, we believe that the annotation of affective
+states in real life should be as little intrusive as possible. Therefore, we apply in the WellAff system the concept of
+Ecological Momentary Assessment (EMA) [5], which is in line with Descriptive Experience Sampling (DES). DES
+captures the inner experience of subjects in their natural environments using a random beeper invoking rare subject
+surveying [6]. We implemented this by means of randomness and decreased questioning frequency. EMA, in turn, is a
+data collection method in real-time and in real-world settings to avoid retrospective biases and gather ecologically valid
+data. EMA is particularly suited for studying substance use – in our case, strong affect events.
+
+2
+
+Signals in Emotion, Meditation, Stress, Sleep, and Activity Analysis
+
+Wearables are equipped with sensors that provide physiological, behavioral, and environmental data, Tab. 1. These
+sensors are EEG - electroencephalogram, PPG - photoplethysmograph1 delivering BVP - Blood Volume Pulse signal
+and derived signal PPI - peak-to-peak intervals (a.k.a. HRV - heart rate variability, or IBI - interbeat interval), ECG
+- electrocardiograph providing RRI - R-R intervals, EDA - electrodermal activity sensor (a.k.a GSR - galvanic skin
+response), SpO2 - blood oxygen saturation sensor, ACC - accelerometer, GYRO - gyroscope, TERM - thermometer
+providing SKT - skin temperature, BAR - barometer, ALT - altimeter, AL - ambient light sensor, AT - ambient
+temperature sensor, MIC - microphone, MAG - magnetometer, UV - ultraviolet, and GPS. They can also provide other
+data derived from the monitored signals: HR - heart rate (extracted either from BVP/PPI or ECG/RRI), STP - number
+of steps, RSP - respiration rate, EDR - RSP from ECG, CAL - calories burned, SP - sleep phases.
+Emotions. The EEG outperforms other signals in terms of usefulness for emotion recognition [7, 8]. However, recently,
+studies tend to employ wearables [4], which provide various bio-signals and additional environmental data. Most
+often, ECG/BVP and EDA signals are utilized [9–11]. Those signals can be supplemented with ACC, GYRO SKT,
+RSP [12–16], as well as with UV, GPS, and MIC data [17].
+Stress. Bio-signals related to stress include EEG, ECG, BVP, EDA, SKT, and RSP [18, 19]. The best stress detection
+accuracy in the field can be achieved when using ECG/BVP and EDA signals together [20–22]. Albeit, using the
+ECG/BVP or EDA signal solely also provides satisfactory results [23, 24].
+Meditation. The most appropriate physiological signal to study meditation is EEG [25–27]. Other useful signals are
+ECG [28, 29], BVP [30], and EDA [31].
+Sleep. There are two main methods for gathering data in sleep studies: polysomnography (PSG) and actigraphy
+(ACG) [32]. A gold standard is PSG, which uses advanced medical equipment to measure EEG, EOG, EMG, ECG.
+However, due to the complexity, size, wiring, and cost of the equipment, PSG cannot be applied outside the lab. For
+field studies, ACG is an appropriate measurement method based on the movement signals, i.e., ACC data. More recent
+studies also utilize BVP [33, 34], SKT [35], and MIC [36, 37]. Data from SpO2, ECG, RSP, and MIC allow us to
+diagnose the sleep apnea [38–40].
+Physical activity research commonly focuses on the following problems: identification, tracking, and quantification.
+The most frequently used sensors, providing data to tackle these problems are ACC, GYRO, and GPS [41–44], as well
+as PPG [45–47], and ECG [48].
+1
+
+Some producers like Samsung in their Galaxy Watch series provide the raw PPG signal in the form of light intensity stream.
+
+2
+
+A PREPRINT - S EPTEMBER 2, 2020
+
+Table 1: The usefulness of consumer wearables in emotion (Emo), stress (Str), meditation (Md), sleep (Slp), and physical
+activity (Act) analysis. (Phy. raw sign.) denotes the availability of raw physiological signals; (*) marks wearables tested
+by us; (**) denotes the ECG sensor unlocked only in the South Korean market so far. Factors considered in grading:
+richness, sampling, and availability of relevant data, domain-related convenience, battery life.
+Device*
+
+Type
+
+Samsung Galaxy
+Watch 3*
+
+Smart
+watch
+
+Apple Watch 5*
+
+Smart
+watch
+
+Fossil Gen 5*
+Garmin Fenix 6X
+Pro
+Samsung Galaxy
+Watch*
+Polar OH1
+Samsung Galaxy Fit
+E*
+Garmin
+HRM-DUAL
+Muse 2*
+Fitbit Charge 3*
+Garmin VivoActive
+3 Music*
+Oura ring*
+Moodmetric*
+DREEM
+Polar H10
+VitalPatch
+Sony SmartBand 2
+Empatica E4*
+Microsoft Band 2
+Samsung Gear Live
+Philips DTI-2
+
+3
+
+Smart
+watch
+Smart
+watch
+Smart
+watch
+Armband
+
+Release
+
+PPG, ECG** ACC,
+2020.08 GYRO, BAR, AL,
+MIC, GPS
+PPG, ECG, ACC,
+2019.09 GYRO, BAR, MIC,
+GPS
+PPG, ACC, GYRO,
+2019.08
+ALT, AL, MIC, GPS
+PPG, SpO2, ACC,
+2019.08
+GYRO, ALT, AL, GPS
+PPG, ACC, GYRO,
+2019.08
+BAR, AL, MIC, GPS
+2019.03
+PPG, ACC
+
++
+
+++ +++
+
+HR, ACC, GYRO, BAR,
+MIC, GPS, STP, CAL
+
+++
+
++
+
+++ +++
+
+++ ++
+
++
+
+++ +++
+
+++ ++
+
++
+
+++ +++
+
+++ ++
+
++
+
+++ +++
+
+++ ++
+
+-
+
+HR
+
+ECG
+
+ECG
+
+EEG, PPG, SpO2,
+ACC, GYRO
+
+EEG, BVP,
+SpO2, ACC,
+GYRO
+
+PPG, ACC
+
+Chest
+strap
+
+2019.01
+
+PPG, ACC, GYRO,
+ALT
+Smart
+PPG, ACC, GYRO,
+2018.06
+watch
+BAR, GPS
+PPG, ACC, GYRO,
+Smart ring 2018.04
+TERM
+Smart ring 2017.12
+EDA, ACC
+EEG
+2017.06EEG, PPG, SpO2, ACC
+headband
+Chest
+2017.03
+ECG, ACC
+strap
+Chest
+2016.03 ECG, ACC, TERM
+patch
+Fitband 2015.09
+PPG, ACC
+PPG, EDA, ACC,
+Wristband 2015
+TERM
+PPG, EDA, ACC,
+Smartband 2014.10 GYRO, TERM, BAR,
+ALT, AL, UV
+Fitband 2014.06 PPG, ACC, GYRO
+EDA, ACC, TERM,
+Wristband 2014.03
+AL, AT
+Fitband
+
+-
+
+2018.10
+
+BVP
+BVP, SpO2
+BVP
+
+EmoStr Md Slp Act
+
+HR, ACC, GYRO, BAR,
+++ ++
+AL, MIC, GPS, STP
+
+BVP
+
+2019.02
+
+2019.01
+
+BVP
+
+Other data
+
+HR, ACC, GYRO, ALT,
+AL, MIC, GPS, STP
+HR, ACC, GYRO, ALT,
+AL, GPS, STP
+HR, ACC, GYRO, BAR,
+AL, MIC, GPS, STP
+PPI, ACC
+
+Fitband
+
+EEG
+headband
+
+Phy. raw
+sign.
+
+Sensors
+
++
+
++
+
+++ ++
+
++
+
++
+
++
+
++
+
+RRI
+
+++ ++
+
++
+
++
+
++
+
+HR
+
+++ ++ +++ +
+
+-
+
+-
+
+-
+
+HR, ACC, ALT
+
++
+
+++
+
++
+
+++ ++
+
+-
+
+HR, PPI, RSP, ACC,
+STP, CAL
+
++
+
+++
+
++
+
+++ ++
+
+-
+
+HR, PPI, SKT, SP
+
+-
+
+++
+
++
+
++++ +
+
+EDA
+EEG, BVP,
+SpO2, ACC
+
+STP
+
++
+
+++
+
+-
+
++
+
+-
+
+HR
+
+++ ++ +++ ++
+
+-
+
+ECG
+
+RRI, ACC
+
+++ ++
+
++
+
+++ ++
+
+ECG, SKT
+
+HR, RRI, EDR, STP
+
+++ ++
+
++
+
+++
+
+BVP
+BVP, EDA,
+SKT
+
+HR, PPI, ACC
+
++
+
++
+
+++ ++
+
++++ +++ +
+
++++ ++
+
++++ +++ +
+
++++ ++
+
+++ ++
+
++
+
+++ ++
+
++
+
+-
+
+++
+
+HR, PPI, ACC, tags
+
+BVP
+
+HR, PPI, ACC, GYRO,
+BAR, ALT, AL, STP,
+CAL, UV
+HR, ACC, GYRO, STP
+
+EDA
+
+ACC, TEMP, AL, AT
+
+BVP, EDA,
+SKT
+
+++
+
+++
+
+Consumer Wearables for Activity and Affective Computing
+
+When considering whether a device is appropriate for lab or field studies related to a given problem, many factors have
+to be taken into account. The most important is the ability to provide relevant and rich data in a raw format. Many
+producers develop dedicated applications for end-users to allow them convenient monitoring of the data collected by
+various sensors. However, this data is usually processed in some way (e.g., aggregated, filtered, smoothed) and very
+rarely available to download. Thus, not useful for the research purpose. Some manufacturers provide the ability to access
+raw data by integrating with a device over Bluetooth or another protocol, e.g., Empatica E4, Garmin HRM-DUAL,
+Moodmetric. Such integration is sufficient to gather data for the research but still has some limitations, e.g., the sensors’
+sampling frequency cannot be adjusted. Only a few producers provide an SDK (software development kit) that allows
+us to develop our own software and embed it into devices, e.g., Samsung’s smart watches running Tizen operating
+system (OS), and Wear OS devices. See Tab. 1, column Phy. raw sign. for the list of raw physiological signals provided
+by particular consumer devices. Overall, the more signals/sensors related to a considered problem, the better.
+3
+
++
+
++
+
+A PREPRINT - S EPTEMBER 2, 2020
+
+Tab. 1 only contains devices that are portable and grant access to the gathered data. Of course, the portability argument
+is subjective. Ten years ago, a backpack with sensors was considered portable. Today, portables have to be small and
+handy. Perhaps, in five years, portable would mean barely visible or even implanted.
+Raw signals, especially sampled with high frequency, provide more flexibility in research; hence, their availability is
+essential. Portability, in turn, is crucial for field studies in particular long-term ones. Some devices provide signals in
+real-time, whereas the others after the session termination. All wearables in Tab. 1, except DTI-2, are equipped with
+Bluetooth Low Energy (BLE); few also provide Wi-Fi, LTE, and NFC connectivity. We examined devices marked
+with * in terms of raw signals availability. For other devices, we relied on the official producers’ or other external
+information.
+To sum up, there is no off-the-shelf device equipped well enough for a proper analysis in all domains, i.e., emotion,
+stress, meditation, sleep, and physical activity. Producers design them for specific market needs and use sensors and
+electronic units of different quality and often provide access only to selected data. Moreover, the available signals may
+have too low sampling frequency. For example, the averaged over 5 mins PPI and HR in Oura Ring is insufficient for
+accurate emotion recognition (-) but is acceptable for approximate stress detection (++). Furthermore, with additional
+sleep-related data Oura is very good for sleep analysis (+++). The same refers to Apple Watch 5 that provides HR data
+every 5 secs (and no other physiological signals) — too rarely for emotions but good enough for activity studies (+++).
+The best wearables for emotion, stress, and sleep research appear to be the relatively old Empatica E4 and Microsoft
+Band 2. The former will be replaced with EmbracePlus this year; the latter is no longer supported. EEG headbands,
+Muse 2, and DREEM are the best choice for meditation. Although DREEM is intended for sleep studies, we argue that
+it is not very comfortable. Oura Ring is more suitable for undisturbed sleep analysis. The smart watches by Apple,
+Fossil, Garmin, and Samsung have proper sensors and provide the best data for activity investigations.
+We have also considered some other devices, like Emotiv Epoc+*, NeuroSky, emWave2, Honor Band 4*, Xiaomi Mi
+Band 3*, Xiaomi Mi Band 5*, Polar A370*, Fitbit Blaze*, and 20 others. However, they do not offer access to the data
+or have other drawbacks. Therefore, they have not been included in Tab. 1.
+In our studies focused on the affect recognition, we have decided to use a few Empatica E4 devices and dozens of
+Samsung Galaxy Watches. Empatica E4 offers the greatest number of sensors among the devices available in the market
+but is also a few times more expensive than smart watches. On the other hand, Samsung Galaxy Watch lacks only the
+EDA and SKT sensors, but offers some other data like BAR or AL (eventually, should also offer ECG), and allows us to
+build custom watch applications.
+
+4
+
+WellAff: a System for Wellbeing Support based on Affective Computing
+
+The general idea of the WellAff system, including its development phases, is depicted in Fig. 1. The goal of the first
+phase is to train a classification model able to recognize strong affective states experienced in everyday life based on
+physiological signals from wearables (smart watches, wristbands). We have developed a watch application for Samsung
+Galaxy watches that allows the participants to mark both strong affective states and neutral ones (low arousal). An
+analogous, built-in functionality is provided by Empatica E4 by means of the dedicated button. Having physiological
+signals annotated with very intensive and neutral states, we can build a binary classifier recognizing whether a participant
+is currently experiencing a strong affect or not.
+The trained classifier is directly used as a predictor in the second phase. It is a crucial part of the integrated smart
+watch and smartphone application. It continuously monitors physiological and behavioral signals. If, based on
+them, it recognizes a strong affect, a notification appears on the watch with a request to confirm the prediction. The
+participants may either reject such a suggestion (then we mark a false positive prediction) or accept it. If they agree,
+the phone application provides the EMA-type questionnaire [5] - a list of affective states along with the open text
+option. Additionally, to make the system less intrusive and avoid too frequent surveying, we apply some randomness
+and minimal idle time between consecutive questioning. In this way, we are able to identify moments of experiencing
+strong affects in real life without much interfering. As a result, we obtain a new data set consisting of signals and
+new, more comprehensive manual annotations. Some affective states like emotions can often co-occur. Having this in
+mind and based on the data collected, we build various prediction models with distinct outputs: binary, multi-class,
+multi-label, regression, multi-dimensional, structured output, e.g., a sequence of states/values. The model selection
+depends on the use-case (wellbeing support) that we want to apply in the final phase of the WellAff system.
+The learned models are used in the third phase as a component of another wearable and mobile application. Similarly to
+the previous stage, the system is able to analyze signals provided by wearable sensors and to provide more complex
+predictions: different co-occurring affective states, their levels, and transitions – meaningful changes. These realtime predictions are used in various applications related to wellbeing, personal, and health support. For example,
+4
+
+A PREPRINT - S EPTEMBER 2, 2020
+
+Figure 1: A WellAff system for wellbeing support through monitoring and recognition of affective states in everyday
+life.
+
+bipolar disorders and related emotional distress may result from brain metabolic disturbances caused by uremic toxins
+accumulation. This, in turn, can be a symptom of Chronic Kidney Disease (CKD) or problems with treatment after renal
+transplantation. Being able to recognize the mixed affective states at an early stage, we could suggest CKD patients to
+go on dialysis, thus, avoiding significant toxins accumulation and consequently improving their mood and quality of
+life.
+So far, we have completed the first phase with preliminary results, see Section 5.
+
+5
+
+Affect Recognition in Everyday Life - Experimental Results
+
+To implement the entire WellAff idea, we started the first phase in spring 2020. For the purpose of all our WellAff-related
+studies, we received bioethics committee approval no. 149/2020 from Wroclaw Medical University.
+
+5.1
+
+Learning Dataset Collection
+
+In the first phase, we have used Empatica E4 and Samsung Galaxy Watch 2019 wearables. The Empatica is among
+the most appropriate devices for affect recognition, but not very convenient for the end-user, while Samsung Galaxy
+Watch is user-friendly and lacks only EDA and SKT signals, see Tab. 1. The participants used a dedicated smart watch
+application to mark with timestamps the affective states they experience in their life. Additionally, they filled up an
+online questionnaire to report the type of the state (especially strong affect vs. neutral) and a possible delay between the
+experiencing affect and marked timestamp. If the delay exceeds 60 seconds, the events are excluded from the study,
+because in our opinion, it is hard to accurately estimate the delay after a couple of minutes from the strong affective
+event.
+At the moment, we have gathered 294 affective samples (206 - strong affect, 75 - neutral or calm state, 13 samples were
+marked by mistake, therefore excluded) from six female and five male subjects, aged 23-53. During the three-month
+span, we have recorded over 3000 hours for each physiological and behavioral signal. Finally, we used signals from
+the following sensors: PPG (light intensity for Samsung Galaxy Watch, BVP for Empatica), ACC, TERM, and EDA
+(Empatica only), AL, GYRO, and BAR (Samsung only). An example of physiological signals during a strong affect –
+fear for the choked child is depicted in Fig. 2. The participant’s body response in the form of a peak in the EDA signal
+can be easily observed. The data collection in this phase is still on-going, and new samples are gathered every day.
+5
+
+A PREPRINT - S EPTEMBER 2, 2020
+
+Figure 2: An example of strong affect (fear for the choked child) experienced in real life and marked by the participant.
+The body response in term of peak of the EDA signal can be easily observed.
+5.2
+
+Model for Strong Affect Recognition
+
+From all the recordings, the 60-second signal windows preceding the reported affective states have been extracted.
+Then, the signals were pre-processed using winsorization, Butterworth low-pass filter with 10Hz cut-off, and min-max
+normalization. The stratified sampling has been applied to divide 281 samples into training and test sets with 80:20
+ratio and 5-fold cross-validation. The cases in the training set were balanced using the SMOTE [49] method. Next, over
+60 features were extracted from BVP, EDA, SKT, and ACC signals using BioSPPy2 , pyphysio3 , and SciPy4 libraries.
+After feature selection and reduction, the binary classification (strong affect vs. neutral state) has been performed. The
+initial calculations performed with the tree-based models wrapped with the AdaBoost ensemble algorithm provided
+91% F1-measure efficiency.
+
+6
+
+Conclusions
+
+Consumer wearables are yet to match the medical-level devices in terms of sensor and signal quality. The main
+advantage of wearables is their portability, ubiquity, and multiple sensors enabling large-scale multimodal studies in
+everyday life. There are suitable wearables for each of the research topics considered in this paper. The initial results
+suggest that we can benefit from the use of wearables in wellbeing support.
+The nearest future work will cover: (i) additional sampling of neutral states to deliver a better class balance, (ii)
+further collection of new samples with new subjects and diverse conditions, (iii) training and validation of the endto-end multimodal deep learning models as well as their simplification for reasoning purposes on smart watches and
+smartphones (some preliminary results have already been obtained), (iv) implementation of the second and third phase,
+(v) gathering data from CKD-suffering patients.
+Acknowledgments
+This work was partially supported by the National Science Centre, Poland, project no. 2016/21/B/ST6/01463; and the
+statutory funds of the Dept. of Computational Intelligence, Wroclaw University of Science and Technology.
+
+References
+[1] Maan Isabella Cajita, Christopher E Kline, Lora E Burke, Evelyn G Bigini, and Christopher C Imes. Feasible but
+not yet efficacious: a scoping review of wearable activity monitors in interventions targeting physical activity,
+sedentary behavior, and sleep. Current Epidemiology Reports, 7(1):25–38, 2020.
+[2] Jonathan M Peake, Graham Kerr, and John P Sullivan. A critical review of consumer wearables, mobile applications, and equipment for providing biofeedback, monitoring stress, and sleep in physically active populations.
+Frontiers in physiology, 9:743, 2018.
+2
+
+https://biosppy.readthedocs.io
+https://github.com/MPBA/pyphysio
+4
+https://www.scipy.org
+3
+
+6
+
+A PREPRINT - S EPTEMBER 2, 2020
+
+[3] Gloria Cosoli, Susanna Spinsante, and Lorenzo Scalise. Wrist-worn and chest-strap wearable devices: systematic
+review on accuracy and metrological characteristics. Measurement, page 107789, 2020.
+[4] Stanislaw Saganowski, Anna Dutkowiak, Adam Dziadek, Maciej Dziezyc, Joanna Komoszynska, Weronika
+Michalska, Adam G. Polak, Michal Ujma, and Przemyslaw Kazienko. Emotion recognition using wearables: A
+systematic literature review - work-in-progress. In 2020 IEEE International Conference on Pervasive Computing
+and Communications Workshops, PerCom Workshops 2020, Austin, TX, USA, March 23-27, 2020, pages 1–6.
+IEEE, 2020.
+[5] Saul Shiffman, Arthur A Stone, and Michael R Hufford. Ecological momentary assessment. Annu. Rev. Clin.
+Psychol., 4:1–32, 2008.
+[6] Russell T. Hurlburt and Christopher L. Heavy. Interobserver reliability of descriptive experience sampling.
+Cognitive Therapy and Research, 26(1):135–142, 2002.
+[7] Bahareh Nakisa, Mohammad Naim Rastgoo, Andry Rakotonirainy, Frederic Maire, and Vinod Chandran. Long
+short term memory hyperparameter optimization for a neural network based emotion recognition framework.
+IEEE Access, 6:49325–49338, 2018.
+[8] Morteza Zangeneh Soroush, Keivan Maghooli, Seyed Kamaledin Setarehdan, and Ali Motie Nasrabadi. A review
+on eeg signals based emotion recognition. International Clinical Neuroscience Journal, 4(4):118, 2017.
+[9] Grzegorz J Nalepa, Krzysztof Kutt, Barbara Giżycka, Paweł Jemioło, and Szymon Bobek. Analysis and use of the
+emotional context with wearable devices for games and intelligent assistants. Sensors, 19(11):2509, 2019.
+[10] Feri Setiawan, Sunder Ali Khowaja, Aria Ghora Prabono, Bernardo Nugroho Yahya, and Seok-Lyong Lee. A
+framework for real time emotion recognition based on human ans using pervasive device. In 2018 IEEE 42nd
+Annual Computer Software and Applications Conf. (COMPSAC), volume 1, pages 805–806. IEEE, 2018.
+[11] Luz Fernández-Aguilar, Arturo Martínez-Rodrigo, José Moncho-Bogani, Antonio Fernández-Caballero, and
+José Miguel Latorre. Emotion detection in aging adults through continuous monitoring of electro-dermal activity
+and heart-rate variability. In Int. Work-Conference on the Interplay Between Natural and Artificial Computation,
+pages 252–261. Springer, 2019.
+[12] Philip Schmidt, Attila Reiss, Robert Dürichen, and Kristof Van Laerhoven. Labelling affective states in the wild:
+Practical guidelines and lessons learned. In The 2018 ACM Int. Joint Conf. and 2018 Int. Symp. on Pervasive and
+Ubiquitous Comp. and Wearable Comp., pages 654–659. ACM, 2018.
+[13] Cheng He, Yun-jin Yao, and Xue-song Ye. An emotion recognition system based on physiological signals obtained
+by wearable sensors. In Wearable sensors and robots, pages 15–25. Springer, 2017.
+[14] Marco Maier, Chadly Marouane, and Daniel Elsner. Deepflow: Detecting optimal user experience from physiological data using deep neural networks. In Proceedings of the 18th International Conference on Autonomous Agents
+and MultiAgent Systems, pages 2108–2110. International Foundation for Autonomous Agents and Multiagent
+Systems, 2019.
+[15] Philip Schmidt, Attila Reiss, Robert Duerichen, Claus Marberger, and Kristof Van Laerhoven. Introducing
+wesad, a multimodal dataset for wearable stress and affect detection. In Proceedings of the 2018 on International
+Conference on Multimodal Interaction, pages 400–408. ACM, 2018.
+[16] Amani Albraikan, Basim Hafidh, and Abdulmotaleb El Saddik. iaware: A real-time emotional biofeedback system
+based on physiological signals. IEEE Access, 6:78780–78789, 2018.
+[17] Eiman Kanjo, Eman MG Younis, and Chee Siang Ang. Deep learning analysis of mobile physiological, environmental and location sensor data for emotion detection. Information Fusion, 49:46–56, 2019.
+[18] Giorgos Giannakakis, Dimitris Grigoriadis, Katerina Giannakaki, Olympia Simantiraki, Alexandros Roniotis, and
+Manolis Tsiknakis. Review on psychological stress detection using biosignals. IEEE Transactions on Affective
+Computing, 2019.
+[19] Yekta Said Can, Bert Arnrich, and Cem Ersoy. Stress detection in daily life scenarios using smart phones and
+wearable sensors: A survey. Journal of biomedical informatics, page 103139, 2019.
+[20] Arindam Ghosh, Morena Danieli, and Giuseppe Riccardi. Annotation and prediction of stress and workload from
+physiological and inertial signals. In 2015 37th Annual International Conference of the IEEE Engineering in
+Medicine and Biology Society (EMBC), pages 1621–1624. IEEE, 2015.
+[21] Alireza Golgouneh and Bahram Tarvirdizadeh. Fabrication of a portable device for stress monitoring using
+wearable sensors and soft computing algorithms. Neural Computing and Applications, pages 1–23, 2019.
+[22] Yekta Said Can, Niaz Chalabianloo, Deniz Ekiz, and Cem Ersoy. Continuous stress detection using wearable
+sensors in real life: Algorithmic programming contest case study. Sensors, 19(8):1849, 2019.
+7
+
+A PREPRINT - S EPTEMBER 2, 2020
+
+[23] Roberto Zangróniz, Arturo Martínez-Rodrigo, María T López, José Manuel Pastor, and Antonio FernándezCaballero. Estimation of mental distress from photoplethysmography. Applied Sciences, 8(1):69, 2018.
+[24] Roberto Zangróniz, Arturo Martínez-Rodrigo, José Pastor, María López, and Antonio Fernández-Caballero.
+Electrodermal activity sensor for classification of calm/distress condition. Sensors, 17(10):2324, 2017.
+[25] Himika Sharma, Rajnish Raj, and Mamta Juneja. Eeg signal based classification before and after combined yoga
+and sudarshan kriya. Neuroscience letters, 707:134300, 2019.
+[26] Juan Lorenzo Hagad, Kenichi Fukui, and Masayuki Numao. Deep visual models for eeg of mindfulness meditation
+in a workplace setting. In International Workshop on Health Intelligence, pages 129–137. Springer, 2019.
+[27] Bhavna P Harne, Yogini Bobade, RS Dhekekar, and Anil Hiwale. Svm classification of eeg signal to analyze
+the effect of om mantra meditation on the brain. In 2019 IEEE 16th India Council International Conference
+(INDICON), pages 1–4. IEEE, 2019.
+[28] Anne Léonard, Serge Clément, Cheng-Deng Kuo, and Mario U Manto. Changes in heart rate variability during
+heartfulness meditation: A power spectral analysis including the residual spectrum. Frontiers in cardiovascular
+medicine, 6:62, 2019.
+[29] Hussein Alawieh, Zaher Dawy, Elias Yaacoub, Nabil Abbas, and Jamil El-Imad. A real-time ecg feature extraction
+algorithm for detecting meditation levels within a general measurement setup. In 2019 41st Annual International
+Conference of the IEEE Engineering in Medicine and Biology Society (EMBC), pages 99–103. IEEE, 2019.
+[30] Bin Yu, Mathias Funk, Jun Hu, and Loe Feijs. Unwind: a musical biofeedback for relaxation assistance. Behaviour
+& Information Technology, 37(8):800–814, 2018.
+[31] Reddipogu Pavani and Akshay Berad. Study of effect of meditation on galvanic skin response in healthy individuals.
+International Journal of Medical and Biomedical Studies, 3(4), 2019.
+[32] Michael A Grandner and Mary E Rosenberger. Actigraphic sleep tracking and wearables: Historical context,
+scientific applications and guidelines, limitations, and considerations for commercial sleep devices. In Sleep and
+Health, pages 147–157. Elsevier, 2019.
+[33] Mahmoud Assaf, Aïcha Rizzotti-Kaddouri, and Magdalena Punceva. Sleep detection using physiological signals
+from a wearable device. In EAI International Conference on IoT Technologies for HealthCare, pages 23–37.
+Springer, 2018.
+[34] Massimiliano de Zambotti, Leonardo Rosas, Ian M Colrain, and Fiona C Baker. The sleep of the ring: comparison
+of the ōura sleep tracker against polysomnography. Behavioral sleep medicine, 17(2):124–136, 2019.
+[35] Jing Wei and Jennifer Boger. You are how you sleep: Personalized sleep monitoring based on wrist temperature and
+accelerometer data. In 13th EAI International Conference on Pervasive Computing Technologies for HealthcareDemos and Posters. European Alliance for Innovation (EAI), 2019.
+[36] Rossana Castaldo, Marta Prati, Luis Montesinos, Vishwesh Kulkarni, Micheal Chappell, Helen Byrne, Pasquale
+Innominato, Stephen Hughes, and Leandro Pecchia. Investigating the use of wearables for monitoring circadian
+rhythms: A feasibility study. In International Conference on Biomedical and Health Informatics, pages 275–280.
+Springer, 2019.
+[37] Burçin Camcı, Cem Ersoy, and Hakan Kaynak. Abnormal respiratory event detection in sleep: a prescreening
+system with smart wearables. Journal of biomedical informatics, 95:103218, 2019.
+[38] Fabio Mendonca, Sheikh Shanawaz Mostafa, Antonio G Ravelo-García, Fernando Morgado-Dias, and Thomas
+Penzel. A review of obstructive sleep apnea detection approaches. IEEE journal of biomedical and health
+informatics, 23(2):825–837, 2018.
+[39] Sami Nikkonen, Isaac O Afara, Timo Leppänen, and Juha Töyräs. Artificial neural network analysis of the oxygen
+saturation signal enables accurate diagnostics of sleep apnea. Scientific reports, 9(1):1–9, 2019.
+[40] Urtnasan Erdenebayar, Yoon Ji Kim, Jong-Uk Park, Eun Yeon Joo, and Kyoung-Joung Lee. Deep learning
+approaches for automatic detection of sleep apnea events from an electrocardiogram. Computer methods and
+programs in biomedicine, 180:105001, 2019.
+[41] Hoda Allahbakhshi, Lindsey Conrow, Babak Naimi, and Robert Weibel. Using accelerometer and gps data for
+real-life physical activity type detection. Sensors, 20(3):588, 2020.
+[42] Gobinath Aroganam, Nadarajah Manivannan, and David Harrison. Review on wearable technology sensors used
+in consumer sport applications. Sensors, 19(9):1983, 2019.
+8
+
+A PREPRINT - S EPTEMBER 2, 2020
+
+[43] Haruka Murakami, Ryoko Kawakami, Satoshi Nakae, Yosuke Yamada, Yoshio Nakata, Kazunori Ohkawara,
+Hiroyuki Sasai, Kazuko Ishikawa-Takata, Shigeho Tanaka, and Motohiko Miyachi. Accuracy of 12 wearable
+devices for estimating physical activity energy expenditure using a metabolic chamber and the doubly labeled
+water method: Validation study. In JMIR mHealth and uHealth, 2019.
+[44] Muhammad Shoaib, Stephan Bosch, Ozlem Durmaz Incel, Hans Scholten, and Paul J. M. Havinga. Fusion of
+smartphone motion sensors for physical activity recognition. Sensors, 14(6):10146–10176, 2014.
+[45] Sean Pham, Danny Yeap, Gisela Escalera, Rupa Basu, Xiangmei Wu, Nicholas J. Kenyon, Irva Hertz-Picciotto,
+Michelle J. Ko, and Cristina E. Davis. Wearable sensor system to monitor physical activity and the physiological
+effects of heat exposure. Sensors, 20(3), 2020.
+[46] Andre Matthias Müller, Nan Wang, Jiali Yao, Chuen Seng Tan, Ivan Cherh Chiet Low, Nicole Lim, Jeremy
+Tan, Agnes Tan, and Falk Müller-Riemenschneider. Heart rate measures from wrist-worn activity trackers in a
+laboratory and free-living setting: Validation study. In JMIR mHealth and uHealth, 2019.
+[47] K.R. Arunkumar and M. Bhaskar. Heart rate estimation from wrist-type photoplethysmography signals during
+physical exercise. Biomedical Signal Processing and Control, 57:101790, 2020.
+[48] Selena R. Pasadyn, Mohamad Soudan, Marc Gillinov, Penny Houghtaling, Dermot Phelan, Nicole Gillinov,
+Barbara Bittel, and Milind Y. Desai. Accuracy of commercially available heart rate monitors in athletes: a
+prospective study. Cardiovascular Diagnosis and Therapy, 9(4), 2019.
+[49] Nitesh V Chawla, Kevin W Bowyer, Lawrence O Hall, and W Philip Kegelmeyer. Smote: synthetic minority
+over-sampling technique. Journal of artificial intelligence research, 16:321–357, 2002.
+
+9
+
+

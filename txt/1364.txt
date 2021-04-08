@@ -1,0 +1,2491 @@
+sensors
+Article
+
+Simultaneous EEG Acquisition System for Multiple
+Users: Development and Related Issues
+Sunghan Lee 1 , Hohyun Cho 2 , Kiseong Kim 3,4
+1
+2
+3
+4
+
+*
+
+and Sung Chan Jun 1, *
+
+School of Electrical Engineering and Computer Science, Gwangju Institute of Science and Technology,
+Gwangju 61005, Korea; sunghanlee@gist.ac.kr
+Wadsworth Center, New York State Department of Health, Albany, NY 12201, USA;
+Hohyun.Cho@health.ny.gov
+Department of Bio and Brain Engineering, Korea Advanced Institute of Science and Technology,
+Daejeon 34141, Korea; iames@kaist.ac.kr
+R&D Center, BioBrain Inc., Daejeon, 35203, Korea; ks@biobrain.kr
+Correspondence: scjun@gist.ac.kr; Tel.: +82-62-715-2216
+
+Received: 21 September 2019; Accepted: 20 October 2019; Published: 22 October 2019
+
+
+
+
+Abstract: Social interaction is one of humans’ most important activities and many efforts have been
+made to understand the phenomenon. Recently, some investigators have attempted to apply advanced
+brain signal acquisition systems that allow dynamic brain activities to be measured simultaneously
+during social interactions. Most studies to date have investigated dyadic interactions, although
+multilateral interactions are more common in reality. However, it is believed that most studies have
+focused on such interactions because of methodological limitations, in that it is very difficult to
+design a well-controlled experiment for multiple users at a reasonable cost. Accordingly, there are few
+simultaneous acquisition systems for multiple users. In this study, we propose a design framework
+for an acquisition system that measures EEG data simultaneously in an environment with 10 or more
+people. Our proposed framework allowed us to acquire EEG data at up to 1 kHz frequency from up to
+20 people simultaneously. Details of our acquisition system are described from hardware and software
+perspectives. In addition, various related issues that arose in the system’s development—such as
+synchronization techniques, system loads, electrodes, and applications—are discussed. In addition,
+simultaneous visual ERP experiments were conducted with a group of nine people to validate the
+EEG acquisition framework proposed. We found that our framework worked reasonably well with
+respect to less than 4 ms delay and average loss rates of 1%. It is expected that this system can be used
+in various hyperscanning studies, such as those on crowd psychology, large-scale human interactions,
+and collaborative brain–computer interface, among others.
+Keywords: EEG; hyperscanning; simultaneous acquisition
+
+1. Introduction
+Social interaction is one of the hallmarks of people’s daily lives, as humans have lived in societies
+and interacted with each other since prehistoric times. Recently, some neuroscientists have studied social
+interactions from the neural activity perspective, and interest in interpersonal neural synchronization
+(INS) during social interaction has increased rapidly; research on neural mechanisms, interpersonal
+coordination, and certain related issues during social interaction is blossoming and is referred to
+as hyperscanning [1]. Dyadic interactions have been studied during various tasks, such as visual
+gaze-based interactions [2,3], verbal interactions [4–6], hand movements [7–9], the social game [10],
+and music performance [11–13], among others. In addition, they have been applied to estimate mutual
+cooperation levels to ensure proper efficiency and safety standards in operational environments [14–16].
+
+Sensors 2019, 19, 4592; doi:10.3390/s19204592
+
+www.mdpi.com/journal/sensors
+
+Sensors 2019, 19, 4592
+
+2 of 20
+
+Our neuroscientific understanding of social interaction has made great advancements in recent decades,
+and Phi complex [7] and alpha interbrain synchrony [6,17–19] have been reported as neural behaviors
+and markers in social interactions.
+Human social activities in daily life include not only dyadic interactions, but also occur in the forms
+of many-to-many interactions (e.g., choruses, band performances, brainstorming, and discussions)
+and one-to-many interactions (seminars, lectures, etc.). However, most hyperscanning studies have
+been conducted only on dyadic interactions, and very few have investigated three or more people’s
+interactions. Several reviews of hyperscanning [16,20–26] have reported that most studies’ experimental
+designs were quite limited and there are few compelling group interaction studies. They emphasized
+near-realistic group interaction studies as one of the future directions for hyperscanning.
+The brain imaging techniques used widely in hyperscanning studies include functional
+magnetic resonance imaging (fMRI) [27–29], functional near-infrared spectroscopy (fNIRS) [30,31],
+magnetoencephalography (MEG) [32], and electroencephalography (EEG) [33]. Given the scalability
+necessary to allow simultaneous multiple connections, fNIRS and EEG seem to have the best potential
+in that they are portable and can acquire data online from three or more people at a reasonable cost.
+Indeed, the recent hyperscanning literature shows that fNIRS and EEG have been used most often to
+acquire data from three or more interactors. In the case of fNIRS, Jiang et al. [5] reported the difference in
+INS between leader–follower pairs and follower–follower pairs during three-person group discussions,
+while Dai et al. [34] studied INS via the cocktail party effect [35] during three people’s group discussions.
+Furthermore, Nozawa et al. [36] conducted a cooperative word chain game (Shiritori) with a group of
+four people using two-channel wireless fNIRS devices. Duan et al. [37] introduced a framework for
+fNIRS hyperscanning referred to as “cluster imaging of multi-brain networks” (CIMEN) and acquired
+fNIRS data from a group of nine people during a drum beat synchronization task. Babiloni et al. [38,39]
+and Astolfi et al. [40] acquired EEG data while four people played a card game, and Babiloni et al. [11,41]
+also studied professional saxophonists’ group interactions in a musical quartet scenario. Furthermore,
+multilateral EEG acquisition in the classroom environment has been reported [42–44].
+Although many-to-many or one-to-many interactions seem more interesting and compelling in
+hyperscanning studies than do dyadic interactions, there are several reasons why group interaction
+studies have been reported rarely to date:
+•
+
+•
+
+•
+
+Multiple (at least two or more) acquisition devices are necessary for hyperscanning studies.
+Depending on the number of channels, reliable commercial EEG or fNIRS devices may range in
+price from $3000 to over $10,000 per unit. To reduce the cost, it may be necessary to custom-made
+devices or reduce the number of channels greatly. In addition to their cost, recruiting participants
+and managing experiments with many participants are not easy. As the number of participants
+increases, the total experimental cost, including management cost (the number of staff, device
+maintenance, preparation time for the experiment, and so on) increases significantly.
+Because of these problems, no well-controlled experimental paradigm for many participants (more
+than two) has been developed. To mimic daily life interactions in hyperscanning experiments,
+participants need to interact freely and easily without feeling they are controlled. However, the
+data acquired are likely to include severe artifacts, such as movement noise, when great freedom
+is given during the interaction task. It is relatively easy to identify features or analyze data under
+well-controlled experiments, such as a locked task time and synchronized stimulus presentation.
+These two factors (realistic experimental settings and ability to conduct data analysis easily)
+may lead to problems that make it difficult to satisfy both factors. Furthermore, unlike dyadic
+interactions, there may be exponentially greater degrees of control in group interactions, and thus,
+designing a well-controlled experimental paradigm is very challenging.
+It also is difficult to develop multilateral analysis techniques. Connectivity and causality are used
+primarily in analysis in hyperscanning studies. In the case in which three or more people interact,
+the inter-relation between a pair of people can be far more complex than in a dyadic interaction,
+and existing connectivity techniques may be unsuitable for multilateral analysis.
+
+Sensors 2019, 19, 4592
+
+•
+
+3 of 20
+
+Multilateral commercial acquisition systems for hyperscanning are not popular in the market.
+Each manufacturer may provide its own solution for hyperscanning, but it is difficult to measure
+many (more than two) people at the same time, and the data acquisition strategy for hyperscanning
+differs depending on the manufacturer [45]. To the best of our knowledge, there is no commercial
+hyperscanning acquisition system for more than four people. Furthermore, it is difficult to find
+detailed reports on the way to set up and implement such an acquisition system.
+
+Many other issues remain unresolved in multilateral hyperscanning studies, and it is believed that
+the first priority is to develop a framework that acquires biosignals from many people simultaneously.
+With respect to simultaneous EEG acquisition from many people, simple channel division from a few
+high-density EEG systems is not applicable, because EEG requires its own reference for each person.
+Thus, it is essential to use one EEG device for each person. In that sense, some multilateral EEG systems
+have been commercialized recently. BioSemi devices can support simultaneous EEG acquisition for
+up to four people through a daisy chain method. In one group interaction study [41], four identical
+EEG devices from EB Neuro were used to connect to interfaces via fiber optics and from interfaces to a
+commercial switch device via a local area network (LAN). Software the manufacturer provided also
+was used. These commercial solutions may be highly reliable, and provide hardware synchronization
+from multiple EEG amplifiers. However, they are quite costly, and may have limited scalability
+for a large number of participants. Thus, this has motivated investigators to develop a customized
+framework for a simultaneous acquisition system. Poulsen et al. [42] recorded EEG data from a group
+of nine people simultaneously using tablets connected to the Emotiv device. Dikker et al. [43] and
+Bevilacqua et al. [44] used portable EEG devices (Emotiv EPOC+) to acquire data from 12 and 13 people
+on a single personal computer (PC, MacBook Pro), and used custom-made acquisition software with
+the openFrameworks software package [46].
+There is a high demand to build multilateral EEG acquisition systems, and some recent studies
+have introduced systems [42–44] and various methods to obtain EEG data from multiple people
+simultaneously. However, to the best of our knowledge, there is little information in the literature
+that describes the procedural details and technical issues of simultaneous acquisition systems, such as
+internal algorithms, operating principles, or the open source code required to implement the system.
+The main purpose of most hyperscanning studies is to investigate the INS, so they are less likely to
+focus on the system used in the experiment. In addition, custom-made acquisition systems tend to
+be difficult to apply in various hyperscanning experiments because they likely were developed for
+specific experiments. Poulsen et al. [42] used an ‘n:n’ connection and reported that they generated
+an electric spark for synchronization. However, it is difficult to monitor data or present events in
+real time in this structure. Dikker et al. [43] and Bevilacqua et al. [44] addressed the use of the
+openFramework platform for system development. However, although openFramework is a very
+large, general-purpose software platform, it is unsuitable for real-time neuroscience. Therefore, it has
+not been reported whether the acquisition system was able to perform the synchronization, event
+trigger presentation, real-time monitoring, and processing necessary for the experiment. Furthermore,
+they did not address specifically the way the system was constructed or the way it communicated,
+and whether the various functions required for the experiment were possible. This motivated us to
+introduce our recent custom-made EEG acquisition system.
+In this work, we propose our framework for simultaneous EEG acquisition and discuss in detail
+our various trial-and-error experiences while developing the system. We used OpenViBE, a platform
+for real-time neuroscience, as the software basis to enable functions (e.g., stimulus presentation and
+real-time monitoring). Our proposed framework also can be used for a variety of hyperscanning
+experiments, not just one specific experiment. In addition, we proposed a strategy to synchronize
+devices and reduce the hardware load. A detailed comparison and summary of existing systems
+is given in Table 1. As mentioned above, little detailed information about the framework has been
+addressed in the existing research, but this work describes the framework’s structure and internal
+operation principle to increase replicability. Section 2 discusses three methods to connect devices in
+
+Sensors 2019, 19, 4592
+
+4 of 20
+
+a multilateral simultaneous system and introduces both our custom-made system’s hardware and
+software aspects. In Section 3, we investigated the way our proposed acquisition system worked by
+estimating the acquisition delay and signal quality with event-related potential (ERP) experimental
+data acquired from a group of nine people. Finally, we report all of the technical issues associated with
+the simultaneous acquisition system in Section 4.
+Table 1. Comparison to other custom-developed EEG acquisition frameworks.
+Device
+
+Wireless EEG [42]
+(Emotiv EPOC)
+
+Wireless EEG [43,44]
+(Emotiv EPOC+)
+
+Wireless EEG
+(Our Custom-Made System)
+
+Sampling Frequency (Hz)
+
+128
+
+256
+
+1000
+
+Number of Channels
+
+14
+
+14
+
+8
+
+Concurrent Acquisition
+(Maximum)
+
+9 (N/M 1 )
+
+13 (N/M)
+
+9 (20)
+
+Connection Method
+
+n:n
+
+1:n
+
+1:n
+
+Basis Software
+
+-
+
+openFrameworks [46]
+
+OpenViBE [47]
+
+Synchronization during
+Experiment
+
+Electrical spark
+
+N/M
+
+Frame number, synchronization
+module
+
+Framework Structure
+
+-
+
+N/M
+
+Described
+
+N/M
+
+N/M
+
+Possible
+
+N/M
+
+Total independence [48],
+auditory ERP
+
+Delay, loss rate, visual ERP
+
+Real-Time Processing
+
+2
+
+Validation
+1
+
+Not mentioned; 2 Real-time function including signal monitoring, sending event trigger, present stimulus, etc.
+
+2. Acquisition Framework Development
+2.1. Connection of Devices
+As mentioned earlier, the modality used for large-scale hyperscanning is likely to be fNIRS or EEG,
+both of which are portable and cost-effective. In this work, we proposed a large-scale hyperscanning
+framework using EEG devices. There are several ways to connect multiple devices to the server, and
+real-time data acquisition architectures largely are categorized in three ways, as Figure 1 illustrates:
+First, each device is connected individually to each low-specification computer (Raspberry Pi,
+Arduino, tablet, PC, etc.), as shown in Figure 1a and is referred to as the ‘n:n’ connection for n devices.
+Second, data are sent in two steps. In the first, each group of k devices among n (= k×p) devices
+is connected to one low-specification server; then, in the second, p low-specification servers are all
+connected to one high-specification server, which is referred to as the ‘k:p:1’ connection for n devices;
+Figure 1b shows the case of k = 2.
+Third, all devices are connected directly to one high-end server simultaneously, as depicted in
+Figure 1c, which is referred to as the ‘n:1’ connection for n devices.
+Among these three, we adopted the last—the ‘n:1’ connection (Figure 1c)—as our proposed
+acquisition framework. We observed that the ‘n:1’ connection is advantageous in the experimental
+procedure because it has a short communication delay, and allows direct control of the device, as well
+as real-time signal acquisition, monitoring, and processing.
+
+Sensors 2019, 19, 4592
+
+Sensors 2019, 19, x FOR PEER REVIEW
+
+5 of 20
+
+5 of 18
+
+Hyperscanning experiments require not only simultaneous data acquisition from multiple devices,
+but also various functions for experimental progress. Fortunately, there are well-organized open
+sources for real-time experiments, such as BCI2000 [49], OpenViBE [47], and BCILAB [50]. We adopted
+OpenViBE in our proposed acquisition framework because it has synchronization and multi-acquisition
+modules for multimodality. OpenViBE is open-source software for real-time neuroscientific experiments
+developed in INRIA. It provides many functions, such as scripting, real-time signal monitoring,
+acquisition, filtering, stimulus presentation, and file input/output. The basic structure and acquisition
+flow between OpenViBE and the device are illustrated in Figure 2. The acquisition server controls
+the device, receives data from it, and parses them. The designer communicates with the acquisition
+server and performs functions to process the data, such as real-time monitoring, filtering, and file
+(a)
+(b)
+(c)
+input/output. Our custom-made code used to control the device, synchronize all devices, and finally
+Figure
+1. OpenViBE
+Three ways acquisition
+to connect multiple
+acquire EEG data, was added
+to the
+server.devices.
+Sensors 2019, 19, x FOR PEER REVIEW
+
+5 of 18
+
+Hyperscanning experiments require not only simultaneous data acquisition from multiple
+devices, but also various functions for experimental progress. Fortunately, there are well-organized
+open sources for real-time experiments, such as BCI2000 [49], OpenViBE [47], and BCILAB [50].
+We adopted OpenViBE in our proposed acquisition framework because it has synchronization and
+multi-acquisition modules for multimodality. OpenViBE is open-source software for real-time
+neuroscientific experiments developed in INRIA. It provides many functions, such as scripting, realtime signal monitoring, acquisition, filtering, stimulus presentation, and file input/output. The basic
+structure and acquisition flow between OpenViBE and the device are illustrated in Figure 2.
+The acquisition server controls the device, receives data from it, and parses them. The designer
+communicates with (a)
+the acquisition server and performs
+functions to process the
+(b)
+(c) data, such as realtime monitoring, filtering, and file input/output. Our custom-made code used to control the device,
+Figure 1.
+1. Three
+Three ways
+ways to
+to connect
+connect multiple
+multiple devices.
+devices.
+synchronize all devices, andFigure
+finally acquire
+EEG data,
+was added to
+the OpenViBE acquisition server.
+Hyperscanning experiments require not only simultaneous data acquisition from multiple
+devices, but also various functions for experimental progress. Fortunately, there are well-organized
+open sources for real-time experiments, such as BCI2000 [49], OpenViBE [47], and BCILAB [50].
+We adopted OpenViBE in our proposed acquisition framework because it has synchronization and
+multi-acquisition modules for multimodality. OpenViBE is open-source software for real-time
+neuroscientific experiments developed in INRIA. It provides many functions, such as scripting, realtime signal monitoring, acquisition, filtering, stimulus presentation, and file input/output. The basic
+structure and acquisition flow between OpenViBE and the device are illustrated in Figure 2.
+The acquisition server controls the device, receives data from it, and parses them. The designer
+communicates with the acquisition server and performs functions to process the data, such as realtime Figure
+monitoring,
+filtering, and file input/output. Our custom-made code used to control the device,
+2. OpenViBE working flow. Dotted arrows (in gray) indicate communication protocol, solid
+synchronize
+all
+devices,
+and
+acquire
+EEG
+data,
+to the
+OpenViBE acquisition
+server.
+Figure 2.
+OpenViBE
+flow.
+Dotted
+arrows
+(inwas
+gray)added
+indicate
+communication
+protocol, solid
+arrows
+(blue)
+indicateworking
+datafinally
+flow,
+and
+colored
+boxes
+represent
+processes.
+arrows (blue) indicate data flow, and colored boxes represent processes.
+
+2.2. Hardware
+2.2. Hardware
+Firstly, a small piece of EEG acquisition hardware was developed and manufactured for our
+multi-user
+scale)
+hyperscanning
+(BioBrain
+Inc., Daejeon
+35203, Korea).
+ADS1299 chip
+Firstly,(large
+a small
+piece
+of EEG acquisition
+hardware
+was developed
+andAn
+manufactured
+forfrom
+our
+Texas
+Instruments
+(Dallas,
+TX,
+USA)
+was
+used
+for
+the
+EEG
+acquisition
+module,
+and
+2.4
+GHz
+Wi-Fi
+was
+multi-user (large scale) hyperscanning (BioBrain Inc., Daejeon 35203, Korea). An ADS1299 chip from
+introduced
+to communicate
+via USA)
+the TCP/IP
+software
+protocol.
+The Raspberry
+Pi Zero
+W model
+was
+Texas Instruments
+(Dallas, TX,
+was used
+for the
+EEG acquisition
+module,
+and 2.4
+GHz Wi-Fi
+adopted
+as the wireless
+communication
+This EEG
+device, which
+weighs approximately
+56 g
+was introduced
+to communicate
+via thehardware.
+TCP/IP software
+protocol.
+The Raspberry
+Pi Zero W model
+(without
+battery)asand
+is 93
+× 47 × 16communication
+mm in size, is battery-powered,
+at a speed
+of 1 kHz,
+and
+was adopted
+the
+wireless
+hardware. Thisoperates
+EEG device,
+which
+weighs
+consists
+of seven
+one bipolar
+channels.
+We
+note
+mA Xiaomi battery
+was
+approximately
+56monopolar
+g (withoutand
+battery)
+and is 93
+× 47 × 16
+mm
+in that
+size,ais10,000
+battery-powered,
+operates
+at
+used
+(approximately
+194
+g) in our
+validation
+experiment,
+as our
+device
+must operate
+continuously
+for
+a speed
+of 1 kHz, and
+consists
+of seven
+monopolar
+and one
+bipolar
+channels.
+We note
+that a 10,000
+®
+up
+two hours.
+EEG
+data
+are(approximately
+transmitted via 194
+a commercialized
+wireless
+router (AD7200-Nighthawk
+mAtoXiaomi
+battery
+was
+used
+g) in our validation
+experiment,
+as our device must
+X10
+model
+from
+NETGEAR).
+isarrows
+connected
+to
+the
+router
+anda assigned
+to onesolid
+internet
+operate
+continuously
+forworking
+up toEach
+two
+hours.
+data
+transmitted
+via
+commercialized
+wireless
+Figure
+2.
+OpenViBE
+flow.device
+DottedEEG
+(inare
+gray)
+indicate
+communication
+protocol,
+protocol
+(IP)(blue)
+address.
+In addition,
+manufactured
+device processes.
+uses
+Deutsches
+Institut für
+router
+(AD7200-Nighthawk®
+X10 our
+model
+fromboxes
+NETGEAR).
+Eachadevice
+is connected
+to Normung
+the router
+arrows
+indicate
+data flow,
+and
+colored
+represent
+and assigned to one internet protocol (IP) address. In addition, our manufactured device uses a
+2.2. Hardware
+Deutsches
+Institut für Normung (DIN, German Institute for Standardization) 42802 type snap-lead
+and a passive disposable foam electrode. The header consists of a synchronization element (2 bytes),
+Firstly, a small piece of EEG acquisition hardware was developed and manufactured for our
+multi-user (large scale) hyperscanning (BioBrain Inc., Daejeon 35203, Korea). An ADS1299 chip from
+Texas Instruments (Dallas, TX, USA) was used for the EEG acquisition module, and 2.4 GHz Wi-Fi
+
+Sensors 2019, 19, 4592
+
+6 of 20
+
+Sensors 2019, 19, x FOR PEER REVIEW
+
+6 of 18
+
+(DIN, German Institute for Standardization) 42802 type snap-lead and a passive disposable foam
+electrode.
+The header(1consists
+of a 3synchronization
+element
+(2 bytes),
+information
+(1 byte),are
+anda
+device information
+byte), and
+bytes of the packet
+number
+as a device
+timestamp.
+The payloads
+3total
+bytes
+packet
+as a timestamp.
+The payloads
+areper
+a total
+of 24 bytes
+with 8one
+channels
+of
+ofof
+24the
+bytes
+withnumber
+8 channels
+of 3 bytes (24-bit
+resolution
+channel).
+Therefore,
+device’s
+3transmission
+bytes (24-bit rate
+resolution
+perper
+channel).
+one device’s
+transmission
+is 30 kBisper
+second.
+is 30 kB
+second.Therefore,
+Our hardware
+for wiring
+and therate
+electrodes
+shown
+in
+Our
+hardware
+for
+wiring
+and
+the
+electrodes
+is
+shown
+in
+Figure
+3.
+Figure 3.
+
+2.3. Software
+
+Figure 3. Our custom-made device for the multilateral EEG acquisition system.
+Figure 3. Our custom-made device for the multilateral EEG acquisition system.
+
+2.3. Software
+Acquisition devices and processes were connected as a pair in the OpenViBE data acquisition
+module. This structure may exert a heavy load on the system because the number of processes
+increases with the number of devices. Thus, we introduced asynchronous communication, as shown
+in Figure 4b. In our proposed architecture, communication consists of two phases—device/ software
+(custom-made) and software (custom-made)/acquisition server. Our custom-made software performs
+parsing, merging, and synchronizing tasks, and sends the combined EEG data to the acquisition server
+by the message passing method. The acquisition server parses the data received into the correct block
+size for OpenViBE and sends it to the designer (Figure 4a). We note that at the current level, data can
+be acquired from up to 20 devices simultaneously.
+
+(a)
+
+(b)
+
+(c)
+
+Figure 3. Our custom-made device for the multilateral EEG acquisition system.
+
+2.3. Software
+
+Sensors 2019, 19, 4592
+
+7 of 20
+
+(a)
+
+(b)
+
+(c)
+Figure 4. (a) Connection diagram of acquisition program and OpenViBE. Our custom-made software
+acquires data from the devices and sends parsed and synchronized data to the OpenViBE acquisition
+server by message passing; (b) Comparison between synchronous and asynchronous communications.
+In synchronous communication, the main thread should wait until data from the device are read;
+however, asynchronous communication delivers the transmission request only and continues to process
+the main thread; (c) Diagram of framework configuration overall.
+
+3. Validation of our Designed Framework
+3.1. Validation Experiments
+3.1.1. Communication
+We attempted to measure the communication delay in the structure of our proposed framework
+for a multilateral EEG acquisition system. Communication delay was estimated with the ping utility,
+which measures the round-trip travel time of the message sent from the host to the target. We defined
+the wireless transmission delay as half of the ping result (one-way travel time). The parameters that
+influence the transmission speed are presumed to be the number of devices connected and their mean
+distance from the router. Thus, we measured the communication delays as the two parameters varied.
+Keeping the devices turned on and connected to the server PC, a pulse signal was sent to each device
+every 10 ms after setting the sending buffer size to 32 bytes and the timeout to 500 ms. For each test,
+a total of 1000 pulses was sent to estimate delay. This test was repeated 10 times, and finally, the
+
+Sensors 2019, 19, 4592
+
+8 of 20
+
+communication delay was estimated by averaging the delay time over 10,000 pulses and computing
+the loss rate. The two cases we tested are as follows:
+•
+•
+
+Case 1: The number of devices connected varied from 1–10 and each device was kept 3 m from
+the router
+Case 2: With 10 devices connected to the router, the communication delay was estimated over
+various distances (2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0 m) between the devices and router
+
+For each case, the final result was the grand mean of the communication delays over all devices.
+This test was performed on a PC (Intel® Core ™ i7-6700k central processing unit (CPU), GeForce 1080
+graphics adapter, 32 GB double data rate fourth generation (DDR4) memory, Windows 10 operating
+system (OS)). We note that no program that used the network was run during the test except the
+ping tool.
+3.1.2. Event-Related Potential Experiment
+It is necessary to verify that the framework proposed in this work can acquire multiple EEG
+data simultaneously. Thus, ERP experiments were conducted for verification purposes because ERP
+is highly sensitive to the time at which stimuli are presented. Therefore, it is necessary to know
+whether the devices can be synchronized reasonably well according to the given triggers. Under the
+conventional ERP experimental paradigm, a group of nine people participated together and EEG data
+from three channels (Fp1, Fpz, and Fp2) were collected simultaneously from all. Reference and ground
+channels were placed on both mastoids and all other channels were fixed to the scalp with disposable
+sticker-type electrodes without a cap. All subjects gave their informed consent before they participated
+in the study, which the institutional review board of the Gwangju Institute of Science and Technology
+approved (20160120-HR-21-01-02). The detailed experimental paradigm is as follows.
+The green circular stimulus for the visual ERP is presented on a blank black background on a
+screen, as shown in Figure 5a. All participants sat 3 m on average from the screen, and were instructed
+to count the number of visual stimuli presented. All stimulus onset times were marked for the visual
+ERP. An inter-stimulus interval (ISI) between 2.5 s and 3.5 s was selected randomly and the stimulus
+duration was 0.2 s. A range of 13–29 trials were conducted for each run, and 10 runs were conducted
+for a total of 188 trials collected for each participant.
+The ERP component is difficult to detect with only one or several trials. Generally, as many
+as tens or hundreds trials are averaged to detect the ERP component and estimate the ERP P300’s
+amplitude. Tens of trials (at least) are necessary to acquire EEG from one person and detect an ERP
+component. We hypothesized that if the simultaneous EEG acquisition system worked reasonably
+well—i.e., synchronizing nine devices was sufficient—all EEG trials acquired from multiple people
+under the experimental paradigm may be used to generate the visual ERP component, thereby reducing
+the number of trials required to detect ERP greatly. To test this hypothesis, we defined ERP detection
+in this experiment when all three of the following conditions for the ERP component were met:
+•
+•
+•
+
+Its minimum peak appeared 140–300 ms after stimulus onset.
+Its maximum peak appeared 280–450 ms after stimulus onset.
+Its peak to peak amplitude was greater than 6 µV.
+
+We note that these conditions were determined empirically. Based on the definition of ERP
+detectability above, we counted the number of trials each individual participant required to detect
+the ERP component and investigated ERP detection as the number of trials increased from 6 to 60.
+For example, to determine the detectability during 10 trials, we computed the first mean for the first to
+10th trials, the second for the second to 11th trials, and so on. This was computed continuously until
+the last trial, which was used as the mean. Finally, the detection rate was estimated from all means
+for the successive trials in the n trials given (n varied from 6 to 60). In this way, we estimated each
+
+detectability above, we counted the number of trials each individual participant required to detect
+the ERP component and investigated ERP detection as the number of trials increased from 6 to 60.
+For example, to determine the detectability during 10 trials, we computed the first mean for the first
+to 10th trials, the second for the second to 11th trials, and so on. This was computed continuously
+until the last trial, which was used as the mean. Finally, the detection rate was estimated from all
+Sensors 2019, 19, 4592
+9 of 20
+means for the successive trials in the n trials given (n varied from 6 to 60). In this way, we estimated
+each individual and the group of people’s detection rates, respectively. We note that one trial in the
+group
+analysis
+was
+multiple
+trials detection
+depending
+on respectively.
+the numberWe
+ofnote
+people
+(onetrial
+acquired
+from
+individual
+and the
+group
+of people’s
+rates,
+that one
+in the group
+each
+person).
+analysis
+was multiple trials depending on the number of people (one acquired from each person).
+The
+15 Hz
+Hz (Butterworth).
+(Butterworth). Each
+The EEG
+EEG data
+data acquired
+acquired were
+were band-passed
+band-passed between
+between 11 and
+and 15
+Each trial
+trial was
+was
+cut
+cut temporally
+temporally [-200,
+[-200, 1000]
+1000] ms
+ms according
+according to
+to the
+the visual
+visual stimulus
+stimulus onset.
+onset. A
+A temporal
+temporal window
+window of
+of 200
+200 ms
+ms
+before
+presentation was
+wasused
+usedas
+asthe
+thebaseline
+baselinecorrection.
+correction.Trials
+Trialsthat
+that
+exceeded
+amplitude
+before stimulus
+stimulus presentation
+exceeded
+anan
+amplitude
+of
+of
+60
+μV
+were
+rejected
+automatically
+as
+bad
+trials.
+We
+also
+rejected
+trials
+associated
+strongly
+with
+eye
+60 µV were rejected automatically as bad trials. We also rejected trials associated strongly with eye
+movement,
+movement, blinking,
+blinking, and
+and other
+other artifacts
+artifacts by
+by visual
+visual inspection.
+inspection. These
+These rejected
+rejected trials
+trials were
+were not
+not used
+used to
+to
+detect
+ERP,
+but
+their
+number
+was
+counted.
+We
+observed
+that
+the
+number
+of
+trials
+removed
+because
+detect ERP, but their number was counted. We observed that the number of trials removed because of
+of
+artifacts
+varied
+person
+to person.
+Wethat
+note
+thatdifficult
+it was to
+difficult
+to apply
+artifact
+removal
+artifacts
+varied
+fromfrom
+person
+to person.
+We note
+it was
+apply artifact
+removal
+techniques,
+techniques,
+such as independent
+analysis
+(ICA),
+foradata
+from
+a small
+of channels.
+such as independent
+componentcomponent
+analysis (ICA),
+for data
+from
+small
+number
+of number
+channels.
+
+(a)
+
+(b)
+
+Figure 5. (a) Visual ERP paradigm; (b) Experimental configurations. Nine people participated
+Figure 5. (a) Visual ERP paradigm; (b) Experimental configurations. Nine people participated
+simultaneously in this group experiment. They sat approximately 3 m away from the monitor and
+simultaneously in this group experiment. They sat approximately 3 m away from the monitor and
+were instructed to focus on and count the visual stimuli.
+were instructed to focus on and count the visual stimuli.
+
+3.2. Validation Results
+3.2. Validation Results
+Ping yields the approximate round-trip time for the message sent from the host to the target.
+Ping
+yieldsinthe
+approximate
+round-trip
+time for the message
+sentdefined
+from theashost
+the ping
+target.
+As
+As addressed
+the
+previous section,
+communication
+delay was
+halftothe
+time.
+addressed
+in the
+section,
+communication
+delay
+was
+asof
+half
+the ping
+time.
+Table
+3
+Table 2 shows
+theprevious
+estimated
+communication
+delays
+when
+thedefined
+number
+devices
+varied
+while
+the
+shows
+the
+estimated
+communication
+delays
+when
+the
+number
+of
+devices
+varied
+while
+the
+distance
+distance from the router was fixed 3 m away. We observed that the ping time nearly always was
+from
+the router
+was
+fixed 3 of
+mthe
+away.
+We ofobserved
+that the ping
+time nearly
+alwaysofwas
+approximately
+3 ms
+regardless
+number
+devices connected.
+Furthermore,
+regardless
+the
+approximately
+3
+ms
+regardless
+of
+the
+number
+of
+devices
+connected.
+Furthermore,
+regardless
+of the
+number of devices connected, the loss rate was between 0.65–1.34%, which is negligible. Table 3 presents
+the communication delays over various distances between the device and router when 10 devices were
+connected. The distance varied from 2 to 5 m in 0.5 m increments. We found that there was no notable
+difference in delay within a distance of 5 m. It is quite interesting that 10 devices (participants) all may
+be located easily in a room within 5 m away from the router during the experiment. Thus, in practice,
+all EEG data acquired reached the server within 1.5–2.0 ms.
+Table 2. Estimated communication delay over various numbers of connected devices. The distance
+from the router to all devices was maintained at 3 m.
+Number of
+Connected Devices
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10
+
+Ping Delay (ms)
+
+3
+
+3
+
+3
+
+3
+
+3
+
+3
+
+3
+
+4
+
+3
+
+3
+
+Loss Rate (%)
+
+0.87
+
+0.74
+
+0.79
+
+0.65
+
+0.7
+
+1.34
+
+1.32
+
+1.34
+
+0.86
+
+0.94
+
+experiment. Thus, in practice, all EEG data acquired reached the server within 1.5–2.0 ms.
+Table 3. Estimated communication delay over various numbers of connected devices. The distance
+from the router to all devices was maintained at 3 m.
+Number
+of
+Sensors 2019,
+19, 4592
+Connected Devices
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+1010 of 20
+
+9
+
+3
+3
+3
+3
+3
+3
+3
+4
+3
+3
+Ping Delay (ms)
+Table
+3.
+Estimated
+communication
+delay
+over
+various
+distances
+from
+the
+router
+when
+10
+devices
+0.87
+0.74
+0.79
+0.65
+0.7
+1.34
+1.32
+1.34
+0.86
+0.94
+Loss Rate (%)
+were connected.
+Table 4. Estimated communication delay over various distances from the router when 10 devices
+Distance from the
+2
+2.5
+3
+3.5
+4
+4.5
+5
+were connected.
+Router (m)
+
+Ping
+Delay
+Distance
+from
+the (ms)
+2
+Router
+(m)
+Loss Rate (%)
+Ping Delay (ms)
+3
+
+3
+0.80
+
+2.5
+
+2
+0.62
+
+3
+
+3
+0.70
+
+3.5
+
+3
+
+0.89
+
+3
+
+3
+
+3
+
+0.76
+
+0.58
+
+0.61
+
+4
+
+4.5
+
+5
+
+2
+3
+3
+3
+3
+3
+Loss Rate (%)
+0.80
+0.62
+0.70
+0.89
+0.76
+0.58
+0.61
+We collected 188 trials for each participant in the ERP experiments, and observed that the number
+collected
+trials for each
+participant
+in the
+ERPthat
+experiments,
+and observed
+that Sub5)
+the
+of badWe
+trials
+varied188
+considerably
+among
+them. We
+found
+two participants
+(Sub2 and
+number
+of
+bad
+trials
+varied
+considerably
+among
+them.
+We
+found
+that
+two
+participants
+(Sub2
+and
+showed a relatively smaller number of good trials than did the others because eye blinking and
+Sub5) showed
+a relatively
+smaller number
+of good trials
+than
+did the others
+because
+eyeand
+blinking
+stimulus
+presentation
+overlapped
+very frequently.
+Three
+participants’
+(Sub6,
+Sub8,
+Sub9)and
+ERP
+stimulus
+overlapped
+very frequently.
+participants’
+Sub8, and
+Sub9) ERPin
+data
+werepresentation
+eliminated from
+our analysis
+because ofThree
+unusual
+patterns.(Sub6,
+The details
+are discussed
+data were
+our analysis ERP
+because
+unusual
+The details
+aregroup
+discussed
+in
+Section
+4.3. eliminated
+Ultimately,from
+six participants’
+dataofwere
+usedpatterns.
+in the individual
+and
+analyses.
+Section
+4.3.
+Ultimately,
+six
+participants’
+ERP
+data
+were
+used
+in
+the
+individual
+and
+group
+analyses.
+Figure 6 represents the ERP component’s detection rates at Fpz as the number of trials increased.
+Figure 6 represents
+the ERP
+ERP detection
+component’s
+Fpz aswere
+the number
+of trials
+Individual
+participant’s
+ratesdetection
+and thatrates
+of theatgroup
+compared.
+In theincreased.
+group case
+Individual
+participant’s
+ERP
+detection
+rates
+and
+that
+of
+the
+group
+were
+compared.
+In
+the
+group
+case
+specifically, we gathered six synchronized trials from six participants simultaneously to generate
+specifically, we gathered six synchronized trials from six participants simultaneously to generate the
+the ERP component. For example, 4 trials in the group ERP test represented 24 trials (4 from each
+ERP component. For example, 4 trials in the group ERP test represented 24 trials (4 from each
+participant). All cases showed clear moderate increases in ERP detection rates as the number of trials
+participant). All cases showed clear moderate increases in ERP detection rates as the number of trials
+increased. In individual cases, most participants required over 54 trials to yield an ERP detection rate
+increased. In individual cases, most participants required over 54 trials to yield an ERP detection rate
+of 80% or above, while 14 trials were sufficiently good to yield an ERP detection rate of 80% for the
+of 80% or above, while 14 trials were sufficiently good to yield an ERP detection rate of 80% for the
+group case. We note that all EEG trials of three of the nine participants were eliminated from the group
+group case. We note that all EEG trials of three of the nine participants were eliminated from the
+analysis; thus, the group ERP detection required approximately 1/5 the number of trials for individual
+group analysis; thus, the group ERP detection required approximately 1/5 the number of trials for
+ERP detection.
+individual ERP detection.
+
+(a)
+
+(b)
+
+Figure 6. ERP detection rates as the number of trials increased. (a) Individuals’ ERP detection rates.
+The red bold curve represents the mean detection rate over all participants; (b) The ERP detection rate
+for the group of six participants (all of three participants’ ERP trials were rejected, so six participants’
+trials were used ultimately).
+
+4. Discussion
+4.1. Connection and Synchronization of Devices
+The simplest way to acquire data simultaneously is to use as many computers as devices, as
+shown in Figure 1a. This ‘n:n’ connection, without specific implementation, may be available with
+the commercial software the manufacturer provides, and is easy to implement even when software
+development is required. However, we knew that it is difficult to synchronize the devices, send triggers,
+and present stimuli during an experiment with the ‘n:n’ connection. Poulsen et al. [42] introduced this
+
+Sensors 2019, 19, 4592
+
+11 of 20
+
+connection in an experiment with a group of nine people, and noted that the electric spark was used
+for synchronization. It is said that a piezoelectric spark generator produces a strong spark up to 60 kV,
+but it was not visible in EEG. Synchronization may be possible if a spark generator is used to make a
+strong spark, as it may allow synchronization at the beginning or end of the experiment. However,
+synchronization during the experiment relies completely on the devices and it is not easy to mark the
+trigger or timestamp during the experiment. Thus, the other two methods, the ‘k:p:1’ (n = k × p) or
+‘n:1’ connections (Figure 1b,c) are more preferable when the experiment requires sensitive timestamps,
+stimulus presentation, and feedback. Comparing the ‘k:p:1’ and ‘n:1’ connections, ‘k:p:1’ may be less
+advantageous with respect to communication delay, because data are transmitted in two stages, and
+their synchronization may be a hurdle. As the number of ‘p’ servers increases, and the load on the
+central server definitely is reduced significantly because of the intermediate servers’ processing. While
+the ‘n:1’ connection may control the device on the server directly and it is simple to send commands
+and minimize communication delay, it may exert a heavy workload on the central server.
+It is known that the ideal approach to synchronize the EEG acquisition system is to use
+synchronization hardware in a wired environment. Hardware-based synchronization is advantageous,
+in that it may minimize unavoidable communication delays in a high-speed environment. Generally,
+however, it is too expense to manufacture and the cost increases dramatically with the number of
+participants. Although a wired connection between the device and server is used widely in practice, it is
+quite inconvenient when a hyperscanning experiment is conducted that acquires data from many people
+simultaneously. Thus, to allow the participants more mobility, a wireless connection is used most often
+today. Duan et al. [37] reported that participants’ movement was difficult to accommodate because of
+the limited length of optical cables in fNIRS device, and similar problems may be encountered in any
+kind of wired environment. This limits the participants’ position and motion, and the experimental
+paradigm’s design. As the number of participants increases, the number of cables laying on the floor
+also increases, which is highly inconvenient when moving to offer experimental guidance and check
+electrodes. Furthermore, wired devices make it inconvenient to set up the experimental environment.
+Thus, the cost of conducting the experiment increases with the number of participants. Accordingly,
+it is highly important for the experimental setup process to be as simple as possible. In this work,
+to develop a wearable (wireless) system at a reasonable cost, we considered software synchronization
+for multiple wireless connections. We believe that our proposed system is more convenient to use
+(because of wireless connection) as well as affordable.
+4.2. Other Platforms for Multilateral Systems: Lab Streaming Layer
+Recently, investigators have considered the software platform Lab Streaming Layer (LSL) [51]
+for simultaneous acquisition. LSL is software for the unified collection of measurement time series
+in research experiments that Swartz Center for Computational Neuroscience, USA developed. It is
+open-source software and supports many powerful functions for real-time research experiments, such
+as sending trigger events, presenting stimuli, connecting to signal acquisition devices, and capturing
+keyboard/mouse events. Most importantly, LSL supports time synchronization designed after the
+Network Time Protocol (NTP) [52], and may be applied potentially to large-scale connections. However,
+we found that LSL could not maintain the structure we proposed, as it largely is structured for a
+dyadic connection (between sender and receiver); thus, it is simple to implement to execute one
+process for each device, which is identical to the ‘n:n’ connection (Figure 1a). As addressed in Section 2,
+this connection may require much greater consumption of hardware resources in OpenViBE-based
+multi-process architecture when 10 or more acquisition processes are executed simultaneously. To solve
+this problem, we proposed a framework that introduced a multi-client centralized connection approach
+that reduces the number of processes to one.
+Although it appeared that LSL cannot be applied to our structure easily, LSL and OpenViBE
+acquisition servers may differ in resource consumption during processes. The hardware load may not
+be significant in LSL while processes are maintained. Furthermore, it may attempt to reduce loads by
+
+Sensors 2019, 19, 4592
+
+12 of 20
+
+using multi-thread. Thus, LSL is a good alternative for large-scale systems that support strong time
+synchronization and various functions, although to the best of our knowledge, there is no report on
+large-scale EEG acquisition via LSL. Thus, to verify its usefulness in multilateral acquisition systems,
+extensive and intensive investigation may be needed, which will be performed in our subsequent work.
+4.3. Recent Version of OpenViBE
+Our proposed framework’s basis is OpenViBE v. 1.3.1. However, this is updated regularly and the
+most recent version is 2.2.0. We found that there were three major updates, but the news release did
+not report any improvement in the acquisition server’s resource consumption. Because OpenViBE has
+reported continuous performance improvements in every update thus far, there may be some progress
+in acquisition load and a newer version may be able to acquire EEG data more stably. Thus, we note
+that the latest version OpenViBE needs to be tested and implemented.
+4.4. System Load
+Most work to date has been conducted with the ‘n:n’ connection structure, which is the one-to-one
+connection between OpenViBE and a single device. In this case, to achieve simultaneous acquisition,
+the server may need as many real-time processes as the number of devices. One of the ‘n:n’ connection
+structure’s hurdles is its high hardware load. As the number of acquisition server processes increases,
+CPU use may reach nearly 100%, which prevents the server from functioning. The acquisition
+server, designer, and synchronization processes all are conducted in real-time and require continuous
+processing of the data the devices send; the load is high because the process usually continues without
+idle time. In the case in which only the acquisition server is run, we observed that there are no resources
+available when a dozen or more processes are activated. When the designer and acquisition processes
+were executed together and data were acquired, the CPU use rate reached 100% and function failure.
+Because a designer process with multiple functions, such as monitoring and filtering, is needed during
+these experiments, we observed that more than eight connections are intractable in the ‘n:n’ connection
+structure. We note that all tests were performed on a PC (Intel® Core ™ i7-6700k CPU, GeForce 1080
+graphics adapter, 32GB DDR4 memory, Windows 10 OS, with OpenViBE v. 1.3.1).
+Two schemes were introduced in our proposed architecture to reduce the number of processes
+and reduce the hardware load thereby.
+•
+
+•
+
+A server process was connected with multiple clients (devices). As a unit of program execution,
+the process was allocated a unique address space and hardware resources, including CPU registers,
+text data in memory, and open files and devices. Therefore, as the process increases, the burden on
+resources increases. In addition, as the server’s OS does not run just one program, it is necessary to
+change the process that it executes, which entails a very high cost in context exchange. Therefore,
+we made it possible for the software to communicate with all devices in one process that reduced
+the number of processes overall.
+Second, asynchronous communication. There are synchronous and asynchronous modes of
+communication, as shown in Figure 4. In the synchronous communication mode, CPU blocks and
+no other operations can be processed until a response arrives from the device. In this structure,
+a greater number of devices increases the blocked time required for input/output (I/O), which
+may result in very inefficient operation. However, asynchronous communication reduces the
+hardware resource load dramatically, even in situations in which multiple devices are connected.
+Nonetheless, in asynchronous communication, the OS determines the send timing and the data’s
+size, so it is necessary to parse the data and control synchronization between devices.
+
+Our custom-made device operates on 8 channels at a sampling frequency of 1000 Hz. Based on
+the device developed, data may be acquired from up to 20 devices using the current framework.
+However, it is advantageous for EEG devices to have as many channels as possible in hyperscanning
+studies because various cortical areas’ involvement can be investigated. It is natural to question
+
+Sensors 2019, 19, 4592
+
+13 of 20
+
+whether the number of devices in a simultaneous acquisition system should decrease when each
+device’s number of channels increases. A practical test is required to confirm this, as we expect that a
+mild increase in the number of channels (addition of just several channels per device) may not lead
+to any problems and maintain the number of connections unless the number of channels increases
+dramatically. It is understood that the current load problem on the hardware is not the amount of
+transmission on the network from the device, but the CPU resource consumption. For example, we
+tested a 64 channels Biosemi ActiveTwo device using the one-to-one communication method on the
+same server. Biosemi operates at a sampling frequency of 1024 Hz, and our 8-channel device operates
+at a sampling frequency of 1000 Hz. A fair comparison is not even possible, as with respect to the
+amount of transmission from the device to the server, Biosemi is expected to transmit the roughly same
+amount of data as that of the eight devices we developed. However, in practice, compared to hardware
+consumption, Biosemi consumed less than 30% of the CPU’s resources, while eight simultaneous
+connections did not operate normally because 100% of the CPU’s resources were consumed. It was
+inferred from this observation that network traffic may not cause the hardware load, but context
+switching for execution between many real-time processes. Such an understanding and observation
+motivated us to propose our simultaneous acquisition framework with the single process structure
+and asynchronous communication method.
+4.5. Electrodes
+A large number of people participated in our experiment; thus, we found that it took quite a
+long time to prepare the experiment. First, sticker-type disposable electrodes were made that were
+more convenient for the participants. They were pre-applied with a conductive gel, which reduced the
+preparation time for the experiment and were easy to use because they are disposable. Furthermore,
+they can be used without EEG caps or pastes, which also reduced the time to prepare the experiment
+greatly. However, we found that they could not be attached to areas of the scalp with hair because they
+need to be attached directly to the skin; thus, they were used on the frontal lobe only. The terminal at the
+opposite end of the snap-lead (shown in Figure 7a) is a DIN 42802 type used widely and is compatible
+with all passive types of electrodes: dry, clip, disk-type (used with glue), and so on. Therefore,
+the electrode’s type and position can be selected freely according to the experiment’s purpose, and
+the EEG cap also may be used for its convenience. In addition, ear clip electrodes can be used as a
+reference for signal quality if other electrodes need to be placed near the mastoid.
+Our custom-made devices are compact and mobile; however, participants still reported discomfort
+during the experiment that was found to derive from the DIN 42802 snap-lead. The leads became
+twisted and because the line weighs over 150 g, including all channels (reference and bipolar), they
+are heavy to use over a long period. To compensate for this inconvenience, we considered a flexible
+printed circuit board (PCB), as illustrated in Figure 7b. This PCB is lighter in weight and twists less
+when used, which makes it considerably more convenient than the previous DIN 42802 snap-lead. In
+any case, both commercial and research parties continue to make great efforts to improve all aspects of
+electrodes (convenience, weight, cost, and mobility).
+For several reasons, the cost required to prepare and execute multilateral hyperscanning
+experiments is very high. One of the important reasons is that EEG data should be obtained using
+a conductive gel or paste to fix the electrode to the scalp. In this work, sticker-type electrodes were
+used for convenience; however, they had some limitations, as EEG data could be obtained only on the
+frontal area, and they detached easily and frequently because of subjects’ sweat or facial movement.
+Dry electrodes, which do not require conductive gels or pastes, and unlike the sticker-type, can be
+used on all areas of the scalp, may overcome these disadvantages. Fortunately, the electrode industry
+has developed dry electrodes in recent years that perform well, and some comparison studies have
+been conducted to verify their usefulness [53,54]. We expect that dry electrodes will be more reliable
+and comfortable, and have many advantages in time and cost in preparation for experiments, and thus,
+may be a good choice for multilateral hyperscanning experiments.
+
+movement. Dry electrodes, which do not require conductive gels or pastes, and unlike the stickertype, can be used on all areas of the scalp, may overcome these disadvantages. Fortunately,
+the electrode industry has developed dry electrodes in recent years that perform well, and some
+comparison studies have been conducted to verify their usefulness [53,54]. We expect that dry
+electrodes
+will
+in
+Sensors
+2019, 19,
+4592be more reliable and comfortable, and have many advantages in time and cost
+14 of 20
+preparation for experiments, and thus, may be a good choice for multilateral hyperscanning
+experiments.
+
+(a)
+
+(b)
+
+Figure 7.
+7. (a)
+(a) Appearance
+Appearance of
+of the
+the DIN
+DIN 42802
+42802 snap-lead;
+snap-lead; (b)
+(b) Flexible
+Flexible PCB
+PCB we
+we developed.
+developed.
+Figure
+
+4.6.
+4.6. ERP
+ERP Detection
+Detection
+With
+system,
+we acquired
+ERP data
+participants
+for validation
+purposes,
+Withour
+ourproposed
+proposed
+system,
+we acquired
+ERPfrom
+datanine
+from
+nine participants
+for validation
+as
+illustrated
+Figure 8.inThe
+trials8.were
+sortedwere
+(in decreasing
+order) according
+the meantoamplitude
+purposes,
+as in
+illustrated
+Figure
+The trials
+sorted (in decreasing
+order)to
+according
+the mean
+between
+200
+and
+350
+ms.
+Six
+participants
+yielded
+reasonable
+ERP
+components.
+However,
+N2
+and P3
+amplitude between 200 and 350 ms. Six participants yielded reasonable ERP components. However,
+components
+(typical components
+of visual ERP)
+largelyERP)
+werelargely
+absent were
+in three
+participants’
+(Sub6, Sub8,
+N2 and P3 components
+(typical components
+of visual
+absent
+in three participants’
+and
+Sub9)
+ERP
+data,
+which
+illustrated
+Figure 8b. in
+Compared
+toCompared
+the ERP cases
+of ERP
+the participants
+(Sub6,
+Sub8,
+and
+Sub9)
+ERPisdata,
+which in
+is illustrated
+Figure 8b.
+to the
+cases of the
+who
+performed
+well
+(Figure
+8a),
+N2
+components
+were
+not
+seen
+clearly,
+and
+even
+P3
+components
+participants who performed well (Figure 8a), N2 components were not seen clearly, and even P3
+seemingly
+appeared
+400 appeared
+or more ms
+after
+onset. ms
+Thus,
+weonset.
+couldThus,
+not confirm
+thatnot
+they
+are typical
+components
+seemingly
+400
+or more
+after
+we could
+confirm
+that ERP
+they
+components.
+We
+presumed
+that
+subjects’
+characteristics
+were
+one
+possible
+reason
+for
+this
+outcome.
+are typical ERP components. We presumed that subjects’ characteristics were one possible reason for
+However,
+although
+we excluded
+these
+three subjects’
+our analysis
+because
+of unusual
+ERP
+this outcome.
+However,
+although
+we excluded
+thesedata
+threefrom
+subjects’
+data from
+our analysis
+because
+observations,
+by checking
+triggerby
+indications,
+we did confirm
+that simultaneous
+acquisition
+under our
+of unusual ERP
+observations,
+checking trigger
+indications,
+we did confirm
+that simultaneous
+framework
+successful.
+acquisition was
+under
+our framework was successful.
+In
+from
+a single
+trial;
+thus,
+as many
+trials
+as
+In practice,
+practice,ERP
+ERPcomponents
+componentscannot
+cannotbebedetected
+detectedclearly
+clearly
+from
+a single
+trial;
+thus,
+as many
+trials
+possible
+areare
+averaged
+until
+thethe
+component
+appears
+clearly.
+as possible
+averaged
+until
+component
+appears
+clearly.Acquiring
+Acquiringa agreat
+greatnumber
+numberof
+oftrials
+trialstakes
+takes
+time
+timeand
+and tires
+tires participants.
+participants. This
+This motivated
+motivated us
+us to
+to investigate
+investigate whether
+whether acquiring
+acquiringERP
+ERP data
+data from
+from aa group
+group
+of
+of people
+people simultaneously
+simultaneously can
+can reduce
+reduce the
+the number
+number of
+of trials
+trials required
+required for
+for ERP
+ERP detection
+detection by
+by using
+using all
+all
+participants’
+trials
+combined.
+Using
+trials
+from
+a
+group
+of
+people
+to
+achieve
+ERP
+detection
+may
+be
+participants’ trials combined.
+group of people to achieve ERP detection may be
+quite
+quite interesting
+interesting and
+and ERP
+ERP may
+may be
+bedetectable
+detectable with
+with far
+farfewer
+fewertrials.
+trials. It
+It is
+is believed
+believed that
+that this
+this application
+application
+will
+training
+process
+in brain–computer
+interfaceinterface
+(BCI), such
+as P300
+spellers,
+dramatically.
+willreduce
+reducethethe
+training
+process
+in brain–computer
+(BCI),
+such
+as P300
+spellers,
+In
+this
+study,
+sticker-type
+disposable
+electrodes
+were
+used
+and
+EEG
+data
+were
+acquired
+from
+the
+frontal
+dramatically. In this study, sticker-type disposable electrodes were used and EEG data were acquired
+lobe
+Thus, we
+observed
+that the
+data acquired
+weredata
+quiteacquired
+noisy because
+of eyenoisy
+blinking
+and
+fromonly.
+the frontal
+lobe
+only. Thus,
+we EEG
+observed
+that the EEG
+were quite
+because
+rolling,
+and the three
+participants
+whose
+were excluded
+this to a experienced
+greater degree.
+of eye blinking
+and rolling,
+and the
+threedata
+participants
+whose experienced
+data were excluded
+this to
+Excluding
+these three participants, we tested ERP detection from six participants combined.
+a greater
+degree.
+We found
+that individual
+participants
+required
+at leastERP
+54 trials
+to achieve
+than 80% performance
+Excluding
+these three
+participants,
+we tested
+detection
+frombetter
+six participants
+combined.
+in
+the
+ERP
+detection
+rate.
+However,
+even
+when
+only
+six
+participants
+performed
+the
+same
+We found that individual participants required at least 54 trials to achieve better than task
+80%
+simultaneously and their ERP detection trials were used in combination, the number of trials required
+to detect ERP decreased dramatically (from 54 to 14 to achieve 80% detection performance). These results
+confirmed that our proposed system works reasonably well in a hyperscanning experiment.
+
+performance in the ERP detection rate. However, even when only six participants performed the
+same task simultaneously and their ERP detection trials were used in combination, the number of
+trials required to detect ERP decreased dramatically (from 54 to 14 to achieve 80% detection
+performance).
+These results confirmed that our proposed system works reasonably well 15
+inofa20
+Sensors 2019, 19, 4592
+hyperscanning experiment.
+
+(a)
+
+(b)
+
+Figure8.8.Colormap
+ColormapofofERP
+ERPdata
+dataover
+overtrials
+trialsand
+andERP
+ERPcomponent
+componentby
+byaveraging
+averagingover
+overtrials.
+trials.(a)
+(a)Cases
+Casesfor
+for
+Figure
+participants
+who
+performed
+well;
+(b)
+Cases
+for
+participants
+who
+performed
+poorly.
+participants who performed well; (b) Cases for participants who performed poorly.
+
+4.7. Applications, Limitations, and Future Work
+4.7. Applications, Limitations, and Future Work
+Our proposed system can be applied to group interaction studies in neuroscience, and will allow
+Our proposed system can be applied to group interaction studies in neuroscience, and will allow
+us to design experimental paradigms for hyperscanning more freely. More realistic experimental
+us to design experimental paradigms for hyperscanning more freely. More realistic experimental
+settings, such as discussions, presentations, and classroom situations may be tractable to investigation.
+settings, such as discussions, presentations, and classroom situations may be tractable to
+It also allows us to conduct research on choices and interactions in social contexts, such as the Asch
+investigation. It also allows us to conduct research on choices and interactions in social contexts,
+paradigm [55]. We expect that the framework can be used to evaluate the interaction between teachers
+and learners to improve our understanding of learning’s effectiveness. Furthermore, it is possible
+to evaluate video content or produce audience-interactive content through biomarkers from a large
+number of people. It also may be applied to the development of BCI technology. BCI is a technology
+that uses brain signals to communicate the user’s intentions to a computer without the need for
+
+Sensors 2019, 19, 4592
+
+16 of 20
+
+any input devices such as a keyboard and mouse. BCI technology has been applied to spellers for
+quadriplegic patients, prosthesis and environment control, and rehabilitation aids. Among them, a
+collaborative BCI, which may be a method to overcome BCI’s limitations, can be combined with
+hyperscanning technology to improve BCI performance [56,57] or assist patients [58]. Particularly,
+a collaborative BCI and guided BCI paradigms are under development.
+There are some limitations in this work, as follows:
+•
+
+•
+
+•
+
+•
+
+The framework proposed adopted a connection using a 2.4 GHz Wi-Fi. Generally, a 2.4 GHz
+band is used in many devices, such as wireless keyboards and routers. Therefore, devices operate
+stably when there is no other router or device nearby that uses 2.4 GHz. However, communication
+disconnection or delay may occur when the conditions surrounding the wireless connections
+are crowded.
+Ping was used to estimate the transmission delay, which is technically different from the EEG
+data devices send, and therefore it may offer only a rough estimation. In addition, the ping tool’s
+accuracy is limited inherently because of its temporal resolution in ms.
+A very simple ERP component that has a minimum/maximum peak in the N2 and P3 ranges was
+investigated in the validation experiment. However, N2 and P3 timings vary greatly depending
+on the trials or people. For example, one participant (Sub 4) showed clean EEG data in which it
+was easy to detect the ERP component (Figure 8a). However, the ERP component’s shape did not
+meet the criteria we proposed and thus, it did not perform well. Therefore, we believe that other
+criteria for ERP detection may yield different or better results.
+In this work, our framework was tested with a group of nine people. However, we confirmed that
+it could work with up to 20 people. Because of usable devices’ limitation during experiments, only
+nine devices were used. We will continue to perform experiments with larger groups in the future.
+
+In this work, we implemented a multilateral acquisition framework without a sophisticated
+experimental design and INS analysis for group interaction. Group interactions under our framework
+are currently under investigation.
+5. Conclusions
+There is a demand for, and research efforts on, group interactions. However, the methodology
+has not been discussed in detail. Thus, in this study, a framework for hyperscanning was designed
+and developed that allows EEG data to be acquired simultaneously from a group of people (over 10
+and up to 20). Furthermore, various issues we encountered and solutions we found while developing
+our proposed system were discussed. We also conducted an ERP experiment to verify our system,
+and found that time-sensitive ERP components were obtained successfully with EEG data recorded
+simultaneously from a group of nine people. We confirmed that the multilateral acquisition system
+has the potential to reduce the trials required to detect ERP components and suggests the possibility
+of various applications, such as collaborative, assisted, and multi-mind BCI, brain gaming, crowd
+psychology, and interactive contents development.
+Author Contributions: Conceptualization, S.L., H.C., and S.C.J.; Methodology, S.L. and K.K.; Software, S.L.;
+Validation, S.L. and K.K.; Formal analysis, S.L.; Writing—original draft preparation, S.L.; Writing—review and
+editing, S.C.J.; Visualization, S.L.; Supervision and project administration, S.C.J.; Funding acquisition, K.K. and
+S.C.J.
+Funding: This research was supported by the Institute of Information & Communications Technology Planning &
+Evaluation (IITP) grant funded by the Korea government (no. 2017-0-00451).
+Acknowledgments: The detailed documentation of the OpenViBE developer helped us develop our framework,
+and we would like to thank the INRIA OpenViBE developer team and its contributors.
+Conflicts of Interest: The authors declare no conflict of interest. The funders had no role in the design of the
+study; in the collection, analyses, or interpretation of data; in the writing of the manuscript, or in the decision to
+publish the results.
+
+Sensors 2019, 19, 4592
+
+17 of 20
+
+Abbreviations
+INS
+fMRI
+fNIRS
+MEG
+EEG
+LAN
+PC
+ERP
+IP
+DIN
+CPU
+DDR4
+OS
+ISI
+ICA
+LSL
+NTP
+I/O
+PCB
+BCI
+
+Interpersonal neural synchronization
+Functional magnetic resonance imaging
+Functional near-infrared spectroscopy
+Magnetoencephalography
+Electroencephalography
+Local area network
+Personal computer
+Event-related potential
+Internet Protocol
+Deutsches Institut für Normung (German Institute for Standardization)
+Central processing unit
+Double data rate fourth generation
+Operating system
+Inter-stimulus interval
+Independent component analysis
+Lab streaming layer
+Network Time Protocol
+Input/output
+Printed circuit board
+Brain-computer interface
+
+References
+1.
+
+2.
+
+3.
+
+4.
+5.
+6.
+
+7.
+8.
+9.
+10.
+11.
+
+Montague, P.R.; Berns, G.S.; Cohen, J.D.; McClure, S.M.; Pagnoni, G.; Dhamala, M.; Wiest, M.C.; Karpov, I.;
+King, R.D.; Apple, N.; et al. Hyperscanning: Simultaneous fMRI during Linked Social Interactions.
+NeuroImage 2002, 16, 1159–1164. [CrossRef]
+Saito, D.; Tanabe, H.; Izuma, K.; Hayashi, M.; Morito, Y.; Komeda, H.; Uchiyama, H.; Kosaka, H.; Okazawa, H.;
+Fujibayashi, Y.; et al. “Stay Tuned”: Inter-Individual Neural Synchronization During Mutual Gaze and Joint
+Attention. Front. Integr. Neurosci. 2010, 4, 127. [CrossRef] [PubMed]
+Bilek, E.; Ruf, M.; Schäfer, A.; Akdeniz, C.; Calhoun, V.D.; Schmahl, C.; Demanuele, C.; Tost, H.; Kirsch, P.;
+Meyer-Lindenberg, A. Information flow between interacting human brains: Identification, validation, and
+relationship to social expertise. Proc. Natl. Acad. Sci. USA 2015, 112, 5207–5212. [CrossRef] [PubMed]
+Jiang, J.; Dai, B.; Peng, D.; Zhu, C.; Liu, L.; Lu, C. Neural Synchronization during Face-to-Face Communication.
+J. Neurosci. 2012, 32, 16064. [CrossRef] [PubMed]
+Jiang, J.; Chen, C.; Dai, B.; Shi, G.; Ding, G.; Liu, L.; Lu, C. Leader emergence through interpersonal neural
+synchronization. Proc. Natl. Acad. Sci. USA 2015, 112, 4274. [CrossRef] [PubMed]
+Ahn, S.; Cho, H.; Kwon, M.; Kim, K.; Kwon, H.; Kim, B.S.; Chang, W.S.; Chang, J.W.; Jun, S.C. Interbrain phase
+synchronization during turn-taking verbal interaction-a hyperscanning study using simultaneous EEG/MEG.
+Hum. Brain Mapp. 2018, 39, 171–188. [CrossRef] [PubMed]
+Tognoli, E.; Lagarde, J.; DeGuzman, G.C.; Kelso, J.A.S. The phi complex as a neuromarker of human social
+coordination. Proc. Natl. Acad. Sci. USA 2007, 104, 8190. [CrossRef] [PubMed]
+Zhou, G.; Bourguignon, M.; Parkkonen, L.; Hari, R. Neural signatures of hand kinematics in leaders vs.
+followers: A dual-MEG study. NeuroImage 2016, 125, 731–738. [CrossRef] [PubMed]
+Naeem, M.; Prasad, G.; Watson, D.R.; Kelso, J.A.S. Electrophysiological signatures of intentional social
+coordination in the 10–12Hz range. NeuroImage 2012, 59, 1795–1803. [CrossRef]
+Baker, J.M.; Liu, N.; Cui, X.; Vrticka, P.; Saggar, M.; Hosseini, S.M.H.; Reiss, A.L. Sex differences in neural and
+behavioral signatures of cooperation revealed by fNIRS hyperscanning. Sci. Rep. 2016, 6, 26492. [CrossRef]
+Babiloni, C.; Buffo, P.; Vecchio, F.; Marzano, N.; Del Percio, C.; Spada, D.; Rossi, S.; Bruni, I.; Rossini, P.M.;
+Perani, D. Brains “in concert”: Frontal oscillatory alpha rhythms and empathy in professional musicians.
+NeuroImage 2012, 60, 105–116. [CrossRef] [PubMed]
+
+Sensors 2019, 19, 4592
+
+12.
+
+13.
+14.
+
+15.
+
+16.
+
+17.
+
+18.
+
+19.
+20.
+21.
+22.
+
+23.
+24.
+25.
+26.
+
+27.
+
+28.
+29.
+
+30.
+
+18 of 20
+
+Osaka, N.; Minamoto, T.; Yaoi, K.; Azuma, M.; Shimada, Y.M.; Osaka, M. How Two Brains Make One
+Synchronized Mind in the Inferior Frontal Cortex: fNIRS-Based Hyperscanning During Cooperative Singing.
+Front. Psychol. 2015, 6, 1811. [CrossRef] [PubMed]
+Lindenberger, U.; Li, S.-C.; Gruber, W.; Müller, V. Brains swinging in concert: Cortical phase synchronization
+while playing guitar. BMC Neurosci. 2009, 10, 22. [CrossRef] [PubMed]
+Toppi, J.; Sciaraffa, N.; Antonacci, Y.; Anzolin, A.; Caschera, S.; Petti, M.; Mattia, D.; Astolfi, L. Measuring the
+agreement between brain connectivity networks. In Proceedings of the 2016 38th Annual International
+Conference of the IEEE Engineering in Medicine and Biology Society (EMBC), Orlando, FL, USA,
+16–20 August 2016; pp. 68–71.
+Sciaraffa, N.; Borghini, G.; Aricò, P.; Di Flumeri, G.; Colosimo, A.; Bezerianos, A.; Thakor, N.V.; Babiloni, F.
+Brain Interaction during Cooperation: Evaluating Local Properties of Multiple-Brain Network. Brain Sci.
+2017, 7, 90. [CrossRef]
+Liu, D.; Liu, S.; Liu, X.; Zhang, C.; Li, A.; Jin, C.; Chen, Y.; Wang, H.; Zhang, X. Interactive Brain Activity:
+Review and Progress on EEG-Based Hyperscanning in Social Interactions. Front. Psychol. 2018, 9, 1862.
+[CrossRef]
+Astolfi, L.; Toppi, J.; Borghini, G.; Vecchiato, G.; Isabella, R.; Fallani, F.D.V.; Cincotti, F.; Salinari, S.; Mattia, D.;
+He, B.; et al. Study of the functional hyperconnectivity between couples of pilots during flight simulation:
+An EEG hyperscanning study. In Proceedings of the 2011 Annual International Conference of the IEEE
+Engineering in Medicine and Biology Society, Boston, MA, USA, 30 August–3 September 2011; pp. 2338–2341.
+Astolfi, L.; Toppi, J.; Borghini, G.; Vecchiato, G.; He, E.J.; Roy, A.; Cincotti, F.; Salinari, S.; Mattia, D.; He, B.; et al.
+Cortical activity and functional hyperconnectivity by simultaneous EEG recordings from interacting couples
+of professional pilots. In Proceedings of the 2012 Annual International Conference of the IEEE Engineering
+in Medicine and Biology Society, San Diego, CA, USA, 28 August–1 September 2012; pp. 4752–4755.
+Kawasaki, M.; Yamada, Y.; Ushiku, Y.; Miyauchi, E.; Yamaguchi, Y. Inter-brain synchronization during
+coordination of speech rhythm in human-to-human social interaction. Sci. Rep. 2013, 3, 1692. [CrossRef]
+Babiloni, F.; Astolfi, L. Social neuroscience and hyperscanning techniques: Past, present and future. Neurosci.
+Biobehav. Rev. 2014, 44, 76–93. [CrossRef]
+Mu, Y.; Cerritos, C.; Khan, F. Neural mechanisms underlying interpersonal coordination: A review of
+hyperscanning research. Soc. Personal. Psychol. Compass 2018, 12, e12421. [CrossRef]
+Wang, M.-Y.; Luan, P.; Zhang, J.; Xiang, Y.-T.; Niu, H.; Yuan, Z. Concurrent mapping of brain activation from
+multiple subjects during social interaction by hyperscanning: A mini-review. Quant. Imaging Med. Surg.
+2018, 8, 819–837. [CrossRef]
+Hari, R.; Kujala, M.V. Brain Basis of Human Social Interaction: From Concepts to Brain Imaging. Physiol. Rev.
+2009, 89, 453–479. [CrossRef]
+Hasson, U.; Ghazanfar, A.A.; Galantucci, B.; Garrod, S.; Keysers, C. Brain-to-Brain coupling: A mechanism
+for creating and sharing a social world. Trends Cogn. Sci. 2012, 16, 114–121. [CrossRef] [PubMed]
+Konvalinka, I.; Roepstorff, A. The two-brain approach: How can mutually interacting brains teach us
+something about social interaction? Front. Hum. Neurosci. 2012, 6, 215. [CrossRef] [PubMed]
+Astolfi, L.; Toppi, J.; De Vico Fallani, F.; Vecchiato, G.; Cincotti, F.; Wilke, C.T.; Yuan, H.; Mattia, D.;
+Salinari, S.; He, B.; et al. Imaging the Social Brain by Simultaneous Hyperscanning During Subject Interaction.
+IEEE Intell. Syst. 2011, 26, 38–45. [CrossRef] [PubMed]
+Zimmerman, J.E.; Thiene, P.; Harding, J.T. Design and Operation of Stable rf-Biased Superconducting
+Point-Contact Quantum Devices, and a Note on the Properties of Perfectly Clean Metal Contacts. J. Appl. Phys.
+1970, 41, 1572–1580. [CrossRef]
+Ogawa, S.; Lee, T.-M.; Nayak, A.S.; Glynn, P. Oxygenation-sensitive contrast in magnetic resonance image of
+rodent brain at high magnetic fields. Magn. Reson. Med. 1990, 14, 68–78. [CrossRef]
+Belliveau, J.W.; Kennedy, D.N.; McKinstry, R.C.; Buchbinder, B.R.; Weisskoff, R.M.; Cohen, M.S.; Vevea, J.M.;
+Brady, T.J.; Rosen, B.R. Functional mapping of the human visual cortex by magnetic resonance imaging.
+Science 1991, 254, 716–719. [CrossRef]
+Jobsis, F.F. Noninvasive, infrared monitoring of cerebral and myocardial oxygen sufficiency and circulatory
+parameters. Science 1977, 198, 1264–1267. [CrossRef]
+
+Sensors 2019, 19, 4592
+
+31.
+
+32.
+33.
+34.
+
+35.
+36.
+
+37.
+
+38.
+
+39.
+
+40.
+
+41.
+
+42.
+43.
+
+44.
+
+45.
+46.
+47.
+
+48.
+49.
+50.
+
+19 of 20
+
+Ferrari, M.; Giannini, I.; Sideri, G.; Zanette, E. Continuous Non Invasive Monitoring of Human Brain by Near
+Infrared Spectroscopy. In Oxygen Transport to Tissue VII; Kreuzer, F., Cain, S.M., Turek, Z., Goldstick, T.K., Eds.;
+Springer: Boston, MA, USA, 1985; pp. 873–882. ISBN 978-1-4684-3291-6.
+Cohen, D. Magnetoencephalography: Evidence of Magnetic Fields Produced by Alpha-Rhythm Currents.
+Science 1968, 161, 784–786. [CrossRef]
+Haas, L.F. Hans Berger (1873–1941), Richard Caton (1842–1926), and electroencephalography. J. Neurol.
+Neurosurg. Psychiatry 2003, 74, 9. [CrossRef]
+Dai, B.; Chen, C.; Long, Y.; Zheng, L.; Zhao, H.; Bai, X.; Liu, W.; Zhang, Y.; Liu, L.; Guo, T.; et al.
+Neural mechanisms for selectively tuning in to the target speaker in a naturalistic noisy situation. Nat. Commun.
+2018, 9, 2405. [CrossRef]
+Cherry, E.C. Some Experiments on the Recognition of Speech, with One and with Two Ears. J. Acoust. Soc. Am.
+1953, 25, 975–979. [CrossRef]
+Nozawa, T.; Sasaki, Y.; Sakaki, K.; Yokoyama, R.; Kawashima, R. Interpersonal frontopolar neural
+synchronization in group communication: An exploration toward fNIRS hyperscanning of natural
+interactions. NeuroImage 2016, 133, 484–497. [CrossRef] [PubMed]
+Duan, L.; Dai, R.-N.; Xiao, X.; Sun, P.-P.; Li, Z.; Zhu, C.-Z. Cluster imaging of multi-brain networks (CIMBN):
+A general framework for hyperscanning and modeling a group of interacting brains. Front. Neurosci.
+2015, 9, 267. [CrossRef] [PubMed]
+Babiloni, F.; Cincotti, F.; Mattia, D.; Mattiocco, M.; Fallani, F.D.V.; Tocci, A.; Bianchi, L.; Marciani, M.G.;
+Astolfi, L. Hypermethods for EEG hyperscanning. In Proceedings of the 2006 International Conference of
+the IEEE Engineering in Medicine and Biology Society, New York, NY, USA, 30 August–3 September 2006;
+pp. 3666–3669.
+Babiloni, F.; Cincotti, F.; Mattia, D.; Fallani, F.D.V.; Tocci, A.; Bianchi, L.; Salinari, S.; Marciani, M.; Colosimo, A.;
+Astolfi, L. High Resolution EEG Hyperscanning During a Card Game. In Proceedings of the 2007 29th
+Annual International Conference of the IEEE Engineering in Medicine and Biology Society, Lyon, France,
+22–26 August 2007; pp. 4957–4960.
+Astolfi, L.; Toppi, J.; De Vico Fallani, F.; Vecchiato, G.; Salinari, S.; Mattia, D.; Cincotti, F.; Babiloni, F.
+Neuroelectrical Hyperscanning Measures Simultaneous Brain Activity in Humans. Brain Topogr. 2010, 23,
+243–256. [CrossRef] [PubMed]
+Babiloni, C.; Vecchio, F.; Infarinato, F.; Buffo, P.; Marzano, N.; Spada, D.; Rossi, S.; Bruni, I.; Rossini, P.M.;
+Perani, D. Simultaneous recording of electroencephalographic data in musicians playing in ensemble. Cortex
+2011, 47, 1082–1090. [CrossRef]
+Poulsen, A.T.; Kamronn, S.; Dmochowski, J.; Parra, L.C.; Hansen, L.K. EEG in the classroom:
+Synchronised neural recordings during video presentation. Sci. Rep. 2017, 7, 43916. [CrossRef]
+Dikker, S.; Wan, L.; Davidesco, I.; Kaggen, L.; Oostrik, M.; McClintock, J.; Rowland, J.; Michalareas, G.;
+Van Bavel, J.J.; Ding, M.; et al. Brain-to-Brain Synchrony Tracks Real-World Dynamic Group Interactions in
+the Classroom. Curr. Biol. 2017, 27, 1375–1380. [CrossRef]
+Bevilacqua, D.; Davidesco, I.; Wan, L.; Chaloner, K.; Rowland, J.; Ding, M.; Poeppel, D.; Dikker, S.
+Brain-to-Brain Synchrony and Learning Outcomes Vary by Student–Teacher Dynamics: Evidence from a
+Real-world Classroom Electroencephalography Study. J. Cogn. Neurosci. 2018, 31, 401–411. [CrossRef]
+Barraza, P.; Dumas, G.; Liu, H.; Blanco-Gomez, G.; van den Heuvel, M.I.; Baart, M.; Pérez, A.
+Implementing EEG hyperscanning setups. MethodsX 2019, 6, 428–436. [CrossRef]
+openFrameworks. Available online: https://openframeworks.cc/ (accessed on 2 September 2019).
+Renard, Y.; Lotte, F.; Gibert, G.; Congedo, M.; Maby, E.; Delannoy, V.; Bertrand, O.; Lécuyer, A. OpenViBE:
+An Open-Source Software Platform to Design, Test, and Use Brain–Computer Interfaces in Real and Virtual
+Environments. Presence 2010, 19, 35–53. [CrossRef]
+Wen, X.; Mo, J.; Ding, M. Exploring resting-state functional connectivity with total interdependence.
+NeuroImage 2012, 60, 1587–1595. [CrossRef] [PubMed]
+Schalk, G.; McFarland, D.J.; Hinterberger, T.; Birbaumer, N.; Wolpaw, J.R. BCI2000: A general-purpose
+brain-computer interface (BCI) system. IEEE Trans. Biomed. Eng. 2004, 51, 1034–1043. [CrossRef] [PubMed]
+Kothe, C.A.; Makeig, S. BCILAB: A platform for brain–computer interface development. J. Neural Eng.
+2013, 10, 056014. [CrossRef] [PubMed]
+
+Sensors 2019, 19, 4592
+
+51.
+
+52.
+53.
+54.
+
+55.
+56.
+57.
+58.
+
+20 of 20
+
+Delorme, A.; Mullen, T.; Kothe, C.; Akalin Acar, Z.; Bigdely-Shamlo, N.; Vankov, A.; Makeig, S. EEGLAB, SIFT,
+NFT, BCILAB, and ERICA: New Tools for Advanced EEG Processing. Comput. Intell. Neurosci. 2011, 2011, 12.
+[CrossRef]
+Martin, J.; Kasch, W. Network Time Protocol Version 4: Protocol and Algorithms Specification; Internet Engineering
+Task Force: Fremont, CA, USA, 2010.
+Lopez-Gordo, M.A.; Sanchez-Morillo, D.; Pelayo Valle, F. Dry EEG electrodes. Sensors 2014, 14, 12847–12870.
+[CrossRef]
+Di Flumeri, G.; Aricò, P.; Borghini, G.; Sciaraffa, N.; Di Florio, A.; Babiloni, F. The Dry Revolution: Evaluation of
+Three Different EEG Dry Electrode Types in Terms of Signal Spectral Features, Mental States Classification
+and Usability. Sensors 2019, 19, 1365. [CrossRef]
+Asch, S.E. Effects of group pressure upon the modification and distortion of judgments. In Groups, Leadership
+and Men, Research in Human Relations; Carnegie Press: Oxford, UK, 1951; pp. 177–190.
+Wang, Y.; Jung, T.-P. A Collaborative Brain-Computer Interface for Improving Human Performance. PLoS ONE
+2011, 6, e20422. [CrossRef]
+Poli, R.; Valeriani, D.; Cinel, C. Collaborative Brain-Computer Interface for Aiding Decision-Making.
+PLoS ONE 2014, 9, e102693. [CrossRef]
+Li, Y.; Nam, C.S. A Collaborative Brain-Computer Interface (BCI) for ALS Patients. Proc. Hum. Factors Ergon.
+Soc. Annu. Meet. 2015, 59, 716–720. [CrossRef]
+© 2019 by the authors. Licensee MDPI, Basel, Switzerland. This article is an open access
+article distributed under the terms and conditions of the Creative Commons Attribution
+(CC BY) license (http://creativecommons.org/licenses/by/4.0/).
+
+

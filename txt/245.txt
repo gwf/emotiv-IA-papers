@@ -1,0 +1,3783 @@
+ZHANG C, GAI K, ZHANG S.: MATRIX NORMAL PCA FOR INTERPRETABLE DIMENSION REDUCTION AND GRAPHICAL NOISE MODELING
+
+1
+
+Matrix Normal PCA for Interpretable Dimension
+Reduction and Graphical Noise Modeling
+
+arXiv:1911.10796v2 [cs.LG] 5 Jan 2021
+
+Chihao Zhang, Kuo Gai and Shihua Zhang
+Abstract—Principal component analysis (PCA) is one of the most widely used dimension reduction and multivariate statistical
+techniques. From a probabilistic perspective, PCA seeks a low-dimensional representation of data in the presence of independent
+identical Gaussian noise. Probabilistic PCA (PPCA) and its variants have been extensively studied for decades. Most of them assume
+the underlying noise follows a certain independent identical distribution. However, the noise in the real world is usually complicated and
+structured. To address this challenge, some variants of PCA for data with non-IID noise have been proposed. However, most of the
+existing methods only assume that the noise is correlated in the feature space while there may exist two-way structured noise. To this
+end, we propose a powerful and intuitive PCA method (MN-PCA) through modeling the graphical noise by the matrix normal
+distribution, which enables us to explore the structure of noise in both the feature space and the sample space. MN-PCA obtains a
+low-rank representation of data and the structure of noise simultaneously. And it can be explained as approximating data over the
+generalized Mahalanobis distance. We develop two algorithms to solve this model: one maximizes the regularized likelihood, the other
+exploits the Wasserstein distance, which is more robust. Extensive experiments on various data demonstrate their effectiveness.
+Index Terms—Principal component analysis, dimension reduction, matrix normal distribution, sparse inverse covariance, graphical
+noise modeling
+
+F
+
+1
+
+I NTRODUCTION
+
+M
+
+ASSIVE data emerge from diverse fields of science
+and engineering dramatically. For example, biologists
+can use microarray to detect the expression of thousands of
+genes at the same time; a single picture consists of hundreds,
+thousands, or even more pixels. Generally, those data are
+redundant and noisy. Directly extracting useful information
+from the primitive data is often infeasible. Therefore, how
+to discover the compact and meaningful representation of
+high-dimensional data becomes a fundamental problem.
+Researchers have developed many powerful methods to
+address this problem from different perspectives. Among
+those methods, principal component analysis (PCA) is one
+of the most fundamental and widely used data mining
+and multivariate statistical techniques. Since Pearson [1]
+invented it in 1901, PCA has become a standard approach
+for dimension reduction and feature extraction, and has
+numerous applications in various fields, such as signal processing [2], human face recognition [3] and gene expression
+analysis [4].
+PCA obtains a low-dimensional representation for highdimensional data in a L2 -norm sense. However, it is known
+that PCA is sensitive to gross errors. To remove the effect
+of sparse gross errors, robust PCA (RPCA) [5], [6], [7] has
+been proposed. Specifically, RPCA seeks to decompose the
+data matrix as a superposition of a low-rank matrix with a
+sparse matrix. The sparse matrix captures the gross errors,
+enabling RPCA to recover the low-rank representation of
+•
+
+Chihao Zhang, Kuo Gai and Shihua Zhang* are with the NCMIS,
+CEMS, RCSDS, Academy of Mathematics and Systems Science, Chinese
+Academy of Sciences, Beijing 100190, China, and School of Mathematical
+Sciences, University of Chinese Academy of Sciences, Beijing 100049,
+China.
+*To whom correspondence should be addressed. Email: zsh@amss.ac.cn.
+
+data accurately. RPCA has been demonstrated to have a
+number of applications in various fields [7], [8], [9], [10].
+To tackle the noise of data implicitly, regularized methods have been introduced. A common assumption is that
+the representations of two data points that are close should
+be close too. To preserve the local geometrical structure in
+the representation, graph regularizers are imposed. Gao et
+al. [11] proposed a sparse coding method which exploits
+the dependence among the feature space by constructing a
+Laplace matrix. Zheng et al. [12] also proposed a graph regularized sparse coding to learn the sparse representations
+that explicitly takes into account the local manifold structure
+of the data. More recently, Yin et al. [13] proposed a lowrank representation method that considers the geometrical
+structure in both the feature space and the sample space. As
+many measurements in experiments are naturally nonnegative, there are also some nonnegative matrix factorization
+variants with graph regularization [14], [15].
+Probabilistic approaches are natural ways to account
+for different types of noise in data. Tipping and Bishop
+[16] first introduced a probabilistic PCA (PPCA) method,
+and showed that PCA could be derived from a Gaussian
+latent variable model. PPCA assumes that the distribution of noise is independent and identical (IID) Gaussian
+distribution. This probabilistic framework allows various
+extensions of PCA. For example, Bishop extended PCA
+by a Bayesian method [17] (BPCA) that can automatically
+determine the number of retained principal components.
+Despite the Gaussian distribution, researchers have also
+introduced different distributions to handle different types
+of noise [18], [19], [20]. For example, Wang et al. [19] used the
+Laplace distribution to model data with gross errors. Li and
+Tao [20] employed the exponential family distributions to
+handle general types of noise. Most of those variants assume
+
+2
+
+ZHANG C, GAI K, ZHANG S.: MATRIX NORMAL PCA FOR INTERPRETABLE DIMENSION REDUCTION AND GRAPHICAL NOISE MODELING
+
+the distribution of noise is IID.
+However, the noise in the real-world is usually complicated and structured. The IID assumption no longer
+holds. For example, data collected from different sources
+may contain heterogeneous noise. Zhang and Zhang [21]
+developed a Bayesian joint matrix decomposition method
+(BJMD) to model the heterogeneous noise of multi-view
+data by the Gaussian distribution. Some authors relaxed
+the identical assumption and introduced mixture of distributions to model the complex noise [22], [23]. Beyond the
+independent assumption, some researchers also explored
+the non-IID assumption in the sense of PCA [24], [25],
+[26], [27]. Kalaitzis and Lawrence [24] generalized PPCA
+by adding a fixed random effect to decompose the residual
+variance (RCA). RCA can be interpreted as the IID Gaussian
+noise with a linear offset in the feature space. Vaswani and
+Guo [26] studied the correlated-PCA problem where the
+noise is data-dependent.
+Most of the existing methods assume that the noise is
+only correlated in the feature space. However, the noise
+can be correlated among features and among samples simultaneously. Take the gene expression data Y ∈ Rn×p as
+an example, where n is the number of biological samples,
+and p is the number of genes (features). The noise of gene
+expression of samples may demonstrate different patterns
+under different biological conditions, while the noise of
+genes related with the same biological processes are also
+correlated. There are only a few works that model the
+noise structure in feature and sample spaces simultaneously.
+Allen et al. [28] proposed the generalized PCA (GPCA)
+using the matrix normal distribution to model noise. GPCA
+finds the best low-rank approximation of data with respect
+to the predefined sample and feature precision matrices.
+The authors suggested two empirical ways to construct
+the precision matrices to account for the spatial-temporal
+relationship. GPCA works well for spatial-temporal data,
+but the predefined precision matrices can make it restrictive
+for general data.
+To this end, we propose a powerful and intuitive PCA
+model (MN-PCA) to obtain the low-rank representation and
+the structure of the underlying noise at the same time.
+Different for GPCA, MN-PCA infers the precision matrices of the matrix normal distribution from the observed
+data. The inference of the precision matrices of the matrix normal distribution turns to be that of two Gaussian
+graphical models, enabling us to explore the structure of
+the noise in both the feature space and the sample space.
+We develop two algorithms to solve this model: one is to
+maximize the regularized likelihood directly; the other is to
+minimize the discrepancy between the distribution of the
+white matrix normal and that of the residue. We extensively
+compare the two algorithms and discuss their advantages
+and disadvantages. Extensive experiments on various data
+show their effectiveness. By considering the structure of the
+underlying noise, MN-PCA generally obtains a better lowrank representation, and the inferred structure of the noise is
+interpretable and reveals some interesting information that
+is ignored by other methods.
+The contribution of this paper is twofold. First, we
+propose an intuitive framework MN-PCA that obtains the
+low-rank representation and discovers the noise structure
+
+in the sample and feature spaces at the same time; MNPCA connects two important statistic topics, PCA and
+sparse precision matrix estimation. Second, we develop two
+effective algorithms from different perspectives; the latter
+algorithm based on minimizing the Wasserstein distance is
+more robust than that maximizes the regularized likelihood.
+This may inspire the future research of PCA for data with
+complicated noise.
+
+2
+2.1
+
+R ELATED W ORK
+PCA
+
+There are two common formulations of PCA that give rise
+to the same algorithm [29]. From a dimension reduction perspective, PCA seeks a low-dimensional sub-space in which
+the projected variance of the data is maximized. Specifically,
+let Y ∈ Rn×p be the data matrix of n observations and
+p variables. For simplicity, assume the data matrix Y is
+already centered. The first principal component v1 is defined
+as
+v1 = arg max v T Sv subject to kvk = 1,
+(1)
+v
+
+where S = Y Y /n is the p × p covariance matrix. The next
+principal components vr+1 are defined in sequence:
+T
+
+vr+1 = arg max v T Sv,
+v
+
+(2)
+
+subject to kvk = 1, v T vl = 0, ∀1 ≤ l ≤ r.
+This definition implies that the first r principal components are the first r eigenvectors of S . Thus, we can use the
+singular value decomposition (SVD) to perform PCA. Let
+the SVD of Y be
+Y = U ΣV T ,
+(3)
+where U ∈ Rn×p and V ∈ Rp×p are orthogonal matrices,
+Σ ∈ Rp×p is a diagonal matrix with the diagonal elements σi
+in descending order. By XV = U Σ, we see that zr = U·r σr .
+PCA can also be interpreted as minimizing the reconstruction error. Given Y , we aim at finding a low-rank
+approximation of Y ≈ XW T under the Frobenius norm:
+
+min ||Y − XW T ||2F ,
+
+(4)
+
+where X ∈ R
+and W ∈ R
+. Eckart and Young [30]
+showed that truncated SVD has the optimality property:
+n×k
+
+p×k
+
+||Y − Yk ||F ≤ ||Y − B||F ,
+
+(5)
+
+where Yk = Uk Σk VkT is the truncated SVD of Y , and B is
+any matrix of rank at most k . Thus, Yk is the best rank-k
+approximation of Y under the Frobenius norm. Then X =
+Uk Σk is the PC scores, W = Vk is the principal directions,
+and XW T = Yk .
+2.2
+
+RPCA and Graph Regularized Matrix Factorization
+
+PCA is sensitive to gross errors. RPCA has been proposed to
+improve it. Specifically, RPCA seeks to decompose the data
+matrix Y into two parts:
+
+Y = L + S,
+
+(6)
+
+where L is a low-rank matrix and S is a sparse matrix. The
+gross errors will be captured by the sparse matrix S and the
+
+MANUSCRIPT, VOL. XX, NO. XX, XXX 2019
+
+3
+
+low-rank matrix L can still approximate Y well. Mathematically, the objective function of RPCA can be written as:
+
+min kLk∗ + ρ kSk1 s.t. L + S = Y,
+L,S
+
+(7)
+
+where kLk∗ is called the nuclear norm of L, which is the sum
+of the singular values of L. The nuclear norm is a convex
+relaxation of rank norm. kSk1 encourages the sparsity of S .
+However, algorithms dealing with the nuclear norm usually
+involve computing SVD, which is very time consuming
+when the problem size is large. To avoid the SVD, one way is
+to factorize the low-rank matrix L as a product of two lowrank matrices. For example, Zhou and Tao [31] formulated a
+regularized RPCA by letting L = XW T , where X ∈ Rn×k ,
+W ∈ Rp×k , and k  min(m, n). Readers may refer to [32]
+for the recent advances about RPCA.
+Graph regularized matrix factorization methods consider the local geometrical structure of the data. For example, Zheng et al. [12] proposed a graph regularized sparse
+coding method for image presentation:
+
+min Y − XW T
+
+2
+F
+
++ η tr(X T LX) + ρ kXk1 ,
+
+(8)
+
+where η > 0, ρ > 0. X is the sparse low-dimensional
+representation of images. L ∈ Rn×n is the Laplacian matrix
+of a graph. Suppose we construct a binary graph matrix
+G by the k -NN P
+approach. Then the graph regularizer
+tr(X T LX) = 12 ij (xi· − xj· )2 Gij , where Gij = 1 if
+sample i is a neighbor of sample j in the constructed graph,
+otherwise Gij = 0. Therefore, it encourages samples that
+are close in the original space to be neighbors in the sparse
+representation X . Moreover, Yankelevsky and Elad [33] proposed a low-rank representation method that considers the
+local geometrical structures in both the feature and sample
+spaces by imposing two graph regularizers tr(X T L1 X) and
+tr(W T L2 W ). Here L1 and L2 are the Laplacian matrices in
+the corresponding spaces, respectively.
+2.3
+
+Probabilistic PCA and its Variants
+
+Tipping and Bishop [16] showed that PCA could be derived
+from a Gaussian latent variable model (PPCA). The generative model of PPCA is:
+
+Y = XW T + E,
+
+(9)
+IID
+
+where X ∈ Rn×k , W ∈ Rp×k and Eij ∼ N (0, σ 2 ). The
+negative log-likelihood is as follows:
+
+1
+Y − XW T
+2σ 2
+
+2
+F
+
++ np log σ.
+
+(10)
+
+PPCA conventionally defines standard Gaussian N (0, I)
+prior on each column of X and derives the maximum
+likelihood estimation (MLE) of W and σ .
+The goal of PPCA is not to give better results than
+PCA but to permit a broad range of future extensions by
+facilitating various probabilistic techniques and introducing
+different assumptions of distribution. For example, Bishop
+[34] developed a variational formulation of Bayesian PCA,
+which can automatically determine the number of retained
+principal components; Zhao and Jiang [18] proposed tPPCA
+which assumes that data are sampled from multivariate
+
+Student-t distribution; Wang et al. [19] used the Laplace distribution for robust probabilistic matrix factorization. Most
+of those methods assume that the underlying distribution of
+data are IID.
+2.4
+
+PCA with Non-IID Assumption
+
+To allow the model to account for more general noise, Zhao
+et al. [22] relaxed the IID assumption and introduced the
+mixture of Gaussian noise to model the complex noise. Cao
+et al. further extended the model to the mixture of exponential family noise [23]. Note that such noise is not identical
+but still independent. Inspired by the linear mixed model,
+Kalaitzis and Lawrence [24] proposed RCA to generalize
+PPCA by adding fixed effects onto Eq. (9), i.e.,
+
+Y = XW T + ZV T + E,
+
+(11)
+
+where Z is a matrix of known covariates. The loading
+matrices W and V can be marginalized with the Gaussian
+isotropic priors:
+
+ln p(Y ) =
+
+n
+X
+
+j=1
+
+ln N (Y·j |0, XX T + Σ),
+
+(12)
+
+where Σ = ZZ T + σ 2 I . Σ can be interpreted as an offset
+of the covariance in the feature space. There exists a line of
+research that studies PCA model for data-dependent noise
+[25], [26], [35]. For example, Vaswani and Guo [26] proposed
+the correlated-PCA model. Given a time sequence of data
+vectors, yt , that satisfies
+
+yt = lt + wt , with wt = Mt lt and lt = P at ,
+
+(13)
+
+where P is an n × k basis matrix, lt is the true data
+vector, wt is the data-independent noise, and Mt is the
+correlation/data-dependency matrix. We note that the noise
+is only correlated in the feature space. Gu and Shen [27]
+considered the problem that the noise is IID Gaussian but
+the factor is modeled by a zero-mean Gaussian process.
+To utilize the covariances in both the sample and feature
+spaces, Allen et al [28] proposed a generalized PCA (GPCA):
+
+Y =
+
+k
+X
+i=1
+
+di xi wiT + E; E ∼ MN (0, Ω, Σ),
+
+(14)
+
+such that X T ΩX = I , W T ΣW = I , and E follows the
+matrix normal distribution MN n,p (M, Ω, Σ). We note that
+Ω−1 and Σ−1 are predefined in GPCA. Hence, GPCA can be
+restrictive for general data.
+To handle the nonlinearity, some authors extended PPCA
+inspired by the kernel methods [36], [37], [38]. Moreover,
+Lawrence [39] introduced an alternative probabilistic interpretation of PPCA (DPPCA) and non-linear DPPCA through
+Gaussian processes. But those non-linear methods are often
+difficult to explain.
+In tensor data analysis, some researchers also made their
+efforts to handle comlicated noise in real data [40], [41]. For
+example, Ding et al. [41] proposed dimension folding PCA
+(DFPCA) for matrix-valued data:
+
+Y = M + XZW T + E,
+
+(15)
+
+where X ∈ Rn×k1 , Z ∈ Rk1 ×k2 , W ∈ Rp×k2 , and E follows
+the matrix normal distribution. The observed data are a set
+
+4
+
+ZHANG C, GAI K, ZHANG S.: MATRIX NORMAL PCA FOR INTERPRETABLE DIMENSION REDUCTION AND GRAPHICAL NOISE MODELING
+q
+
+of matrices {Yi }i=1 . Different from GPCA that the precision
+matrices are predefined, DFPCA can estimate them from
+data by maximum likelihood estimation. But it requires the
+number of observed matrices q > max(n/p, p/n) + 1 [42].
+Hence, DFPCA is not applicable when there is only one
+observed matrix Y .
+2.5
+
+Gaussian Graphical Model
+
+Gaussian graphical models (GGM) have been proposed to
+understand the statistical relationship between variables of
+interest in the form of a graph. Specifically, those models use
+multivariate Gaussian distribution to model the statistical
+relationship between variables. The precision matrix of the
+multivariate Gaussian reveals the conditional correlations
+between pairs of variables. How to estimate a large precision
+matrix is fundamental in modern multivariate analysis. Formally, suppose one has n multivariate normal observations
+of dimension p with covariance Σ. Let Θ = Σ−1 be the
+precision matrix, and S be the empirical covariance matrix;
+then the problem is to maximize the log-likelihood:
+
+log |Θ| − tr (SΘ),
+
+(16)
+
+where Θ is positive definite and |Θ| is the determinant of Θ.
+To estimate a large precision matrix, the sparse assumption is made in literature, i.e., many entries in the precision
+matrix Θ are zeros. Thus, one can add the L1 -norm penalty
+onto the log-likelihood:
+
+log |Θ| − tr (SΘ) − ρ kΘk1 ,
+
+(17)
+
+where ρ > 0 controls the sparsity of Θ. This problem
+has been extensively studied [43], [44], [45], [46], [47], [48].
+Readers may refer to [49] for a comprehensive review.
+
+3
+3.1
+
+vec(Y ) ∼ Nnp (vec(M ), Σ ⊗ Ω),
+
+(20)
+
+where ⊗ denotes the Kronecker product. Therefore, the
+density function of MN n,p (M, Ω, Σ) has the form:
+
+
+exp − 12 tr Σ−1 (Y − M )T Ω−1 (Y − M )
+P (Y |M, Ω, Σ) =
+.
+np
+p
+n
+(2π) 2 |Ω| 2 |Σ| 2
+(21)
+Accordingly, the negative log-likelihood of MN-PCA is
+i
+1 h
+L = tr Σ−1 (Y − XW T )T Ω−1 (Y − XW T )
+2
+(22)
+n
+p
++ log |Ω| + log |Σ|.
+2
+2
+The number of parameters of the covariance reduces
+from n2 p2 to n2 + p2 , but it is still infeasible to minimize
+the negative log-likelihood in Eq. (22). Because the number
+of free parameters in Ω and Σ grows quadratically with
+n and p, respectively. To address this issue, we impose
+sparse constraints on the precision matrices Ω−1 and Σ−1
+by introducing the L1 -norm regularization terms:
+i
+1 h
+L = tr Σ−1 (Y − XW T )T Ω−1 (Y − XW T )
+2
+p
+n
++ log |Ω| + log |Σ| + nλ1 Ω−1 1 + pλ2 Σ−1 1 ,
+2
+2
+(23)
+where λ1 , λ2 control the sparsity of Ω−1 and Σ−1 , respectively. Note that Ω and Σ are positive-definite. We can
+further rewrite Eq. (23) in the Frobenius norm:
+
+L=
+
+1
+1 2
+p
+1
+n
+Ω− 2 (Y − XW T )Σ− 2
++ log |Ω| + log |Σ|
+F
+2
+2
+2
++ nλ1 Ω−1 1 + pλ2 Σ−1 1 .
+(24)
+
+Let Ω and Σ be identity matrices, then L reduces to
+
+M ATRIX N ORMAL PCA
+Model Construction
+
+Most probabilistic methods assume the underlying noise E
+is IID. Though the IID assumption enjoys good theoretical
+properties, it is easily violated in real-world data. To model
+the underlying correlated noise (graphical noise), a naive
+approach is to assume that the noise follows a multivariate
+Gaussian distribution, i.e., vec(E) ∼ N (0, Σ). However, E
+consists of np variables, the corresponding covariance matrix Σ is of size n2 p2 which is too huge and thus infeasible.
+Instead, we assume that the noise is correlated in both
+the sample and feature spaces. We use a matrix normal
+distribution to model the among-sample and among-feature
+covariances of noise simultaneously. Due to its close relationship with PCA, we name it as MN-PCA (Fig. 1).
+Specifically, MN-PCA follows the similar generative model
+as PPCA
+Y = XW T + E.
+(18)
+But MN-PCA assumes E ∼ MN n,p (0, Ω, Σ), where Ωn×n
+and Σp×p are among-row and among-column variance respectively. Note that the matrix normal is related to the
+multivariate normal distribution in the following way:
+
+Y ∼ MN n,p (M, Ω, Σ),
+
+if and only if
+
+(19)
+
+2
+1
+.
+(25)
+Y − XW T
+F
+2
+Therefore, MN-PCA degenerates to the classical PCA when
+Ω and Σ are identity matrices.
+
+L=
+
+3.2
+
+Model Interpretation
+
+PCA aims at minimizing the reconstruction errors, which
+is measured by the sum of Euclidean distances between
+the data points yi· and the reconstructed points xi· W T .
+In particular, the objective function of PCA Eq. (4) can be
+rewritten as:
+n
+X
+min
+(yi· − xi· W T )(yi· − xi· W T )T ,
+(26)
+i=1
+
+Nevertheless, measuring the distance among points by Euclidean distance can be misleading, knowing that they are
+realizations of the anisotropic multivariate distribution. For
+example, as shown in Fig. 2a., there are three points x1
+(square), x2 (cross mark) and x3 (triangle) drawn from an
+anisotropic 2D normal distribution N (µ, Σ) (the density is
+illustrated by the blue dots). x2 is the center of the distribution. The Euclidean distance between x1 and x2 is equal
+to that between x2 and x3 . This is misleading. Because the
+
+MANUSCRIPT, VOL. XX, NO. XX, XXX 2019
+
+5
+
+Fig. 2. Illustration of the Mahalanobis distance in a 2D data. The blue
+dots are drawn from a 2D Gaussian distribution. The cross mark indicates the center of the distribution.
+
+where σi (A) is the i-th largest eigenvalue of the matrix A.
+Proof. See the Supplementary Materials.
+
+Fig. 1. Illustration of MN-PCA. MN-PCA models the low-rank representation and the structure of noise in both feature and sample spaces.
+
+density of the distribution near x1 is much lower than that
+near x3 . In a sense, the distance x1 is farther from x2 than x1 .
+Hence, Euclidean distance does not reflect the underlying
+random process N (µ, Σ). Mahalanobis distance addresses
+this problem by utilizing the information of covariance:
+
+d(xi , xj ) = (xi − xj )T Σ−1 (xi − xj ),
+
+(27)
+
+which is equivalent to deform the anisotropic Gaussian
+to an isotropic Gaussian and then compute the Euclidean
+distance (Fig. 2b). MN-PCA can be regarded as minimizing
+the reconstruction error over the generalized Mahalanobis
+distance. When Ω = I , the reconstruction error of MN-PCA
+has the Mahalanobis distance form:
+n
+X
+min
+(yi· − xi· W T )Σ−1 (yi· − xi· W T )T .
+(28)
+i=1
+
+We have the similar result when Σ = I . Thus, we can
+regard MN-PCA as a minimization of the reconstruction
+error over the generalized Mahalaobis distance. MN-PCA
+transforms the matrix normal noise to isotropic noise and
+then applies PCA to the transformed data. The following
+theorem explains the rationale of MN-PCA:
+
+Theorem 1. Suppose Y = M + E , where M ∈ Rn×p is the
+low-rank structure, and E ∼ MN (0, Ω, Σ) is the matrix normal
+noise. Assume that Y is already centered for simplicity. If tr(Ω) =
+nσ and tr(Σ) = pσ , then the following inequality holds:
+
+
+
+
+1 T
+1
+T
+E(Y Y ) − σi
+M M ≤ σσ1 (Σ),
+(29)
+σi
+n
+n
+
+The constraints tr(Ω) = nσ and tr(Σ) = pσ make the scales
+of IID noise N (0, σ 2 ) and matrix normal noise MN (0, Ω, Σ)
+comparable. Recall that PCA is interested in the eigenvalues
+and eigenvectors of the covariance n1 Y T Y . Therefore, Eq.
+(29) quantifies the difference of eigenvalues between the
+expectation of sample covariance n1 Y T Y and the noise-free
+covariance n1 M T M . Note the upper bound σσ1 (Σ) is the
+tightest when the noise is IID, i.e., Σ = σI . It implies that
+PCA is more suitable for IID noise and may be inaccurate
+when the noise is non-IID. The result of p1 Y Y T can be
+shown in the same manner.
+3.3
+
+Maximum Regularized Likelihood
+
+Here we present an alternatively iterative update procedure
+to seek the maximum regularized likelihood (MRL):
+i
+1 h
+minL = tr Σ−1 (Y − XW T )T Ω−1 (Y − XW T )
+2
+p
+n
++ log |Ω| + log |Σ| + nλ1 Ω−1 1 + pλ2 Σ−1 1
+2
+2
+p
+n
+s.t. Ω ∈ S++
+, Σ ∈ S++
+,
+(30)
+where Ω ∈ Sn++ denotes that Ω is a n × n symmetric positive definite matrix. This is a matrix optimization problem
+involving four matrix variables X , W , Ω and Σ. We adopt a
+block coordinate descent strategy to minimize L.
+Updating X and W : Retain the terms involving X and W
+
+min L =
+1
+
+1
+1
+1
+1
+1
+Ω− 2 Y Σ− 2 − Ω− 2 XW T Σ− 2
+2
+
+2
+F
+
+(31)
+
+1
+
+Let Y 0 be Ω− 2 Y Σ− 2 . By Eckart and Young’s theorem, the
+best rank-k approximation of Y 0 in the Frobenius norm is
+the truncated k SVD of Y 0 , i.e., Yk0 = Uk Σk VkT . Let
+1
+
+1
+
+X = Ω 2 Uk Σk , W = Σ 2 Vk .
+− 21
+
+− 12
+
+(32)
+
+Then Ω XW T Σ
+= Yk0 and the objective function is
+minimized. Thus we obtain the closed-form solution of X
+1
+1
+and W for Eq. (31). However, computing Ω− 2 and Σ− 2
+is often computationally expensive in practice. Instead, we
+
+6
+
+ZHANG C, GAI K, ZHANG S.: MATRIX NORMAL PCA FOR INTERPRETABLE DIMENSION REDUCTION AND GRAPHICAL NOISE MODELING
+
+matrix normal distribution and that of the residue instead
+of maximizing the likelihood function.
+First, recall the original model:
+
+Algorithm 1 Maximum Regularized Likelihood
+Input: data matrix Y , rank k
+Output: X , W , Ω and Σ
+1: Truncated k SVD of Y = Uk Σk Vk
+2: Initialize X = Uk and Y = Σk Vk , A = I , Σ = I
+3: repeat
+4:
+update Ω and Σ with Eq. (35)
+5:
+repeat
+6:
+update X with Eq. (33)
+7:
+update W with Eq. (34)
+8:
+until convergence
+9: until Change of the objective function value is small enough
+
+(39)
+
+QY R ∼ MN n,p (QM R, I, I),
+
+(40)
+
+min D(Q(Y − M )R||MN n,p (0n×p , In , Ip )).
+
+(41)
+
+if and only if
+
+employ an alternative least square approach (ALS) to update X and W
+
+X = Y Σ−1 W (W T Σ−1 W + I)−1 ,
+
+(33)
+
+W = Y T Ω−1 X(X T Ω−1 X + I)−1 ,
+
+(34)
+
+where  is a small positive constant to protect the inverse of
+matrices from singular.
+Updating Ω and Σ: A straightforward approach is to optimize Ω and Σ iteratively as follows:
+
+Ω̂ = arg min tr(Ω−1 S1 ) + log |Ω| + λ1 Ω−1 1 ,
+Ω
+(35)
+Σ̂ = arg min tr(Σ−1 S2 ) + log |Σ| + λ2 Σ−1 ,
+1
+Σ
+
+where
+
+1
+(Y − XW T )Σ−1 (Y − XW T )T ,
+(36)
+p
+1
+(37)
+S2 = (Y − XW T )T Ω−1 (Y − XW T ).
+n
+We can regard S1 and S2 as the empirical covariances, and
+both problems in Eq. (35) are L1 -norm regularized precision
+matrix estimation, for which efficient optimization has been
+intensively studied (Sec 2.5). We adopt a fast and stable
+algorithm QUIC [46] as the basic solver:
+(
+Ω̂ = QUIC(S1 , λ1 ),
+(38)
+Σ̂ = QUIC(S2 , λ2 ).
+S1 =
+
+The inference scheme is summarized in Algorithm 1.
+Given any invertible matrix P , XP P −1 W T equals XW T .
+Therefore, X and W are not identifiable. To obtain a unique
+low-rank representation, we use GPCA [28] to post-process
+X and W . GPCA uses a generalized power method to
+obtain the columns of U and V sequentially. We note that
+Eq. (14) converges to the unique global solution when Ω−1
+and Σ−1 are both positive-definite.
+3.4
+
+Y ∼ MN n,p (M, Ω, Σ),
+
+Minimizing Wasserstein Distance
+
+MRL is well-understood and easy to implement, yet it is still
+a point estimation and may get trapped in local minimums
+that are far from the global minimum. In the setting of
+MN-PCA, when the condition number of the among-row
+variance Ω or the among-column variance Σ is large, the
+data matrix Y can be significantly influenced by the noise
+E . So the initial PCA of Y is far from the real low-rank
+structure of the observed data, and MRL tends to converge
+to a solution close to the initial PCA. To address this issue,
+we aim to minimize the discrepancy between the white
+
+where Q and R are both square, QT Q = Ω−1 , RT R = B −1
+and M = XW T . It implies that the true factorization of
+Ω−1 and Σ−1 transform the residue matrix to IID Gaussian
+noise. Then we transform the objective function by defining
+a divergence D(·||·):
+Q,R
+
+The Wasserstein distance [50] is a good metric of measuring
+the divergence between two distributions. If the Wasserstein
+distance is minimized to 0, the density functions of the
+two distributions are the same except a set with measure 0.
+Compared with MRL, minimizing the Wasserstein distance
+has the potential to find a solution closer to the global
+optimum. The definition of Wasserstein distance is
+
+Wc (Px , Py ) = inf Ex∼px [c(x, T (x))],
+T
+
+(42)
+
+where T : X → Y is a measure preserving map. The
+Wasserstein distance is hard to compute due to the infimum
+operator. However, if both Px and Py are Gaussian distributions, their Wasserstein distance has a closed form solution.
+Given the two normal distributions x = N (m1 , Σ1 ) and
+y = N (m2 , Σ2 ) with the means m1 , m2 ∈ Rp and the covariance Σ1 , Σ2 ∈ Rp×p , their squared Wasserstein distance
+is defined as [51]:
+
+1
+ 1
+1 2
+2
+2
+2
+2
+.
+W (x, y)2 = km1 − m2 k2 + tr Σ1 + Σ2 − 2 Σ2 Σ1 Σ2
+(43)
+We use E to denote the current residue, E = Y − M , Ẽ
+to denote QER, and σ 2 to denote the variance of noise. To
+pursue sparsity, we introduce the L1 -norm regularization as
+before. Note that the expectation of mean of E is zero, so
+we omit the computation of mean for both the norm and
+covariance in Eq. (43). When we update Q, the estimation of
+covariance among rows should be:
+
+Σ=
+
+1
+Ẽ Ẽ T ,
+p
+
+(44)
+
+then the objective function turns to:
+
+
+1
+min tr Σ − 2σΣ 2 + λ1 kQT Qk1 ,
+
+(45)
+
+1
+1
+tr(Ẽ Ẽ T ) = kẼ Ẽ T k22 ,
+p
+p
+
+(46)
+
+Q
+
+The formula can be simpler since
+
+tr(Σ) =
+and
+
+1
+1
+1
+1
+tr(Σ 2 ) = √ tr(Ẽ Ẽ T ) 2 = √ kẼk∗ .
+p
+p
+
+(47)
+
+Hence, the objective function to update Q takes the form:
+
+1
+2σ
+min kQERk22 − √ kQERk∗ + λ1 kQT Qk1 .
+Q p
+p
+
+(48)
+
+MANUSCRIPT, VOL. XX, NO. XX, XXX 2019
+
+7
+
+Similarly, the objective function to update R is:
+
+2σ
+1
+min kQERk22 − √ kQERk∗ + λ2 kRT Rk1 .
+R n
+n
+
+Algorithm 2 MN-PCA-W2
+(49)
+
+In Eq. (48), the coefficient ratio of terms ||QER||22√ and
+√
+||QER||∗ is 1/2σ p and in Eq. (49), the ratio is 1/2σ n. If
+we update Q and R through Eqs. (48) and (49) alternatively,
+the optimization will not converge to the solution, since the
+coefficient ratios are not consistent. To address this issue,
+we unify the coefficients in Eqs. (48) and (49) with their
+√
+√
+geometric average 1/ np and 2σ/ 4 np. Then the objective
+function is changed to:
+
+Input: data matrix Y , rank k, λ1 , λ2
+Output: X , Q and R
+repeat
+2:
+Truncated k SVD of X = (QY R)k
+set E = Y − Q−1 XR−1
+4:
+update Q with Eq. (55)
+update R with Eq. (56)
+6: until convergence
+
+We implement the algorithm by Pytorch with the Adam
+optimizer. The gradients can be computed automatically.
+If the likelihood function is maximized, the residue may
+1
+2σ
+min √ kQERk22 − √
+kQERk∗ +λ1 kQT Qk1 +λ2 kRT Rk1 . not be Gaussian. In contrast, if the Wasserstein distance of
+4
+Q,R
+np
+np
+(50) two distributions is minimized, then the two distributions
+are the same almost everywhere. In MN-PCA, theoretically,
+Not that if
+we have
+1
+2
+kQERk∗ , (51)
+Q∗ , R∗ = arg min √ kQERk22 − √
+4
+np
+np
+Theorem 2. Suppose E and R are fixed and n > p. Let
+Q,R
+row{QER} denote the set of rows of the matrix QER, S is
+then
+the set of n samples from the distribution N (0, Ip ), H is a n × p
+√ ∗ √ ∗
+1
+2σ
+matrix by stacking each item in S as a row in a certain order.
+σQ , σR = arg min √ kQERk22 − √
+kQERk
+.
+∗
+4 np
+np
+Q,R
+Then W (row{QER}, S) is minimized if and only if QER can
+(52) be transformed to Hp−k by rearranging its rows, where p − k is
+Thus, there is no need to adjust the parameter σ . In the the rank of E and Hp−k is the truncated p − k SVD of H .
+experiments, we find that the optimizing process converges
+faster with smaller σ . To keep the balance between Q and Proof. See the Supplementary Materials.
+R, we normalize Q after each iteration, i.e., the average
+Theorem 2 shows that under moderate assumptions,
+eigenvalues of Q and R are equal. Besides, the first term of
+the minimum of Wasserstein distance corresponds to the
+the relaxed objective function Eq. (50) is quadratic to Q and
+global optimum of the problem. However, computing the
+R, which can be solved efficiently. To compute the gradient
+Wasserstein distance exactly is prohibitive. Thus, we adopt
+with respect to Q and R through Eq. (50), we need to know
+the formula in Eq. (43) instead. The formula in Eq. (43)
+the gradient of the nuclear norm ||QER||∗ . Since the nuclear
+is the Wasserstein distance of two multi-variate Gaussian.
+norm is non-derivable, we can only obtain the subgradient.
+However, the real distribution of the residue is unknown.
+If the SVD of QER is U0 Σ0 V0T , then a subderivative is
+By utilizing the formula, we actually approximated the
+U0 V0T [52]. Then the subgradients of Q and R through Eq.
+distribution of residue with its mean vector and covariance
+(50) is:
+matrix. Thus, the computation of Wasserstein distance is
+inaccurate. Since our model is over-parameterized, if we
+2
+2
+T T T
+enforce the residue to be exactly IID Gaussian, the model
+U
+V
+R
+E
+(53)
+∇Q = √ QERRT E T − √
+0 0
+4 np
+np
+can be overfitted. Thus, the inaccuracy in Eq. (43) makes
+it possible to adjust our model to different kinds of data.
++ λ1 sign(QT Q)Q,
+Moreover, the computation of the formula doesn’t need
+2
+2
+T T
+T
+∇R = √ E T QT QER − √
+E
+Q
+U
+V
+(54)
+0
+sampling from the distribution of IID Gaussian, which is
+0
+4 np
+np
+also intractable.
++ λ2 sign(RT R)R.
+Then Q and R are updated by:
++
+
+Q = Q − η∇Q ,
+R+ = R − η∇R ,
+
+3.5
+(55)
+(56)
+
+where η is the learning rate. The use of Wasserstein metric is inspired from generative adversarial network (GAN)
+[53], especially the Wasserstein-GAN [54]. Note that if we
+treat Q and R as the weight matrices of a layer of neural
+network, the data matrix as input and the truncated SVD
+as the activate function over the eigenvalue of Y , our MNPCA model can be regarded as a single layer network. In
+Wasserstein GAN, the Wasserstein distance between the
+generated distribution and the target distribution is estimated by a discriminator, while we can directly compute the
+Wasserstein distance with a close form formula in MN-PCA.
+
+Computational Complexity and Convergence
+
+Here we first discuss the computational complexity of
+MLR. At each iteration of updating X , the computational
+cost arises in matrix multiplication and inverse, which is
+O(np2 + k 3 ). Similarly, the computational cost for updating
+X is O(n2 p + k 3 ).
+Solving Ω−1 and Σ−1 is much more computationally
+expensive. The dominant computational cost of QUIC is
+using the Cholesky decomposition at each iteration for
+the linear search of the step size to ensure the precision
+matrix is positive-definiteness. The the complexity of the
+Cholesky decomposition is O(n3 ) for updating Ω−1 (O(p3 )
+for updating Σ−1 ). Therefore, updating Ω−1 and Σ−1 can
+be very time-consuming. To address this problem, QUIC
+decomposes the precision matrix into smaller blocks with
+
+8
+
+ZHANG C, GAI K, ZHANG S.: MATRIX NORMAL PCA FOR INTERPRETABLE DIMENSION REDUCTION AND GRAPHICAL NOISE MODELING
+
+connected components and then runs the Cholesky decomposition for each block. For example, if Ω−1 consists of C
+connected components of size n1 , · · · , nC (n1 + · · · + nC =
+n). Then the time complexity of the Cholesky decomposition
+is reduced to O(max({n3i }C
+i=1 )). The connected components
+of Ω−1 can be detected in O( Ω−1 0 ), which is very efficient
+when Ω−1 is sparse (the situation of Σ−1 is the same).
+The implementation of QUIC also exploits the sparsity
+of Ω−1 and Σ−1 by using sparse matrix operations. The
+computational cost of QUIC reduces sufficiently when the
+estimated precision matrix is sparse. Empirically, the computational cost is affordable with sufficient large λ1 and λ2
+when max(n, p) < 104 . MRL can be regarded as a block
+coordinate descent algorithm. We note that updating X and
+W has the closed-form solution when Ω and Σ are fixed.
+However, it is difficult to obtain a global convergence rate
+for updating Ω and Σ. Empirically, the objective function
+value of MRL gets stable in less than ten rounds of iterations.
+The complexity in each iteration of MN-PCA by minimizing the Wasserstein distance mainly arises in SVD,
+which is O(min(pn2 , np2 )) and the inverse of Q and R,
+which are O(n3 ) and O(p3 ), respectively. Since we only
+update Q and R with one gradient descent step, MN-PCAW2 needs more iterations and usually more time than MRL.
+3.6
+
+Tuning Parameters Selection
+
+Given the desired dimension k , we should select the tuning
+parameters λ1 and λ2 to balance the trade-off of the loglikelihood value and the sparseness of the inferred precision
+matrices. While carrying a 2D grid search of λ1 and λ2 is
+computational expensive, we select λ1 and λ2 separately.
+Specifically, we use the Bayesian Information Criterion (BIC)
+to select appropriate λ1 . The BIC for the L1 -norm regularized precision matrix for a fixed value of λ1 is given in [43]:
+BIC(λ1 ) = − log |Ω−1 (λ1 )|+tr(S1 Ω−1 (λ1 ))+t1
+
+log p
+, (57)
+p
+
+where Ω−1 (λ1 ) is inferred by Eq. (38). X and W are given
+by truncated k SVD and Σ−1 = I . t1 is the number of nonzero entries in the upper diagonal portion of Ω−1 (λ1 ).
+To obtain a grid of values of λ1 , we use the heuristic approach proposed in [55]. The largest value of the candidate
+λ1 depends on the value of the empirical covariance:
+
+λmax = max (max(S1 − I)ij − min(S1 − I)ij )ij .
+
+(58)
+
+We set λmin = 0.1λmax and the candidate tuning parameters
+are ten values logarithmically spaced between λmin and
+λmax . The value of λ1 minimizing the BIC is chosen as the
+final tuning parameter. λ2 is chosen by the same procedure.
+For MN-PCA-w2, we empirically set λ1 = λ2 = 0.05 in all
+the experiments.
+
+4
+
+E XPERIMENTAL R ESULTS
+
+In this section, we demonstrate the effectiveness of the proposed methods on both synthetic data and real-world data.
+We first compare MN-PCA and PCA on both small-scale
+and large-scale synthetic data sets and then apply MN-PCA
+to non-linear synthetic data. We further conduct extensive
+experiments on various real-world data. All experiments are
+performed on a desktop computer with a 2GHz Intel Xeon
+E5-2683v3 CPU, a GTX 1080 GPU card and 16GB memory.
+
+4.1
+4.1.1
+
+Synthetic Experiments
+Small-Scale Synthetic Data
+
+We construct the toy data with Y = M + E , where
+Y ∈ Rn×p is the observed data matrix, M is the lowrank signal and E is the matrix normal noise. Each row
+of M are drawn from k different centroids which are row
+vectors of length p. We then add the matrix normal noise
+E ∼ MN (0, Ω, Σ) to M . As we assume the precision
+matrix Ω−1 is sparse, we use the sparsity parameters α1
+and condition number c1 to control the generated Ω−1 . In
+particular, the sparsity parameter indicates the proportion
+of nonzero entries in Ω−1 , α1 = #{Ω−1 6= 0}/n2 ; the condition number is defined as c1 = σmax (Ω−1 )/σmin (Ω−1 ) ≥ 1,
+where σmax (Ω−1 ) and σmin (Ω−1 ) are the largest and smallest
+singular values of matrix Ω−1 , respectively. Note that the
+larger the condition number is, the violation of the IID
+assumption is more serious. Similarly, we generate Σ−1
+with parameters α2 and c2 . We always set c1 = c2 = c,
+α1 = α2 = α for simplicity in the following experiments.
+Note that c = 1 and α = 0 correspond to the IID situation.
+We generate data with n = 300, p = 200, k = 2,
+α = 10−2 . M consists of 300 samples drawn evenly from
+three different centroids. Specifically, the first and last 20
+entries of centroid 1 equal one; the first and last 20 entries
+of centroid 2 equal minus one; the first 20 entries of centroid
+3 equal one and the last 20 entries equal minus one. To
+investigate the effects of the graphical noise, we vary the
+condition number c form 8 to 224. We generate 10 synthetic
+data for each parameter combination. The L1 -norm penalty
+parameters λ1 , λ2 of the maximum likelihood are selected
+by the aforementioned procedure.
+We investigate the effect of graphical noise on the performance of PCA and the proposed methods measured in
+terms of low-rank matrix recovery (Table 1). Specifically,
+let the estimated low-rank matrix be M̂ , and the true lowrank matrix be M ∗ . We calculate the root mean square root
+√
+(RMSE) by M̂ − M ∗ / np and peak signal to noise ratio
+F
+(PSNR), respectively. We also apply K-means clustering to
+the projected data and compute the normalized mutual
+information (NMI) to evaluate the low-rank recovery implicitly. Both the proposed methods outperform PCA in
+terms of all computed metrics. PCA works well when c = 8
+because the distribution of the noise is close to a IID normal
+distribution when c is small. The performance of the three
+methods decreases as the condition numbers increase. The
+maximum likelihood method becomes unstable along with
+the increase of the condition numbers. On the other hand,
+MN-PCA-w2 is more robust and outperforms MN-PCA
+when the condition numbers are sufficiently large.
+We compare the performance of the proposed methods
+with QUIC in terms of the estimation of precision matrices
+(Table 2). To facilitate the comparison, we apply QUIC
+to among-row and among-column covariance, respectively.
+Since there are many small values in the true precision
+matrices, we only treat the top 150 non-diagonal entries
+as non-zero values (by absolute value). We summarize
+the performance in terms of true positive rate (TPR), true
+negative rate (TNR) and predictive positive value (PPV)
+(Supplementary Materials).
+
+MANUSCRIPT, VOL. XX, NO. XX, XXX 2019
+
+9
+
+TABLE 1
+Performance of low-rank recovery on Small Synthetic Datasets
+PSNR
+c=8
+c = 16
+c = 32
+c = 64
+c = 96
+c = 128
+c = 160
+c = 192
+c = 224
+
+RMSE
+
+NMI
+
+PCA
+
+MN-PCA
+
+MN-PCA-w2
+
+PCA
+
+MN-PCA
+
+MN-PCA-w2
+
+PCA
+
+MN-PCA
+
+MN-PCA-w2
+
+15.71(0.24)
+14.15(0.72)
+9.21(1.48)
+5.62(1.24)
+3.09(1.49)
+1.52(1.24)
+0.43(1.14)
+-0.42(1.18)
+-1.14(1.24)
+
+16.79(0.19)
+16.34(0.28)
+15.64(0.36)
+11.07(4.16)
+6.94(3.71)
+4.32(1.09)
+2.83(1.92)
+1.78(1.94)
+0.54(1.80)
+
+16.64(0.17)
+16.28(0.23)
+13.12(3.55)
+11.36(3.34)
+10.37(3.02)
+9.58(3.40)
+9.33(3.19)
+9.62(3.24)
+8.99(3.28)
+
+0.16(0.00)
+0.20(0.02)
+0.35(0.05)
+0.53(0.08)
+0.71(0.12)
+0.85(0.12)
+0.96(0.13)
+1.06(0.14)
+1.15(0.16)
+
+0.14(0.00)
+0.15(0.00)
+0.17(0.01)
+0.31(0.15)
+0.48(0.15)
+0.61(0.07)
+0.74(0.17)
+0.83(0.19)
+0.96(0.20)
+
+0.15(0.00)
+0.15(0.00)
+0.24(0.10)
+0.29(0.10)
+0.32(0.09)
+0.35(0.12)
+0.36(0.12)
+0.35(0.14)
+0.38(0.14)
+
+98.93(1.26)
+98.19(1.93)
+73.87(12.75)
+40.33(12.43)
+17.89(14.10)
+7.33(6.33)
+3.68(2.21)
+2.68(1.41)
+2.08(1.07)
+
+99.31(0.89)
+99.29(0.91)
+97.94(1.75)
+70.00(34.42)
+43.42(36.95)
+25.62(27.49)
+18.13(25.01)
+17.39(25.24)
+13.00(19.45)
+
+98.22(1.69)
+99.30(0.90)
+82.88(18.82)
+75.40(19.51)
+70.16(18.95)
+58.78(34.88)
+59.25(34.74)
+68.71(28.93)
+63.86(27.14)
+
+TABLE 2
+Performance of precision matrix estimation on Small Synthetic Datasets
+TPR1
+
+TNR1
+
+PPV1
+
+QUIC
+
+MN-PCA
+
+MN-PCA-w2
+
+QUIC
+
+MN-PCA
+
+MN-PCA-w2
+
+QUIC
+
+MN-PCA
+
+MN-PCA-w2
+
+c=8
+c = 16
+c = 32
+c = 64
+c = 96
+c = 128
+c = 160
+c = 192
+c = 224
+
+0.17(0.05)
+0.21(0.06)
+0.25(0.06)
+0.27(0.05)
+0.28(0.05)
+0.30(0.05)
+0.29(0.05)
+0.31(0.05)
+0.30(0.06)
+
+0.35(0.08)
+0.45(0.11)
+0.45(0.10)
+0.38(0.09)
+0.39(0.09)
+0.38(0.10)
+0.34(0.09)
+0.33(0.09)
+0.31(0.09)
+
+0.12(0.03)
+0.18(0.03)
+0.22(0.04)
+0.26(0.03)
+0.29(0.03)
+0.30(0.03)
+0.32(0.04)
+0.32(0.04)
+0.32(0.04)
+
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+
+0.58(0.12)
+0.33(0.08)
+0.33(0.05)
+0.34(0.05)
+0.35(0.05)
+0.37(0.04)
+0.37(0.04)
+0.38(0.04)
+0.38(0.05)
+
+0.75(0.12)
+0.73(0.16)
+0.80(0.15)
+0.83(0.13)
+0.72(0.18)
+0.75(0.16)
+0.78(0.15)
+0.76(0.16)
+0.74(0.17)
+
+0.19(0.04)
+0.26(0.04)
+0.31(0.03)
+0.34(0.03)
+0.37(0.03)
+0.38(0.02)
+0.39(0.03)
+0.39(0.03)
+0.39(0.03)
+
+c=8
+c = 16
+c = 32
+c = 64
+c = 96
+c = 128
+c = 160
+c = 192
+c = 224
+
+0.09(0.02)
+0.11(0.03)
+0.13(0.03)
+0.14(0.03)
+0.15(0.03)
+0.15(0.03)
+0.15(0.03)
+0.14(0.04)
+0.15(0.03)
+
+0.22(0.05)
+0.30(0.06)
+0.28(0.07)
+0.19(0.06)
+0.22(0.06)
+0.19(0.05)
+0.16(0.05)
+0.16(0.04)
+0.14(0.05)
+
+0.17(0.03)
+0.21(0.05)
+0.24(0.05)
+0.26(0.06)
+0.28(0.08)
+0.28(0.07)
+0.28(0.08)
+0.30(0.07)
+0.30(0.07)
+
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+1.00(0.00)
+
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+
+0.12(0.03)
+0.14(0.03)
+0.16(0.03)
+0.18(0.03)
+0.18(0.03)
+0.18(0.03)
+0.18(0.03)
+0.18(0.04)
+0.18(0.03)
+
+0.94(0.05)
+0.84(0.10)
+0.84(0.11)
+0.82(0.13)
+0.65(0.14)
+0.68(0.14)
+0.70(0.13)
+0.72(0.16)
+0.65(0.16)
+
+TPR2
+
+TNR2
+
+PPV2
+0.20(0.02)
+0.24(0.04)
+0.26(0.03)
+0.28(0.04)
+0.29(0.05)
+0.28(0.05)
+0.28(0.05)
+0.30(0.05)
+0.30(0.05)
+
+TPR1 , TNR1 , PPV1 denote true positive rate, true negative rate and positive predictive value of estimated Ω−1 , respectively.
+TPR2 , TNR2 , PPV2 denote the corresponding metrics of estimated Σ−1 , respectively.
+TABLE 3
+Performance of low-rank recovery on Large Synthetic Datasets
+PSNR
+p = 2000
+p = 3000
+p = 4000
+p = 5000
+p = 6000
+
+RMSE
+
+NMI
+
+PCA
+
+MN-PCA
+
+MN-PCA-w2
+
+PCA
+
+MN-PCA
+
+MN-PCA-w2
+
+PCA
+
+MN-PCA
+
+MN-PCA-w2
+
+4.53(0.50)
+4.79(0.46)
+4.10(0.51)
+4.47(0.25)
+3.71(0.66)
+
+20.06(1.19)
+7.49(0.65)
+12.51(5.74)
+7.76(0.38)
+5.60(2.30)
+
+20.99(0.17)
+20.59(0.23)
+14.96(0.97)
+10.87(0.22)
+10.69(0.20)
+
+0.59(0.03)
+0.58(0.03)
+0.62(0.04)
+0.60(0.02)
+0.65(0.05)
+
+0.10(0.01)
+0.42(0.03)
+0.28(0.17)
+0.41(0.02)
+0.54(0.14)
+
+0.09(0.00)
+0.09(0.00)
+0.18(0.02)
+0.29(0.01)
+0.29(0.01)
+
+4.32(7.86)
+4.88(7.34)
+0.83(0.09)
+1.42(0.44)
+1.57(0.53)
+
+98.80(1.18)
+85.13(9.73)
+90.75(11.66)
+82.98(11.91)
+59.43(32.38)
+
+96.70(2.17)
+96.75(1.80)
+73.47(7.52)
+47.62(1.57)
+44.40(1.65)
+
+Numerical results from Table 2 reveal some interesting
+conclusions. 1) MN-PCA outperforms QUIC and MN-PCAw2. 2) The TPR of all methods is relatively low. It is difficult
+to recover all non-zero entries in the true precision matrices
+of the noise as there may exist many small values. 3) The
+TNR of all methods is close to one. The BIC criterion is
+prone to choose sparser models, as discussed in [47], [55].
+4) It is not surprising that QUIC has lower TPR due to
+the existence of the low-rank matrix. But the TPR of QUIC
+increases along with the increase of the condition numbers.
+It is easier for QUIC to find true interactions when the effect
+of the matrix normal noise is stronger. 5) On the other hand,
+
+the TPR of the proposed methods increases first and then
+decreases with the condition numbers increase. When the
+effect of the matrix normal noise is small, it is difficult to
+capture the structure of the precision matrices. However, if
+the effect of the noise is too strong, the estimated low-rank
+matrix may mislead the estimation of precision matrices.
+6) The PPV of MN-PCA is significantly higher than that of
+QUIC. Therefore, the FDR (FDR = 1 − PPV) of the proposed
+methods is acceptable when the condition number is mild.
+MN-PCA may help scientists to discover the underlying
+statistical correlations in the noise, which are ignored by
+PCA and most of its variants.
+
+10
+
+ZHANG C, GAI K, ZHANG S.: MATRIX NORMAL PCA FOR INTERPRETABLE DIMENSION REDUCTION AND GRAPHICAL NOISE MODELING
+
+We illustrate the difference between MN-PCA and PCA
+on data generated with mild and large c, respectively (Fig.
+3). We can see that both MN-PCA and MN-PCA-w2 have
+clear clusters when the condition number is mild (c = 32).
+The bottom row shows that when the condition number is
+large (c = 224), PCA has inferior performance. The projection of MN-PCA is more dispersed than that of MN-PCAw2, suggesting that minimizing the Wasserstein distance is
+more accurate when the condition number is large.
+4.1.2 Large-Scale Synthetic Data
+To investigate the performance of the proposed methods on
+large-scale data, we construct a set of synthetic data with a
+similar strategy. We generate data with n = 1000, k = 2,
+c = 196, α1 = 10−2 , α2 = 10−3 and vary p from 2000 to
+6000. The first 10% features of centroid 1 equal one; the last
+10% features of centroid 2 equal one; the first 10% features of
+centroid 3 equal one and the last 10% features equal minus
+one. The results are the average of 5 runs.
+We show the performance of low-rank recovery on the
+large-scale synthetic data (Table 3). PCA fails to produce
+meaningful projection because the NMI is close to zero.
+MN-PCA-w2 significantly outperforms MN-PCA in terms
+of PSNR and RMSE. But MN-PCA has a better performance
+in clustering than that of MN-PCA-w2. It suggests that
+MN-PCA-w2 tends to recover the low-rank matrix more
+accurately, but the projection of MN-PCA is more dispersed
+and thus may have a better performance in clustering.
+We also show the running time of MN-PCA and MNPCA-w2 (Fig. 4). MN-PCA is much faster than MN-PCAw2 (left panel). The running time of MN-PCA drops down
+rapidly with the increase of λ2 (right panel). Because a
+large λ2 encourages the sparsity of the estimated precision
+matrix, allowing us to use the Cholesky decomposition on
+each block (see Sec 3.5). The running time of MN-PCA-w2
+does not change a lot with the increase of λ2 , because its
+implementation does not fully exploit the sparsity of the
+estimated precision matrices.
+4.1.3 Swiss Roll Data
+We then compare our methods with PCA on the Swiss roll
+data. Swiss roll data is widely used to test various dimensionality reduction algorithms. The idea of Swiss roll data is
+to create several points in 2D space and then map them to
+3D space. Existing algorithms such as Isomap [56], LLE [57]
+and SDE [58] considering the local geometry structure can
+unfold the roll to 2D space successfully.
+We create two rolls, as shown in the first panel of Fig.
+5 and then use PCA and the proposed methods to project
+the data points to 2D space. Fig. 5 presents that the two
+clusters in the projection of PCA are mixed. But those two
+clusters are separated from the projection of the proposed
+methods. MN-PCA does not consider the local geometry or
+geodesic distance explicitly. This experiment implies that the
+precision matrices somehow reflect the local structure and
+may guide us to obtain a better representation.
+4.2
+
+Real-World Experiments
+
+In this section, we show the effectiveness of MN-PCA and
+compare it with PCA as well as three other competing
+
+methods on various real-world data, including kernel PCA
+(KPCA), ICA and GPCA. KPCA is an extension of PCA,
+and it adopts the kernel idea to handle nonlinear data.
+However, how to choose an appropriate kernel for the
+given data is still unknown. Therefore, we apply three
+different kernels (i.e., linear, Gaussian, and polynomial) with
+recommended parameters to the data. ICA has been well
+studied and extensively used in signal processing. We use
+an efficient and popular algorithm FastICA proposed by [59]
+for comparison. GPCA is the most competing approach [28].
+However, it requires the precision matrix Ω−1 and Σ−1 to
+be predefined. Two empirical ways have been suggested to
+set it: 1) the inverse smoothing matrix, which is computed
+by the Laplacian matrix L; 2) the standard exponential
+smoothing matrix S , which is based on the distance matrix.
+Finally, there are four different settings for GPCA, denoted
+as LL, LS, SL, and SS, respectively. The statistics of the 18
+used datasets for evaluation are summarized in Table 4.
+More details are described in the Supplementary Materials.
+TABLE 4
+Summary of the Datasets
+Datasets
+balance-scale
+german
+glass
+heart-statlog
+iono
+sonar
+tae
+vehicle
+wine
+wisc
+zoo
+METABRIC
+gse29505
+3sources
+gesture
+eeg-eye
+mfeat
+radar
+
+# Samples (n)
+
+# Features (p)
+
+# Classes
+
+625
+1000
+214
+270
+351
+208
+151
+846
+178
+699
+101
+1975
+290
+352
+3003
+5000
+2000
+3500
+
+4
+20
+9
+13
+34
+60
+5
+18
+13
+9
+16
+1000
+384
+700
+32
+14
+649
+174
+
+3
+2
+6
+2
+2
+2
+3
+4
+3
+2
+7
+5
+2
+6
+5
+2
+10
+7
+
+All methods require an approximation of the rank of
+the data matrix. We adopt the bi-cross validation method
+[60]. Specifically, we first approximate the data matrix by
+Pk ˆ
+T
+the truncated SVD Yˆk , where Yˆk =
+j=1 dj ûj v̂j . The
+the proportion of variance explained is defined as Ri =
+Pi
+ˆ2 Pk dˆ2 . Note that Ri is between 0 and 1 and
+j=1 dj /
+j=1 j
+grows with i. We assume that the redundant components
+should not contribute much to the total variance. The final
+rank estimation is the smallest integer k , which satisfies
+Rk > τ , τ > 0 is the thresholding proportion value (e.g.
+0.8) and 1 ≤ k ≤ K .
+In the following experiments, we set K = 10 and τ = 0.8
+to choose the rank for dimension reduction. If the number
+of features are smaller than 15, we simply set k = 2. Then
+we use a Least-squares SVM (LSSVM) [61] with a Gaussian
+kernel as a benchmark classifier to evaluate the quality of
+the low-rank presentation. To facilitate a fair comparison,
+we choose the hyperparameter of LSSVM by 5-fold cross
+validation. The accuracy is the average of 10 runs.
+We demonstrate the cross-validated classification accuracies of these methods on the real-world datasets (Table 5).
+
+MANUSCRIPT, VOL. XX, NO. XX, XXX 2019
+
+11
+
+Fig. 3. Illustration of PCA, MN-PCA and MN-PCA-w2 on small synthetic data. Top: c = 32. Bottom: c = 224.
+TABLE 5
+Performance of Dimension Reduction on Real-world Datasets
+Dataset
+balance-scale
+german
+glass
+heart-statlog
+iono
+sonar
+tae
+vehicle
+wine
+wisc
+zoo
+metabric
+gse29505
+3sources
+gesture
+eeg-eye
+mfeat
+radar
+
+PCA
+
+GPLVM
+
+KPCA (lin)
+
+KPCA (gau)
+
+ICA
+
+GPCA (LS)
+
+GPCA (SL)
+
+MN-PCA
+
+MN-PCA-w2
+
+66.37(0.76)
+71.02(0.65)
+56.18(0.94)
+80.33(0.95)
+93.16(0.67)
+85.83(2.21)
+43.13(4.47)
+45.72(0.64)
+95.95(0.24)
+96.85(0.13)
+89.51(1.25)
+66.12(0.28)
+92.86(0.56)
+70.55(1.82)
+54.49(0.16)
+61.94(0.27)
+90.53(0.28)
+95.57(0.23)
+
+68.05(0.74)
+70.31(0.36)
+56.32(1.39)
+82.96(0.65)
+93.53(0.36)
+71.16(2.49)
+42.71(5.00)
+46.60(0.71)
+95.79(0.60)
+96.81(0.14)
+85.72(1.38)
+65.85(0.32)
+92.86(0.56)
+69.89(0.99)
+54.96(0.47)
+62.22(0.30)
+91.55(0.21)
+96.17(0.20)
+
+52.51(0.74)
+71.05(0.74)
+51.54(2.03)
+83.52(0.94)
+92.99(0.57)
+85.54(2.34)
+40.71(2.77)
+43.83(0.89)
+95.79(0.40)
+96.87(0.17)
+87.50(1.95)
+67.08(0.32)
+92.59(0.55)
+70.59(1.22)
+54.82(0.32)
+65.93(0.18)
+88.71(0.35)
+95.47(0.19)
+
+63.34(0.34)
+70.25(0.14)
+32.14(1.91)
+74.11(1.79)
+92.02(0.43)
+59.09(3.35)
+54.83(3.37)
+28.90(0.74)
+90.93(1.25)
+95.95(0.14)
+66.77(2.66)
+4.52(0.21)
+59.90(0.54)
+2.47(0.46)
+53.25(0.31)
+66.17(0.18)
+0.55(0.14)
+7.51(0.18)
+
+61.94(0.63)
+72.71(0.60)
+16.96(1.01)
+76.56(0.25)
+89.86(0.61)
+49.66(2.05)
+46.49(3.22)
+9.79(0.58)
+56.29(2.01)
+91.39(0.55)
+73.77(3.26)
+1.58(0.24)
+48.97(3.25)
+0.03(0.09)
+51.75(0.34)
+66.10(0.23)
+1.59(0.29)
+4.09(0.19)
+
+71.26(0.63)
+74.56(1.16)
+85.44(1.32)
+50.07(1.38)
+63.82(1.72)
+50.96(0.86)
+87.07(0.97)
+56.87(0.45)
+-
+
+88.63(2.10)
+62.49(0.46)
+95.76(0.73)
+14.26(1.31)
+-
+
+77.39(1.11)
+71.48(0.65)
+61.01(2.18)
+82.07(0.66)
+91.17(0.43)
+85.34(1.68)
+49.55(3.11)
+51.72(0.93)
+96.74(0.44)
+96.50(0.24)
+76.45(4.61)
+67.74(0.62)
+93.24(0.52)
+76.78(0.88)
+55.42(0.32)
+64.25(0.44)
+90.71(0.41)
+95.84(0.13)
+
+75.30(0.37)
+71.88(0.54)
+47.15(0.89)
+82.70(0.72)
+92.09(0.67)
+81.15(2.15)
+42.43(4.35)
+58.17(0.93)
+93.09(0.28)
+96.15(0.17)
+90.46(5.21)
+61.25(0.34)
+92.31(0.61)
+63.15(1.26)
+57.72(0.46)
+65.54(0.30)
+69.54(1.04)
+89.80(0.32)
+
+Top two of the cross-validated accuracies are shown in bold. GPCA fails to produce results when the predefined precision
+matrices are ill-conditioned. Due to space limitations, the results of PPCA, KPCA with polynomial kernel, GPCA(LL) and
+GPCA(SS) are shown in the Supplementary Materials.
+
+Fig. 4. Running time of MN-PCA and MN-PCA-w2 on synthetic data of
+n = 1000, c = 192. Left: time versus data size. Right: time versus log λ2
+with p = 2000 and λ1 = 0.5.
+
+The running time is reported in Supplementary Materials.
+We could clearly find the following observations. 1) Our
+methods have competitive or superior performance compared with PCA in most cases, suggesting that MN-PCA
+could obtain more informative representation in some real
+applications. 2) The performance of GPCA is poorer than
+MN-PCA in general. Although GPCA with the predefined
+precision matrices was considered to work well on the brain
+MRI data, it needs to choose appropriate precision matrices
+in advance, which is not suitable for general data. 3) The
+performance of GPLVM is similar to PCA. 4) The performance of KPCA with different kernels are very different. 5)
+Both KPCA and GPLVM adopt the kernel trick to handle the
+nonlinear data, but it is challenging to choose an appropriate
+kernel for a given data. 6) ICA sometimes produces inferior
+
+12
+
+ZHANG C, GAI K, ZHANG S.: MATRIX NORMAL PCA FOR INTERPRETABLE DIMENSION REDUCTION AND GRAPHICAL NOISE MODELING
+
+Fig. 5. Illustration of PCA and MN-PCA on Swiss roll data. From left to right: the 3D scatter plot of Swiss roll data; the projection of PCA; the
+projection of MN-PCA; the projection of MN-PCA-w2
+
+performance. A possible reason is that the non-Gaussian
+assumption of ICA is too restrictive.
+4.3
+
+The Estimated Precision Matrix is Informative
+500
+
+1000
+
+1500
+
+500
+Basal
+Her2
+Normal
+LumA
+LumB
+
+1000
+
+1500
+
+Fig. 6. Illustration of the estimated precision matrix of MN-PCA in the
+sample space. It is reordered based on the subtypes with k = 5. Since
+the estimated precision matrix contains many small values which should
+be less significant, only top 1000 interactions are shown.
+
+We have shown the effectiveness of MN-PCA in terms
+of dimension reduction and low-rank representation. Furthermore, the estimated precision matrices also reveal some
+inspiring patterns in the noise. Take the METABRIC data
+as an illustrating example. It contains a large cohort of
+around 2000 breast cancer patients with detailed clinical
+measurements and genome-wide molecular profiles. How
+to use the gene expression profile to classify invasive breast
+cancer into biologically and clinically distinct subtypes has
+been intensively studied. Here we use the famous PAM50
+subtypes as the reference [62] to evaluate the low-rank representation and graphical noise structure. We select the top
+1000 genes by the coefficients of variation and focus on the
+precision matrix in the sample space. There are 5504 edges
+in the estimated precision matrix (Fig 6). It demonstrates
+that the interactions within subtypes tend to be denser than
+that between subtypes, and biologically relevant subtypes
+have more interactions. For example, LumA and LumB
+have more interactions. Normal-like subtypes have many
+interactions with the other subtypes.
+The next example is about 3sources data, which is
+collected from three well-known online news sources, including BBC, Reuters, and The Guardian. Here we use
+the documents collected from the BBC as an example. The
+document term matrix is of size 352 × 3560. We remove the
+terms that appear less than 20 times in documents. There
+
+are 700 terms left. We focus on the estimated precision
+matrix in the feature space, which reveals the relationship
+of terms in the documents. The estimated rank k = 7,
+and there are 651 edges. We note that the semantically
+related terms tend to have interactions. For example, the
+top 5 term (chosen by absolute values) pairs are ”premier/league”, ”study/research”, ”executive/chief”, ”minister/primer”, ”journal/study”, respectively. Those term
+pairs frequently appear in the same documents.
+
+5
+
+D ISCUSSION
+
+AND
+
+C ONCLUSION
+
+We propose MN-PCA to model the graphical noise in both
+the feature and sample spaces. MN-PCA can be regarded as
+the minimization of the reconstruction error over the generalized Mahalaobis distance. PCA is a special case of our
+model. We develop two algorithms for inference. The first
+one is to maximize the regularized likelihood that works
+well on the synthetic data when the effect of the matrix
+normal noise is mild and can handle relatively large data.
+But it is not robust when the condition numbers get larger.
+To address this challenge, we propose to minimize the
+Wasserstein distance between the the transformed residue
+and the white noise. It is more robust when the effect of
+the matrix normal noise is substantial. Extensive numerical
+results show that considering the structural noise brings an
+improvement in classification, suggesting our methods find
+better low-rank representations. Moreover, the inferred precision matrices are informative and can help us understand
+the underlying structure of the noise.
+There are several questions that remain to be investigated. First, the estimation of the precision matrices is
+computationally expensive, which makes the proposed algorithms inefficient for large data. It is worth studying how
+to develop a more efficient and robust algorithm for big
+data. Second, our proposed methods are not guaranteed to
+provide a better low-rank representation for clustering and
+classification. As we demonstrate in the real-world experiments, the estimated precision matrices are also informative.
+If the inferred structure of the noise captures the information
+related to clustering and classification, the performance of
+the low-rank representation possibly decreases. One crucial
+problem is that what is the noise, and what is the signal?
+Conventional methods such as PCA assume the noise is
+white noise, which is seldom satisfied. In this paper, we
+model the graphical noise by matrix normal distribution.
+Although it is difficult to determine what information is captured in the estimated noise without external knowledge,
+
+MANUSCRIPT, VOL. XX, NO. XX, XXX 2019
+
+our methods provide an approach for data exploration for
+users to obtain the low-rank representation and discover the
+underlying structure of the noise simultaneously.
+MN-PCA can be extended from two aspects. First, it can
+be extended to matrix variate data, where one has multiple
+matrix variate observations. Second, it is worth to generalize
+MN-PCA for tensor data by the tensor normal distribution,
+enabling us to explore the correlation of the noise in the
+high-order data.
+
+R EFERENCES
+[1]
+[2]
+[3]
+[4]
+[5]
+
+[6]
+[7]
+[8]
+
+[9]
+[10]
+[11]
+[12]
+[13]
+[14]
+[15]
+
+[16]
+[17]
+[18]
+[19]
+[20]
+[21]
+
+K. Pearson, “Liii. on lines and planes of closest fit to systems of
+points in space,” The London, Edinburgh, and Dublin Philosophical
+Magazine and Journal of Science, vol. 2, no. 11, pp. 559–572, 1901.
+B. Moore, “Principal component analysis in linear systems: controllability, observability, and model reduction,” IEEE Trans. Autom. Control, vol. 26, no. 1, pp. 17–32, 1981.
+P. J. Hancock, A. M. Burton, and V. Bruce, “Face processing:
+human perception and principal components analysis,” Memory
+& Cognition, vol. 24, no. 1, pp. 26–40, 1996.
+T. Hastie et al., “’Gene shaving’as a method for identifying distinct
+sets of genes with similar expression patterns,” Genome Biology,
+vol. 1, no. 2, p. research0003, 2000.
+J. Wright, A. Ganesh, S. Rao, Y. Peng, and Y. Ma, “Robust principal
+component analysis: exact recovery of corrupted low-rank matrices via convex optimization,” in Advances in Neural Information
+Processing Systems, 2009, pp. 2080–2088.
+H. Xu, C. Caramanis, and S. Sanghavi, “Robust PCA via outlier
+pursuit,” in Advances in Neural Information Processing Systems, 2010,
+pp. 2496–2504.
+E. J. Candès, X. Li, Y. Ma, and J. Wright, “Robust principal
+component analysis?” J. ACM, vol. 58, no. 3, p. 11, 2011.
+Y. Peng, A. Ganesh, J. Wright, W. Xu, and Y. Ma, “Rasl: robust
+alignment by sparse and low-rank decomposition for linearly
+correlated images,” IEEE Trans. Pattern Anal. Mach. Intell., vol. 34,
+no. 11, pp. 2233–2246, 2012.
+G. Liu, Z. Lin, S. Yan, J. Sun, Y. Yu, and Y. Ma, “Robust recovery
+of subspace structures by low-rank representation.” IEEE Trans.
+Pattern Anal. Mach. Intell., vol. 35, no. 1, pp. 171–184, 2013.
+N. Shahid, V. Kalofolias, X. Bresson, M. Bronstein, V, and
+P. ergheynst, “Robust principal component analysis on graphs,”
+in Proc. IEEE Int. Conf. Comput. Vision, 2015, pp. 2812–2820.
+S. Gao, I. W.-H. Tsang, L.-T. Chia, and P. Zhao, “Local features are
+not lonely - laplacian sparse coding for image classification,” Proc.
+Comput. Soc. Conf. Comput. Vision Pattern Recognit., 2010.
+M. Zheng et al., “Graph regularized sparse coding for image
+representation,” IEEE Trans. Image Process., vol. 20, no. 5, pp. 1327–
+1336, 2011.
+M. Yin, J. Gao, Z. Lin, Q. Shi, and Y. Guo, “Dual graph regularized latent low-rank representation for subspace clustering,” IEEE
+Trans. Image Process., vol. 24, no. 12, pp. 4918–4933, 2015.
+D. Cai, X. He, J. Han, and T. S. Huang, “Graph regularized
+nonnegative matrix factorization for data representation,” IEEE
+Trans. Pattern Anal. Mach. Intell., vol. 33, no. 8, pp. 1548–1560, 2011.
+S. Zhang, Q. Li, J. Liu, and X. J. Zhou, “A novel computational framework for simultaneous integration of multiple types
+of genomic data to identify microrna-gene regulatory modules,”
+Bioinformatics, vol. 27, no. 13, pp. i401–i409, 2011.
+M. E. Tipping and C. M. Bishop, “Probabilistic principal component analysis,” J. Royal Statistical Soc. B, vol. 61, no. 3, pp. 611–622,
+1999.
+C. M. Bishop, “Bayesian PCA,” in Advances in Neural Information
+Processing Systems, 1999, pp. 382–388.
+J. Zhao and Q. Jiang, “Probabilistic PCA for t distributions,”
+Neurocomputing, vol. 69, no. 16-18, pp. 2217–2226, 2006.
+N. Wang, T. Yao, J. Wang, and D.-Y. Yeung, “A probabilistic approach to robust matrix factorization,” in Proc. Eur. Conf. Comput.
+Vision. Springer, 2012, pp. 126–139.
+J. Li and D. Tao, “Simple exponential family PCA,” in Proc. Int.
+Conf. Artif. Intell. and Statist., 2010, pp. 453–460.
+C. Zhang and S. Zhang, “Bayesian joint matrix decomposition for
+data integration with heterogeneous noise,” IEEE Trans. Pattern
+Anal. Mach. Intell., pp. 1–1, 2019.
+
+13
+
+[22] Q. Zhao, D. Meng, Z. Xu, W. Zuo, and L. Zhang, “Robust principal
+component analysis with complex noise,” in Proc. Int. Conf. Mach.
+Learn., 2014, pp. 55–63.
+[23] X. Cao et al., “Low-rank matrix factorization under general mixture noise distributions,” in Proc. IEEE Int. Conf. Comput. Vision,
+2015.
+[24] A. A. Kalaitzis and N. D. Lawrence, “Residual component analysis: Generalising PCA for more flexible inference in linear-gaussian
+models,” in Proc. Int. Conf. Mach. Learn. Omnipress, 2012, pp. 539–
+546.
+[25] F. Han and H. Liu, “Principal component analysis on non-gaussian
+dependent data,” in International Conference on Machine Learning,
+2013, pp. 240–248.
+[26] N. Vaswani and H. Guo, “Correlated-pca: principal components’
+analysis when data and noise are correlated,” Advances in Neural
+Information Processing Systems, vol. 29, pp. 1768–1776, 2016.
+[27] M. Gu and W. Shen, “Generalized probabilistic principal component analysis of correlated data.” Journal of Machine Learning
+Research, vol. 21, no. 13, pp. 1–41, 2020.
+[28] G. I. Allen, L. Grosenick, and J. Taylor, “A generalized least-square
+matrix decomposition,” J. Amer. Statist. Assoc., vol. 109, no. 505, pp.
+145–159, 2014.
+[29] C. M. Bishop and N. M. Nasrabadi, “Pattern recognition and
+machine learning,” J. Electronic Imag., vol. 16, p. 049901, 2007.
+[30] C. Eckart and G. Young, “The approximation of one matrix by
+another of lower rank,” Psychometrika, vol. 1, no. 3, pp. 211–218,
+1936.
+[31] T. Zhou and D. Tao, “Greedy bilateral sketch, completion &
+smoothing,” J. Mach. Learn. Res., vol. 31, pp. 650–658, 2013.
+[32] S. Ma and N. S. Aybat, “Efficient optimization algorithms for
+robust principal component analysis and its variants,” Proc. IEEE,
+vol. 106, no. 8, pp. 1411–1426, 2018.
+[33] Y. Yankelevsky and M. Elad, “Dual graph regularized dictionary
+learning,” IEEE Trans. Signal Inf. Process. Netw., vol. 2, no. 4, pp.
+611–624, 2016.
+[34] C. M. Bishop, “Variational principal components,” in Proc. Conf.
+Artif. Neural Netw. IET, 1999, pp. 509–514.
+[35] N. Vaswani and P. Narayanamurthy, “Finite sample guarantees for
+pca in non-isotropic and data-dependent noise,” in 2017 55th Annual Allerton Conference on Communication, Control, and Computing
+(Allerton). IEEE, 2017, pp. 783–789.
+[36] M. E. Tipping, “Sparse kernel principal component analysis,” in
+Advances in Neural Information Processing Systems, 2001, pp. 633–
+639.
+[37] Z. Ge and Z. Song, “Kernel generalization of ppca for nonlinear
+probabilistic monitoring,” Industrial & Engineering Chemistry Research, vol. 49, no. 22, pp. 11 832–11 836, 2010.
+[38] B. Moghaddam, “Principal manifolds and probabilistic subspaces
+for visual recognition,” IEEE Trans. Pattern Anal. Mach. Intell.,
+vol. 24, no. 6, pp. 780–788, 2002.
+[39] N. Lawrence, “Probabilistic non-linear principal component analysis with gaussian process latent variable models,” J. Mach. Learn.
+Res., vol. 6, no. Nov, pp. 1783–1816, 2005.
+[40] O. Stegle, C. Lippert, J. M. Mooij, N. D. Lawrence, and K. Borgwardt, “Efficient inference in matrix-variate gaussian models
+with\iid observation noise,” in Advances in neural information
+processing systems, 2011, pp. 630–638.
+[41] S. Ding and R. D. Cook, “Dimension folding pca and pfc for
+matrix-valued predictors,” Statistica Sinica, vol. 24, no. 1, pp. 463–
+492, 2014.
+[42] P. Dutilleul, “The mle algorithm for the matrix normal distribution,” Journal of statistical computation and simulation, vol. 64, no. 2,
+pp. 105–123, 1999.
+[43] M. Yuan and Y. Lin, “Model selection and estimation in the
+gaussian graphical model,” Biometrika, vol. 94, no. 1, pp. 19–35,
+2007.
+[44] J. Friedman, T. Hastie, and R. Tibshirani, “Sparse inverse covariance estimation with the graphical lasso,” Biostatistics, vol. 9, no. 3,
+pp. 432–441, 2008.
+[45] L. Li and K.-C. Toh, “An inexact interior point method for l 1regularized sparse covariance selection,” Math. Program. Computation, vol. 2, no. 3-4, pp. 291–315, 2010.
+[46] C.-J. Hsieh, M. A. Sustik, I. S. Dhillon, and P. Ravikumar, “QUIC:
+quadratic approximation for sparse inverse covariance estimation.” J. Mach. Learn. Res., vol. 15, no. 1, pp. 2911–2947, 2014.
+
+14
+
+ZHANG C, GAI K, ZHANG S.: MATRIX NORMAL PCA FOR INTERPRETABLE DIMENSION REDUCTION AND GRAPHICAL NOISE MODELING
+
+[47] P. Danaher, P. Wang, and D. M. Witten, “The joint graphical lasso
+for inverse covariance estimation across multiple classes,” J. Royal
+Statistical Soc. B, vol. 76, no. 2, pp. 373–397, 2014.
+[48] T. T. Cai, W. Liu, and H. H. Zhou, “Estimating sparse precision
+matrix: optimal rates of convergence and adaptive estimation,”
+Annal. Statist., vol. 44, no. 2, pp. 455–488, 2016.
+[49] J. Fan, Y. Liao, and H. Liu, “An overview of the estimation of
+large covariance and precision matrices,” The Econometrics Journal,
+vol. 19, no. 1, pp. C1–C32, 2016.
+[50] C. Villani, Optimal transport: old and new. Springer Science &
+Business Media, 2008, vol. 338.
+[51] I. Olkin and F. Pukelsheim, “The distance between two random
+vectors with given dispersion matrices,” Linear Algebra and its
+Applications, vol. 48, pp. 257–263, 1982.
+[52] G. A. Watson, “Characterization of the subdifferential of some
+matrix norms,” Linear algebra and its applications, vol. 170, pp. 33–
+45, 1992.
+[53] I. Goodfellow et al., “Generative adversarial nets,” in Advances in
+Neural Information Processing Systems, 2014, pp. 2672–2680.
+[54] I. Gulrajani, F. Ahmed, M. Arjovsky, V. Dumoulin, and A. C.
+Courville, “Improved training of Wasserstein GANs,” in Advances
+in Neural Information Processing Systems, 2017, pp. 5767–5777.
+[55] T. Zhao, H. Liu, K. Roeder, J. Lafferty, and L. Wasserman, “The
+huge package for high-dimensional undirected graph estimation
+in R,” J. Mach. Learn. Res., vol. 13, pp. 1059–1062, 2012.
+[56] J. B. Tenenbaum, V. De Silva, and J. C. Langford, “A global
+geometric framework for nonlinear dimensionality reduction,”
+Science, vol. 290, no. 5500, pp. 2319–2323, 2000.
+[57] S. T. Roweis and L. K. Saul, “Nonlinear dimensionality reduction
+by locally linear embedding,” Science, vol. 290, no. 5500, pp. 2323–
+2326, 2000.
+[58] K. Q. Weinberger and L. K. Saul, “Unsupervised learning of image
+manifolds by semidefinite programming,” Int. J. Comput. Vision,
+vol. 70, no. 1, pp. 77–90, 2006.
+[59] A. Hyvärinen and E. Oja, “Independent component analysis:
+algorithms and applications,” Neural Netw., vol. 13, no. 4-5, pp.
+411–430, 2000.
+[60] A. B. Owen, P. O. Perry et al., “Bi-cross-validation of the SVD and
+the nonnegative matrix factorization,” Annal. Statist., vol. 3, no. 2,
+pp. 564–594, 2009.
+[61] K. De Brabanter et al., LS-SVMlab toolbox user’s guide: version 1.7.
+Katholieke Universiteit Leuven, 2010.
+[62] J. S. Parker et al., “Supervised risk predictor of breast cancer based
+on intrinsic subtypes,” J. Clin. Oncol., vol. 27, no. 8, p. 1160, 2009.
+
+Supplementary Materials for “Matrix Normal PCA for
+Interpretable Dimension Reduction and Graphical Noise
+Modeling”
+
+arXiv:1911.10796v2 [cs.LG] 5 Jan 2021
+
+Chihao Zhang, Kuo Gai and Shihua Zhang*
+
+Contents
+1 Methods
+1.1 Proof of Theorem 1 . . . . . . . . . .
+1.2 Proof of Theorem 2 . . . . . . . . . .
+1.3 GPCA Post-processing . . . . . . . .
+1.4 Minimizing Wasserstein Distance and
+1.5 Performance Metrics . . . . . . . . .
+
+. . . . . . . .
+. . . . . . . .
+. . . . . . . .
+its Relaxation
+. . . . . . . .
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+2
+2
+2
+2
+3
+4
+
+2 Experimental Results
+2.1 Comparison on Synthetic
+2.2 Real-world Datasets . .
+2.3 METABRIC Dataset . .
+2.4 3sources Dataset . . . .
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+4
+4
+6
+9
+9
+
+Data
+. . . .
+. . . .
+. . . .
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+.
+.
+.
+.
+
+Chihao Zhang, Kuo Gai and Shihua Zhang* are with the NCMIS, CEMS, RCSDS, Academy of Mathematics
+and Systems Science, Chinese Academy of Sciences, Beijing 100190, China, and School of Mathematical
+Sciences, University of Chinese Academy of Sciences, Beijing 100049, China.
+*To whom correspondence should be addressed. Email: zsh@amss.ac.cn.
+
+1
+
+1
+1.1
+
+Methods
+Proof of Theorem 1
+
+Proof. The expectation of the sample covariance is as follows:
+
+
+1
+1
+1 T
+Y Y = M T M + tr(Ω)Σ.
+E
+n
+n
+n
+
+(1)
+
+By the eigenvalue stability inequality [1], we have the following upper bound:
+
+
+
+
+1
+1
+1 T
+T
+σi
+E(Y Y ) − σi
+M M ≤
+tr(Ω)Σ
+= σσ1 (Σ),
+n
+n
+n
+op
+
+(2)
+
+where k·kop is the operator norm of matrix. The last equation holds because the operator
+norm of matrix Ω can be computed by the square root of the largest eigenvalue of ΩT Ω.
+
+1.2
+
+Proof of Theorem 2
+
+Proof. Since the number of rows of QER equals to |S|, the optimal transport map from the
+rows of QER to S always exists. Let T denote the optimal transport map from the rows of
+QER to S, then by the definition of the Wasserstein distance,
+W 2 (row{QER}, S) =
+
+1
+kQER − T (QER)k2F ,
+n
+
+(3)
+
+where T (QER) is a n×p matrix with its rows corresponding to those of QER by T . Actually,
+we can transform T (QER) to H by rearranging its rows, i.e., T (QER) = P H, where P is a
+permutation matrix. Then
+1
+1
+kQER − T (QER)k2F =
+P T QER − P T T (QER)
+n
+n
+1
+2
+=
+P T QER − H F .
+n
+
+2
+F
+
+(4)
+(5)
+
+Since M is obtained by SVD of Y and E = Y − M , the rank of E is p − k. Hence,
+2
+1
+P T QER − H F is minimized if and only if:
+n
+P T QER = Hp−k ,
+
+(6)
+
+which completes the proof.
+
+1.3
+
+GPCA Post-processing
+
+As aforementioned in the main manuscript, the solution of X and W is not unique. Specifically, given any invertible matrix P , XP P −1 W T equals XW T . Therefore, X and W are not
+identifiable. To address this issue, we use GPCA [2] to post-process W and X, and obtain
+the unique solutions of X and W . The objective function of GPCA is as follows:
+
+T
+1
+tr Y − U DV T Ω−1 Y − U DV T Σ−1
+2
+s.t. U T Σ−1 U = I
+
+min
+
+T
+
+−1
+
+V Ω V =I
+diag(D) ≥ 0.
+2
+
+(7)
+
+Recall that PCA can be interpreted as the minimization of the reconstruction error under
+the Frobenius norm. Given Y , PCA aims at finding a low-rank approximation such that
+min Y − XW T
+
+2
+F
+
+.
+
+(8)
+
+Note that the objection function of GPCA can be rewritten as
+1
+
+2
+
+1
+
+Ω− 2 (Y − U DV T )Σ− 2
+when Ω−1 and Σ−1 are positive definite,
+
+1
+
+F
+
+1
+
+Ω− 2 XΣ− 2
+
+F
+
+,
+
+(9)
+
+is a proper matrix norm for any
+
+X ∈ R . Let’s denote this generalized matrix norm as Ω−1 , Σ−1 -norm, or kXkΩ−1 ,Σ−1 .
+For simplicity, we also denote kXkΩ−1 ,I as kXkΩ−1 and kXkI,Σ−1 as kXkΣ−1 , where I is the
+identity matrix of a proper size.
+Therefore, GPCA can be interpreted as the minimization of the reconstruction error under
+the Ω−1 , Σ−1 -norm. Inspired by PCA, GPCA employs a generalized power method to obtain
+the columns of U and W sequentially. The scheme is given in Algorithm 1.
+n×p
+
+Algorithm 1 GPCA (Post-processing)
+Input: data matrix Y , precision matrices Ω−1 , Σ−1 and initialization of u1 and v1
+Output: U , D, V
+1: Y (1) = X
+2: for r = 1, · · · , k do
+3:
+repeat
+Y (r) Σ−1 vk
+4:
+set uk = Y (r)
+k Σ−1 vk kΩ−1
+Y (r)T Ω−1 uk
+5:
+set vk = Y (r)T
+Ω−1 uk k −1
+k
+Σ
+6:
+until convergence
+7:
+set dk = uTk Ω−1 Y (r) Σ−1 vk
+8:
+set Y (r+1) = Y (r) − uk dk vkT
+9: end for
+10: set U = [u1 , . . . , uk ], V = [v1 , · · · , vk ] and D = diag(d1 , . . . , dk )
+
+1.4
+
+Minimizing Wasserstein Distance and its Relaxation
+
+The covariance of vec(Y − M ) is Ω ⊗ Σ. Taking it into Eq. (42) in the main text and adding
+L1 -norm regularizers, the objective function of minimizing Wasserstein distance should be:
+min
+Q,R
+
+1
+2σ
+kQERk42 − √ kQERk2∗ + λ1 kQT Qk1 + λ2 kRT Rk1 .
+np
+np
+
+(10)
+
+The objective function is not homogeneous on σ. Therefore, the original function is sensitive
+to the hyperparameter σ. But it is difficult to choose or estimate an appropriate value of
+σ for a given data. To overcome this limitation, we relax the original objective function by
+applying the square root of the first two terms:
+1
+2
+min √ kQERk22 − √
+kQERk∗ + λ1 kQT Qk1 + λ2 kRT Rk1 .
+4
+Q,R
+np
+np
+3
+
+(11)
+
+Now the objective function is homogeneous on σ. Specifically, we can see that
+2
+1
+kQERk∗ ,
+Q∗ , R∗ = arg min √ kQERk22 − √
+4
+np
+np
+Q,R
+
+(12)
+
+then
+
+√ ∗ √ ∗
+1
+2σ
+σQ , σR = arg min √ kQERk22 − √
+kQERk∗ .
+(13)
+4
+np
+np
+Q,R
+In addition, the first term of Eq. (10) is quartic to Q and R, which is difficult to solve. The
+first term of Eq. (11) becomes quardratic, which can be solved more efficiently. For clarity, we
+refer the original version as MN-PCA-w2*. We implement both the algorithms based on the
+gradient decent strategy with PyTorch [3]. We add the experimental results of MN-PCA-w2*
+and its relaxation on both synthetic data and real-world data in Section 2.
+
+1.5
+
+Performance Metrics
+
+The true positive rate, true negative rate and predictive positive value are defined as follows:
+
+2
+
+TPR =
+
+#{Ω̂ij 6= 0 & Ωij 6= 0}
+,
+#{Ωij 6= 0}
+
+(14)
+
+TNR =
+
+#{Ω̂ij = 0 & Ωij = 0}
+,
+#{Ωij = 0}
+
+(15)
+
+PPV =
+
+#{Ω̂ij 6= 0 & Ωij 6= 0}
+
+(16)
+
+#{Ω̂ij 6= 0}
+
+.
+
+Experimental Results
+
+2.1
+
+Comparison on Synthetic Data
+
+We apply MN-PCA-w2* to the small synthetic datasets. The generation process is described
+in the main manuscript. The comparison results of MN-PCA-w2* and MN-PCA-w2 are
+shown in Table S1. We can find that
+• When c = 8 and c = 16, MN-PCA-w2* has significantly poorer performance and very
+large standard deviation compared to MN-PCA. This is due to that MN-PCA-w2*
+raises errors when computing SVD. When the condition number c is small, the residue
+is relatively small in the Frobenius norm. It makes the computation of SVD unstable.
+• MN-PCA-w2 tends to outperform MN-PCA-w2*, and its performance has smaller standard deviation. Note that the underlying σ is known, so we can simply set the σ of
+MN-PCA-w2* as the ground truth. This may contribute to the robustness of the performances of MN-PCA-w2*. However, the true value of σ is unknown when we apply
+MN-PCA-w2* to the real-world data. We find that estimating the value of σ approximately is still difficult.
+We compare the performance of estimating the precision matrices in Table S2. The definition of the used metrics are in the main manuscript. We can see that MN-PCA-w2 achieves
+better performance than MN-PCA-w2* in terms of all metrics.
+In summary, the relaxation of MN-PCA-w2* is homogeneous on σ and thus eliminate the
+unnecessary hyperparameter. Moreover, the first term of the objective function of MN-PCAw2* is quartic to Q and R, which can be difficult. MN-PCA-w2 applies the square root to
+the first two terms of the objective function of MN-PCA-w2*. The quartic term becomes
+quadratic, which can be solved more efficiently. The relaxation of MN-PCA-w2* has better
+performance on the small synthetic data.
+4
+
+Table S1: Comparison of the low-rank recovery on the small synthetic datasets
+PSNR
+c=8
+c = 16
+c = 32
+c = 64
+c = 96
+c = 128
+c = 160
+c = 192
+c = 224
+
+RMSE
+
+MN-PCA-w2*
+
+MN-PCA-w2
+
+MN-PCA-w2*
+
+9.50(3.11)
+9.77(2.99)
+11.56(1.06)
+10.00(1.03)
+9.32(0.67)
+9.31(1.23)
+8.50(1.33)
+8.46(0.81)
+7.97(0.83)
+
+16.64(0.17)
+16.28(0.23)
+13.12(3.55)
+11.36(3.34)
+10.37(3.02)
+9.58(3.40)
+9.33(3.19)
+9.62(3.24)
+8.99(3.28)
+
+0.36(0.15)
+0.35(0.14)
+0.27(0.03)
+0.32(0.04)
+0.34(0.03)
+0.35(0.05)
+0.38(0.06)
+0.38(0.03)
+0.40(0.04)
+
+NMI
+
+MN-PCA-w2 MN-PCA-w2*
+0.15(0.00)
+0.15(0.00)
+0.24(0.10)
+0.29(0.10)
+0.32(0.09)
+0.35(0.12)
+0.36(0.12)
+0.35(0.14)
+0.38(0.14)
+
+52.99(30.48)
+58.26(31.17)
+78.57(11.56)
+67.31(10.75)
+61.99(5.11)
+63.65(14.77)
+56.41(19.32)
+62.34(9.88)
+59.03(8.04)
+
+MN-PCA-w2
+98.22(1.69)
+99.30(0.90)
+82.88(18.82)
+75.40(19.51)
+70.16(18.95)
+58.78(34.88)
+59.25(34.74)
+68.71(28.93)
+63.86(27.14)
+
+The best performance is shown in bold.
+
+Table S2: Comparison of the precision matrix estimation on the small synthetic datasets
+TPR1
+c=8
+c = 16
+c = 32
+c = 64
+c = 96
+c = 128
+c = 160
+c = 192
+c = 224
+
+TNR1
+
+MN-PCA-w2*
+
+MN-PCA-w2
+
+MN-PCA-w2*
+
+9.50(3.11)
+9.77(2.99)
+11.56(1.06)
+10.00(1.03)
+9.32(0.67)
+9.31(1.23)
+8.50(1.33)
+8.46(0.81)
+7.97(0.83)
+
+16.64(0.17)
+16.28(0.23)
+13.12(3.55)
+11.36(3.34)
+10.37(3.02)
+9.58(3.40)
+9.33(3.19)
+9.62(3.24)
+8.99(3.28)
+
+0.36(0.15)
+0.35(0.14)
+0.27(0.03)
+0.32(0.04)
+0.34(0.03)
+0.35(0.05)
+0.38(0.06)
+0.38(0.03)
+0.40(0.04)
+
+TPR2
+c=8
+c = 16
+c = 32
+c = 64
+c = 96
+c = 128
+c = 160
+c = 192
+c = 224
+
+0.09(0.05)
+0.13(0.07)
+0.19(0.04)
+0.20(0.04)
+0.21(0.04)
+0.20(0.05)
+0.21(0.04)
+0.20(0.04)
+0.20(0.04)
+
+PPV1
+
+MN-PCA-w2 MN-PCA-w2*
+0.15(0.00)
+0.15(0.00)
+0.24(0.10)
+0.29(0.10)
+0.32(0.09)
+0.35(0.12)
+0.36(0.12)
+0.35(0.14)
+0.38(0.14)
+
+TNR2
+0.17(0.03)
+0.21(0.05)
+0.24(0.05)
+0.26(0.06)
+0.28(0.08)
+0.28(0.07)
+0.28(0.08)
+0.30(0.07)
+0.30(0.07)
+
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+
+5
+
+52.99(30.48)
+58.26(31.17)
+78.57(11.56)
+67.31(10.75)
+61.99(5.11)
+63.65(14.77)
+56.41(19.32)
+62.34(9.88)
+59.03(8.04)
+
+MN-PCA-w2
+98.22(1.69)
+99.30(0.90)
+82.88(18.82)
+75.40(19.51)
+70.16(18.95)
+58.78(34.88)
+59.25(34.74)
+68.71(28.93)
+63.86(27.14)
+
+PPV2
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+0.99(0.00)
+
+0.12(0.07)
+0.16(0.08)
+0.22(0.04)
+0.23(0.03)
+0.24(0.04)
+0.23(0.04)
+0.24(0.04)
+0.23(0.04)
+0.23(0.04)
+
+0.20(0.02)
+0.24(0.04)
+0.26(0.03)
+0.28(0.04)
+0.29(0.05)
+0.28(0.05)
+0.28(0.05)
+0.30(0.05)
+0.30(0.05)
+
+2.2
+
+Real-world Datasets
+
+We used 18 real-world datasets in the experiments. 15 of them were downloaded from the
+UCI machine learning repository, including:
+balance scale1 : This data set was generated to model the psychological experimental
+results.
+german2 : This dataset classifies people described by a set of attributes as good or bad
+credit risks.
+glass3 : This dataset contains 6 types of glasses defined in terms of their oxide content
+(i.e. Na, Fe, K, etc).
+heart-statlog4 : This dataset contains the information of patients to predict the heart
+disease.
+iono5 : Ionosphere dataset was collected from the radar returns. It contains two types
+of samples: “Good” radar returns that shows the evidence of some type of structure in the
+ionosphere. “Bad” returns are that do not.
+sonar6 : This dataset contains sonar signals that bounced off a metal signals and that
+bounced off a roughly cylindrical rock.
+tae7 : Teaching assistant evaluation dataset consists of the evaluations of teaching assistant
+assignments.
+vehicle8 : Vehicle silhouettes dataset contains the features extracted from the silhouettes
+of vehicle images. The aim of this data is to classify a given silhouette as one of four types of
+vehicles.
+wine9 : This dataset is to use chemical analysis to determine the origin of wines.
+wisc10 : The breast cancer Wisconsin (original) dataset consists of the clinical indicators
+of breast cancer samples and the corresponding classes.
+zoo11 : The zoo dataset consists of the attributes of different kinds of animals and the
+classes.
+gesture12 : The dataset is composed by features extracted from 7 videos with people
+gesticulating, aiming at studying Gesture Phase Segmentation. We used a subset of this
+data.
+eeg-eye13 : This dataset is from one continuous EEG measurement with the Emotiv EEG
+Neuroheadset. The duration of the measurement was 117 seconds. The eye state was detected
+via a camera during the EEG measurement. We used a subset of this data.
+mfeat14 : This dataset consists of features of handwritten numerals (‘0’–‘9’) extracted
+from a collection of Dutch utility maps. 200 patterns per class (for a total of 2,000 patterns)
+have been digitized in binary images. The features are extracted by different algorithms and
+there are 649 features in total.
+mfeat15 : This dataset consists of features of handwritten numerals (‘0’–‘9’) extracted
+1
+
+http://archive.ics.uci.edu/ml/datasets/balance+scale.
+https://archive.ics.uci.edu/ml/datasets/statlog+(german+credit+data)
+3
+https://archive.ics.uci.edu/ml/datasets/glass+identification
+4
+http://archive.ics.uci.edu/ml/datasets/statlog+(heart)
+5
+https://archive.ics.uci.edu/ml/datasets/ionosphere
+6
+http://archive.ics.uci.edu/ml/datasets/connectionist+bench+(sonar,+mines+vs.+rocks)
+7
+https://archive.ics.uci.edu/ml/datasets/teaching+assistant+evaluation
+8
+https://archive.ics.uci.edu/ml/datasets/Statlog+(Vehicle+Silhouettes)
+9
+https://archive.ics.uci.edu/ml/datasets/wine
+10
+https://archive.ics.uci.edu/ml/datasets/breast+cancer+wisconsin+(original)
+11
+https://archive.ics.uci.edu/ml/datasets/zoo
+12
+https://archive.ics.uci.edu/ml/datasets/gesture+phase+segmentation
+13
+https://archive.ics.uci.edu/ml/datasets/EEG+Eye+State
+14
+https://archive.ics.uci.edu/ml/datasets/Multiple+Features
+15
+https://archive.ics.uci.edu/ml/datasets/Multiple+Features
+2
+
+6
+
+from a collection of Dutch utility maps. 200 patterns per class (for a total of 2,000 patterns)
+have been digitized in binary images. The features are extracted by various algorithms. There
+are 649 features in total.
+radar16 : This data set is a fused bi-temporal optical-radar data for cropland classification.
+It contains 7 classes. We sample 500 instances for each class to test our algorithm.
+We used the same procedure to process those datasets. Specifically, we first removed the
+features that are not numerical. Then we removed the samples containing missing values.
+Finally, we normalized all the features by the z-score strategy to avoid the problem that
+different features may have different scales. The remaining 3 datasets are:
+gse2650517 : This dataset is available with accession (GSE26505). It consists of 290 samples (colon, breast, lung, thyroid and Wilims’ tumor cancers) and matched normal samples.
+Each sample has 384 methylation probes. We used the same procedure to process this data
+as that in [4].
+The details and the preprocessing procedure of the METABRIC and 3sources are
+described in the main manuscript Section 4.3. After preprocessing the data, we used a
+standard procedure to choose the rank k. The chosen k of each dataset is shown in Table S3.
+
+Table S3: Selection of k on the real-world datasets
+Dataset
+k Dataset
+k
+balance-scale
+german
+glass
+heart-statlog
+iono
+sonar
+tae
+gesture
+eeg-eye
+
+2
+8
+2
+2
+6
+6
+2
+7
+2
+
+vehicle
+wine
+wisc
+zoo
+METABRIC
+gse29505
+3sources
+mfeat
+radar
+
+3
+2
+2
+5
+5
+5
+7
+6
+5
+
+The additional results of methods those are not contained in the main manuscript are
+reported in Table S4, including PPCA, KPCA(pol), GPCA(SS) and GPCA(LL). In general,
+the performance of PPCA is similar to that of PCA. GPCA(SS) and GPCA(LL) tend to fail
+because the predefined precision matrices are ill-conditioned. The performance of KPCA(pol)
+is also not robust. It may produce poor performance on some data. For example on 3sources
+data, the performance of KPCA(pol) is significantly poorer than that of PCA. The performance of the original version of MN-PCA-w2* is also not very robust compared to the relaxed
+version MN-PCA-w2.
+Table S5 and S6 report the running time of the algorithms on real-world datasets. PCA
+and ICA are very efficient. The precision matrix of GPCA is predefined. Hence, the computational cost of GPCA is similar to PCA. The probabilistic algorithms, including PPCA,
+GPLVM, MN-PCA and MN-PCA-w2, are relatively slow. The proposed algorithms are slower
+because the estimation of the precision matrices is computationally expensive. The time consumption of MN-PCA is heavily dependent on the non-zero entries in the precision matrices.
+On the other hand, MN-PCA-w2 costs more time because it involves SVD at each iteration
+and does not exploit the sparsity of the precision matrices.
+16
+17
+
+https://archive.ics.uci.edu/ml/datasets/Crop+mapping+using+fused+optical-radar+data+set
+https://www.ncbi.nlm.nih.gov/geo/
+
+7
+
+Table S4: Additional results on the real-world datasets
+Dataset
+PPCA
+KPCA(pol) GPCA(LL) GPCA(SS)
+balance-scale
+german
+glass
+heart-statlog
+iono
+sonar
+tae
+vehicle
+wine
+wisc
+zoo
+metabric
+gse
+3sources
+gesture
+
+58.93(0.40)
+69.99(0.27)
+42.97(2.66)
+83.00(0.62)
+93.28(0.68)
+86.11(1.37)
+39.61(3.98)
+45.39(0.61)
+95.11(0.65)
+96.68(0.21)
+85.05(2.37)
+65.17(0.25)
+92.86(0.59)
+71.79(1.33)
+54.83(0.24)
+
+56.93(0.38)
+71.46(0.34)
+34.11(1.66)
+78.22(0.83)
+89.09(0.34)
+68.50(2.13)
+42.84(2.55)
+35.78(0.68)
+78.92(1.48)
+95.59(0.29)
+88.30(5.09)
+51.81(0.29)
+75.93(0.48)
+33.84(1.31)
+54.33(0.39)
+
+43.18(0.66)
+79.59(1.31)
+-
+
+86.90(2.45)
+67.14(0.25)
+93.86(0.63)
+64.75(2.03)
+-
+
+Table S5: Running time on the real-world datasets
+Dataset
+balance-scale
+german
+glass
+heart-statlog
+iono
+sonar
+tae
+vehicle
+wine
+wisc
+zoo
+metabric
+gse
+3sources
+gesture
+eeg eye
+mfeat
+
+PCA
+
+PPCA
+
+GPLVM
+
+KPCA(lin)
+
+KPCA(gau)
+
+KPCA(pol)
+
+ICA
+
+0.0003
+0.0009
+0.0003
+0.0005
+0.0150
+0.0014
+0.0003
+0.0057
+0.0003
+0.0027
+0.0004
+0.2006
+0.0180
+0.0233
+0.0013
+0.0042
+0.0674
+
+0.0985
+0.0576
+0.0055
+0.0111
+0.0956
+0.2056
+0.0056
+0.1332
+0.0090
+0.0340
+0.0244
+65.8584
+7.5660
+4.3406
+0.0693
+0.1493
+23.6447
+
+2.4820
+27.0593
+0.6492
+0.7930
+6.0315
+1.4391
+0.5483
+4.0359
+0.7537
+3.1442
+0.7022
+73.3401
+3.6690
+1.3790
+86.3266
+208.5825
+35.0592
+
+0.4598
+1.0942
+0.0133
+0.0612
+0.0122
+0.0347
+0.0075
+0.0851
+0.0117
+0.0521
+0.0014
+0.6652
+0.0661
+0.1291
+10.2738
+8.8485
+11.0996
+
+0.4574
+0.7482
+0.0366
+0.0552
+0.0886
+0.0261
+0.0211
+0.7615
+0.0348
+0.3989
+0.0125
+0.6625
+0.0133
+0.0273
+165.7107
+215.5432
+146.6688
+
+0.4187
+0.9136
+0.0406
+0.0587
+0.0862
+0.0411
+0.0149
+0.5744
+0.0289
+0.4247
+0.0094
+6.3860
+0.0527
+0.1052
+106.9476
+97.3119
+66.5211
+
+0.0021
+0.1059
+0.0032
+0.0034
+0.0146
+0.0090
+0.0071
+0.0202
+0.0052
+0.0331
+0.0080
+0.5514
+0.0451
+0.1685
+0.0372
+0.0128
+0.1396
+
+The running time is measured in seconds.
+
+8
+
+Table S6: Running time on the real-world datasets (continue)
+Dataset
+balance-scale
+german
+glass
+heart-statlog
+iono
+sonar
+tae
+vehicle
+wine
+wisc
+zoo
+metabric
+gse
+3sources
+geture
+eeg-eye
+mfeat
+
+2.3
+
+GPCA(LL)
+
+GPCA(LS)
+
+GPCA(SL)
+
+GPCA(SS)
+
+MN-PCA
+
+MN-PCA-w2
+
+0.0187
+1.9904
+0.0442
+0.2688
+-
+
+0.0291
+0.1457
+0.0047
+0.0328
+0.0297
+0.0054
+1.2931
+0.0622
+2.4268
+-
+
+0.0039
+1.2819
+0.0370
+0.2288
+-
+
+0.0042
+1.1250
+0.0287
+0.1881
+-
+
+0.7992
+1.8368
+0.2408
+0.1094
+2.2436
+0.1614
+0.0561
+150.3426
+0.0899
+2.7413
+0.0357
+111.1968
+18.3070
+1.0401
+343.4577
+1778.3257
+141.6516
+
+117.3487
+179.1464
+112.4802
+127.4794
+147.4035
+128.4263
+106.6672
+142.4144
+106.0842
+138.6479
+100.3534
+2384.8400
+251.8776
+363.4707
+470.5875
+1261.2412
+927.1965
+
+METABRIC Dataset
+
+We compare the estimated precision matrix in the sample space of QUIC and MN-PCA here.
+To facilitate a fair comparison, we choose the L1 -norm parameter for QUIC such that the
+estimated precision matrix has the same number of edges approximately as that of MN-PCA.
+As shown in Fig. S1, the estimated precision matrices show similar patterns.
+
+Figure S1: The estimated precision matrices of QUIC and MN-PCA in the sample space.
+They are reordered based on subtypes with k = 5. Only the top 1000 interactions are shown.
+
+2.4
+
+3sources Dataset
+
+Here we compare the results of QUIC and MN-PCA on the 3source data. We choose the
+top 100 interactions in the estimated precision matrices in the feature (term) space by the
+absolute value.
+Table S7 reports the selected terms of MN-PCA and QUIC. MN-PCA ∩ QUIC indicates
+the term pairs that appear both in the top 20 of MN-PCA and QUIC. QUIC \ MN-PCA
+indicates term pairs that appear in the top 20 of QUIC, but not in MN-PCA. Similarly,
+9
+
+MN-PCA \ QUIC indicates term pairs that are in MN-PCA, but not in QUIC. We can see
+that all those term pairs, such as “minister/primer”, “study/research”, are semantic relative
+and thus they tend to appear in the same article. Besides, the top 20 interactions of QUIC and
+MN-PCA have considerable overlap, i.e., 11 out of 20. But they still show some differences.
+Table S7: Estimated terms pairs on 3sources Data
+MN-PCA ∩ QUIC
+minister/primer
+Gordon/prime
+Brown/prime
+Brown/Gordon
+tori/conserve
+economy/economic execut/chief university/research study/research premier/league
+journal/study
+QUIC \ MN-PCA
+MN-PCA \ QUIC
+party/conserve free/user internet/user G20/leader
+expense/MP
+victory/win
+site/user
+cup/football
+qualify/cup club/football liverpool/league book/ref
+board/chairman site/social study/Dr
+referee/penalty financial/bank cross/striker
+
+References
+[1] T. Tao, Topics in random matrix theory. American Mathematical Soc., 2012, vol. 132.
+[2] G. I. Allen, L. Grosenick, and J. Taylor, “A generalized least-square matrix decomposition,” Journal of the American Statistical Association, vol. 109, no. 505, pp. 145–159,
+2014.
+[3] A. Paszke, S. Gross, S. Chintala, G. Chanan, E. Yang, Z. DeVito, Z. Lin, A. Desmaison,
+L. Antiga, and A. Lerer, “Automatic differentiation in pytorch,” in NIPS-W, 2017.
+[4] G. Chen, P. F. Sullivan, and M. R. Kosorok, “Biclustering with heterogeneous variance,”
+Proc. Natl. Acad. Sci. U.S.A., vol. 110, no. 30, pp. 12 253–12 258, 2013.
+
+10
+
+

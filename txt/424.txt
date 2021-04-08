@@ -1,0 +1,1241 @@
+■原
+
+著■
+
+＜ Contribution ＞ Proposal of Recognition Algorithm for
+Menu Selection using Steady State Visual Evoked
+Potential, by Hidenori BOTANI & Mieko OHSUGA.
+
+定常視覚誘発電位を用いたメニュー選択インタフェースの識別
+アルゴリズムの提案 1
+棒谷英法2，大須賀美恵子3
+This study refers to a recognition algorithm for SSVEP（Steady State Visual Evoked Potential）
+-based
+brain computer interface for menu selection. Aimed at simple-to-use interfaces with no training, we propose
+an algorithm that requires neither calibration processes, nor machine learning. A commercial headset,“Emotiv
+EEG Neuroheadset,”was introduced to measure electroencephalograms in order to decrease the time
+required to attach electrodes. Visual stimulation with a frequency higher than 20 Hz was used to reduce the
+risk of photosensitive epileptic seizure. In the experiment, eight healthy young adults participated, and were
+asked to observe one of six squares with intensities modulated sinusoidally with six different frequencies
+between 20 to 30 Hz presented on an LCD（Liquid Cristal Display）with a refresh rate of 120 Hz. After
+studying the collected data, we have proposed an algorithm that compares the Z-scores of averaged SSVEP
+amplitudes of the left and right occipital lobe (O1, O2) obtained by the averaging method for each frequency,
+and selects the significantly large one. Five out of eight participants showed good performance; the average
+accuracy and ITR（Information Transfer Rate）are 83.3％ and 30.5 bits/min, respectively. The average
+number of trials required for decisions was less than two. The best two showed 100％ accuracy, and the
+average ITR was 35.8 bits/min.
+本研究は，定常視覚誘発電位（Steady State Visual Evoked Potential：SSVEP）を用いたメニュー選択イ
+ンタフェースのための識別アルゴリズムの開発に関するものである．
+誰にでも訓練なしで簡単に使えるインタフェー
+スを目標とし，個人適応のためのキャリブレーションや識別器の学習を必要としないアルゴリズムを提案す
+る．脳波計測には短時間で装着できる市販のヘッドセット（EEG Neuroheadset，Emotiv社）を用い，光過敏
+性発作のリスクを低減するために20 Hz以上の刺激周波数を用いることを特徴とする．実験には若年成人8名
+が参加した．リフレッシュレート120 Hzの液晶ディスプレイに20 ～30 Hzの6周波数で正弦波状に輝度変調し
+た四角形の刺激を提示し，いずれかの刺激を注視させた．収集データを基に，加算平均法で各刺激周波数の
+SSVEPを求め，後頭部左右2部位（O1，O2）の平均振幅のZ-Scoreを比較し，有意に大きいSSVEPを示す周
+波数を選択するアルゴリズムを考案した．8名中5名の結果は，良好な結果を示し，平均正答率83.3％，平均
+情報伝達率30.5 bits/min，識別に必要な試行回数の平均は2試行以下であった．うち2名では，正答率100％，
+情報伝達率35.8 bits/minという結果を得た．
+（キーワード：Steady state visual evoked potential，Electroencephalogram，Menu selection）
+
+ほとんど訓練なしに利用できる定常視覚誘発電位（Steady
+
+1．はじめに
+
+State Visual Evoked Potential：SSVEP）を用いる1）．
+SSVEP
+は，視覚誘発電位（Visual Evoked Potential：VEP）の一
+
+本研究のゴールは，障がい者だけでなく健常者でも手
+
+つで，第1次視覚野の反応であり，後頭部優位に出現す
+
+がふさがっているときなどに有用で，ほぼ訓練なしで使
+
+る． たとえば，15 Hzの点滅刺激を注視しているときの
+
+用できる実用的なメニュー選択インタフェースの開発で
+
+脳波を解析すると，15 Hzの成分が大きく出現する． さ
+
+ある． 注意を向けるだけで振幅が増大すると考えられ，
+
+らに，2倍3倍の高調波も出現する 1）．SSVEPを誘発する
+
+1 受付：2016年5月4日 受理：2017年1月17日
+2 元大阪工業大学工学研究科生体医工学専攻
+Department of Biomedical Engineering, Graduate School of
+Engineering, Osaka Institute of Technology, Osaka, Japan
+3 大阪工業大学工学部ロボット工学科
+Department of Robotics, Faculty of Engineering, Osaka Institute of
+Technology, Osaka, Japan
+
+8
+
+人間工学
+
+Vol.53, No.1（’17）
+
+周波数は，1 ～100 Hzとされており 2），周波数が高くなる
+ほどSSVEPは誘発されにくくなる特徴を持つ．SSVEP
+を入力インタフェ ースに用いるときの刺激周波数は，1
+～12 Hzの低域周波数帯域，12 ～30 Hzの中間周波数帯
+域，30 ～60 Hzの高周波数帯域の大きく3つに分けられ
+る 1）．このうち多くの研究ではSSVEPが大きく出現する
+
+低域周波数帯域， 特に10 Hz付近の周波数帯域の刺激を
+
+Analysis：CCA）を用いるものもあり， 好成績を上げて
+
+用いている 3 ～8）．しかし，周波数が低いと光過敏性発作
+
+いる 5,7,12）．これらの学習器を使用する場合は，個人ごと，
+
+のリスクや，点滅のちらつきによる不快感が大きくなる
+
+あるいは使用する度に，学習データを収集して学習させ
+
+ため， 高周波数刺激を利用したインタフェ ースが望ま
+
+る手間がかかる．
+
+れる ．高周波数の刺激提示が可能かどうかは，刺激装
+
+本研究は，数個の選択肢を提示し，注視により選択す
+
+置に依存する．刺激装置は大きく分けて，発光ダイオー
+
+るインタフェースを対象とした学習不要のアルゴリズム
+
+ド（Light Emitting Diode：LED）や蛍光灯，キセノンラ
+
+開発を目的とする．選択肢に文字や記号，図形，イラス
+
+ンプなどの専用のハードウェアを用いるものと液晶ディ
+
+トなどを用い，選択肢そのものを点滅させることを考え，
+
+スプレイ（Liquid Crystal Display：LCD）やブラウン管
+
+LCDを採用する．刺激周波数は，光過敏性発作のリスク
+
+（Cathode-Ray Tube：CRT）などの汎用表示装置を用いる
+
+を低減するために20 Hz以上とし， リフレッシュレート
+
+1）
+
+ものがある．
+
+120 HzのLCDに，正弦波状に輝度変調した刺激を提示す
+
+中・高周波数帯域の刺激を用いたものには，刺激装置
+にLEDを用いた研究
+
+る．また，日常生活で使用することを想定し，脳波計測
+
+はある
+
+には専門家でなくても短時間で装着できるEmotivを用い
+
+が，LCDを用いたものは少ない．LCDでは，リフレッシュ
+
+る．Emotivはサンプル周波数が低く，高周波数刺激で位
+
+レートの整数分の1の周波数しか使えないという制約が
+
+相を弁別するのは難しいため，位相コーディングではなく，
+
+あるためである．リフレッシュレート120 HzのLCDでも
+
+周波数コーディングを採用する．キャリブレーションや
+
+利用できる周波数は限られる．この制約を回避するため
+
+識別器の学習なしですぐに利用できるシステムにするため，
+
+に正弦波状に輝度変調をした刺激を用いることが提案さ
+
+SSVEPの振幅の比較で判定を行うシンプルなアルゴリ
+
+れている
+
+ズムを提案する．
+
+とCRTを用いた研究
+
+9,10）
+
+11,12）
+
+．複数のメニューを提示し選択させるために
+
+6,8）
+
+は，メニューと刺激を対応付けるコーディングが必要で
+ある．ほとんどの研究が周波数コーディングを用いてい
+
+2．アルゴリズムの開発
+
+るが，位相コーディング 13,14）や周波数と位相の複合コー
+ディングを用いているもの 15,16）もある．
+脳波計測装置については，64 ～128部位 4,9,12）など多部
+
+2-1．SSVEP定量化手法の検討
+
+位計測する方向と， 装着が簡単な14部位のヘッドセッ
+
+SSVEPの定量化手法の選定のため， 加算平均法と周
+
+ト型脳波計測装置（EEG Neuroheadset，Emotiv社，以下
+
+波数解析による振幅スペクトル法のノイズ耐性を，Lin
+
+Emotiv）のようなヘッドセット
+
+ら 12）に倣い，シミュレーションで比較した．
+
+6 ～8）
+
+や（数～十数部位），
+
+ヘアバンド（1 ～2部位）などを用いる簡易計測の方向が
+ある
+
+シミュレーションに用いるデータは，サンプル周波数
+
+．多チャンネル計測の方が得られる情報量が多
+
+1024 Hz，20 Hzから2 Hz刻みで30 Hzまでの6周波数の正
+
+いが電極装着が煩わしい．Emotivには，専門家でなくて
+
+弦波に，ホワイトノイズを加えた信号である．正弦波は
+
+も1 ～2分で装着・ 計測開始できる利点があるが， サン
+
+SSVEP成分， ホワイトノイズは刺激と関係なく生じる
+
+プル周波数が128 Hzと低く， ジッター
+（サンプリング間
+
+自発脳波を模擬している．式
+（1）に示す信号とノイズの
+
+隔の変動）があること，外部信号と同期がとれないとい
+
+比率（Signal Noise Ration：SNR）は，0から－2 dBごと，
+
+う欠点もある．実際，Emotivを用いたSSVEPの研究では
+
+－20 dBまでの11通りとした．後頭部の2部位（国際10-
+
+一部の基礎実験を除き20 Hz以下の刺激を用いている
+
+20法によるO1 とO2）の脳波を用いることを想定し，2チャ
+
+3,13,14）
+
+．
+
+6～8）
+
+SSVEPの定量化には，高速フーリエ変換（Fast Fourier
+Transform：FFT）などによる周波数解析が最も多く利用
+される．刺激の特定位相をトリガとして脳波を切り出し
+て加算平均する方法もある 6,13,14）．識別段階では，抽出さ
+れた特徴を比較して最も大きな特徴を示す刺激を選ぶ単
+純なアルゴリズムもあれば， 線形判別 5,17）やサポートベ
+
+ンネル分のデータを4 s分作成した．
+
+SNR = 10 log10
+
+PWsignal
+PWnoise
+
+= 10 log10
+
+(A 2)
+
+2
+
+σ2
+
+（1）
+
+PWはパワー，Aは正弦波の振幅，σ2 はノイズの分散を
+示している．
+加算平均法による解析手順は， 以下のとおりである．
+
+クターマシン（Support Vector Machine：SVM）4,18） を用
+
+まず，4 s分の各作成信号に，その信号の周波数だけでな
+
+いて注目刺激の識別を行うものもある．この他にも，前
+
+く，6つの周波数±1 Hzの6種類のバンドパスフィルタを
+
+処理段階の電極の選定と，刺激に対応した周波数成分の
+
+かけた． フィルタは2次のバタワースフィルタで， 順方
+
+抽出および識別に，正準相関分析（Canonical Correlation
+
+向，逆方向の2回適用し，位相遅れを補正した．2 s目か
+
+原著：定常視覚誘発電位を用いたメニュー選択インタフェースの識別アルゴリズムの提案
+
+9
+
+ら1 s分のフィルタ出力に対し，フィルタの中心周波数の
+1周期ごとにトリガを作成し，その前後1周期分を切り出
+して加算平均した．加算平均波形のトリガから1周期以
+内の最大値と， 最大値をとる時点から遡って1周期前以
+
+（脳波の場合は自発成分）が相殺され減衰するためである．
+そこで，本研究では加算平均法を用いることにした.
+
+2-2．データ収集
+
+内の最小値を求め，これらの差をSSVEP振幅とし（図1），
+
+2-2-1．実験参加者
+
+2チャンネル分の平均を取り， 最も大きな振幅を示す周
+
+実験は大阪工業大学ライフサイエンス実験倫理委員会
+
+波数を選択した．
+
+の承認を得て実施した（承認番号2013-10-1）．実験参加
+
+周波数解析は，作成信号の2 s目からの1 s分を切り出し，
+
+者（以下，参加者）は文書によるインフォームドコンセ
+
+Hammingウィンドウをかけて，短時間フーリエ変換を施
+
+ントを得た健常大学生8名である．
+
+した． 得られた2チャンネル分の振幅スペクトルを平均
+
+2-2-2．刺激装置と実験手続き
+
+して，最大値を示す周波数を選択した．
+
+実験風景を図3に示す． 刺激提示には， リフレッシュ
+
+2手法とも， 正弦波の各周波数， 各SNRにつき100回
+
+レート120 HzのLCDを用いた． 顎台に顎を乗せた参加
+
+ずつ識別し， 正答率を求め比較した（図2）
+． これより，
+
+者の顔前50 cmにLCDを置き， 眼の高さを中心として，
+
+加算平均法の方が周波数解析よりノイズ耐性が良いこと
+
+1辺14 mmの正方形の視覚刺激を6つ，2行3列（間隔は
+
+がわかる．加算平均により刺激と同期していないノイズ
+
+13 mm）に配置した（図3，4）
+．この刺激と間隔の大きさ
+（視角約1.6 deg）は，将来スマートフォンに実装すること
+
+正弦波
+
+を想定して決定しており，多くの既存研究より小さいも
+
+ホワイ
+トノイズ
+
+のである．
+6つの刺激は，それぞれ，20 Hzから2 Hz刻みで30 Hzま
+での6周波数で，画素値をグレイスケールで，0 ～255の
+バンドパスフィルタ 22，24，26，28 Hzに バンドパスフィルタ
+20 Hz±1 Hz おいても同様の処理 30 Hz±1 Hz
+1周期
+（20 Hz）
+波形
+
+1周期
+（30 Hz）
+波形
+
+重ね書き
+
+重ね書き
+
+加算平均
+
+加算平均
+
+範囲で正弦波状に変化させた．刺激周波数は，上段左か
+ら20，22，24Hz，下段左から26，28，30 Hzである．
+2 sの非変調区間（OFF）とこれに続く2 sの変調区間
+
+振幅
+（peak to peak） 振幅
+（peak to peak）
+図1
+
+加算平均波形の振幅の求め方 19）
+How to obtain amplitude of averaged waveforms.
+
+Fig. 1
+
+図3
+
+実験風景 19）
+
+図2
+Fig. 2
+
+10
+
+Experimental setting.
+
+14 mm
+
+averaging
+
+13 mm
+
+26 Hz
+－20－18－16－14－12－10 －8 －6 －4 －2 0
+signal-to-noise ration［dB］
+
+2つの識別手法におけるノイズの影響の比較
+Influence of noise on two recognition approaches.
+人間工学
+
+Vol.53, No.1（’17）
+
+22 Hz
+
+24 Hz
+
+28 Hz
+
+30 Hz
+
+41 mm
+
+FFT
+
+20 Hz
+13 mm
+
+14 mm
+
+accuracy［％］
+
+Fig. 3
+100
+90
+80
+70
+60
+50
+40
+30
+20
+10
+0
+
+68 mm
+図4
+Fig. 4
+
+提示画面
+Layout of presented stimuli.
+
+（ON）を1試行とし，10試行で1セットとした．参加者の
+
+激とセンサは，黒のビニールテープで覆い，参加者に見
+
+目の位置での照度は，OFFの時が158.3 lxで，ONの時が
+
+えないようにした． 照度センサの出力と， 外付けジャ
+
+159.2 lxであり，差は約1 lxである．各セットの開始前に，
+
+イロセンサの信号を，AD変換ボード（NI PCIe-6321，
+
+参加者に6つの四角形のうちの一つを口頭で指示し，こ
+
+National Instruments）を介して，1000 Hzでサンプルして
+
+れを注視させた． 各刺激2回ずつ計12セット実施した．
+
+PCに取り込んだ．
+
+ON時にはできるだけ目を動かさないように教示した．なお，
+
+2-2-4．解析
+
+後述する時間合わせのために，各セットの開始時と終了
+
+Emotivで計測した脳波データの例を図5に示す． 最初
+
+時に，口頭の合図に合わせて頭を上下に動かせた．
+
+に，Emotivの脳波と別系統で記録した照度信号の同期を
+
+2-2-3．計測
+
+とるために，各セットのEmotiv 内蔵のジャイロセンサと
+
+脳 波 は， 前 述 の よ う にEmotivを 用 い て 計 測 し た．
+
+外付けジャイロセンサの出力波形を用いて，各セットの
+
+Emotivの電極装着部位は，AF3，AF4，F7，F8，F3，F4，
+
+開始時と終了時に頭を上下に動かした時の両センサの波
+
+FC4，FC5，T7，T8，P7，P8，O1，O2 の14部位で， 生理
+
+形が一致するように，Emotivのデータと照度計のデータ
+
+食塩水で湿らせたフェルトを介して頭皮と接触する．今
+
+を1024 Hzでリサンプルした． 次に， 照度信号より変調
+
+回用いるのは後頭部2部位（O1，O2）のみであるが， 将
+
+刺激開始時点を検出し，この時点より2 s分を刺激区間と
+
+来的に眼球運動由来のアーティファクト除去手法を検討
+
+して抽出した．2.1節と同様の方法で加算平均しO1 とO2
+
+するため，前頭・側頭部の脳波も計測した．Emotivに付
+
+のSSVEP振幅の平均を求めた（以降，SSVEP振幅につ
+
+属しているアプリケーションで，各電極において頭皮と
+
+いて明示しない場合は，O1 とO2 の平均を示す）．
+
+の接触状態が悪い状態（赤色）
+，良い状態（黄色）の場合，
+最も良い状態（緑色）になるように全ての電極の接触状
+
+2-3．アルゴリズムの検討
+
+態の調整を行った（判定色と接触抵抗値の対応は公開さ
+
+図6に，ある参加者（Pt.7）の6つの異なる周波数の刺
+
+れていない）．Emotivの脳波データの出力は， サンプル
+
+激に対するSSVEP振幅の10試行分の平均と標準偏差を
+
+周波数2048 Hzでサンプルされ，0.2 ～45 Hzのビルドイ
+
+示す．列方向が注視している刺激の周波数，行方向が解
+
+ン・デジタル5次sincフィルタがかけられた後，128 Hzで
+
+析周波数である． この図より， 注視している周波数の
+
+リサンプルされて，Bluetoothを介してPCに送信される．
+
+SSVEP振幅が他の周波数成分より大きくなっているの
+
+Emotivには，頭の動きを計測するためのジャイロセンサ
+
+がわかる．
+
+が内蔵されている． この信号も， 脳波と同時にPCに送
+
+まず，SSVEPの振幅が最大となる周波数の刺激に注
+
+信される．時間合わせに用いるために，別途，ジャイロ
+
+視していると判定する最も単純なアルゴリズムを試した．
+
+センサ（EC-03RE，村田製作所製，以下，外付けジャイ
+
+図7に，参加者ごとの正答率の12セット分の平均とこれ
+
+ロセンサ）を，Emotivの後頭部分に取り付けた．
+
+の全参加者の平均を示す．
+
+LCDの左端隅に，20 Hzの変調刺激を表示し（図4），
+
+AF4
+F8
+F4
+FC6
+T8
+P8
+T8
+O2
+O1
+P7
+T7
+FC5
+F3
+F7
+AF3
+23.5
+図5
+Fig. 5
+
+下の検討では， 正答率がすべて50％以下の参加者Pt.1，
+
+analyzed frequency［Hz］
+
+EEG channel
+
+照度センサ（AMS302，Panasonic）で計測した． この刺
+
+図より， 正答率の個人差が大きいことがわかる． 以
+
+24
+
+24.5
+
+25 25.5
+time［s］
+
+26
+
+Emotivで計測した脳波データ
+EEG data measured by an Emotiv.
+
+26.5
+
+10
+20 5
+0
+5
+22
+0
+5
+24
+0
+5
+26
+0
+5
+28
+0
+5
+30
+0
+
+20
+
+22
+24
+26
+28
+30
+stimulus frequency［Hz］
+
+図6 6つの周波数の刺激に対するSSVEPの振幅（文献 19）の
+図を改変）
+Fig. 6 Amplitude of SSVEP obtained by averaging for
+stimuli with six different frequencies.
+
+原著：定常視覚誘発電位を用いたメニュー選択インタフェースの識別アルゴリズムの提案
+
+11
+
+判別アルゴリズム
+Ss1
+Ss2
+Ss3
+Ss4
+Ss5
+Ss6
+Ss7
+Ss8
+AVE
+RAGE
+
+80
+60
+40
+20
+0
+
+図7
+
+2
+
+4
+
+6
+trial
+
+8
+
+各参加者の正答率と8名の平均（文献
+
+10
+の図を改変）
+
+19）
+
+Z-scoreの閾値を超えている周波数が一つ？
+yes
+no
+（N＝＝1）
+no
+（N＞＝2）
+
+trial
+First
+Second
+Third
+
+1
+0
+
+no
+
+no
+
+N試行とも正のZ-scoreの値を示した周波数が一つ？
+
+判別不能
+図9
+
+20
+
+22 24
+26 28 30
+stimulus frequency［Hz］
+
+図8 30 Hzの刺激を注視しているときの1 ～3試行のSSVEP
+の平均振幅のZ-score（文献 19）の図を改変）
+Fig. 8 Z-scores calculated using SSVEP amplitudes during
+1-3 trials when participants gazed at stimulus of 30 Hz.
+
+Pt.3，Pt.8の3名を除き残りの5名のデータを対象とした．
+SSVEPの振幅は個人差だけでなく個人内でも状態に
+よって変動する． そこで，1試行内で判定を行えるよう
+にするため，6周波数に対するO1，O2 のSSVEP平均振幅
+のZ-scoreを求め， 大きなZ-scoreを示す周波数を選択す
+るというアルゴリズムを採用する．
+
+yes
+
+その周波数の刺激に注目して
+いると判定
+
+判別アルゴリズムのフローチャート
+The flowchart of discrimination algorithm.
+
+Fig. 9
+
+－1
+
+yes
+
+N試行とも設定閾値を超えている周波数が一つ？
+
+no
+（N＝＝Nmax）
+
+2
+Z-score
+
+Z-scoreが負のものを判別対象外とする
+以降の試行も判別対象外とする
+
+N＝N＋1
+
+Fig. 7 Ratio of correct evaluations for each participant, and
+average for eight participants.
+
+－2
+
+第N試行内でSSVEPの振幅のZ-scoreを求める
+
+correct ratio［％］
+
+correct ratio［％］
+
+100
+
+100
+90
+80
+70
+60
+50
+40
+30
+：Target
+20
+：Non-Target
+10
+0
+－2 －1.5 －1 －0.5 0 0.5 1 1.5
+Z-score
+
+2
+
+図10 SSVEP振幅のZ-scoreの累積ヒストグラム（文献 19）の
+図を改変）
+Fig. 10 Cumulative histogram of Z-scores for SSVEP
+amplitude.
+
+Z-scoreが突出して大きければ，その周波数刺激に注視
+していると考えられる．しかし，必ずしもZ-scoreが大き
+
+N＋1試行以降のデータで， 閾値を超えている周波数
+
+な刺激が1つだけ選べるとは限らない．例として，参加
+
+が一つでない場合，全試行とも，閾値を超えている周波
+
+者Pt.6の30 Hz刺激を注視しているとき（）の第1 ～3試
+
+数を選択周波数とした． 次に全試行ともZ-scoreが正の
+
+行の各刺激周波数の振幅のZ-scoreを図8に示す．注視し
+
+値を示している周波数を選択周波数とし，検出が一つで
+
+ている30 Hzに対するZ-scoreは3試行とも大きいが， 各
+
+ない場合は，次の試行で判定する．判別をする試行回数
+
+試行では他の刺激に対するZ-scoreの方が大きい場合もあ
+
+に，打ち切り試行回数を設定し，試行回数が打ち切り試
+
+ることがわかる．このような場合でも，正しく判定でき
+
+行回数（Nmax）と一致する場合は，判定不能と判別とし
+
+るアルゴリズムにしなければならない．
+
+た（図9）．
+
+考案したアルゴリズムは以下のとおりである．Z-score
+
+ここで問題となるのが閾値の決め方である．Z-scoreが
+
+に閾値を設け，閾値を超えている周波数が一つだけの場
+
+大きいという判定のための閾値を上げると検出ミス（注
+
+合， その周波数の刺激に注視していると判定する．1試
+
+視刺激を注視と判定し損なう）が増え，下げると誤検出
+
+行目で検出された周波数が一つでない場合は，次の試行
+
+（非注視刺激を注視と判定してしまう）が増える． 適切
+
+（N＋1）で判定する．Z-scoreが負になった刺激は対象外
+とする．以降も同様である．
+
+12
+
+人間工学
+
+Vol.53, No.1（’17）
+
+な閾値を決めるため， 注視刺激と非注視刺激に分けて，
+5名分の10試行目までの各試行のSSVEPの平均振幅の
+
+100
+
+対するZ-Scoreの高値からの累積ヒストグラム（○）
+，非
+
+80
+
+注視刺激（NonTarget）に対するZ-scoreの低値からの累
+積ヒストグラム（×）を示す． 図より，0.3 ～0.5付近に
+交点があり， 注視刺激のZ-scoreの80％が約0.5以上で，
+非注視刺激の80％が約0.3以下であることがわかる． こ
+れより，Z-scoreの閾値を0.3，0.4，0.5で比較すること
+
+correct ratio［％］
+
+Z-score分布を検討した．図10に，注視刺激（Target）に
+
+60
+40
+
+0
+
+にした．
+
+3．結 果
+
+undecided
+incorrect
+
+20
+
+correct
+.3.4.5 .3.4.5 .3.4.5 .3.4.5 .3.4.5
+1trial 2trials 3trials 4trials 5trials
+
+図11 Z-scoreの閾値を0.3，0.4，0.5， 最大試行数1 ～5とし
+たときの正答率，誤識別率，判別不能率（5名の平均）
+
+3-1．正答率と試行数
+2-3に示したアルゴリズムを用いて，Z-scoreの閾値を
+0.3，0.4，0.5とし，最大（その試行で判定不能でも打ち
+切りとする）試行回数を1 ～10試行として，実験参加者5
+名を対象に判定を行った．その結果，判別不能以外で必
+要識別回数は，最大5試行であった．そこで，最大試行
+回数を1 ～5試行として， 実験参加者5名の平均正答率，
+平均誤識別率，平均判別不能率を比較した（図11）．
+最大試行回数を増やすと3試行までは正答率が増加す
+るが，それ以上では改善が見られない．判定にかかる試
+行数は少ない方がよいので，最大試行回数を3試行とす
+ると，Z-scoreの閾値が0.4のときに平均正答率が最も良
+い83.3％となり， 平均誤識別率15％， 平均判別不能率
+1.7％という結果になった．
+次に， 式（2）
+（3） を用いて情報伝達率（Information
+Transfer Rate：ITR）を求めた．ここで，Nは刺激の種類
+の数（N＝6）で，Pは正答率（正答数／全セット数）で
+ある．命令転送間隔（Command Transfer Interval：CTI）
+
+Fig. 11 Average ratio of correct evaluations, incorrect
+evaluations, and undecided trials for five participants;
+the threshold for Z-scores is 0.3, 0.4 or 0.5,
+maximum trial number is one to five（average for
+5 participants）
+.
+表1 Z-scoreの閾値0.4， 最大試行回数3試行のときの正答
+率，誤識別率，判別不能率，判定に必要な平均試行回数，
+CTI，ITの結果（参加者5名分）
+Tab. 1 Results of the ratio of correct evaluations, incorrect
+evaluations, undecided trials, average number of trials
+required for decisions; the threshold for Z-scores is
+0.3, 0.4 or 0.5, maximum trial number is three（for five
+participants）
+.
+average
+correct incorrect undecided number of CTI
+ITR
+participant
+［％］ ［％］ ［％］ required ［s］［bit/min］
+trial
+Pt.2
+66.7
+33.3
+0.0
+2.0
+6.0
+20.8
+Pt.4
+66.7
+33.3
+0.0
+1.3
+3.3
+37.4
+Pt.5
+83.3
+8.3
+8.3
+2.0
+6.0
+22.7
+Pt.6
+100.0
+0.0
+0.0
+1.6
+4.3
+35.8
+Pt.7
+100.0
+0.0
+0.0
+1.6
+4.3
+35.8
+average
+83.3
+15.0
+1.7
+1.7
+4.8
+30.5
+
+は， 入力合計時間を全識別回数で除したものである 15）．
+ここでは，判定に要する試行回数が1試行の場合は2 s，2，
+
+4．考 察
+
+3試行の場合はそれぞれ非変調区間を含む6 s，10 sとし
+て計算した．
+Bits
+= log 2 N + P log 2 P + (1 − P )
+command
+× log 2 (1 − P ) ( N − 1 ) 
+
+ITR =
+
+Bits
+60
+⋅
+command CTI
+
+本研究結果と既存研究の結果を比較する．20 Hz以上
+の刺激周波数で脳波計測にEmotivを用いた研究はないた
+（2）
+
+め，刺激周波数が低いが，刺激装置にLCD，脳波計測装
+置にEmotivを用いているLiuら 7）の研究，および，刺激提
+
+（3）
+
+Z-scoreの 閾 値 が0.4で， 最 大 試 行 回 数 を3試 行 と し
+
+示装置がCRTだが，20 Hz以上の刺激周波数を用いてい
+るLinら 12）の研究を対象とする．
+Emotivを用いたLiuら 7） のオフラインの研究では， 刺
+
+た と き の 実 験 参 加 者 の 5 名（Pt.2，Pt.4，Pt.5，Pt.6，
+
+激提示はLCDで16刺激の同時提示， 刺激周波数6.67 ～
+
+Pt.7）の正答率， 誤識別率， 判別不能率， 必要試行回
+
+15.5 Hz，識別手法はCCA，提示時間6 sで，参加者4名の
+
+数，CTI，ITRを 表1に 示 す． 参 加 者5名 のITRの 平 均
+
+平均正答率82.99±4.98％，平均ITR 28.06±6.45 bits/min
+
+は30.5 bits/min， このうち上位2名（Pt.6，Pt.7）では，
+
+という結果を得ている．成績の良い2名の正答率は94.55
+
+35.8 bits/minとなった．
+
+± 3.34％，85.14 ± 7.21％，ITRは 36.44 ± 8.85 bits/min，
+原著：定常視覚誘発電位を用いたメニュー選択インタフェースの識別アルゴリズムの提案
+
+13
+
+28.88±6.45 bits/minであった．
+Linら 12）の研究では，64部位の医用脳波計を用い，刺
+激装置はCRTモニタで9刺激の同時提示，刺激周波数は
+
+参加者8名中5名で平均正答率83.3％，ITR 30.5 bits/min，
+平均試行回数2試行以内， このうち上位2名では正答率
+100％，ITR 35.8 bits/min，という結果が得られた．
+
+27 ～43 Hz，部位選定と識別にCCAを用い，時間幅2.25 s，
+
+正答率の悪い参加者が生じた原因の解明は今後の課題
+
+参加者11名で，平均約75％の正答率という結果である．
+
+であるが，入力結果のフィードバックがなく集中力持続
+
+図から個人の正答率が25 ～90％であることが読み取れ，
+
+が難しい課題であったことも一つの要因と考えられる．
+
+個人差が大きいことがわかる．ITRは計算されていない．
+
+今後，このアルゴリズムをメニュー選択インタフェース
+
+いずれの研究も個人差が大きく，参加者の選び方で成
+
+に実装し評価する予定である．自らの意思で入力をさせ
+
+績が大きく変わってくる．また，SSVEPは刺激強度（視
+
+ることで，集中力が持続しやすくなり識別成績が向上す
+
+角，照度差など）が大きいほど明確になり，刺激間隔が
+
+るのではないかと期待している．
+
+広いほど隣接刺激の混入は小さくなる．Liuら 7）の研究で
+
+本論文は，筆頭著者の学位論文 19）の一部として記載し
+
+は視角についての記載がないので，LCD全面に刺激が配
+
+た実験データに新たな解析と判別アルゴリズムを適用し
+
+置されていたと仮定して図から推定すると刺激の視角は
+
+たものである．
+
+約5 ～6 deg， 刺激間隔は3 deg程度である．Linらの研究
+では，著者らの先行研究 20）から推定すると刺激の視角は
+1.9×2.6 deg， 刺激間隔は4.3 deg程度である． 本研究で
+は先行研究より厳しい条件で実験をしている点を考慮す
+ると，良好な成績が得られていると言えるのではないか
+と考える．
+なお，Linらの研究 12）でもCCAを用いている．CCAは，
+電極数が多いときのノイズ耐性に効果があり，刺激の高
+調波を含む複数成分を目的変数，複数チャンネルの脳波
+の高調波を含む複数成分を説明変数に用いる方法で識別
+率向上に有用である．本研究では，電極数が少なく，刺
+激が正弦波で高調波を含まないこと，SSVEPの高調波
+成分も刺激周波数が高いためにもともと小さい上Emotiv
+内蔵のローパスフィルタ（カットオフ周波数45 Hz）で減
+衰している．そのため，CCAを導入しても成績向上は期
+待できない．
+今回の実験では，刺激の配置と提示順序をカウンタバ
+ランスしていないため，刺激周波数と刺激位置の正答率
+に及ぼす影響については検討できない．これらについて
+は今後の課題である．
+
+5．おわりに
+本研究の成果は，1）脳波計測を簡単にするために市
+販のヘッドセットEmotivを用い，20 Hz以上の視覚刺激
+でもSSVEPが得られることを確認したこと，2）リフ
+レッシュレート120 HzのLCDに，20 Hzか ら2 Hz刻 み で
+30 Hzまでの6周波数の正弦波による輝度変調刺激（視角
+1.6 deg）を同時提示し，そのいずれに注視しているか識
+別できることを示したこと，3）各刺激周波数に対する
+SSVEPのZ-Scoreの閾値を用い， キャリブレーションや
+機械学習が不要な識別アルゴリズムを提案したこと，4）
+
+14
+
+人間工学
+
+Vol.53, No.1（’17）
+
+参考文献
+1）
+		 Zhu D, Bieger J, et al: A survey of stimulation methods
+used in SSVEP-based BCIs, Computational Intelligence
+and Neuroscience 2010, Article ID 702357, 1-13, 2010
+2）
+		 Herrmann CS: Human EEG responses to 1-100 Hz
+flicker: resonance phenomena in visual cortex and their
+potential correlation to cognitive phenomena. Experimental
+Brain Research, 137
+（3-4）
+, 346-353, 2001
+3）		 安藤惇, 外山純一, 他：定常視覚誘発電位によるドライ
+ビングシミュレータの定量的ステアリング操作, 日本バー
+チャルリアリティ学会論文誌, 15
+（1）
+, 33-40, 2010
+4）		 泉岡太輔, 笹山瑛由, 他： 定常視覚誘発電位に基づく
+BCI： 振幅変化を利用した被注意刺激の判別に関する基
+礎的検討, 電子情報通信学会技術研究報告, NC. 111（96）,
+91-96, 2011
+5）		 張誠, 木村陽介, 他：定常的視覚誘発電位に基づいたブ
+レイン・コンピューターインタフェースにおける移動ロボッ
+トの制御, 電子情報通信学会技術研究報告, NC. 111（315）,
+41-46, 2011
+6）		 Vliet M, Robben A, et al: Designing a brain-computer
+interface controlled video-game using consumer grade EEG
+hardware, Proc. of Biosignals and Biorobotics Conference
+2012 ISSNIP, 1-6, 2012
+7）		 Liu Y, Jiang X, et al: Implementation of SSVEP based
+BCI with Emotiv EPOC, Proc. of IEEE International
+Conference on Virtual Environments, Human-Computer
+Interfaces and Measurement Systems, 34-37, 2012
+8）		 Chumerin N, Manyakov N, et al: Steady-state visual evoked
+potential-based computer gaming on a cosumer-grade EEG
+device, IEEE trans. On Computational Intelligence and AI
+in Games, 5
+（2）
+, 100-110, 2013
+9）		 Wang Y, Wang R, et al: Brain-computer interface based on
+the high-frequency steady-state visual evoked potential, Proc.
+of the 1st International Conference on Neural Interface and
+Control, 37-39, 2005
+10）
+		 Ruen SL, Ibrahim F, et al: Assessment of steady-state
+visual evoked potential for brain computer communication,
+Proc. of the 3rd Kuala Lumpur International Conference
+
+on Biomedical Engineering, 352-354, 2007
+
+19）		 棒谷英法： 生体信号を用いた入力インタフェ ースの開
+
+11）		 Sami S, Nielsen KD: Communication speed enhancement
+for visual based brain computer interfaces, Proc. of the 9th
+
+発と評価に関する研究, 大阪工業大学, 2015, 博士論文
+20）		 Cheng M, Gao XR, et al: Design and implementation of
+
+Annual Conference of the International FES Society, 2004
+12）		 Lin Z, Zhang C, et al: Frequency recognition based on
+canonical correlation analysis for SSVEP-based BCIs, IEEE
+trans. on Biomedical Engineering, 54
+（6）
+, 1172-1176, 2007
+13）		 Lee P, Sie J, et al: An SSVEP-actuated brain computer
+interface using phase-tagged flickering sequences: a cursor
+system. Annals of Biomedical Engineering, 38
+（7）
+, 2383-2397,
+2010
+14）		 Hyu K, Lee MH, et al: The low-cost implement of a phase
+coding SSVEP-based BCI system, Proc. of the 17th IEEE
+International Conference on Electronics, Circuits, and
+Systems, 559-562, 2010
+15）		 Hung YW, Lee PL, et al: Accounting for phase drifts in
+SSVEP-based BCIs by means of biphasic stimulation, IEEE
+trans. on Biomedical Engineering, 58
+（5）
+, 1394-1402, 2011
+16）		 Chuan J, Gao X, et al: Frequency and phase mixed coding
+in SSVEP-based brain-computer interface, IEEE trans. on
+Biomedical Engineering, 58
+（1）
+, 200-206, 2011
+17）		 Leow RS, Leow RS, et al: An efficient low-cost realtime brain computer interface system based on SSVEP,
+IEICE Electronics Express, 7（5）, 326-331, 2010
+18）		 白鳥友規, 南波寛直, 他：SSAを用いた脳波SSVEPの
+2クラス判別, 電子情報通信学会技術研究報告, NC, 113
+（315）, 13-16, 2013
+
+a brain-computer interface with high transfer rates, IEEE
+trans. on Biomedical Engineering, 49
+（10）
+, 1181-1186, 2002
+
+著者情報
+棒谷英法（ぼうたにひでのり，正会員，連
+絡著者）
+2015年大阪工業大学工学研究科生体医工
+学博士後期課程卒業．研究は，生体信号を
+用いたアプリケーション，特に脳波を用い
+た研究をしている．現在，自動車会社の研
+究所勤務．日本生体医工学会，ヒューマン
+インタフェース学会の会員．
+連絡先：boutanihidenori@gmail.com
+大須賀美恵子（おおすがみえこ，正会員）
+1979年東京大学工学部計数工学科卒． 三
+菱電機㈱の勤務を経て，2002年より大阪
+工業大学情報科学部情報メディア学科教
+授，2006年より同学工学部生体医工学科，
+2010年より同学部ロボット工学科 教授．
+博士（工学）
+．
+専門領域：生理心理工学．IEEE，ヒュー
+マンインタフェース学会，日本生体医工学
+会などの会員．
+連絡先：mieko.ohsuga@oit.ac.jp
+
+原著：定常視覚誘発電位を用いたメニュー選択インタフェースの識別アルゴリズムの提案
+
+15
+
+

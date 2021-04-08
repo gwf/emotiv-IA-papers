@@ -1,0 +1,728 @@
+Steady State Visual Evoked Potential Detection Using Subclass
+Marginal Fisher Analysis
+Anastasios Maronidis, Vangelis P. Oikonomou, Spiros Nikolopoulos and Ioannis Kompatsiaris
+Abstract— Recently, SSVEP detection from EEG signals has
+attracted the interest of the research community, leading to a
+number of well-tailored methods, such as Canonical Correlation
+Analysis (CCA) and a number of variants. Despite their
+effectiveness, due to their strong dependence on the correct
+calculation of correlations, these methods may prove to be
+inadequate in front of potential deficiency in the number of
+channels used, the number of available trials or the duration
+of the acquired signals. In this paper, we propose the use
+of Subclass Marginal Fisher Analysis (SMFA) in order to
+overcome such problems. SMFA has the power to effectively
+learn discriminative features of poor signals, and this advantage
+is expected to offer the appropriate robustness needed in
+order to handle such deficiencies. In this context, we pinpoint
+the qualitative advantages of SMFA, and through a series of
+experiments we prove its superiority over the state-of-the-art
+in detecting SSVEPs from EEG signals acquired with limited
+resources.
+
+I. INTRODUCTION
+Steady State Visual Evoked Potentials (SSVEPs) have
+become an integral part of contemporary Brain Computer
+Interfaces (BCIs), offering new ways of communication to
+special groups of users with certain physical disabilities
+[1]. For example, they may allow people with mobility
+impairments to interact with computers using merely their
+eyes. SSVEPs are based on the concept that the human
+brain is perfectly tuned to an oscillating visual stimulus and
+thus the EEG activity of the brain parts, responsible for
+vision, exhibit similar frequency properties to the stimulus.
+Based on this assumption, there is a strong potential to
+detect the frequency generating the stimulus by looking
+for SSVEPs in EEG signals acquired from subjects during
+their exposition to the stimulus. However, in practice, noise
+artefacts and interference (e.g., severe contamination of EEG
+by eye movement, current noise, etc) hinder the correct
+SSVEP detection and in order to circumvent this barrier,
+reliable methods have to be invented.
+Usually, a whole pipeline consisting of preprocessing
+(e.g., band-pass filtering), artefact removal/correction, feature
+extraction and feature classification is used for SSVEP
+detection [2]. In this paper, we mainly focus on the feature
+extraction step, although we also use some preprocessing and
+of course a classification step in our methodology. Along
+these lines, the recent intense activity of the research community around SSVEPs has led to the development of various
+feature extraction methods, which coupled with state-of-theart classifiers, have allowed for the effective SSVEP detection
+*This work was not supported by any organization
+All the authors are with Information Technologies Institute, Centre for
+Research and Technology Hellas, Greece amaronidis@iti.gr
+
+from EEG signals. For instance, a number of typical methods
+operating in the frequency domain, like Power Spectral Density Analysis (PSDA) [3], have been proposed. However such
+methods prove to be highly sensitive to background noise and
+require long time windows to estimate the signal spectrum
+with sufficient frequency resolution [4]. For overcoming this
+drawback, recently, a variety of time-domain methods has
+been proposed. Among these methods, Canonical Correlation
+Analysis (CCA) has become the baseline, because of its
+proven effectiveness and its ease of implementation. Based
+on its capability of revealing correlations between two sets
+of multi-dimensional variables, CCA identifies the target
+frequency based on the canonical correlation values between
+multi-channel EEG time-domain signals and predefined sinusoidal reference signals at stimulation frequencies [5].
+A clear strong point of CCA is that it does not require
+calibration. However its functionality is affected by the
+interference of spontaneous EEG activities. For alleviating
+this shortcoming, some extensions of the standard CCA have
+been investigated in the literature. In [6], a number of CCA
+variants have been collectively presented and compared in
+SSVEP detection. Among these extensions, an Individual
+Template based CCA method (IT-CCA), which averages
+across multiple EEG trials from each subject has been
+proposed for optimising the reference signals per frequency
+stimulus [7]. In addition, a spatial filtering method, also
+known as Combined CCA (Comb-CCA), which combines
+correlation coefficients between a) projections of a test set,
+b) individual templates and c) sine-cosine reference signals,
+has been proposed in [8].
+The above methods have been successfully used in laboratory settings (e.g., for biomedical purposes), where up to
+256 channels are often used to acquire as many EEG trials
+as needed for the analysis. Moreover, these trials may have
+sufficient time-length ensuring the correct functioning of the
+detection methods. Nowadays though, there is an emerging
+demand to achieve top classification performance in realtime scenarios where all the above acquisition resources
+are limited. Indeed, an increasing number of EEG wearable
+devices (e.g., EMOTIV Epoc) is being used for everyday
+purposes in out-of-lab environments by arbitrary end-users
+with high expectations and little patience. Consequently,
+finding those methods that optimally combine computational
+efficiency, robustness to limited resource availability and
+SSVEP detection effectiveness may have a strong impact
+from both a technological and a commercial perspective.
+In this paper, motivated by the above demand, we propose
+the use of Subclass Marginal Fisher Analysis (SMFA) [9]
+
+in SSVEP detection from EEG signals. SMFA belongs to a
+general category of techniques, known as Subspace Learning
+(SL) [10], which in the process of feature extraction reduce
+the dimensionality of the raw data, while retaining as much
+discriminant information as possible. In general, SL methods
+have been applied to many different classification domains
+with noticeable success [11]. Amongst them, Linear Discriminant Analysis (LDA) [12] and Multi-Linear Regression
+(MLR) [4] have become baseline approaches, and a multitude
+of other methods build on them.
+In contrast to typical SL methods, SMFA qualifies as the
+most appropriate method for SSVEP detection, as it collects
+a number of important advantages, which are explained in
+detail in the following sections. The most prominent characteristic of SMFA is that it exploits potential subclass structure
+within the classes of the data, which offers a clear advantage
+in the context of SSVEP detection. Indeed, according to
+some recent studies, EEG signals tend to form clusters based
+on their phase content [13] and this clustering information
+could be exploited by SMFA in achieving better classification
+accuracy. Along these lines, in this paper, through a series of
+experiments on a benchmark database, we show that SMFA
+outperforms the state-of-the-art in SSVEP detection using
+only very few (even 5 trials per frequency), short (down to
+0.5sec) EEG signals, which have been acquired using only
+3 channels. Therefore, it is highly recommended as an offthe-shelf solution to the SSVEP detection problem, outside
+the laboratory environment.
+II. M ETHODOLOGY
+In this section, we present the SMFA methodology proposed for SSVEP detection from EEG signals. The main
+concept of this methodology is to i) project the initial signals
+onto a lower dimensional space, while maintaining the classdiscriminant information and ii) employ a baseline classifier
+on the obtained low-dimensional signals. As SMFA and
+generally SL methods stem from Linear Algebra, from now
+on, data trials will be referred to as vectors.
+A. Subclass Marginal Fisher Analysis
+Subclass Marginal Fisher Analysis has its inception in
+Subclass Graph Embedding (SGE), which is a general framework for developing algorithms that reduce the dimensionality of high-dimensional data samples [11]. In SGE, we seek
+for a projection matrix V ∈ Rn×m so that every vector
+x ∈ Rn lying in the initial space can be projected to a lowdimensional vector y ∈ Rm , with m < n via: y = VT x. The
+projection matrix V is learned by the use of a set of training
+vectors X = {x1 , x2 , · · · , xN }, which are represented by
+two graphs, namely, the intrinsic graph Gint = {X , Wint }
+and the penalty graph Gpen = {X , Wpen }, where Wint
+and Wpen are the corresponding graph matrices. The intrinsic and penalty graph matrices model the similarity and
+dissimilarity connections, respectively, between every pair
+of training vectors that have to be reinforced after the
+projection. For both graph matrices, the larger their values
+
+are, the stronger their effect on the respective pairs of training
+vectors will be.
+SMFA, in contrast to typical unimodal methods like LDA,
+is aimed at exploiting potential subclass information within
+the classes. In reaching its goal, SMFA builds the intrinsic
+and penalty graph matrix in such a way that characterises the
+within subclass compactness and the between class separability, respectively [14]. Moreover, apart from supervised
+labelling, SMFA also uses the topology of the classes and
+subclasses, which is encoded as neighbouring information
+among the vectors. More specifically, the intrinsic graph
+matrix of SMFA is defined as:
+
+1 , if p ∈ Nkint (q) or q ∈ Nkint (p)
+Wint (q, p) =
+,
+0 , otherwise
+(1)
+where Nkint (q) denotes the index set of the kint nearest
+neighbors of the q-th vector in the same subclass. On the
+other hand, the penalty graph matrix of SMFA is defined as:
+
+1 , if p ∈ Mkpen (q) or q ∈ Mkpen (p)
+Wpen (p, q) =
+,
+0 , otherwise
+(2)
+where Mkpen (q) denotes the set of vectors that belong to
+the kpen nearest neighbours of q outside the class of q. It
+is worth noting that in contrast to the intrinsic graph matrix,
+the values of the penalty graph matrix depend merely on the
+class information regardless of the subclass labels. In this
+way, constraints between subclasses belonging to the same
+class are avoided, offering better generalisation chances [9].
+Having constructed the two above intrinsic and penalty
+matrices, SMFA sets and solves the following optimisation
+problem:
+XLint XT v = λXLpen XT v ,
+(3)
+where Lint = Dint − Wint is the intrinsic Laplacian
+matrix and Dint is the intrinsic Degree matrix defined as
+the diagonal matrix,
+which has at position (q, q) the value
+P
+Dint (q, q) = p Wint (q, p). Similarly are defined Lpen and
+Dpen . Eq. (3) reduces to solving the following generalised
+eigenvalue problem
+Lint v = λLpen v ,
+
+(4)
+
+keeping the eigenvectors vi ∈ Rn , i ∈ {1, 2, . . . , m} that
+correspond to the m smallest eigenvalues. The projection
+matrix V then contains the above eigenvectors as columns
+and the subspace learning process is completed.
+1) A qualitative comparison of SMFA with CCA-based
+methods: In contrast to the majority of CCA-based methods, which calculating canonical correlations learn improved
+reference signals, SMFA digs deep into the data per se,
+looking for discriminant information. This is very important,
+as CCA-based methods strongly depend on the implicit
+assumption that test signals have common characteristics
+with the reference signals and there is no strong evidence that
+this assumption always holds. Moreover, lacking the ability
+to use the inherent discriminant information lying within the
+data may not permit the subtraction of potential noise and
+variation that accompany EEG signals.
+
+2) A qualitative comparison of SMFA with typical SL
+methods: SMFA collects a number of advantages that render it a perfect candidate for SSVEP detection, against
+other SL methods. First of all, when using SMFA, there
+is no assumption on the data distribution, since the intrasubclass compactness is encoded by the nearest neighbours
+of the data belonging to the same subclass and the interclass separability is modelled using the margins among the
+classes. Furthermore, the functionality of SMFA is based
+on two parameters, i.e., kint and kpen , which appropriately
+adjusted may lead to avoiding potential overfitting, therefore
+offering generalisation power to the method. Last but not
+least, the available projection dimensionality using SMFA
+is determined by kpen , which almost always is much larger
+than that of methods like LDA.
+B. Subclass extraction
+From the presentation of SMFA, it is clear that an integral
+part of its operation is the use of subclasses. Therefore a
+question that naturally emerges is how many subclasses are
+there in each different class and what is the best way to
+extract these subclasses. Although these are general questions, in the context of SSVEP an answer could be provided
+by the use of signal phase information. Indeed, based on
+some previous studies [13], it has been shown that in front
+of a visual stimulus, signals tend to take two fundamental
+forms according to the brain hemisphere that is mainly
+working. By specifying the number of subclasses per class, a
+baseline clustering approach (e.g., K-means) usually suffices
+to effectively extract the clusters within each class that form
+the corresponding subclasses.
+C. Classification
+Having completed the dimensionality reduction process
+using SMFA, the resulting low dimensional vectors are used
+for training a classifier. Theoretically, under ideal conditions,
+SMFA achieves optimal discrimination of the several classes
+in Bayesian terms. For this reason, in general, a Nearest
+Cluster Centroid (NCC) approach can be used to classify
+correctly any test vector into the appropriate frequency
+stimulus [15].
+III. E XPERIMENTS
+A. Dataset description
+For the experiments we used the publicly available SCCN
+dataset [6]. SCCN is a 12 class SSVEP dataset acquired
+from 10 subjects in a simulated BCI experiment. Each class
+represents a stimulus frequency in the range from 9.25Hz
+to 14.75Hz with increment 0.5Hz. More specifically, during
+the acquisition, each subject was sitting in a 60cm distance
+from a computer monitor with 60Hz refreshing rate and was
+asked to gaze for 4sec at one of multiple squares flickering
+at a specific frequency. 8-channel EEG signals were then
+recorded with 2048Hz sampling rate and downsampled to
+256Hz. With the previous process, for each subject, 180 trials
+(15 trials per stimulus frequency), each of 1024 samples,
+were acquired.
+
+B. Performance Evaluation
+All the experiments in this paper were conducted using the
+eeg-processing-toolbox [16]. For evaluating the performance
+of the several methods we followed the same approach as
+in [6]. The classification accuracy was calculated in a “per
+subject” basis, using leave-one-block out cross validation,
+where each block consists of 12 trials, i.e., one trial per
+frequency. More specifically, in each of 15 cross validation
+rounds, 168 trials (i.e., 14 trials per each frequency) were
+used for training and the remaining 12 trials (i.e., 1 trial per
+frequency) were used for testing. In addition to classification accuracy, method performance was also evaluated by
+calculating the Information Transfer Rate (ITR) [6], which
+is perfectly suited for evaluating real-time performance, as
+it indicates the capability of a method to transfer SSVEP
+detection information from the user trials to the system. ITR
+is defined as:
+
+
+
+1−A
+60
+· log2 Nf + A log2 A + (1 − A) log2
+IT R =
+,
+T
+Nf − 1
+(5)
+
+where T is the EEG trial length (in seconds), Nf is the
+number of different stimulus frequencies, and A is the
+classification accuracy. Following the instructions of [6], as
+regards the time-length T , in each experiment, we considered
+an extra 1sec duration which is due to gaze shifting.
+C. Data preprocessing and parameter selection
+In all experiments, following the pipeline approach presented in Section I, the data were first preprocessed using Infinite Impulse Response (IIR) digital band-pass Butterworth
+filtering of the 3rd degree, in 6-80Hz band. Finally, trial
+normalisation was ensured by mean signal referencing.
+The parameters involved in SMFA (i.e., kint and kpen )
+were selected among a number of indicative values, as
+those that returned the best results in a set of preliminary
+experiments. For extracting the subclasses needed by SMFA,
+we employed K-means and for the sake of completeness we
+experimented with diverse numbers of subclasses. Interestingly, in accordance with the findings mentioned in Section
+II-B, two subclasses per class returned the best classification
+results in almost all cases.
+Based on Section II-C, in our study we used NCC classifier. We also tried Support Vector Machines (SVMs) in
+both linear and RBF mode with diverse values of the several
+parameters. However, SVM performed consistently worse
+than NCC and for this reason the corresponding accuracy
+results have been omitted.
+D. Standard experiment
+In this experiment we evaluated the performance of the
+methods using all available resources. The average accuracy
+and ITR across all subjects, with different EEG time-lengths
+from 0.5sec to 4sec, are illustrated in Fig. 1 (a) and (b),
+respectively. From Fig. 1 (a), it is straightforwardly implied
+that Comb-CCA outperforms the rest methods in almost all
+cases, in terms of classification accuracy. However, interestingly, in 0.5sec SMFA shows the top performance, which
+is a strong indication of its robustness when using short
+EEG signals. Along the same lines, the most interesting
+remark from Fig. 1 (b) is that the best ITR, which is around
+
+100
+
+90
+
+90
+
+80
+
+CCA
+IT-CCA
+Comb-CCA
+MLR
+LDA
+SMFA
+
+70
+
+80
+
+60
+
+ITR (bits/min)
+
+Accuracy (%)
+
+60
+70
+
+CCA
+IT-CCA
+Comb-CCA
+MLR
+LDA
+SMFA
+
+50
+40
+
+20
+10
+
+0
+
+0.5
+
+1
+
+1.5
+
+2
+
+2.5
+
+3
+
+3.5
+
+4
+
+Data length (sec)
+
+(a)
+Fig. 1.
+
+40
+30
+
+30
+20
+
+50
+
+0
+
+0
+
+0.5
+
+1
+
+1.5
+
+2
+
+2.5
+
+3
+
+3.5
+
+4
+
+Data length (sec)
+
+(b)
+
+Performance comparison of SSVEP detection methods using all 8 channels. (a) Averaged classification accuracy, (b) ITR.
+
+80 bits per minute, is shared by SMFA and Comb-CCA.
+This finding proves the strong potential of SMFA in realtime SSVEP detection systems. Regarding the other methods,
+it is worth observing the superiority of SL methods over
+CCA-based, when using less than 2sec signals, in terms of
+both accuracy and ITR. Finally, standard CCA completely
+fails to compete with the other methods, with around 20%
+accuracy at 0.5sec, which can be attributed to the inadequacy
+of 0.5sec trials to correlate with the reference sinusoidal
+signals, accentuating at the same time the disadvantage of
+CCA to lack a calibration phase.
+
+methods when reducing the number of channels, in contrast
+to CCA-based methods, whose functionality seems to be
+strongly dependent on the number of available channels.
+For instance, Comb-CCA’s best accuracy drops from 98% to
+94% (at 4sec), while SMFA accuracy remains stable around
+95% (at 4sec), between the two experiments. This finding,
+highlights the added value of using SL methods and in
+particular SMFA in settings where only a limited number
+of channels are available.
+
+E. Comparing classification performance using three channels
+
+In this experiment, for each subject, we used all 8 channels
+in 0.5sec, varying the number of the training trials per
+frequency from 14 to 4. The mean accuracy results across
+all subjects are illustrated in Fig. 3. The first remark from
+Fig. 3 is that SMFA is consistently superior over the rest
+methods with mean accuracy 76.2% and 63.3%, for 14 and
+4 training trials, respectively. On the other hand, the second
+position is held by Comb-CCA and MLR, for 4-10 and
+11-14 training trials, respectively. More specifically, CombCCA has accuracy performance 60.8% for 4 training trials,
+whereas MLR has accuracy 72.1% for 14 training trials. In
+general, it is worth stressing that SL methods consistently
+outperform CCA-based ones – except for Combined CCA
+– proving the ability of SL methods to detect SSVEPs in
+settings where only a few EEG trials are available. Finally,
+it is interesting to notice the stable performance of standard
+CCA across different numbers of training trials, which is
+expected given that CCA is devoid of training and thus its
+performance is independent of the number of used training
+trials.
+
+In verifying the superiority of SMFA when using a small
+number of channels, we carried out an experiment using
+channels 6, 7 and 8. The selection of these channels is
+justified as follows. According to the 10/20 international
+reference system, channel 7 corresponds to Oz , whereas
+channels 6 and 8 are approximately equivalent to O1 and
+O2 , which are connected to those areas of the occipital
+lobe that are most sensitive to visual stimuli. In addition,
+these channels are often used by common devices and thus
+conclusions about them can be extended to data acquired
+using such devices. The average accuracy results along with
+the corresponding ITRs are illustrated in Fig. 2.
+From Fig. 2 (a), it is interesting to observe that SMFA in
+almost all cases outperforms the other methods. In particular,
+at 0.5sec, SMFA shows the top performance with accuracy
+64.00%, which is around 4% over the 60.06% of the second
+in rank MLR. Interestingly, in general, Comb-CCA seems to
+fall short compared to SL methods and furthermore it shows
+worse performance than IT-CCA for longer than 1.5sec signals. Standard CCA shows again extremely low performance,
+which can be explained using the same arguments as in the
+standard experiment. Finally, from Fig. 2 (b), in terms of
+ITR, SMFA clearly returns the best result with 63.33 bits
+per minute using 1sec time-length signals, while Comb-CCA
+along with MLR and LDA hold the second rank with around
+59 bits per minute.
+Comparing Fig. 1 (a) with Fig. 2 (a), it is interesting
+to observe the robustness of SMFA and in general of SL
+
+F. Comparing classification performance using different
+number of training trials
+
+IV. CONCLUSIONS
+In this paper, we proposed the use of Subspace Learning
+methods and in particular SMFA for SSVEP detection from
+EEG signals, in cases where there is deficiency in acquisition
+resources, such as small number of channels, limited EEG
+trials and short time-length signals. Through an experimental
+study, we demonstrated that in such cases, SMFA outperforms a number of state-of-the-art CCA-based methods welltailored to the SSVEP detection problem. The superiority
+
+70
+
+100
+90
+
+CCA
+IT-CCA
+Comb-CCA
+MLR
+LDA
+SMFA
+
+60
+
+80
+50
+
+ITR (bits/min)
+
+Accuracy (%)
+
+70
+60
+
+CCA
+IT-CCA
+Comb-CCA
+MLR
+LDA
+SMFA
+
+50
+40
+30
+
+10
+
+0
+
+0.5
+
+1
+
+1.5
+
+2
+
+2.5
+
+3
+
+3.5
+
+4
+
+Data length (sec)
+
+0.5
+
+1
+
+1.5
+
+2
+
+2.5
+
+3
+
+3.5
+
+4
+
+Performance comparison of SSVEP detection methods using channels 6, 7 and 8. (a) Averaged classification accuracy, (b) ITR.
+
+70
+
+60
+
+Accuracy (%)
+
+0
+
+(b)
+
+80
+
+50
+
+CCA
+IT-CCA
+Comb-CCA
+MLR
+LDA
+SMFA
+
+40
+
+30
+
+20
+14
+
+0
+
+Data length (sec)
+
+(a)
+Fig. 2.
+
+30
+
+20
+
+20
+10
+
+40
+
+13
+
+12
+
+11
+
+10
+
+9
+
+8
+
+7
+
+6
+
+5
+
+4
+
+Number of training trials
+
+Fig. 3. Classification accuracy using different numbers of 0.5 sec length
+training trials.
+
+of SMFA is attributed to several qualitative advantages,
+which were discussed in this paper. In addition, from the
+experiments it was shown that SL methods, in general,
+outperform CCA-based ones. Another important remark is
+that all methods requiring training are impressively robust
+when using short trials, and along the same lines, it was
+explicitly proven that the time-length of the trials is very
+crucial for the correct functioning of the standard CCA.
+In summary, the general conclusion of this paper is that
+SMFA constitutes an off-the-shelf solution to the SSVEP
+detection problem, that can be adopted in real-time BCI environments with limited resources for capturing EEG signals.
+Moreover, although in this paper the great potential of SMFA
+has been explicitly proven, these are only early results and
+there might be much more space for further improving its
+performance. More specifically, a great advantage of SMFA
+is that it contains a number of parameters, which appropriately adjusted can optimize its effectiveness. In the near
+future we intend to further experiment with these parameters
+as well as employ more sophisticated methods for extracting
+the subclasses.
+R EFERENCES
+[1] J. Li, J. Liang, Q. Zhao, J. Li, K. Hong, and L. Zhang, “Design
+of assistive wheelchair system directly steered by human thoughts,”
+International journal of neural systems, vol. 23, no. 03, p. 1350013,
+2013.
+
+[2] V. Oikonomou, G. Liaros, K. Georgiadis, E. Chatzilari, K. Adam,
+S. Nikolopoulos, and I. Kompatsiaris, “Comparative evaluation of
+state-of-the-art algorithms for ssvep-based bcis,” arXiv:1602.00904,
+February 2016.
+[3] M. Cheng, X. Gao, S. Gao, and D. Xu, “Design and implementation of
+a brain-computer interface with high transfer rates,” IEEE transactions
+on biomedical engineering, vol. 49, no. 10, pp. 1181–1186, 2002.
+[4] H. Wang, Y. Zhang, N. R. Waytowich, D. J. Krusienski, G. Zhou, J. Jin,
+X. Wang, and A. Cichocki, “Discriminative feature extraction via
+multivariate linear regression for ssvep-based bci,” IEEE Transactions
+on Neural Systems and Rehabilitation Engineering, vol. 24, no. 5, pp.
+532–541, 2016.
+[5] G. Bin, X. Gao, Z. Yan, B. Hong, and S. Gao, “An online multi-channel
+ssvep-based brain–computer interface using a canonical correlation
+analysis method,” Journal of neural engineering, vol. 6, no. 4, p.
+046002, 2009.
+[6] M. Nakanishi, Y. Wang, Y.-T. Wang, and T.-P. Jung, “A comparison
+study of canonical correlation analysis based methods for detecting
+steady-state visual evoked potentials,” PloS one, vol. 10, no. 10, p.
+e0140703, 2015.
+[7] G. Bin, X. Gao, Y. Wang, Y. Li, B. Hong, and S. Gao, “A high-speed
+bci based on code modulation vep,” Journal of neural engineering,
+vol. 8, no. 2, p. 025015, 2011.
+[8] Y. Wang, M. Nakanishi, Y.-T. Wang, and T.-P. Jung, “Enhancing
+detection of steady-state visual evoked potentials using individual
+training data,” in 2014 36th Annual International Conference of the
+IEEE Engineering in Medicine and Biology Society. IEEE, 2014, pp.
+3037–3040.
+[9] A. Maronidis, A. Tefas, and I. Pitas, “Subclass marginal fisher analysis,” in Computational Intelligence, 2015 IEEE Symposium Series on.
+IEEE, 2015, pp. 1391–1398.
+[10] A. Maronidis, D. Bolis, A. Tefas, and I. Pitas, “Improving subspace
+learning for facial expression recognition using person dependent and
+geometrically enriched training sets,” Neural Networks, vol. 24, no. 8,
+pp. 814–823, 2011.
+[11] A. Maronidis, A. Tefas, and I. Pitas, “Graph embedding exploiting
+subclasses,” in Computational Intelligence, 2015 IEEE Symposium
+Series on. IEEE, 2015, pp. 1452–1459.
+[12] D. J. Kriegman, J. P. Hespanha, and P. N. Belhumeur, “Eigenfaces
+vs. fisherfaces: Recognition using class-specific linear projection,” in
+ECCV, 1996, pp. I:43–58.
+[13] D. Liparas, S. Dimitriadis, N. Laskaris, A. Tzelepi, K. Charalambous,
+and L. Angelis, “Exploiting the temporal patterning of transient vep
+signals: A statistical single-trial methodology with implications to
+brain–computer interfaces (bcis),” Journal of neuroscience methods,
+vol. 232, pp. 189–198, 2014.
+[14] A. Maronidis, A. Tefas, and I. Pitas, “Subclass graph embedding and
+a marginal fisher analysis paradigm,” Pattern Recognition, vol. 48,
+no. 12, pp. 4024–4035, 2015.
+[15] ——, “Frontal view recognition using spectral clustering and subspace
+learning methods,” in International Conference on Artificial Neural
+Networks. Springer, 2010, pp. 460–469.
+[16] G. Liaros, V. Oikonomou, K. Georgiadis, E. Chatzilari, K. Adam,
+S. Nikolopoulos, and I. Kompatsiaris, “eeg-processing-toolbox,”
+https://github.com/MAMEM/eeg-processing-toolbox, 2016.
+
+

@@ -1,0 +1,3428 @@
+Energy Efficient Compression of
+Biological Signals at the Sensor Node
+by
+Hesham Mahrous
+
+A THESIS SUBMITTED IN PARTIAL FULFILLMENT OF
+THE REQUIREMENTS FOR THE DEGREE OF
+MASTER OF APPLIED SCIENCE
+in
+The Faculty of Graduate and Postdoctoral Studies
+(Electrical and Computer Engineering)
+
+THE UNIVERSITY OF BRITISH COLUMBIA
+(Vancouver)
+March 2017
+c Hesham Mahrous 2017
+
+Abstract
+Compression of biological signals is rapidly gaining much attention in research especially for Wireless Body Area Networks (WBANs) applications.
+This is because of their demonstrated potential in assisting physicians and
+patients, and helping them achieve a more convenient lifestyle. This work focuses on some problems arising in the deployment of EEG signals in WBANs
+where EEG data is collected and then transmitted using devices powered
+by batteries. To elongate the battery life, the energy consumed by acquiring, processing and transmitting the data has to be minimized. Lots of
+work using Compressed Sensing (CS) have addressed this problem and have
+demonstrated power savings in WBANs for applications such as Seizure detection. None of these studies however, have demonstrated a high quality
+signal recovery at high compression ratios such as 10:1. Higher quality signal
+recovery results in better performance for seizure detection. The ultimate
+goal is to achieve high quality recovery at high compression rates so as to
+elongate the battery life and without degrading the performance of WBAN
+applications. Two frameworks have been previously proposed to solve this
+problem. The first is a CS framework, which has an Analog to Digital Converter (ADC), micro-controller, and a low power transmitter at the sensor
+node. The second framework has an under-sampling circuit, an ADC, and
+ii
+
+a transmitter.
+This thesis compares the results of the state of the art CS algorithms of
+both frameworks and demonstrates their performance in automatic seizure
+detection. Then it proposes two methods that achieve high quality signal
+recovery at high compression rates, for both frameworks. These methods
+are demonstrated on 3 different datasets. The first method, BSBL-LNLD is
+used for the CS framework. It exploits the linear and a non-linear dependency of multivariate EEG signals to recover the compressed signals. This
+method can achieve up to 0.06 Normalized Mean Square Error (NMSE)
+at 10:1 compression ratio. The second method solves the under-sampling
+CS framework using a Meyer wavelet over-complete dictionary by using the
+Analysis-Prior Formulation. This method achieves up to 0.18 NMSE at 10:1
+compression ratio. The proposed methods achieve superb recovery quality
+and significantly decreased energy consumption.
+
+iii
+
+Preface
+This thesis presents the research conducted by Hesham Mahrous, in collaboration with Professor Dr. Rabab K. Ward. I hereby declare that I am the
+first author of this thesis. Chapters 4 and 5 are based on work that I have
+conducted. This work was published in the following journal and conference:
+1. Mahrous, H.; Ward, R., Block Sparse Compressed Sensing of Electroencephalogram (EEG) Signals by Exploiting Linear and Non-Linear
+Dependencies. Sensors 2016, 16, 201.
+2. Mahrous; Ward, A Low Power Dirac Basis Compressed Sensing Framework for EEG using a Meyer Wavelet Function Dictionary. IEEE
+CCECE 2016
+For both publications, I carried out the literature review, developed the
+frameworks, implemented them in software, carried out the simulations,
+analyzed the results, and wrote the manuscripts. Dr. Ward helped in formulating the research problem, supervised the direction of the research, and
+provided significant editorial comments and important suggestions for the
+organization of each manuscript.
+
+iv
+
+Table of Contents
+Abstract
+
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+ii
+
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+iv
+
+Table of Contents . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+v
+
+List of Tables
+
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+ix
+
+List of Figures . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+x
+
+Preface
+
+List of Acronyms . . . . . . . . . . . . . . . . . . . . . . . . . . . . xii
+Acknowledgments
+
+. . . . . . . . . . . . . . . . . . . . . . . . . . . xiii
+
+1 Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+1
+
+1.1
+
+Biological Signals in Wireless Body Area Networks (WBAN)
+
+1
+
+1.2
+
+Electroencephalogram (EEG) Signals
+
+. . . . . . . . . . . . .
+
+3
+
+1.3
+
+Challenges of EEG in WBANs . . . . . . . . . . . . . . . . .
+
+4
+
+1.4
+
+Aim of the Thesis
+
+. . . . . . . . . . . . . . . . . . . . . . . .
+
+7
+
+1.5
+
+Lossy and Lossless Compressions . . . . . . . . . . . . . . . .
+
+7
+
+1.6
+
+Compressed Sensing . . . . . . . . . . . . . . . . . . . . . . .
+
+9
+
+1.7
+
+Seizure Detection
+
+9
+
+. . . . . . . . . . . . . . . . . . . . . . . .
+
+v
+
+1.8
+
+Motivation
+
+. . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+1.9
+
+Literature Review on Compressed Sensing
+
+10
+
+. . . . . . . . . .
+
+11
+
+1.10 Contribution of this Research . . . . . . . . . . . . . . . . . .
+
+13
+
+1.11 Thesis Structure . . . . . . . . . . . . . . . . . . . . . . . . .
+
+14
+
+2 Compressed Sensing . . . . . . . . . . . . . . . . . . . . . . . .
+
+16
+
+2.1
+
+Sparse Signals
+
+. . . . . . . . . . . . . . . . . . . . . . . . . .
+
+17
+
+2.2
+
+Measurement and Reconstruction Algorithms . . . . . . . . .
+
+18
+
+2.3
+
+Incoherence of Sensing Matrix and Dictionary
+
+20
+
+2.4
+
+Block Sparse Recovery and Conventional Sparsity
+
+. . . . . .
+
+21
+
+2.5
+
+Block Sparse Bayesian Learning Framework . . . . . . . . . .
+
+22
+
+3 A Compressed Sensing Framework for EEG Signals . . . .
+
+25
+
+. . . . . . . .
+
+3.1
+
+Problem Description . . . . . . . . . . . . . . . . . . . . . . .
+
+25
+
+3.2
+
+Method . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+27
+
+3.2.1
+
+Transmission of Compressed EEG Signals at Sensor
+Node
+
+3.3
+
+. . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+3.2.2
+
+Recovery Algorithms at Server Node
+
+3.2.3
+
+Power Consumption Evaluation
+
+3.2.4
+
+Seizure Detection Technique
+
+Results
+
+27
+
+. . . . . . . . .
+
+29
+
+. . . . . . . . . . . .
+
+29
+
+. . . . . . . . . . . . . .
+
+30
+
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+33
+
+3.3.1
+
+Seizure Dataset
+
+. . . . . . . . . . . . . . . . . . . . .
+
+3.3.2
+
+Results using the State-of-the-Art Techniques
+
+3.3.3
+
+Energy Savings Results at High Compression Rates
+
+. . . .
+.
+
+33
+34
+35
+
+vi
+
+3.3.4
+
+Seizure Detection Performance Results After Recovery Using the Current State of the Art Recovery Technique
+
+3.4
+
+. . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+Discussion and Conclusion
+
+. . . . . . . . . . . . . . . . . . .
+
+36
+38
+
+4 Exploiting Linear and Non-Linear Dependency in BSBL Framework . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+39
+
+4.1
+
+Problem Description . . . . . . . . . . . . . . . . . . . . . . .
+
+39
+
+4.2
+
+Approach . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+40
+
+4.3
+
+Method . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+44
+
+4.3.1
+
+Epoching . . . . . . . . . . . . . . . . . . . . . . . . .
+
+45
+
+4.3.2
+
+Channel Arrangement and Vectorization
+
+. . . . . . .
+
+45
+
+4.3.3
+
+Compression Using Binary Sparse Matrix . . . . . . .
+
+47
+
+4.3.4
+
+Modification of BSBL-BO Algorithim (BSBL-LNLD)
+
+48
+
+4.4
+
+4.5
+
+Experiments and Results
+
+. . . . . . . . . . . . . . . . . . . .
+
+50
+
+4.4.1
+
+Datasets
+
+. . . . . . . . . . . . . . . . . . . . . . . . .
+
+51
+
+4.4.2
+
+Dependence Measure of Intra and Inter EEG blocks .
+
+51
+
+4.4.3
+
+Error Metrics
+
+. . . . . . . . . . . . . . . . . . . . . .
+
+53
+
+4.4.4
+
+Compression/Recovery Results . . . . . . . . . . . . .
+
+54
+
+4.4.5
+
+Seizure Detection After Signal Recovery Results . . .
+
+58
+
+Conclusion and Discussion
+
+. . . . . . . . . . . . . . . . . . .
+
+59
+
+5 A Compressed Sensing Technique by Under Sampling EEG
+Signals . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+61
+
+5.1
+
+Problem Description . . . . . . . . . . . . . . . . . . . . . . .
+
+61
+
+5.2
+
+Approach . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+63
+vii
+
+5.3
+
+Method . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+5.3.1
+
+Meyer Wavelet for Over-Complete Dictionary Construction
+
+5.3.2
+5.4
+
+5.5
+
+65
+
+. . . . . . . . . . . . . . . . . . . . . . . . .
+
+65
+
+Analysis Prior Formulation . . . . . . . . . . . . . . .
+
+67
+
+Experiments and Results
+
+. . . . . . . . . . . . . . . . . . . .
+
+67
+
+. . . . . . . . . . . . . . . . . . . . . . . . .
+
+67
+
+5.4.1
+
+Datasets
+
+5.4.2
+
+Dictionary Sparsity
+
+. . . . . . . . . . . . . . . . . . .
+
+68
+
+5.4.3
+
+Compression/Recovery Results . . . . . . . . . . . . .
+
+69
+
+5.4.4
+
+Power Consumption Estimation
+
+. . . . . . . . . . . .
+
+70
+
+5.4.5
+
+Seizure Detection After Signal Recovery Results . . .
+
+72
+
+Conclusion
+
+. . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+73
+
+6 Conclusions and Future Directions . . . . . . . . . . . . . . .
+
+75
+
+6.1
+
+Conclusions . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+75
+
+6.2
+
+Future Directions
+
+. . . . . . . . . . . . . . . . . . . . . . . .
+
+77
+
+Bibliography . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+79
+
+viii
+
+List of Tables
+1.1
+
+Commercially Available EEG headset showing battery life . .
+
+3.1
+
+Reconstruction Results of the State of the Art Algorithms at
+high compression rates . . . . . . . . . . . . . . . . . . . . . .
+
+3.2
+
+35
+
+Break Down of Power consumption Results at different compression Rates in milliwatts . . . . . . . . . . . . . . . . . . .
+
+3.3
+
+5
+
+35
+
+Average Seizure Detection Performance at different compression rates using BSBL-BO and STSBL-EM Algorithms . . . .
+
+36
+
+4.1
+
+NMSE of the different methods at different compression rates
+
+57
+
+4.2
+
+Average Seizure Detection Performance at 90% compression
+rates: Signals are recovered by BSBL-BO and BSBL-LNLD .
+
+5.1
+
+5.2
+
+59
+
+Mean and standard deviation of N M SE at different compression rates using 3 different datasets . . . . . . . . . . . . . . .
+
+70
+
+Power Consumption in uW at different Compression Rates
+
+72
+
+.
+
+ix
+
+List of Figures
+1.1
+
+Block diagram for the EEG WBAN framework . . . . . . . .
+
+3.1
+
+A Block diagram of a basic EEG CS framework showing the
+sensor node and the server node . . . . . . . . . . . . . . . . .
+
+3.2
+
+26
+
+A Block diagram Showing the Training and Prediction of
+Seizure Detection . . . . . . . . . . . . . . . . . . . . . . . . .
+
+4.1
+
+5
+
+32
+
+(a) DCT of vec[X T ] of 23 channels, (b) DCT of vec[X] of 23
+channels, (c) DCT of signal xl of 23 seconds length, (d) DCT
+of signal xl if one second length . . . . . . . . . . . . . . . . .
+
+42
+
+4.2
+
+Context Block Diagram of CS method . . . . . . . . . . . . .
+
+44
+
+4.3
+
+Block structure of correlated and uncorrelated signals in the
+DCT domain . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+4.4
+
+Mean Correlation and PLV in the blocks and between the
+blocks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+4.5
+
+53
+
+NMSE vs Number of Channels of proposed Method at Different Compression % Rates . . . . . . . . . . . . . . . . . . . .
+
+4.6
+
+46
+
+55
+
+Samples of Recovered EEG Signals at 90 % Compression
+Rates using state-of-the-art Recovery Algorithms . . . . . . .
+
+57
+
+x
+
+5.1
+
+A Block diagram Showing the Sensor and the Server Node
+when Solving the Under Sampling Problem . . . . . . . . . .
+
+5.2
+
+Band-Pass Filter bank Over-Complete Dictionary generated
+using the Meyer Ψ(Ω) function . . . . . . . . . . . . . . . . .
+
+5.3
+
+66
+
+Absolute Values of Meyer Wavelet Coefficients and Gabor
+Coefficients sorted in Descending Order . . . . . . . . . . . .
+
+5.4
+
+63
+
+68
+
+Seizure Detection Event Specificity and Event Sensitivity at
+different recovery NMSE . . . . . . . . . . . . . . . . . . . . .
+
+73
+
+xi
+
+List of Acronyms
+AWGN
+ADC
+BCI
+BSBL
+BSBL-BO
+BW
+BP
+CR
+CS
+DCT
+DWT
+EEG
+ECG
+EMG
+IoT
+NMSE
+PPG
+MMV
+RIP
+SNR
+SSIM
+SMV
+SVM
+STFT
+STSBL
+WBAN
+WPAN
+WT
+
+Additive White Gaussian Noise
+Analog to Digital Converter
+Brain Computer Interface
+Block-Sparse Bayesian Learning
+Block-Sparse Bayesian Learning - Bounded Optimization
+Bandwidth
+Blood Pressure
+Compression Ratio
+Compressed Sensing
+Discrete Cosine Transform
+Discrete Wavelet Transform
+Electroencephalogram
+Electrocardiography
+Electromyography
+Internet of Things
+Normalized Mean Square Error
+Photoplethysmogram
+Multiple Measurements Vectors
+Restricted Isometry Property
+Signal-to-Noise Ratio
+Structural SIMilarity
+Single Measurement Vector
+Support Vector Machine
+Short Time Fourier Transform
+Spatio Temporal Sparse Bayesian Learning
+Wireless Body Area Network
+Wireless Personal Area Network
+Wavelet Transform
+
+xii
+
+Acknowledgments
+I would like to thank and acknowledge my colleagues at the lab for their support and help, but first and foremost I would like to thank my supervisor Dr.
+Ward for her unconditional support and encouragement. I cannot express
+the gratitude and appreciation I have for her professionalism, support, body
+of knowledge, achievements, and most importantly her kindness and understanding. Dr. Ward helped in formulating the research problem, supervised
+the direction of the research, and provided significant editorial comments
+and important suggestions for the organization of each manuscript.
+
+xiii
+
+Chapter 1
+
+Introduction
+1.1
+
+Biological Signals in Wireless Body Area
+Networks (WBAN)
+
+WBAN is a wireless network of wearable sensors attached to the human body
+to collect sensory data. This data are not limited to Electroencephalogram,
+Electrocardiography, pulse oximetry,and Oxygen saturation sensors. WBAN
+sensory devices can be embedded inside the body, or can be mounted outside
+the body in a fixed position. These sensors exhibit large amount of data that
+can be used for applications in healthcare, fitness, information technology,
+and Internet of Things (IoT). Smart devices such as smart phones, pads
+and watches play an important role in terms of acting as a data hub that
+provides a user interface to view and manage such applications [56], [52]. The
+development of WBAN technology has emerged during the last two decades
+around the idea of using personal physiological data to develop user friendly
+applications and high quality health care systems. A WBAN system can
+use a Wireless Personal Area Network (WPAN) as gateways to reach longer
+ranges and allow physiological data to be accessible by web applications and
+services. Through gateway devices, it is possible to connect the wearable
+
+1
+
+body sensors (worn on the human body) to the Internet. This way, the body
+sensors data can be used for online gaming applications, medical analysis
+and visualization applications, Brain Computer Interfaces (BCIs), and IoT.
+Addressing all these aspects at once is a very challenging task. In this thesis
+we focus only on the data transmission, aspects mainly related to medical
+applications such as seizure detection.
+Statistics studies have shown that a significant number of seniors suffer
+from chronic diseases and that these are increasing in younger people due
+to unhealthy eating habits and lifestyles [46]. As a result, more financial
+resources must be allocated for the health care system, estimated to be in the
+billions of dollars. Chronic diseases are not easily discovered. This requires
+constant medical check-ups and supervision. One of the reasons healthcare is suffering from scalability issues is because chronic disease patients
+require continuous monitoring of their condition. Traditional health-care
+cannot solve this problem, as it requires a one-to-one relationship between
+the caregiver and the patient. The one-to-one medical attention is costly,
+therefore solutions that are cost effective are required.
+WBAN medical applications can be a solution that is gaining a lot of
+recognition in the health care industry [54], [68]. It allows patients to continuously monitor themselves at home via applications and real-time monitoring systems, while caregivers can be at a remote clinic. By using physiological sensors such as Electroencephalography (EEG), Electrocardiography
+(ECG), Photoplethysmogram (PPG), and Blood Pressure (BP) that are attached to the body, WBANs allow patients to check on their vital signs and
+only consult with a physician when it is needed. WBANs are cost-effective
+2
+
+and scalable which make them practicable to use in health-care solutions.
+For such applications, it is required to have a reliable system that is
+minimally obtrusive and allows the patient to move and walk freely, which
+is the reason why WBANs can be valuable. Each of the above mentioned
+physiological signals is associated with its unique problems in WBANs. In
+this thesis, we only focus on the problems that are associated with EEG
+signals in WBAN applications. Lots of works are carried out to address
+problems of the other type of signals, but this is not the area of interest in
+this thesis.
+
+1.2
+
+Electroencephalogram (EEG) Signals
+
+Electrical brain activity is a main component of WBANs and requires extensive studies. The EEG signals are recorded using non-invasive wireless
+sensors located on a patients scalp and then used for medical applications
+and BCIs. EEG signals are used to detect and predict several medical conditions, such as epileptic seizures. Seizure detection by a WBAN has advantages in health-care because it is a cost-effective solution. Seizures occur
+relatively rarely, hence seizure detection requires constant monitoring for a
+long period of time. This is the reason why seizure detection is resource intensive when carried in a health institution. Health-care Applications that
+utilize EEGs and WBANs can provide patients a way to do the monitoring themselves and then consult a physician when needed. It also enables
+the physicians to automatically monitor patients and assists them to take
+medical decisions during the occurrence of epidemic events such as seizure
+
+3
+
+events. Other common uses of EEG signals include sleep pattern studies,
+and the diagnosis and treatment of strokes, infections (e.g. encephalitis,
+cerebral abscess), cerebral tumors and diseases (e.g. Alzheimers) [55].
+
+1.3
+
+Challenges of EEG in WBANs
+
+The hardware setup of the EEG-based WBAN is shown in figure 1.1. The
+commercially available wireless EEG sensors are assembled on a headset and
+the arrangement of the sensors usually follows the international convention
+(e.g. the international 10-20 system). The number of sensors (electrodes) depends on the application, some require a few numbers of sensors and others
+require a few hundreds. All sensors are wired to an Analog to Digital Converter (ADC) then a central microprocessor unit processes the data. After
+the ADC and the data processing stage, the processed data is transmitted
+via a low-power radio such as Bluetooth or Zigbee. The combination of the
+EEG sensors, ADC, and the microprocessor unit is referred to as the sensor node. This sensor node is battery-powered. The sensor node transmits
+the EEG data to the server node, which is placed in a close proximity or
+routed to a cloud server via WPAN. The server node contains a low-power
+radio receiver and a computing resource (to perform storage, process, and
+heavy computation depending on the applications). It is assumed that there
+are no constraints on the computational power at the server node. There
+are commercially available and off the shelf EEG-based WBAN products
+mainly used for research purposes. These commercially EEG headset are
+summarized in Table 1.1.
+
+4
+
+Figure 1.1: Block diagram for the EEG WBAN framework
+Table 1.1: Commercially Available EEG headset showing battery life
+Headset Brand
+Emotiv
+NeuroSky
+Interaxon Muse
+Imec
+B-Alert X24
+Quasar DSI
+Enobio 32
+
+Number of EEG channels
+14
+1
+4
+8
+24
+23
+32
+
+Battery Life
+12 hours
+8 hours
+5 hours
+22 hours
+8 hours
+12 hours
+14 hours
+
+Reference
+24
+51
+49
+37
+48
+1
+50
+
+The wireless EEG headsets mentioned in the table suffer from two drawbacks. First, the battery life is limited which makes it impractical and
+inconvenient to the patient. If the battery life of a headset is at most 22
+hours, the patients would not be able to continuously monitor the EEG signals. If any of these batteries has to be changed or recharged every day, this
+will be inconvenient to the patient. Second, the number of EEG channels
+is fairly low and usually the 10-20 International System is desired for EEG
+applications. The reason is that the more the number of EEG channels, the
+higher is the spatial resolution, which could improve current applications or
+even unlock new ones. The number of EEG channels is intrinsically linked
+
+5
+
+to the battery life. Using more channels decreases the battery life due to the
+additional requirements carried out on the sensor node such as additional
+sensing and additional wireless data transmission. In addition to that the
+number of the transmitted data packets used to continuously monitor patients is limited per unit time (every second). These limitations restrict the
+maximum number of channels that can be used on the headset. Solutions
+that can address these two drawbacks are highly desired for providing a
+more practical commercial product to customers and patients.
+The battery life available on the sensor node in a WBAN is limited. It
+is required to power the circuits that acquire and digitize the data. Also,
+the battery provides power to the micro-controller that carries out computations on the sensor node, and to the wireless radio transmitter. There is
+little that can be done to minimize the sensing energy. The sensing stage
+is the acquisition of raw data from the sensor. The acquired data are then
+converted from the analog to a digital form. For the computations that are
+carried out by the micro- controller on the sensor node, energy savings is possible. Energy efficient algorithms can be used to achieve low computational
+complexity and hence saving battery life. Also, minimizing the amount
+of data transmitted by the radio transmitter will minimize the power consumed. To minimize the amount of transmitted data from the sensor node,
+the acquired digitized signals are compressed before transmission using low
+computational complexity algorithms. The higher the compression ratio the
+lower the power consumed by the radio transmitter.
+In conclusion, reducing the overall power consumption in the sensor node
+can be achieved by reducing the computational power and the data transmit6
+
+ted by the transmitting radio. Therefore, finding a compression solution for
+EEG signals that does not require lots of computational power is essential.
+Conventionally, EEG signals are collected by the sensors and sampled above
+the Nyquist rate. Then, compression algorithms are directly applied to the
+sampled data, at the sensor node, prior to radio transmission. However,
+traditional compression algorithms consume a high computational power at
+the sensor node which is not desired for WBAN application.
+
+1.4
+
+Aim of the Thesis
+
+The aim is to find a compression framework suitable for EEGs used in telemonitoring and seizure detection applications, in the context of WBANs.
+The goal is to find a solution to extend the battery life of an EEG based
+WBAN and to prove its reliability for use in applications such as seizure
+detection.
+
+1.5
+
+Lossy and Lossless Compressions
+
+Lots of works related to the compression of EEG signals have been proposed.
+Generally, compression algorithms are categorized to be either lossless or
+lossy. Lossless algorithms recover the original data from their compressed
+form, but usually require high computational complexity and achieve low
+compression ratios [63]. On the other hand, lossy algorithms recover the
+original signals with an acceptable error margin. Using lossy algorithms provide higher compression ratios and tend to be less complex. Since WBAN
+requires high compression ratios and low complex algorithms, lossy algo7
+
+rithms are used in this work. A seizure detection application is applied after
+the compression to demonstrate the practicality of lossy algorithms.
+Depending on the application, utilizing lossy algorithms is possible because exact recovery is not necessary as long as a small reconstruction error
+is tolerated given a specific application. Several lossy algorithms offer interesting solutions for EEG signals which are mentioned in previous literature.
+The study in [10] proposed a compression technique that discards the lowest absolute values by of the Daubechies-8 wavelet coefficients. The high
+coefficients are then uniformly quantized. In [31] a classified signature and
+envelope vector sets approach is proposed. This method is based on the generation process of the classified signature and envelope vector sets (CSEVS)
+which employs an effective k-means clustering algorithm. EEG signals are
+modeled by multiplying only three factors called the classified signature
+vector, the classified envelope vector, and the gain coefficient (GC). The
+normalized mean square error of the reconstructed signals of this technique
+is relatively higher than other more successful techniques. In [34] and [35]
+a wavelet compression technique that use the CDF 9/7 wavelet coefficients
+is proposed. Similarly, in [10] in [34] and [35] the use of CDF 9/7 wavelet
+coefficients is proposed instead of Daubechies-8 wavelet coefficients. For
+these 3 wavelets compression techniques, the highest 10 percent of the absolute values of wavelet coefficients are sufficient enough to reconstruct the
+original signal at a low reconstruction error. To the best of our knowledge,
+this is the best state of the art lossy compression technique which achieves
+very low normalized mean square error at high compression rates. However,
+compression using wavelets cannot be applied in WBANs because their ap8
+
+plication is complex enough to apply at the sensor node. For this reason,
+other compression techniques shall be used to implement at the sensor node.
+
+1.6
+
+Compressed Sensing
+
+Much recent research work have studied the use of compressed sensing (CS)
+as an alternative compression technique for ECG, EEG, and EMG data in
+the context of WBANs [46]. After acquiring and digitizing the raw data, the
+digitized data are sampled by CS by taking random linear projections of the
+data (implemented by performing a matrix multiplication) on the sensor
+node. With the correct choice of this matrix, the compression is done at
+low power consumption. The reconstruction of the data is computationally
+complex and is done at the server node [9].
+In CS, the signal has to be sparsely represented; usually sparsity is
+achieved by using a dictionary matrix. A dictionary matrix is a matrix
+that transforms the data to another domain (FFT, DWT, Gabor...etc). The
+smaller the number of random linear projections that is sufficient to recover
+the signal exactly, the longer battery life is achieved for the sensor node. To
+reconstruct the signal, usually greedy algorithms or optimization algorithms
+are used. Chapter 2 contains more details about CS and its underlying theory.
+
+1.7
+
+Seizure Detection
+
+Epilepsy is characterized by sudden discharge of electricity in the brain, it is
+a neurological disorder and around 50 million people worldwide suffer from
+9
+
+it [13]. Such abnormality is sometimes called a seizure, which occurs without warnings and for no obvious reason. This is the reason why seizures are
+unpredictable. The detection or prediction of a seizure can automatically
+prompt immediate medical assistance or even the avoidance of a seizure
+by using a closed-loop application. Using scalp EEG (EEG data collected
+using non-invasive sensors), much automatic seizure detection/prediction
+research work that have shown promising detection performance have been
+developed. The results of such work opens up new possibilities to manage
+and control epilepsy. For example, to trigger a warning signal to remote
+health-care providers during seizure events or to apply a close-loop electricity
+stimulation to intervene with the seizure event and prevent it [38]. Since
+seizures are unpredictable, contentious patient monitoring is required at all
+time. This is the reason EEG based WBAN can be a potential solution for
+seizure detection or prevention.
+
+1.8
+
+Motivation
+
+The motivation behind this thesis is to develop CS recovery techniques
+to achieve high compression ratio, hence, lower the power consumption in
+WBANs. The reconstruction of a highly compressed signal is a challenging
+problem and computationally intensive. Usually there is no limitation on
+the reconstruction side, server node, because there is no power limitation on
+the server node. However, if the compression ratio is too high at the sensor node and the reconstruction quality is not sufficient for the application,
+then the compression ratio is lowered. Hence, low compression ratios are
+
+10
+
+directly associated with high power consumption at the sensor node. The
+goal is to find a CS technique that achieves high quality of reconstruction
+at high compression rates and to prove its reliability in seizure detection
+application.
+
+1.9
+
+Literature Review on Compressed Sensing
+
+The work presented in [54] is the first study that applies CS to EEG compression. The Multiple Measurements Vectors (MMV) approach, that jointly
+compresses the signals from all channels and reconstructs them simultaneously is shown to obtain a reasonable reconstruction error at high compression ratios. However, the experiment is setup in a way such that the EEG
+signals are acquired from repeated trials. A patient was asked to repeat the
+same task many times during the recording of one EEG channel each time.
+This setup increases the coherence in the signals with each other. Usually
+patients are not prompted to act in a certain way or to repeat the same
+task multiple times and for this reason this setting is not desired in WBAN
+applications.
+Since then lots of other work in CS methods have been applied to reconstruct single EEG channels [68], [54], [2], [46], [25]. The work in [54] and [2]
+proposes a CS framework for EEG signals. This framework is compared with
+those using the following dictionaries: a Gabor dictionary, a Mexican hat
+(second derivative of Gaussian function), a linear spline, a cubic spline, and
+a linear B spline and Cubic B-Spline. In [36], ECG and EEG signals were
+reconstructed using a Linear B Spline wavelet dictionary and Cubic B-Spline
+
+11
+
+matrix and reconstructed using Bayesian Compressive Sensing. The dictionary is randomly sampled and a modified banded Toeplitz dictionary matrix
+is formed. Another recent approach applied independent component analysis to pre-processes the EEG signals, prior to applying compressed sensing,
+so as to improve their sparse representation [47]. Zhang et al. have recently
+proposed reconstructing the EEG signals using a Block Sparse Bayesian
+Learning Bounded Optimization (BSBL-BO) framework [68]. BSBL-BO reconstructs EEG signals without using a sparsifying dictionary matrix such
+as a Gabor dictionary. It is empirically shown to be highly effective in reconstructing EEG signals, as long as a low reconstruction error is tolerated.
+In [25], a compressive sensing framework is proposed where inter-channel
+redundancy removal is applied at the sensor after the sensing stage.
+The above studies have addressed the Single Measurement Vector (SMV)
+CS case i.e. single EEG channels are compressed and decompressed channel
+by channel. However, the simultaneous reconstruction of the CS signals
+from their multi-channel measurements (referred to as the MMV problem)
+has been shown to recover the signals more accurately than by applying
+SMV solutions on each channel separately [14], [66], [14], [67].
+In [14] the MFOCUSS algorithm extended the diversity minimization
+FOCUSS algorithm from an SMV to an MMV algorithm. MFOCUSS is
+an iterative re-weighted regularized algorithm that solves a lp norm minimization, where 0 < p1 for MMV. In [66], the MFOCUSS was modified to
+tMFOCUSS by replacing the regularization with the Mahalanobis distance
+regularization, to capture the temporal correlation of the MMV signals. A
+similar idea is used in [14] to capture the temporal correlation, but in this
+12
+
+case a Sparse Bayesian framework for MMV signals is employed. In [67] a
+STSBL-EM algorithm is proposed to solve the MMV model by exploiting
+the temporal and spatial correlation of the signals. It achieves somehow
+lower reconstruction errors compared to applying BSBL-BO on each channel. In this work we propose a method to solve the MMV problem and the
+SMV problem.
+
+1.10
+
+Contribution of this Research
+
+The above mentioned work in the section on Literature Review on Compressed Sensing investigated these questions:
+1. Which energy saving techniques can be realized in CS for EEG WBAN
+applications?
+2. Is it possible to exploit both the EEG temporal correlations (intracorrelations) and spatial correlations (inter-correlations between channels) to increase the compression performance of CS?
+3. Does block sparsity achieve better compression performance than conventional sparsity in EEG compression ?
+4. What is the impact of CS on the performance of a practical application
+that uses EEG signals?
+The main contributions of this thesis are:
+• Proposing novel CS techniques that fully take advantage of the inherent structure present in EEG signals (both temporal and spatial
+13
+
+linear dependence and nonlinear dependence) achieving high quality
+recovery rate at high compression rates.
+• Proposing a novel CS technique that solves the under sampling problem achieving acceptable recovery at high compression rates. Solving
+the under sampling problem unlocks a key in WBAN to replace the
+micro-controller on the sensor node with a low power random sampling
+circuit, thus saving more power more reliably.
+• Comparing CS frameworks with other state-of-the-art compression
+techniques for EEG compression used in WBAN.
+• Applying a CS technique to compress signals in the context of a seizure
+detection application and evaluating its impact on the performance of
+the system.
+
+1.11
+
+Thesis Structure
+
+This thesis is organized as follows. Chapter 2 gives an overview of the theory
+underlying CS and the state of the art reconstruction algorithms such as
+STBSBL, BSBL-BO.
+Chapter 3 shows the compression and recovery results of these techniques. It also shows the battery life performance and the seizure detection
+results when these techniques are used to recover the compressed signals.
+Chapters 4-5, present different versions of CS frameworks for EEG compression in the context of WBANs. Chapter 4 introduces a reconstruction
+algorithm for jointly compressing multichannel EEG data. It takes advan14
+
+tage of the linear and non-linear dependence structure of the EEG signals,
+spatially and temporally. Chapter 5 proposes a technique that solves the
+under-sampling problem and achieves high re-construction quality at high
+compression rates. Solving the under-sampling problem for EEG signals
+saves reduces the power consumption in WBAN sensor nodes, thus the
+micro-controller on the sensor node is replaced by a random sampling circuit.
+Both Chapters 4, and 5 applies both CS techniques in the seizure detection
+problem, shows the results of the power consumption model for both CS
+techniques and compares them with the baseline (no-compression) results.
+Finally, Chapter 6 concludes this thesis by summarizing the contributions
+proposed in chapters 4 and 5 and by offering possible extensions of our work
+and paths to explore.
+
+15
+
+Chapter 2
+
+Compressed Sensing
+Since this thesis revolves around the basis of compressed sensing (CS) this
+chapter discuses the key theoretical concepts of CS. Lots of literature have
+introduced the theory of compressed sensing, also it has been applied in
+many disciplines such as MRI imaging, remote sensing data, seismology,
+and many more. In this section the entire literature of compressed sensing
+is not entirely covered as it is not our aim. This work only focused on applying compressed sensing to a practical problem, therefore the basics that
+will allow the reader to understand how CS works will only be mentioned.
+This chapter is structured as follows. Section 2.1 discusses the meaning of
+signal sparsity and its importance in compressed sensing. Section 2.2 discusses how the EEG signals are measured using the measurement matrix
+and the conventional reconstruction algorithms used to decompress signals
+in CS. Section 2.3 discusses the necessary conditions of the measurement
+matrix and dictionary matrix so that the reconstruction is made possible.
+Section 2.4 discusses the difference between block sparsity and the conventional sparsity mentioned in section 2.1, also the difference in reconstruction
+quality is discussed. Finally, Section 2.5 briefly explains BSBL framework
+and the algorithms derived from them.
+
+16
+
+2.1
+
+Sparse Signals
+
+Almost every signal has a sparse representation in a transform domain. Lots
+of work on EEG signals have tried to find such sparse domain such as using
+transforms like Gabor, second derivative of Gaussian function, linear spline,
+DCT, Wavelets, cubic spline, linear B spline, and Cubic B-Spline [54], [2],
+[36]. Greedy and optimization recovery algorithms are usually used to solve
+for a CS compression problem which requires the signal to have a sparse
+representation in a transform domain. The CS recovery algorithms exploit
+the fact that most signals have a sparse representation in some dictionary.
+The dictionary is denoted by DN XK = [D1 , D2 , ..., DK ]. Given a nonsparse one dimension signal x of length N , x can be represented in a sparse
+form which is written as:
+
+x = Dz =
+
+K
+X
+
+z i Di
+
+(2.1)
+
+i=1
+
+The sparse vector z has a size of K1 which contains large number of zero
+(or small) coefficients, and the non-sparse signal x can be obtained from z
+using few dictionary columns, Di , from the dictionary matrix, D. There are
+a number of non-zero elements in z which is denoted as S, it is said that z
+is the S-sparse representation of x in a given dictionary D. D is also called
+the synthesis dictionary.
+
+17
+
+2.2
+
+Measurement and Reconstruction Algorithms
+
+The compression technique in compressed sensing is performed by the sensing matrix A. Assume the number of EEG channels is L. For the lth
+channel, the corresponding CS model, denoted as the single measurement
+vectors (SMV) model is expressed as
+
+yl = Axl .
+
+(2.2)
+
+In equation 2.2, the vector xl ∈ IRN is the raw signal, converted from
+analog to a digital form, of the lth channel, yl ∈ IRM is the CS compressed
+signal, and A ∈ IRM XN is the measurement matrix (also called the sensing
+matrix). N is the number of samples of xl , and M is the number of projected
+samples after the reduction/compression of xl .
+Equation 2.2 makes it possible to only acquire M samples instead of N
+samples, hence the data is compressed. Where M << N and M > S. As
+mentioned above, S is the smallest number of vector non-zero elements in D
+that represent the signal xl in a sparse form. The success of recovery relies
+on the key assumption that xl is sparse. When xl has a sparse representation
+in a certain domain or dictionary D, then xl can be expressed as xl = Dzl .
+D can be an orthogonal discrete cosine transform (DCT) or an orthogonal
+discrete wavelet transform (DWT) matrix. Therefore, Equation 2.2 can be
+rewritten as:
+yl = AD T zl
+
+(2.3)
+
+To obtain xl from the vector yl , there are an infinite number of solutions
+
+18
+
+for xl or its sparse form zl . Since the signal that is intended to recover
+is sparse, the most correct solution is assumed to be the sparsest solution.
+This corresponds to solving the following an L0 optimization problem which
+is given as
+
+minzl kzl k0 subject to yl = ADzl
+
+(2.4)
+
+Unfortunately, solving for equation 2.4 is a NP hard problem, and therefore it can not be used as a solution. To solve such a problem requires an
+exhaustive search over all the possible combinations of the columns of D. If
+D ∈ IRN XN then there are N ! possible solutions. Fortunately, this problem
+can be converted into an L1 optimization problem which is more practical
+problem due to its convexity. There equation 2.4 can be rephrased as:
+
+minzl kzl k1 subject to yl = ADzl
+
+(2.5)
+
+The solution of equation 2.5 is called the synthesis prior formulation.
+This problem is similar to linear programming and there are many practical
+solvers that exist that can achieve perfect recovery when the small number
+of measurements are small (i.e. M << N ) [41].
+In synthesis prior formulation problem, the objective was to solve for
+the sparse coefficients zl . This formulation is getting so much in the field
+of CS and has been studied extensively. Another alternative is proposed
+which is the opposite and the objective is to solve for xl directly such that
+Hxl is a sparse representation. The dictionary D will be refereed to as the
+synthesis dictionary, while H is refereed to as the analysis dictionary, and
+19
+
+both dictionaries achieves sparsity. When H is used to solve for the CS
+problem, the solution is called analysis prior formulation which is given as:
+
+minxl kHxl k1 subject to yl = Axl
+
+(2.6)
+
+The analysis and synthesis prior formulations are equivalent only when
+their sparsifying dictionaries are orthogonal (i.e. D = H −1 ). The synthesis
+prior formulation approach is only possible if D is either orthogonal or
+tight-frame. On the other hand, if this is the case then the analysis prior
+formulation is used to solve for the problem.
+
+2.3
+
+Incoherence of Sensing Matrix and
+Dictionary
+
+Assuming we are solving a synthesis prior formulation problem, the Perfect
+recovery is possible if the Restricted Isometric Property (RIP) of AD is
+satisfied. The RIP is defined as follows:
+
+(1 − δS )kxl k2 ≤ kADzl k2 ≤ (1 + δS )kxl k2
+
+(2.7)
+
+δS is referred to as the isometric constant of the matrix A such that
+δS < 1. The RIP guarantees that the solution (signal energy) is bounded
+by an upper bound and a lower bound. If the value of δS is small then
+more signal energy is captured and the more stable the inversion of AD
+becomes[9].
+As long as RIP is satisfied perfect reconstruction is achieved at a mini20
+
+mum sampling rate given by M ≥ µ2 (AD.S.log(N )) [32], [71]. This equation shows the minimum value of M that can be chosen, so as perfect reconstruction is achieved. where S is the number of non-zero elements in zl ,
+and µ2 is a coherence function between the two matrices A and D. The
+minimum value that can be chosen for M is dictated by S and the value
+of µ2 (A.D.S.log(N ). To achieve maximum incoherence, both matrices A
+and D should be selected carefully, so that D achieves a minimum S in
+sparsifying xl . Much work has been done by previous researchers, to find
+the optimal D and A to achieve a minimum M .
+
+2.4
+
+Block Sparse Recovery and Conventional
+Sparsity
+
+It has been shown that better reconstruction can be obtained by exploiting the block-sparsity (assuming the data vector is block sparse) than by
+only exploiting the sparsity in the signal (assuming the vector is sparse in
+the conventional sense) [68], [22], [23]. The conventional sparsity solution
+method only assumes that xl has at most S non-zero elements, in a sparse
+domain. However, it does not exploit any further structure that the signal
+may have. The non-zero components can appear anywhere in xl , however,
+there are cases in which the non-zero values can form blocks [23].
+
+21
+
+2.5
+
+Block Sparse Bayesian Learning Framework
+
+BSBL-BO is a CS framework [71] that has been recently proposed for solving
+the Single-Measurement-Vector (SMV) model (i.e. the model 2.2 with L=1).
+While some CS algorithms depend on the sparsity of the signal, BSBL-BO
+exploits the block sparsity in the signal, provided the signal is block sparse
+[68]. That is, BSBL-BO assumes that the vector xl consists of (g nonoverlapping) blocks and some of these blocks are all zeros. As mentioned in
+[68] and [71], the block size can be arbitrarily and the block partition does
+not need to be consistent with the true block structures of the signal.
+Raw EEG signals generally do not have clear block structures in the
+time domain. Therefore, BSBL-BO is applied on the DCT coefficients of
+the signals [68]. By using the DCT dictionary matrix, an EEG signal is
+expressed as a DCT coefficient vector, where the coefficients with significant
+nonzero values concentrate at the lower frequencies of the coefficient vector
+(from the ”energy compaction” property of DCT). The coefficient vector can
+be viewed as a concatenation of one or more nonzero blocks followed by a
+number of zero blocks. Therefore, BSBL-BO can exploit this specific block
+sparsity in the DCT coefficients by first obtaining the DCT coefficients and
+then reconstructing the original EEG signal.
+The BSBL-BO algorithim is derived by applying type II maximum likelihood derivation [71] of the posterior probability given as:
+
+p(x|y, λ, {γi , βi }gi=1 ) = N (µx , Σx )
+
+(2.8)
+
+The hyperparameters λ, {γi , βi }gi=1 represnt the noise (λ), the block
+22
+
+sparsity structure (γi ), and the intra-correlation structure (βi ) in the nonoverlapping blocks g. Let Σ0 be a diagnoal matrix such that Σ0 = diag({γi βi }gi=1 ).
+After estimating the hyper-paramteres, the reconstructed signal x̂ is estimated by minimizing the negative log-likelihood 2.8. The resulting estimate
+of the reconstructed signal is given as x̂ = µx = Σ0 AT (λI + AΣ0 AT )−1 y.
+The hyper-parameters λ and γi are derived based on the bound-optimization
+estimation in [71]. λ is a scalar that helps the algorithm perform in noisy
+conditions. In noiseless cases, λ is fixed to a small value, e.g. λ = 10e−10 but
+when the SNR is less than 15dB, λ is estimated using the bounded optimizag
+P
+T r(Σx i (Ai )T Ai )
+ky − Aµx k22 +
+i=1
+tion technique given in [71]. This yields λ ←
+M
+The hyper-parameter γi is a nonnegative scalar that controls the blocksparsity of the signal. When γi = 0 , the corresponding
+x̂ of the it h block is
+s
+xTi Bi −1 xi
+equal to 0. This hyper-parameter is given as γi ← 2
+T r((Ai )T (Σ∗y )−1 Ai βi )
+The other hyper-parameter, β ∈ IRdi Xdi is a positive definite matrix that
+captures the intra-correlation structure of the ith block. di is the number of
+samples of the ith block. The intra-correlation is useful because it indicates
+a predictive relationship that can be exploited. Equation 2.9, below is a
+covariance matrix which is derived by minimizing the negative log-likelihood
+of the posterior probability 2.8. βi is further modified to obtain β̂i 2.10 by
+constraining it to be a positive definite intracorrealtion matrix. β̂i is formed
+using a rst-order Auto-Regressive (AR) process which is sucient to model
+the intra-block correlation [71]. The resulting β̂i is a Toeplitz matrix that
+is selected to represent the intra-block correlation matrx βi
+
+23
+
+g
+
+1 X Σx i + µx i (µx i )T
+βi =
+g
+γi
+
+(2.9)
+
+i=1
+
+m̄1
+, where m̄0 and m̄1 are
+m̄0
+the average of the elements of the main diagonal and sub-diagonals of the
+The first order Auto-Regressive coefficient is r̄ =
+
+estimated covariance matrix βi .
+
+β̂i = Toeplitz([1, r̄, . . . , r̄
+
+di −1
+
+1
+..
+.
+
+···
+..
+.
+
+
+
+]) = 
+
+
+r̄di −1 · · ·
+
+
+r̄di −1 
+.. 
+. 
+
+
+1
+
+(2.10)
+
+In BSBL-BO, β̂i captures the intra-block correlation structure by converting the estimated covariance matrix βi to a bounded first order Toeplitz
+matrix. The intra-block correlation is a measure of linear dependency.
+In the next chapter, we modify the BSBL-BO so it can exploit both the
+linear dependency structure as well as the non-linear dependency structure
+in EEG signals.
+
+24
+
+Chapter 3
+
+A Compressed Sensing
+Framework for EEG Signals
+3.1
+
+Problem Description
+
+As mentioned in the introduction, compressed sensing (CS) has been drawing much attention in EEG-based WBAN compressed sensing as it results in
+fast and simple computational load at the sensor node, hence saving battery
+energy. The main operations carried out at the micro-controller of the sensor
+node involves taking random projections of the EEG signals. While much
+work has studied the CS compression for EEG signals, little consideration
+has been paid studying its effectiveness from a tel-medicine perspective. Additionally, there have been much focus on saving the battery energy at the
+sensor node, and there has been little focus to improve the recovery error at
+high compression rates for EEG tele-medicine applications.
+The questions we intend to answer in this Chapter are as follows:
+• How important is it to achieve high quality recovery ? Which is obtained at high compression rates for EEG based WBAN.
+• What is the impact of the recovery error on tele-medicine applications
+25
+
+Figure 3.1: A Block diagram of a basic EEG CS framework showing the
+sensor node and the server node
+such as Seizure detection ?
+To address these questions, in this chapter, we use the CS framework in
+figure 3.1 to test the state-of-the-art techniques for EEG compressed sensing [68], [67], suitable for low-power consumption. Using the wireless sensor
+network simulator, Avrora, we model the power consumption of these techniques. The signals recovered by these algorithms are used for the seizure detection application to study the trade off between power savings and seizure
+detection performance.
+Figure 3.1 shows a block diagram of the sensor node and the server node
+of a CS framework proposed in [68], [67].
+This chapter is organized as follows. Section 3.2 presents the different
+building blocks of the framework including the sensor node, and the algorithms used on the server node. This section explains the evaluation method
+of the power consumption at the sensor node. Finally, the seizure detection
+method that uses on the recovered data is presented. Section 3.3 shows the
+results obtained from the recovery algorithms at high compression ratios
+such as 10:1, the evaluation results of the power consumption model, and
+
+26
+
+the seizure detection accuracy. Finally, the conclusions and discussions are
+included in section 3.4
+
+3.2
+
+Method
+
+Below we will discuss the Compressed Sensing framework that was adopted
+from the state-of-the-art techniques presented in [68], [67]. Then we briefly
+discuss the recovery algorithms used to solve the compressed sensing problem. The method of power consumption, Avrora, for wireless sensor network
+simulation is discussed briefly. Finally the seizure detection technique is proposed.
+
+3.2.1
+
+Transmission of Compressed EEG Signals at Sensor
+Node
+
+The idea of CS is to exploit the redundancy in the signal, the repeatable
+sparsity patterns and the sparse representation, using random sampling represented by the matrix A. The signal is reconstructed from the compressed
+data, which is sampled below the Nyquist rate. There are two types of compressed sensing, one that is an analog form random sampling and other form
+samples the signal at the Nyquist rate and then applies random sampling
+[9].
+
+Analog and Digital CS
+Analog CS samples the signal randomly so the resultant sampled signal is
+compressed below the Nyquist rate. Traditionally the ADC samples the
+
+27
+
+signal at Nyquist rate and CS is performed after the ADC stage by taking
+random samples using a random projection matrix. This allows a significant reduction in the power consumption of the analog-to-digital conversion
+(ADC) module and micro-controller on the sensor node [62], [65]. The compression is performed by a matrix multiplication operation on the signal.
+In both cases the complex computational load is shifted to the server node,
+where the computation power is unlimited.
+
+Compression of the SMV Problem and the MMV Problem
+In this chapter, the Single Measurement Vector (SMV), i.e. channel by
+channel compression, and the Multiple Measurement Vector (MMV), i.e.
+channels are compressed simultaneously, problems are solved using two different algorithms. In case of the SMV problem, the compression is given
+as yl = Axl , where l is the lth channel number. As mentioned in section,
+2.3, A should be incoherent with D. This is achieved by decreasing the
+correlation between the elements of both these matrices. Several choices of
+the matrix A are studied in [55] which shows that there are many choices
+of A that don’t affect the recovery quality. In this thesis, a sparse random
+binary matrix is chosen for A, such that each column has exactly 2-nonzero
+entries equal to one. The positions of these non-zero entries are randomly
+chosen. The key for choosing matrix A is that the matrix multiplication of
+Axl is simple compared to any other matrix.
+In case of the MMV problem, the compression is given as Y = AX,
+where X is N XL, where N is the number of samples per unit time, and L
+is the number of channels. Y is M XL, where M is the number of compressed
+28
+
+samples per unit time, and A is M XN . The matrix A is also chosen to be
+a sparse-binary matrix.
+
+3.2.2
+
+Recovery Algorithms at Server Node
+
+To solve for the SMV problem, we use the channel by channel decompression
+of EEG signals, state-of-the-art algorithm BSBL-BO [68]. On the other
+hand, to solve the MMV problem, we use the state-of-the-art algorithm
+STSBL-EM [67].
+The BSBL-BO method is based on the assumption that the signal consists of non-overlapping concatenation blocks, and few of these blocks are
+non-zero while the rest are sparse. As mentioned in section 2.5, BSBL-BO
+exploits the correlation structure within the blocks to reconstruct the signals. For more information about the algorithm and its derivation, refer to
+the work presented in [71]. The STSBL-EM algorithm is another algorithm
+derived from the BSBL framework proposed in [67] to solve the EEG based
+WBAN. The STSBL-EM exploits the inter and the intra block correlations
+of the multi-channel EEG signals, to recover the signals.
+
+3.2.3
+
+Power Consumption Evaluation
+
+The power consumption evaluation of the sensor node is obtained using an
+open-source cycle-accurate wireless sensor network simulator called Avrora
+[59]. It emulates the sensor node circuitry by providing a virtual operating
+environment of the execution. An emulator software for an Atmel AVR
+micro-controller sensor platform, Mica2 and MicaZ, is provided in Avrora.
+It is used to provide a detailed monitoring evaluation of different behaviors
+29
+
+such as packet transmission, energy monitoring, interrupts and stack usage.
+The energy monitor provided in Avrora provides the state changes of the
+sensor node and estimates the power consumption of each component of the
+sensor platform.
+The compression techniques for the SMV and the MMV problem is implemented in Network Embedded Systems C for TinyOS [42]. TinyOS is an
+embedded operating system (OS) that provides hardware abstraction for operations such as packet transmission, storage and input/output (I/O). The
+code was compiled and simulated for a MicaZ sensor platform using Avrora.
+The MicaZ consists of an ATMega 128 micro-controller, ZigBee radio, 4 KB
+of RAM and 128 KB of flash memory.
+To simplify the evaluation process, real-time EEG acquisition simulation
+was not performed. Alternatively, a short epoch segment of EEG data was
+loaded into the memory to simulate a 1 second data window. This simplification does not affect the evaluation results of the power consumption
+because the EEG sensing is the same across all epochs. The majority of
+the power on the sensor node is consumed by the micro-controller and the
+wireless transmitter. Approximately 20% of the power usually consumed by
+the micro-controller (mainly CS compression), while 70% of the power is by
+the radio transmitter [64]. For this reason, usually the main focus of the
+power consumption is on the micro-controller and the wireless transmitter.
+
+3.2.4
+
+Seizure Detection Technique
+
+On the server node, the received compressed data is recovered first then a
+Seizure detection operation is performed. The seizure detection paradigm is
+30
+
+presented in figure 3.2 showing the process of seizure detection. First, the
+row EEG data is divided into window frames of 4 second windows. Each
+Frame is assigned a label, the labels are either 1 or −1, indicating a Seizure
+frame, or a non-Seizure frame. It is important to note that a seizure event
+may contain one or more seizure frames, and a non-seizure event may contain
+one or more non-seizure frames as well. The frames are divided randomly
+into a training set of frames and a testing set of frames. The ratio between
+the training and the testing sets are divided as 60% training data and 40%
+testing data. At first, Feature extraction is applied on the training frames
+then a Support Vector Machine (SVM) classifier is used to learn the features
+and the training labels. The testing frames are compressed as mentioned in
+3.2.1 frame by frame. Then each compressed frame is recovered using the
+algorithms mentioned in section 3.2.2 and then feature extraction is applied
+on the recovered testing frames. The features extracted from the recovered
+testing frames are used to predict the labels using the SVM prediction model.
+
+Feature Extraction
+In [12] three different types of simple features are tested for seizure detection
+such as energy, line length and nonlinear autocorrelation features showing
+great performance using the dataset [30]. In this thesis, the nonlinear autocorrelation features are used.
+The autocorrelation features exploit the repetitive spikes in an EEG
+signal with successive short intervals. The widow frame is divided into 15sample wide non-overlapping sub-windows and the maximum and minimum
+values for each sub-window are calculated. Let max(Si ) and min(Si ) be the
+31
+
+Figure 3.2: A Block diagram Showing the Training and Prediction of Seizure
+Detection
+maximum and minimum of the i − th sub-window in a frame, respectively.
+The parameters, HVi and LVi are calculated as follows:
+
+HVi = min{max(Si ), max(max(Si + 1), max(Si + 2))}
+
+(3.1)
+
+LVi = max{min(Si ), min(min(Si + 1), min(Si + 2))}
+
+(3.2)
+
+where i = 1, ..., NS 2, and HVi and LVi are the high and low values of
+the i − th sub-window, respectively. The symbol, NS , is the total number
+of sub-windows in an N sample.
+The nonlinear autocorrelation value, N LACC, is basically the summa-
+
+32
+
+tion of the differences between HVi and LVi
+
+N LACC =
+
+NS
+X
+(HVi − LVi )
+
+(3.3)
+
+i=1
+
+The results of the seizure detection technique using the algorithms are shown
+in the next section.
+
+3.3
+3.3.1
+
+Results
+Seizure Dataset
+
+The experiments are performed using seizure data from the Childrens Hospital Boston and the Massachusetts Institute of Technology (CHB-MIT) downloaded from PhysioNet (http://www.physionet.org/physiobank/database/chbmit/)
+[30].
+The dataset contained 23 sets of EEG recordings collected from 23 pediatric patients under the age of 18. The patients were being treated for seizure
+and they were taking medication for epilepsy surgery evaluation. The EEG
+signals collected from these patients were recorded using 23 channels which
+was based on the the International 10 20 system. A bipolar montage is
+used to remove signal artifacts and reference electrode noise. The signals
+were sampled at 256 Hz with 16-bit quantization. For each patient, the
+EEG signals were labeled by medical experts to determine the start and end
+times of a seizure event. The duration of a seizure event varied between 6
+and 752 seconds. Although artifacts were present resulting from the scalp
+EEG signals, no artifact removal technique was performed on the signals.
+
+33
+
+3.3.2
+
+Results using the State-of-the-Art Techniques
+
+Using the sparse binary matrix as a sensing matrix A, this section shows
+the recovery performance of the CS framework that solves the SMV and the
+MMV problems using the state-of-the-art work presented in [68], [67]. The
+evaluation metrics is defined at first and the compression ratio (CR) is also
+re stated in this subsection.
+
+Evaluation metrics
+To quantify the compression rate, we used the following equation to select
+M:
+
+CR% = (1 −
+
+M
+)100
+N
+
+(3.4)
+
+To test the recovery quality, we used the normalized mean square error
+(NMSE), and the equation is given as:
+
+NMSE(X, X̂) =
+
+kX − X̂k
+kX − µX k
+
+(3.5)
+
+where X is the original EEG data matrix of size N XL, and X̂ is the
+recovered data matrix. and µX is the mean of X. The NMSE measures
+the distance between 2 matrices and the lower the NMSE, the better the
+reconstruction. We removed the mean of each channel in the original data
+so that differences in means between datasets do not bias the results.
+The reconstruction performance for different compression ratios is shown
+in Table 3.1.
+
+34
+
+Table 3.1: Reconstruction Results of the State of the Art Algorithms at high
+compression rates
+Algorithim
+BSBL-BO
+STSBL
+
+10:1
+0.671
+0.984
+
+Compression ratio
+6.6:1 5:1
+3.3:1 2.5:1
+0.575 0.472 0.319 0.228
+0.728 0.419 0.166 0.091
+
+2:1
+0.147
+0.032
+
+Table 3.2: Break Down of Power consumption Results at different compression Rates in milliwatts
+Compression Ratio
+
+MCU
+
+Transmitter
+
+Memory
+
+0 (No Compression)
+2:1
+2.5:1
+3.3:1
+5:1
+10:1
+
+46.14
+20.07
+19.24
+18.41
+17.72
+17.04
+
+160.68
+30.67
+20.58
+14.1
+9.65
+6.67
+
+0
+13.60
+13.25
+12.91
+12.76
+12.78
+
+3.3.3
+
+Total
+(mW)
+20.82
+64.34
+53.07
+45.42
+40.14
+36.49
+
+Battery Life hrs
+(@3V, 200mAh)
+3.04
+9.79
+11.87
+13.87
+15.69
+17.27
+
+Energy Savings Results at High Compression Rates
+
+The power consumption at the sensor node is simulated using Avrora which
+has been described in Section 3.2.3. The results of the total power consumption on the sensor node is broken down into the code execution of the
+micro-controller, wireless transmitter radio, and flash memory. The power
+consumption of the sensor node of different CR% is estimated over a span
+of 1 hour of data which is sampled at 256Hz. The battery life is estimated
+assuming the battery used is a 3 Volt of 200mAh. The battery life is esticapacity(mAhr)
+. The
+mated as given in [18], where Hours = 0.7
+P owerConsumption(mA)
+results are shown in table 3.2
+
+35
+
+Table 3.3: Average Seizure Detection Performance at different compression
+rates using BSBL-BO and STSBL-EM Algorithms
+CR%
+No Compression
+2:1 (STSBL-EM)
+2.5:1 (STSBL-EM)
+3.3:1 (STSBL-EM)
+5:1 (STSBL-EM)
+10:1 (BSBL-BO)
+
+3.3.4
+
+Event Sensitivity (%)
+95.2
+94.8
+93.7
+91.4
+88.6
+85.2
+
+Frame Sensitivity (%)
+57.6
+57.2
+57.2
+57.2
+57.3
+46.8
+
+Frame Specificity
+99.2
+98.9
+98.9
+98.7
+98.1
+96.4
+
+FP/hr
+2.69
+3.62
+3.57
+4.92
+6.19
+25.45
+
+Latency (Sec)
+9.5
+9.1
+8.9
+9.4
+10.3
+11.6
+
+Seizure Detection Performance Results After
+Recovery Using the Current State of the Art
+Recovery Technique
+
+The study conducted by [12] shows good performance using the non-linear
+autocorrelation features presented in section 3.2.4 by choosing a window size
+of 4 seconds. The following table 3.3 shows the effects of the Compressed
+Sensing on the seizure detection performance for different CR’s and using
+the features discussed and the state of the art recovery algorithm [68]. First,
+the data is compressed using the CS framework then the recovery algorithms
+discussed in section 3.2.2 are used to recover the signals. As shown in table
+3.1 the performance of STSBL-EM is better than BSBL-BO when tested at
+CR’s 2:1, 2.5:1, 3.3:1, and 5:1 percent. In this experiment, the BSBL-BO
+is only used only at CR = 10 : 1 since it is better than STBSL-EM at this
+particular CR. After the recovery is performed on the compressed signals,
+the seizure features are extracted and the SVM prediction model discussed
+in section3.2.4 is used to predict the testing features.
+Table 3.3 shows the classification of the seizure detection experiment.
+The evaluation technique of the seizure classification is adopted from the
+majority of the literature. The results are described as follows:
+36
+
+• Seizure Sensitivity: The percentage of true labels of classified seizure
+events of which at least one or more seizure frame in the seizure event
+is correctly labeled by the classifier. As mentioned above the seizure
+event of the data set varies between 6 and 752 seconds. The frame size
+is only 4 seconds.
+• Frame Sensitivity: The percentage of true labels of classified seizure
+frames. This measures the percentage of accuracy per classified frame.
+• Frame Specificity: The percentage of correctly labeled non-seizure
+frames.
+• False Positives per hour (FP/hr): The number of incorrectly labeled
+frames as seizures within a one hour period.
+• Latency: The average time elapsed since the onset of a seizure event
+to correctly classify one frame as a seizure frame.
+From table 3.3 it is obvious that when the CR increases the detection
+performance relative to the case of no compression. At a CR of 10:1, the
+observed drop in the event sensitivity and frame specificity was 10% and 3%,
+respectively, relative to the uncompressed results. A dramatic increase of
+the false positives per hour from 2.69 to 25.45 is observed. Such degradation
+in seizure detection performance is expected, since the quality of recovered
+signals is low at high compression rates.
+
+37
+
+3.4
+
+Discussion and Conclusion
+
+In this chapter, we briefly discussed the state of the art compression techniques and illustrated their recovery quality by estimating the NMSE of
+the reconstructed signals relative to the original data. The accuracy of the
+seizure detection from the recovered compressed signals are estimated for
+different compression rates. The power consumption at the sensor node is
+estimated at different compression rates by using the Avrora system.
+The state of the art compression techniques achieved 0.671 NMSE at
+high 10:1 compression ratio. The reconstruction results degraded the seizure
+detection event sensitivity by 6% when compared with the no-compression
+case, and the false positives increased from 4.8% to 14.8%. Commercially
+available headsets use 2 AAA batteries to power the EEG headsets of 23
+channels for 12 hours without using compressed sensing [1]. Our results
+showed that by using 1 miniature battery (200mAh), the battery life increased from 3 hours for the no compression case, to 17 hours to transmit
+23 EEG channels when the compression ratio is 10:1. While compressed
+sensing at high compression rates would solve the life battery problem, it is
+not suitable for seizure detection in EEG based WBAN. There is a positive
+correlation between recovery quality and seizure detection performance, this
+thesis contributes to improve the quality of recovery in CS at high compression ratios such as 10:1.
+
+38
+
+Chapter 4
+
+Exploiting Linear and
+Non-Linear Dependency in
+BSBL Framework
+4.1
+
+Problem Description
+
+This chapter studies the reconstruction of the multi-channel signals, known
+as the Multi Measurement Vector, MMV, problem. The works presented
+in [68] and [67] claim to be the state of the art in solving the CS problem
+for EEG signals. These works show that by using a DCT dictionary in
+BSBL-BO for the SMV problem and STBSL (another algorithm baed on
+the BSBL) for MMV problem, low error reconstruction is achieved at high
+compression rates. In this chapter we improve upon the BSBL-BO algorithm
+and compare the recovery performance at high compression rates such as
+10:1. Our results show that our proposed method achieves superior recovery
+performance compared to the state of the art algorithms, using 3 different
+datasets. The BSBL-BO algorithm exploits the intra-correlation structure
+in the EEG signals to reconstruct the signals, while the STBSL exploits
+
+39
+
+the intra and inter correlations of the EEG signals. Since correlation is a
+measure of linear dependency, non-linear dependency in EEG signals have
+also been studied. These work have shown that EEG signals also have a nonlinear dependence structure, temporally and spatially [7],[53]. Our proposed
+method exploits the linear and non-linear dependence in EEG signals. We
+also show that when multi-variable EEG signals are vectorized in a certain
+way, and then DCT is applied, the resulting DCT vector has a block sparse
+redundant structure. This vector representation is proved to significantly
+improve the recovery results when used with BSBL-BO and our proposed
+method. To the best of our knowledge, our proposed technique achieved the
+best result for CS of EEG signals at high compression rates such as 10:1,
+using three different data sets.
+
+4.2
+
+Approach
+
+When the data vector is block sparse, it has been shown that better reconstruction can be obtained by exploiting its block-sparsity than by only
+exploiting the sparsity in the signal (assuming the vector is sparse in the conventional sense) [68], [22], [23]. The conventional sparsity solution method
+only assumes that xl has at most S non-zero elements, in a sparse domain.
+However, it does not exploit any further structure that the signal may have.
+The non-zero components can appear anywhere in xl , however, there are
+cases in which the non-zero values can form blocks [23]. We propose to apply the block-sparse recovery approach to the EEG multiple measurement
+vector (MMV) problem because the MMV data share a joint sparsity pat-
+
+40
+
+tern [11], [11], [19]. For the case of EEG signals, the channels have linear
+and non-linear dependencies between them as well as within each channel
+[19],[7],[53]. The work presented in [68] addresses the case pf the signal from
+one channel, known as the Single Measurement Vector, SMV case. It uses a
+DCT dictionary matrix (that results in energy compaction of a single EEG
+channel) to obtain a vector of block sparse DCT coefficients. These DCT
+coefficients are recovered by BSBL-BO in [68]. To study the MMV case, we
+first investigate the structure of the MMV data vector.
+For the MMV case let X be the matrix [x1 , x2 , xL ] where L is the number of channels. In conventional studies vec[X] i.e. the vector formed by
+stacking the columns of X has been studied . However in this work we
+propose to study vec[X T ] i.e the vector formed by stacking the rows of X
+as a vector.
+The DCT coefficients of vec[X T ] and vec[X] are shown in Fig 4.1-a and
+Fig 4.1-b, respectively. These correspond to the case when the number of
+channels L is 23 . The DCT coefficients of Fig 4.1-c are the DCT transform
+of one channel xl ,when xl is formed of 23 seconds of data of the channel l
+,and the DCT coefficients of Fig. 4.1-d are the DCT transform of xl when it
+is formed of one second of data of the same channel. In Fig 4.1-c, the length
+of the channel was formed of 23 seconds so as to result in the same number
+of coefficients as those of Figs 4.1-a and 4.1-b.
+We compress the DCT coefficients of the multi-channel EEG signals,
+which we form as D T vec[X T ]. This vector, D T vec[X T ] has more of a block
+sparse structure than the vector formed by concatenating the channels of
+the EEG signals, i.e. D T vec[X]. The blocks in D T vec[X T ] also have more
+41
+
+Figure 4.1: (a) DCT of vec[X T ] of 23 channels, (b) DCT of vec[X] of 23
+channels, (c) DCT of signal xl of 23 seconds length, (d) DCT of signal xl if
+one second length
+structure than the DCT coefficients of a single channel which we denote as
+D T xl . Figure 4.1-a shows that the MMV vector, D T vec[X T ], exhibits more
+structure and more redundant non-zero blocks than the vector formed by
+the traditional concatenating of the channels, D T vec[X], (figure 4.1-b) and
+D T xl (Figures 4.1-c and 4.1-d). This is investigated further in more details
+in section 4.3.2, 4.4.2.
+BSBL-BO exploits the intra-block correlation, which is a measure of linear dependency in the blocks of a single channel data (temporal data only).
+Previous works however show that EEG signals and neuron-physiological signals exhibit linear as well as non-linear dependencies [7], [53]. In [7], EEG
+signals are examined for non-linear interdependence between channels, and a
+significant evidence of the existence of non-linear interdependency is shown.
+In order to describe the structure of EEG signals, the work in [53] suggests
+
+42
+
+that nonlinear dependency measures, such as: mutual information, entropy,
+phase synchronization, and state space synchronization are not intended to
+substitute linear dependency measures such as auto regression (AR) and
+cross correlation. Instead, non-linear dependency must be regarded as a
+complement to the linear dependency when studying EEG signals. This
+allows a more comprehensive structure in the EEG data.
+Based on our observation above, we therefore vectorize the signals of
+the multichannel data as vec[X T ] i.e. in a way that is different from the
+conventional one. This will help us better exploit the block-sparse structure of vec[X T ] exhibited in figure 4.1-a. We will show that this resultant
+multichannel vector D T vec[X T ] has significant linear and non-linear dependencies. In our method, the compressed data is reconstructed using this
+vectorization in conjunction with a modified version of BSBL-BO, which
+will be presented in section 4.3.2. As will be shown, we will modify the
+matrix β̂i 2.10 in BSBL-BO. This matrix is Toeplitz and its AR coefficients model the intra-channel correlation for every channel by exploiting
+the intra-block correlation of each EEG channels. The modified version of
+β̂i combines the Phase Locking Values (PLV) of the blocks (so as to exploit
+the non-linearity intra-dependence) with the intra-channel correlation. The
+use of Dvec[X T ] instead of processing single channels, would enable the
+exploitation of the intra-blocks interdependencies and modeling the intra
+and inter dependencies (whether linear dependence, non-linear dependence,
+or both) of channels. Applying the modified BSBL-BO on the vector from
+the suggested vectorization vec[X T ] will enable us to exploit the linear and
+non-linear dependencies within the channels of the EEG data as well as be43
+
+Figure 4.2: Context Block Diagram of CS method
+tween the channels. The detail of the modified algorithm follows in the next
+subsection.
+
+4.3
+
+Method
+
+The corresponding CS model for the L channels case, denoted as the MMV
+problem is expressed as Y = AX+V , where Y = [y1 , y2 , yl ], X = [x1 , x2 , xl ], V =
+[v1 , v2 , vl ], (X ∈ IRN XL , Y ∈ IRM XL , V ∈ IRM XL ), and N is the number of
+samples per epoch. As discussed above, the matrix X T is vectorized so
+that the measurement vector is represented as y = Avec[X T ] + v. For the
+proposed method figure 4.2 shows the operations performed on the sensing
+node prior to the radio transmission. Before transmission the EEG signals are converted to digital using an ADC, and the data of the channels
+are collected in epochs. The channels in each epoch are also arranged and
+vectorized in a certain way then compressed using a sensing matrix A.
+
+44
+
+4.3.1
+
+Epoching
+
+The EEG data of each channel is divided into non-overlapping epochs each
+of size N . In our experiments, we choose N to be equal to the sampling
+frequency of the dataset i.e. it corresponds to one second. After the compression, the data of each epoch are recovered independently from other
+epochs.
+
+4.3.2
+
+Channel Arrangement and Vectorization
+
+In [68], BSBL-BO was developed to decompress a single vector and was
+thus applied on each SMV channel. To compress the multiple channels, the
+BSBL-BO in [68] is modified and then applied to reconstruct the channels
+jointly and exploits the linear and nonlinear dependencies of the EEG signals. Given a data matrix X ∈ IRN XL , whose columns are the data of the
+L channels, then (as mentioned above) the matrix X is transformed into the
+vector
+vec[X T ] = [x1,1 , x2,1 , . . . , xL,1 , x1,2 , x2,2 , . . . , xL,2 , . . . , x1,N , x2,N , . . . , xL,N ]T
+, and also into the vector
+vec[X] = [x1,1 , x2,1 , . . . , xN,1 , x1,2 , x2,2 , . . . , xN,2 , . . . , x1,L , x2,L , . . . , xN,L ]T .
+When vec[X T ] is divided into non-overlapping blocks, d0i s, such that
+di > 2L then each block of vec[X T ] would contain both temporal and spatial
+information about the data. It is thus important that di > 2L otherwise
+temporal correlation would not be taken into consideration.
+As shown in figure 4.1-a the DCT coefficients of vec[X T ] exhibit better
+block sparsity than the DCT coefficents of vec[X] and of xl shown in figures
+
+45
+
+Figure 4.3: Block structure of correlated and uncorrelated signals in the
+DCT domain
+4.1-b, 4.1-c, and 4.1-d. The structure shown in figure 4.1-a is found to
+be consistent for different data samples. The DCT of vec[X T ] shows that
+this distinct block-sparse structure has a redundant form. In figure 4.1-a,
+the non-zero values form blocks that repeat in a consistent fashion. This
+structure does not exist for uncorrelated signals. To prove this empirically,
+the DCT of vec[X T ] is examined when X T is formed of uncorrelated and
+of correlated random variables as show in figures 4.3-a, 4.3-b, 4.3-c, and
+4.3-d. Figure 4.3-a shows the DCT coefficients of the vectorized form of
+uncorrelated random signals. Figures 4.3-B, 4.3-C, and 4.3-D shows the
+DCT coefficients of the vectorized forms of correlated multichannel signals
+generated of random multi-channels variables.
+As shown in figures 4.3-b, 4.3-c, and 4.3-d, the DCT coefficients of the
+vectroized correlated signals exhibit a distinct block sparse-structure. The
+
+46
+
+redundancy of the non-zero structure increases by increasing the number
+of channels. As the number of correlated channels increases the number of
+structured non-zero blocks increases and this increases the accuracy of the
+recovery for high compression rates. This is illustrated in figures 4.3-b, 4.3-c,
+4.3-d, and 4.5.
+
+4.3.3
+
+Compression Using Binary Sparse Matrix
+
+As mentioned in section 2.3, the compression effectiveness depends on the degree of coherence between the matrices A and D. It is shown in [32],[27],[9]
+that the higher the incoherence between A and D, the larger the compression that can be achieved. This is valid only when the R.I.P condition
+applies. Regardless of the type of D, to achieve maximum incoherence, A
+should be independent and identically Gaussian distributed [9]. Using a
+Gaussian N (0, 1/N ) results in an optimal sensing matrix [9], but the generation of such a matrix is computationally expensive. For energy saving
+purposes, sparse binary matrix that contains few non-zeros (of value equal
+to one) in each column of the A matrix was used in [68], [25]. It was shown
+that 2 non-zeros entries are sufficient to compress the signals when the positions of the non-zeros entries are randomly selected in each column of A.
+Also, it was shown that the sparse binary matrix performs as well as using
+a Gaussian matrix [55], [25].
+For the MMV problem, to compress vec[X T ] of every epoch, we use
+A ∈ IRLM XLN , where M is the number of random projections that determines the compression ratio given by N/M (or the compression rate perM
+)100. L is the number of channels of the EEG
+centage CR% = (1 −
+N
+47
+
+signals. To solve the MMV problem, the compressed data is given by y =
+Avec[X T ],where y ∈ IRLM . In case of the SMV problem, yl = Axl ,where
+yl ∈ IRM and A ∈ IRM XN . The matrix A is fixed for the measurement of
+all epochs.
+
+4.3.4
+
+Modification of BSBL-BO Algorithim (BSBL-LNLD)
+
+As mentioned in section 2.5, BSBL-BO exploits the block-sparse structure by
+learning the hyper-parameter γi . It exploits the intra-block correlation (in
+a single channel) by learning the hyper-parameter β̂i . The hyper-parameter
+βi is evaluated by minimizing the negative log-likelihood with respect to βi
+[71]. The resultant derivative is shown in equation 2.10. βi , is transformed
+to β̂i by constraining it to being a positive definite and symmetric matrix.
+Assuming all the blocks have the same size, the idea is to find one parameter
+from which a close estimate of βi is formed. The β̂i formed using the
+parameter, r̄, is especially close to βi along the main diagonal and the
+main sub-diagonal of βi [71]. Further, it is found that for many modeling
+applications, if the elements of a block form a first-order Auto-Regressive
+(AR) process then this is sucient to model the intra-block correlation [70].
+In this case, the covariance matrix βi of the block (equation 2.9) is converted
+to a Toeplitz matrix (β̂i ) as shown in equation (2.10). The parameter r̄ is
+the AR coecient. Instead of estimating r̄ from the BSBL cost function, it is
+m1
+. For most of the time m0 is greater than
+empirically calculated as r̄ =
+m0
+m1 , which makes r̄ < 1. If for any case r̄ > 1, then r̄ is constrained to be
+equal 0.99. This is done in order to insure that βi is always invertible.
+To exploit the linear and nonlinear dependencies, we modify r̄ so that it
+48
+
+can also learn the non-linear dependency and not only the linear one, but the
+rest of the algorithm remains unchanged. The Phase Locking Value (PLV)
+between each block of Dvec[X̂ T ] and every other block is calculated. Here
+X̂ is a matrix of size N XL that represents the reconstructed signal at every
+learning iteration. The PLV between every two non-overlapping blocks is
+calculated and then averaged to become a scalar p. This scalar value, p,
+represents the average phase synchronization between all blocks. Since each
+block of vec[X̂ T ] contains temporal and spatial information about the EEG
+signals, then p captures the intra and inter non-linear dependence in the
+EEG channels.
+The PLV was proposed in[39] to measure the phase relationship between
+two neuro-electric or bio-magnetic signals. The PLV between two signals
+varies from 0 to 1. When the PLV between two signals is equal to one, this
+implies that the signals are perfectly synchronized. When the PLV between
+two signals is equal to zero this implies that the signals are completely out
+of synchronization. The PLV between two signals is given as:
+
+P LV =
+
+N
+1 X j(φ1,i −φ2,i )
+e
+N
+
+(4.1)
+
+i=1
+
+where φ1,i − φ2,i will now be explained: to obtain 4.1, each signal is converted into the Hilbert space to obtain a real and imaginary part for each
+sample of the signal i. The phase angle φ1,i and φ2,i are then obtained by
+calculating arctan of the real and imaginary values. Thus φ1,i − φ2,i is the
+phase angle difference between two signals in each sample. Phase synchronization is useful because the phase component is obtained separately from
+
+49
+
+the amplitude component. Unlike coherence, it does not separate the effects
+of amplitude and phase in the interrelations between two signals.
+To exploit the information about the phase synchronization in BSBL-BO,
+the parameter r̄ is modified so that it learns the linear and also the non-linear
+dependencies in a vector. Thus when applied to vector Dvec[X̂ T ] which
+contains the inter and intra information about the multi channels, r̄ would
+learn both types of dependencies in the channels. As such r̄ would contain
+information about inter relationships between channels and not only intra
+relationships in each channel. This would then allow BSBL-BO to exploit
+the inter and intra linear/non-linear dependence in the channels instead of
+the linear dependency (intra-correlation) only. The modified r̄ is given as
+m1
++ p), where p is the average of the PLV between the blocks. In
+r̄ = 0.5(
+m0
+the experiments section we show the performance of the modified version,
+BSBL-LNLD, in a compressed sensing framework for both SMV and MMV
+problems (we denote our modified algorithm as BSBL-LNLD).
+
+4.4
+
+Experiments and Results
+
+This section presents the results of the CS that are applied on 3 different
+scalp EEG data sets (using non-invasive sensors). Section 4.4.1 briefly discusses the 3 different data sets. In section 4.4.2 the linear and non-linear
+dependence measures of Dvec[X T ] are evaluated, to show the significant
+patterns of dependency at different block sizes. Section 4.4.3 discusses the
+error metrics that is used to evaluate the recovery of the compressed signals.
+Finally the recovery results are tabulated in section 4.4.4.
+
+50
+
+4.4.1
+
+Datasets
+
+The compression and recovery of the experiments were conducted on 3
+datasets to test the performance of the different algorithms on a wide range
+of EEG cases.
+The first Dataset 1 of the BCI Competition IV [5]. This dataset was
+recorded from healthy subjects or generated artificially and contains the
+data of 7 patients. The recording was made using 59 EEG channels per
+subject at an initial sampling rate of 1000Hz. The other databases are from
+Physionet [29]. The second dataset consists of seizure data of 23 pediatric
+subjects. The recordings contain 23 EEG channels at a sampling rate of
+256 Hz [30]. Dataset 3 is a collection of 108 polysomnographic recordings
+of different sleep disorders monitoring. Each recording contains between 5
+and 13 EEG channels sampled at 256 Hz [58].
+Some files of these datasets contain channels where the output is always
+0 µv. These channels are removed from our experiments. The datasets
+are down-sampled to 128Hz so as to provide a realistic sampling frequency
+in the context of WBAN and to ensure uniformity between the datasets.
+Non-overlapping windows of length N = 128 were used in our experiments.
+
+4.4.2
+
+Dependence Measure of Intra and Inter EEG blocks
+
+In this experiment, we study the correlation and the PLV measures over the
+same data samples. A total of 3000 samples were used, 1000 samples from
+each dataset. Each sample of the EEG data was selected randomly from a
+dataset and was over a one second window of the multiple channels. Each
+
+51
+
+sample was thus formed of the data of all channels in that dataset, Each
+sample was transformed to its DCT coefficients and the vectors, D T vec[X T ],
+D T vec[X], and D T xl were formed. Each of these 3 vectors was divided into
+equal size blocks, then the intra block and inter blocks correlation and PLV
+were calculated for each vector . Then the absolute value of these measures
+were averaged over all 1000 samples taken from the dataset it belongs to
+This experiment was then repeated few times but for different block sizes .
+That is each sample was again divided into equal size blocks but for a different block size . The results of correlation and PLV of different block sizes
+are shown in figure 4.1. Correlation is a measure of linear dependency and
+it ranges between −1 to 1. When the correlation measure is positive then
+the average block correlation is a positive correlation.When the correlation
+measure is negative , then it is a negative correlation. The Phase synchronization measures such as the PLV finds a statistical relationship between
+two signals and varies from 0 to 1. PLV is important because EEG signals
+are noisy and chaotic, thus two or more EEG signals may have their phases
+synchronized even if their amplitudes are uncorrelated over time [53].
+Figure 4.4 shows the average correlations and PLV of the randomly selected samples. The vector D T vec(X T ) has the most intra-correlation structure in the blocks (over 1000 repetitions). Our results agree with [7], [53] that
+there exist non-linear dependency between the EEG channels and also within
+each channel. Unlike the correlation measure, the PLV is invariant to the
+type of vector (i.e. it gives the same results for the D T vec[X T ],D T vec[X],
+D T xl ). Although the PLV shows a more dominant dependency, it is not
+meant to replace the correlation type dependency [53]. For this reason we
+52
+
+Figure 4.4: Mean Correlation and PLV in the blocks and between the blocks
+have added the PLV measure in equation 2.10 of the BSBL-BO algorithm
+so as to exploit the non-linear dependency in the EEG signals.
+
+4.4.3
+
+Error Metrics
+
+The original data are compressed at different compression rates given by
+M
+N
+CR% = (1 − )100. Please note that the compression ratio
+= 2 : 1 corN
+M
+responds to CR% = 50. In our experiments we compress the EEG datasets
+at different rates including, 50, 60, 70, 80, and 90% compression rates. For
+these experiments, windows of 4 seconds each were randomly selected from
+the 3 datasets, 200 windows from each channel and for each subject. We
+measured the reconstruction quality using the Normalized Mean Square
+Error (NMSE). During the recording of the EEG datasets, a voltage DC
+bias in the electrodes was present. This bias could cause misleading results
+53
+
+when calculating NMSE, to avoid this bias the mean of each signal,µX is
+subtracted. For a fair evaluation we use the NMSE proposed in [55],[25],
+kX − X̂k
+NMSE(X, X̂) =
+kX − µX k
+
+4.4.4
+
+Compression/Recovery Results
+
+The compression was done using the sparse binary matrix as a sensing matrix. This matrix has only 2 non-zeros (i.e. ones) in each column selected at
+random. The length of the matrix depends on M and this depends on the
+compression rate. For the MMV problem, our proposed BSBL-LNLD, and
+the BSBL-BO algorithms are applied. Based on figure 4.4, the smaller the
+block size (i.e. the more number of blocks per epoch), the higher the dependency measures. This however, causes a slow performance in Matlab. For
+this reason, a block size of 92 is chosen because it is found to be a suitable
+trade off.
+Figure 4.5 shows the performance of our proposed MMV method as the
+number of EEG channels increases. The more EEG channels (spatial data),
+the lower the reconstruction error. This is because the spatial dependence
+between channels increases as the number of channels increase. This promotes more joint dependency which makes the decompression more immune
+to compression rate values.
+In our experiments we compared the performance of our proposed MMV
+method (BSBL-LNLD) with the following state of the art decompression
+EEG algorithms as:
+1) The tMFOCUSS proposed in [66] is a modified version of the MFOCUSS. It works by capturing the temporal correlation in the channels. The
+54
+
+Figure 4.5: NMSE vs Number of Channels of proposed Method at Different
+Compression % Rates
+modification lies in replacing the norm minimization with the Mahalanobis
+distance. 2) The TMSBL method proposed in [14]. It is a Bayesian approach. It defines the signal in the hyper-parameter space instead of the
+Euclidean space such as in L1 /L2 minimization techniques. The hyperparameter space is defined by temporal correlation and sparse modeling,
+this approach is called the Automatic Relevance Determination as proposed
+in [14], and [20]. By using Expected Maximization, the hyper-parameters are
+estimated from the posterior information, which is derived from a prior and
+the log-likelihood of the compressed signal. One can argue that TMSBL
+is similar to BSBL-BO in its basic approach and derivation.
+
+However,
+
+BSBL-BO reconstructs the signal in blocks form, unlike TMSBL. 3) Recently, the BSBL-BO approach [68] was compared with the STSBL-EM
+algorithm presented in [67]. The comparison was performed on BCI data at
+different compression rates such as 50, 60, 70, 80, and 90%. It was shown
+55
+
+that the decompression of SMV BSBL was less accurate than STSBL-EM.
+Two learning hyper-parameters were introduced in STSBL-EM, to capture
+the correlation between the blocks in the temporal and spatial domains.
+STSBL-EM learns the parameters by temporally whitening the model at
+first, and then the spatial hyper-parameter is learned and the signals are
+estimated. Then the signals are spatially whitened and then the temporal
+hyper-parameter and the signals are estimated. This process repeats until
+convergence. The repetitive whiting of the model reduces the correlation
+in the signals which causes less redundancy during decompression, hence
+less correlation amongst the blocks. Our results in the table 4.1 show that
+compared to the other methods STSBL-EM does not achieve low errors at
+high compression rates. The DCT transform matrix is used for all experiments i.e. for the proposed BSBL-LNLD, tMFOCUSS, TMSBL, STBSL,
+and BSBL-BO methods. These 5 methods were applied on the MMV problem. For the SVM problem only BSBL-LNLD and BSBL-BO, were applied
+as the others are not applicable to the MMV problem on Thus single channels are compressed channel by channel for the SMV problem, and multiple
+channels are compressed simultaneously in case of the MMV problem. For
+the SMV problem, the EEG data is compressed for each vector such that
+yl = Axl , ∀l = [1, 2, . . . , L]. In case of the MMV problem, the EEG signals
+were compressed using the vector y = Avec[X T ]. As shown above the proposed method can sustain good recovery results even at high compression
+rates e.g. CR 90% (10:1 compression ratio).
+Figure 4.6 shows a sample of the recovered EEG signals using different state of the art MMV algorithms such as STBSL, and TMSBL. The
+56
+
+Table 4.1: NMSE of the different methods at different compression rates
+CR%
+
+NMSE (BCI DataSet)
+
+NMSE (Seizure DataSet)
+
+NMSE (Sleeping DataSet)
+
+90%(10:1) 85%(6.6:1)
+Compression Experiments
+BSBL-LNLD(Multi-Channels) 0.065
+0.058
+BSBL-BO(Multi-Channels)
+0.094
+0.089
+BSBL-LNLD(Single-Channels) 0.461
+0.384
+BSBL-BO(Single-Channels)
+0.551
+0.414
+STBSL-EM
+0.791
+0.427
+TMSBL
+0.248
+0.178
+tMFOCUS
+0.665
+0.269
+BSBL-LNLD (Multi-channels) 0.242
+0.191
+BSBL-BO (Multi-channels)
+0.311
+0.257
+BSBL-LNLD (Single Channel) 0.457
+0.412
+BSBL-BO (Single Channel)
+0.671
+0.575
+STBSL-EM
+0.984
+0.728
+TMSBL
+0.698
+0.687
+tMFOCUS
+0.912
+0.757
+BSBL-LNLD (Multichannel)
+0.148
+0.135
+BSBL-BO (Multichannel)
+0.176
+0.153
+BSBL-LNLD (SingleChannel) 0.388
+0.265
+BSBL-BO (SingleChannel)
+0.475
+0.356
+STBSL-EM
+0.89
+0.561
+TMSBL
+0.352
+0.243
+tMFOCUS
+0.864
+0.587
+
+80%(5:1)
+
+70%(3.3:1)
+
+60%(2.5:1)
+
+50%(2:1)
+
+0.016
+0.075
+0.242
+0.318
+0.133
+0.066
+0.077
+0.174
+0.216
+0.35
+0.472
+0.419
+0.217
+0.683
+0.095
+0.113
+0.147
+0.225
+0.315
+0.156
+0.413
+
+0.008
+0.014
+0.154
+0.217
+0.038
+0.04
+0.035
+0.114
+0.165
+0.261
+0.319
+0.166
+0.154
+0.441
+0.064
+0.094
+0.092
+0.134
+0.126
+0.114
+0.324
+
+0.005
+0.006
+0.094
+0.134
+0.017
+0.022
+0.018
+0.097
+0.114
+0.156
+0.228
+0.091
+0.11
+0.098
+0.009
+0.015
+0.058
+0.075
+0.065
+0.072
+0.054
+
+0.002
+0.003
+0.045
+0.089
+0.009
+0.014
+0.011
+0.035
+0.058
+0.098
+0.147
+0.032
+0.036
+0.021
+0.004
+0.007
+0.029
+0.044
+0.007
+0.009
+0.017
+
+Figure 4.6: Samples of Recovered EEG Signals at 90 % Compression Rates
+using state-of-the-art Recovery Algorithms
+compression rate was performed at 90%. As shown in the figure the BSBLLNLD and BSBL-BO using Dvec[X T ] shows superior quality recovery at
+
+57
+
+90% compression rate. To the best of our knowledge, these are the best
+results that have been achieved so far with respect to obtaining high compression rates and low construction errors for the EEG signals in compressed
+sensing. Not ignoring that fact that the JPEG2000 still achieves the most
+accurate results at high compression rates, however, it is not suitable for
+WBANs.
+
+4.4.5
+
+Seizure Detection After Signal Recovery Results
+
+In this section the seizure detection technique discussed in section 3.2.4 and
+section 3.3.4 is used to evaluate the detection performance, when BSBLLNLD is used to solve for the MMV problem. For maximum power savings,
+the seizure detection results are compared at 90% compression rate between
+baseline (No Compression), recovered signals using BSBL-BO (state of the
+art), and recovered signals using the MMV BSBL-LNLD. As shown previously in the table 4.1 the recovery quality of the BSBL-LNLD is better than
+BSBL-BO and STSBL-EM, then it is expected that the seizure detection
+performance will improve when BSBL-LNLD is used. The results are shown
+in table 4.2. The BSBL-LNLD has improved the seizure detection when
+90% compression is applied. Using the State-of-the-Art recovery algorithm
+at 90% compression rate the seizure sensitivity is deteriorated by 10% compared to the no compression case. On the other hand the seizure sensitivity
+has only decreased by 0.8% when BSBL-LNLD is used. The number of
+false positives is 25.45 / hour in case of using BSBL-BO but only 2.89 when
+BSBL-LNLD is used.
+
+58
+
+Table 4.2: Average Seizure Detection Performance at 90% compression rates:
+Signals are recovered by BSBL-BO and BSBL-LNLD
+CR% / Recovery Algorithim
+0 % / No Compression
+90% / BSBL-BO
+90/% / BSBL-LNLD (MMV)
+
+4.5
+
+Seizure Sensitivity (%)
+95.2
+85.2
+94.4
+
+Epoch Sensitivity (%)
+57.6
+46.8
+57.3
+
+Specificity
+99.2
+96.4
+98.7
+
+FP/hour
+1.69
+25.45
+2.89
+
+Latency (Sec)
+9.5
+11.6
+9.0
+
+Conclusion and Discussion
+
+This chapter shows a method to compress multi channel EEG signals using
+compressive sensing. We first show that we can represent the multi channel
+EEG data measurements by a vector that has a good sparsity structure.
+Previous works have shown that neurophysiology signals (including EEG
+signals) have a linear and non-linear dependencies within and between channels. We then exploit both these linear and non-linear dependencies when
+reconstructing the sparse EEG vector.
+To confirm the existence of linear and non-linear dependencies in the proposed EEG vector representation we calculate the average correlation and
+phase locking values of various EEG multi channel data To exploit these dependencies, we propose a modification to the parameters of BSBL-BO . This
+modification enables this method to exploit not only the linear dependency
+but also the non-linear one . The modified BSBL-BO is then applied on
+the sparse vector that results from our proposed representation of the EEG
+data . The DCT coefficients of the resultant vector is shown to have a high
+sparse and redundant block sparse structure. We used correlated and uncorrelated random signals to prove that this sparse structure is reproducible
+in correlated signals. The redundancy in the block structure increases with
+the increase in the number of correlated channels.
+59
+
+The proposed compressed sensing technique is applied on the MMV and
+the SMV problems. The compressed signals were decompressed using different existing algorithms for comparison. Two datasets of EEG signals of
+different patients and a third dataset of brain computer interface data were
+used. The results show that, the proposed BSBL-LNLD method results in a
+significant lower error compared to other methods, even at high compression
+rates such as 10:1. To the best of our knowledge, the results obtained are the
+best in the (WBAN) literature for EEG signals, JPEG2000 still remains the
+best compression technique in terms of accuracy at high compression rates,
+but it is not suitable for WBANs due to its high power consumption. Previously in section 3.3.3 we have demonstrated that at 10:1 compression the
+power consumption has dramatically decreased, however, it is not reliable
+to use the current state-of-the-art recovery algorithms to recover the data
+especially when seizure detection is used as a WBAN application. However,
+we demonstrated that it is possible to use our proposed BSBL-LNLD to
+achieve battery life efficiency in a way that it is reliable to use in seizure
+detection.
+
+60
+
+Chapter 5
+
+A Compressed Sensing
+Technique by Under
+Sampling EEG Signals
+5.1
+
+Problem Description
+
+The previous chapter has demonstrated that high compression rates is effective in saving battery energy. However, the higher the compression rate
+the less accurate the recovery results which is not desirable in applications
+like seizure detection. This is because the overall normalized mean square
+error of the recovered compressed signals are considered high, this means
+some of the information in the signals is lost during recovery. In order to
+have an acceptable seizure detection performance and still maintain high
+power efficiency the compression rates should be decreased. Since the goal
+of this study is to solve the power consumption problem and to demonstrate
+its reliability in tele-medicine applications such as seizure detection, two approaches are studied in this thesis study. The first approach, is to study
+the structures in the EEG signals that could be exploited in recovering the
+
+61
+
+lost information, to improve the quality of recovery. This is demonstrated
+in chapter 4. The second approach is explained in this chapter. The challenge hence is to reduce the power consumption in the acquisition stage of
+the EEG signals and still maintain high compression rates. Previously, we
+refereed to this as analog compressed sensing in section 3.2.1. The data are
+randomly sampled as Dirac functions, thus the matrix product operation
+is eliminated from the micro-controller and replaced by a random sampling
+circuit which consumes less power. The previous studies discussed in section
+1.9 have only focused on reducing the amount of transmitted data to tackle
+the power consumption problem, and these approaches do not account for
+reducing the sensing power consumption. Only few works have attempted
+to solve this problem. In [44] it is argued by acquiring a smaller number
+of samples in a random fashion the sensing energy is reduced. The standard CS recovery techniques yield to high NMSE so previous work used an
+alternative recovery approach based on the theory of low-rank completion.
+They applied the compression experiment using the dataset in [5] and their
+proposed algorithm was able to achieve power savings at 2:1 compression
+rates, the signal recover was poor at high compression rates. In [45], it is
+shown that by applying blind compressed sensing, (a compressed sensing
+technique that comprises dictionary learning while solving for the synthesis
+prior formulation) better results are achieved. In [43] proposed a technique
+by combining blind compressed sensing with low-rank recovery (i.e. combining the techniques in [44] and [45]. This technique is considered the state
+of the art technique for solving the under sampling problem. It achieves on
+average 0.18 NMSE at 5:1 using the data set in [5]. In this work we propose
+62
+
+Figure 5.1: A Block diagram Showing the Sensor and the Server Node when
+Solving the Under Sampling Problem
+a different approach to solve the under-sampling problem by building an
+over-complete dictionary and use it to solve the analysis-prior formulation
+that is discussed in section 2.2.
+By Solving the under-sampling problem the matrix multiplication operation on the micro-controller will be no longer needed. Therefore, the
+micro-controller is replaced by a simple low power sampling circuit. Also,
+the ADC is controlled by a random generator that enables the operation of
+the ADC at random as shown in figure 5.1. In figure 3.1 the conventional
+sensing node is shown, hence less power consumption is achieved.
+
+5.2
+
+Approach
+
+Generally, Short Time Fourier Transform (STFT) and wavelets are used to
+decompose non-stationary signals to analyze the time-frequency decomposition of the signal. STFT uses a sliding window to decompose the signal
+in time and frequency domain, which gives the information of both time
+and frequency [3]. A problem arises is that the length of window limits the
+resolution in the frequency domain. On the other hand Wavelet transform
+63
+
+solves this problem as it is adapted in time and frequency by translation and
+dilation [3],[40]. The translated-version of wavelet function locate parts of
+the signal in time. Whereas the dilated-version of wavelets allows the signal
+to be analyzed at different frequency scales.
+In wavelet transform the signal is represented as a scaling function, φ(t),
+and a wavelet function, ψ(t). The function φ(t) is more compact at low frequencies, while the function ψ(t) concentrates at relatively high frequencies.
+Therefore, φ(t) is a function that approximates the signal (captures the low
+frequencies), while ψ(t) is a function that finds the details of the signal (captures the high frequencies) [3],[40]. Usually, signals are realized on multiple
+decomposition levels of low and high frequencies components by dilating and
+translating φ(t) and ψ(t). This is formulated as φj,k (t) = 2j/2 φ(2j t − k) and
+ψj,k (t) = 2j/2 ψ(2j t − k). where j is the parameter of scaling or dilation (i.e.
+the visibility of frequency) and k is the parameter of translation or position.
+Theoretically, a discrete wavelet function ψj,k (t) can represent any nonstationary signal using an infinite number of dilations and translations [8].
+The translation of a wavelet function in time aims to find a particular part
+of the signal that best correlate to the wavelet function, which means it
+represents a certain frequency at such time. The length of the wavelet
+coefficients are determined by an upper bound and a lower bound value [8],
+this length is called the support of a wavelet. A wavelet function is called a
+compact support if and only if it has a bounded support, and infinite support
+otherwise. Based on the admissibility condition properties of wavelets [3]
+[40] [8], the Fourier transform of ψ(t) vanishes at the zero frequency. This
+means a wavelet function acts like a band pass filter in the frequency domain.
+64
+
+Therefore, a signal can be realize as a combination of a stack of band pass
+filters.
+
+F ψ(at) =
+
+1 ω
+ψ
+|a| a
+
+(5.1)
+
+Equation 5.1 shows the Fourier transform of the wavelet function. This
+mean for example when the length of the wavelet is decreased by a factor
+of 2 will stretch the frequency spectrum of the wavelet by a factor of 2 and
+also shifts the frequency components up by a factor of 2. In this work we
+use this insight to construct an over complete dictionary that contains many
+filters of frequency dilations and translations. In order to achieve that we
+picked a wavelet that is not a compact support therefore, the wavelet length
+can be controlled for different sizes. Since the over-complete dictionary we
+constructed is not orthogonal or tight frame we solve the compressed sensing problem using the analysis prior formulation which has been expressed
+previously in equation 2.6.
+
+5.3
+5.3.1
+
+Method
+Meyer Wavelet for Over-Complete Dictionary
+Construction
+
+The Meyer wavelet is an orthogonal wavelet that is indefinitely differentiable
+with infinite support [61], then the lower and upper bounds can be selected
+of different ranges to generate multiple of band-pass filters. Generally, the
+Mayer scale function Φ(ω) and wavelet function Ψ(ω) are defined in the
+
+65
+
+Figure 5.2: Band-Pass Filter bank Over-Complete Dictionary generated using the Meyer Ψ(Ω) function
+frequency domain and transformed to the time domain by using inverse
+Fourier transform [16]. We used this property to construct multiple wavelets
+filter by using the Meyer function in Matlab. We used different values of
+lower bounds and upper bounds to generate multiple filter banks, of which
+each filter is translated in time to cover a wide range of translation. The
+Fast Fourier Transform of the generated over-complete dictionary is shown
+in figure 5.2 showing that the dictionary covers fine frequency resolutions in
+the frequency domain. Please note that the displayed band pass filters in
+figure 5.2 are reduced by a factor of 300 (i.e. between two displayed filters
+in the image there are 300 more filters that are not shown for visualization
+purposes).
+
+66
+
+5.3.2
+
+Analysis Prior Formulation
+
+Natural non-stationary signals like EEG signals are not sparse, but have a
+sparse representation in transform domain such as Wavelets, DCT, or Gabor
+basis. Such basis are used to build dictionaries to achieve the sparsity, this
+is observed in [55], [25], [69], [54], [2], [46]. Such presented dictionaries
+are either orthogonal or tight frame, therefore it is sufficient to solve the CS
+problem using the synthesis prior formulation problem discussed in 2.1. The
+Meyer over-complete dictionary in our work is not tight frame or orthogonal,
+therefore, we use the Analysis-Prior Formulation to solve for our SMV CS
+problem. We used the Nesta algorithm to solve this problem [6].
+
+5.4
+5.4.1
+
+Experiments and Results
+Datasets
+
+The algorithms were tested on a wide range of EEG signals. Experiments
+on the CS compression and recovery of EEG signals were conducted on 3
+datasets. The first dataset was from the BCI Competition IV dataset [30].
+This dataset was recorded from healthy subjects or generated artificially
+and contained the data of 7 patients. The recording was made using 59
+EEG channels per subject at an initial sampling rate of 1000Hz. The other
+databases were from Physionet [29]. The second dataset consisted of seizure
+data of 23 paediatric subjects. The recordings contained 23 EEG channels at
+a sampling rate of 256 Hz. Dataset 3 is a collection of 108 polysomnographic
+recordings of different sleep disorders monitoring. Each recording contained
+
+67
+
+Figure 5.3: Absolute Values of Meyer Wavelet Coefficients and Gabor Coefficients sorted in Descending Order
+between 5 and 13 EEG channels sampled at 256 Hz [58]. The datasets
+were down-sampled to 128Hz so as to provide a realistic sampling frequency
+in the context of WBAN and to ensure uniformity between the datasets.
+Non-overlapping windows of length N = 128 were used in our experiments.
+
+5.4.2
+
+Dictionary Sparsity
+
+Usually the Gabor dictionary is used as a sparsifying basis for EEG signals
+[54], [55], [25]. In this section we show that the Meyer over-complete dictionary is also a good sparse basis for EEG signals. The Gabor dictionary is
+generated the same method that was mentioned in [55]. Figure 5.3 shows
+the absolute values of the Gabor and Meyer wavelet coefficients which are
+sorted in descending order. As shown in the figure both dictionaries have a
+fast decaying coefficients which is a good indicator for sparsity.
+
+68
+
+5.4.3
+
+Compression/Recovery Results
+
+It was argued in [45] that wavelets are coherent with the Dirac function,
+therefore it is not possible to use wavelets to solve for the under sampling
+compressed sensing problem. However, this is not true in case of using
+our Meyer wavelet dictionary. We used the Dirac function as a sensing
+matrix to simulate the random sampling circuit in figure 5.1. In 4.3.3, the
+A matrix is a binary matrix which has two non-zeros in each column; this
+does not simulate the Dirac sampling basis. In order to simulate a random
+Dirac function in time, each row in A should have only one non-zero whose
+location in each row is selected at random, but it should be assigned in
+ascending order relative to each row. The compressed data is recovered
+using the NESTA algorithm and the generated Meyer wavelet over-complete
+dictionary. The original data are compressed at different compression rates
+M
+)100, while that of
+. The definition of compression rate is CR% = (1 −
+N
+N
+N
+compression ratio is
+.Thus a compression ratio
+= 2 : 1 corresponds to
+M
+M
+CR% = 50%. In our experiments we compress the EEG datasets at different
+rates including, 70% (3.3:1), 80%(5:1), and 90%(10:1).
+For the experiments, windows of 1 second each were randomly selected
+from the 3 datasets; a total of 200 windows from each channel and for
+each subject. We measured the reconstruction quality using the N M SE
+measure. During the recording of the EEG datasets, a voltage DC bias in
+the electrodes was present. This bias could cause misleading results when
+calculating N M SE. To avoid this bias, the mean of each signal is subtracted from the signal. For a fair evaluation the NMSE proposed in [25],
+
+69
+
+kX − X̂k
+. As mentioned above there is a limited number
+kX − µX k
+of works proposed to solve the CS under-sampling problem of EEG signals.
+NMSE(X, X̂) =
+
+In these experiments we compare our results with the state of the art technique proposed in [43].
+Table 5.1: Mean and standard deviation of N M SE at different compression
+rates using 3 different datasets
+Recovery Method
+BSBL-BO [1],
+(state of the Art EEG CS)
+
+Data Set
+BCI
+Seizure
+Sleep
+
+BCS [13],
+(state of
+the Art under-sampling)
+Proposed Method
+
+BCI
+Seizure
+Sleep
+BCI
+Seizure
+Sleep
+
+Compression Rates
+90%
+0.5511
++/- 0.00
+0.6715
++/- 0.00
+0.4751
++/- 0.00
+0.6589 +/- 0.023
+0.7412 +/- 0.012
+0.6478 +/- 0.001
+0.2486 +/- 0.0590
+0.2064 +/- 0.0876
+0.1757 +/- 0.0684
+
+80%
+0.3182 +/- 0.00
+0.4721 +/- 0.00
+0.2251 +/- 0.00
+0.4528
+0.4625
+0.4281
+0.1108
+0.1292
+0.1072
+
++/+/+/+/+/+/-
+
+0.011
+0.017
+0.005
+0.0419
+0.0780
+0.0692
+
+70%
+0.2178
++/- 0.00
+0.3192
++/- 0.00
+0.1344
++/- 0.00
+0.3254 +/0.4159 +/0.3510 +/0.0508 +/0.0968 +/0.0421 +/-
+
+0.012
+0.001
+0.045
+0.0249
+0.0726
+0.0355
+
+Table 5.1 shows the mean and standard deviation of the N M SE of the
+recovery quality. As shown from the table, the blind compressed sensing
+(BCS) technique has highest errors especially at high compression rates
+(90%). The BSBL-BO method is used to solve the conventional CS Single
+Vector Measurement problem for EEG signals [1]. Our proposed technique
+performs much better than this method also.
+
+5.4.4
+
+Power Consumption Estimation
+
+The power consumption estimation of the proposed method can not be estimated using the same technique discussed in section 3.2.3. This is because
+the hardware is different as, the micro-controller is no longer needed and
+
+70
+
+a random generator is proposed as an alternative. Therefore, we used the
+same power estimation technique that was proposed in [45], [43].
+For a regular CS technique the total power is given as:
+
+Ptot = Psense + PP rocessor + PT ransmitter
+
+(5.2)
+
+The sensing energy Psense has two parts: amplification and analogue to
+digital converter for every channel these are referred to as Pamp and PADC ,
+respectively. PP rocessor is the power consumed by the micro-controller to
+perform linear multiplication of y = Ax. PT ransmitter is the power consumed
+by the transmitter of the sensor. Since the micro-controller is not used in the
+present framework, we will adopt the method used for measuring the power
+consumption in [45], [43]. The total power consumed at the sensing node
+is comprised of two power sinks Ptot = Psense + PT ransmitter . It was shown
+that Ptot varies linearly with the amount of data transmitted, therefore
+CM
+(Pamp + PADC ), where C is the number of channels. The
+Psense =
+N
+PADC value is obtained from [60] for a 12 bits per sample (R) and the
+sampling rate of the ADC is 500Hz. These specifications are estimated to
+be PA DC = 0.2mW . The specifications of the power amplifier are as that
+used in [43] which are obtained from [33], thus Pa mp = 0.9mW .
+As shown in [43], the communication power is expressed as PT ransmitter =
+CM
+Jfs R, where J the transmission power per 1 bit, fs is the sampling
+N
+frequency of the ADC, and R is the number of bits per sample (resolution).
+The transmission energy required to transmit one bit is estimated to be 5nJ
+per bit. The sampling frequency is 0.5 samples / second. Each sample is
+
+71
+
+Table 5.2: Power Consumption in uW at different Compression Rates
+Compression Rate (%)
+50%(2:1)
+60%(2.5:1)
+70%(3.3:1)
+80%(5:1)
+90%(10:1)
+
+Power Consumption (uW)
+357uW
+286uW
+214uW
+143uW
+71uW
+
+assumed to be 12 bits. The energy consumption is computed at different
+compression rates and shown in Table 5.2.
+
+5.4.5
+
+Seizure Detection After Signal Recovery Results
+
+In this section the seizure detection technique that was previously discussed
+in sections 3.2.4 and 3.3.4 is used to evaluate the detection performance. The
+signals are compressed at high compression rate such as 90% (10:1) which is
+previously described in section 5.4.3. The signals are then recovered using
+the proposed technique and also using the BCS-LR technique proposed by
+[43]. Seizure detection is then applied using both of the recovered signals
+and the detection accuracies are compared in the following figure.
+Figure 5.4 shows the event sensitivity and specificity performances at
+different NMSE of the recovered signal. Using both techniques. This figure
+shows that the proposed method is far more superior than the state of the
+art techniques at high compression rates.
+At 90% compression Rate (10:1), high battery life is achieved, seizure
+detection sensitivity has decreased by 1.4 % compared to no compression
+case (i.e. NMSE = 0). On the other hand, for the state of the art method
+the sensitivity has decreased by 11.5%. Also, at 90% compression Rate
+72
+
+Figure 5.4: Seizure Detection Event Specificity and Event Sensitivity at
+different recovery NMSE
+(10:1), the seizure detection specify has decreased by 0.79 % compared to
+no compression case. Also for the state of the art method the sensitivity has
+decreased by 8.7%.
+
+5.5
+
+Conclusion
+
+A new solution is proposed to solve the under-sampling problem of CS compressed EEG signals. The result of the technique is compared with the
+conventional compressed sensing technique using the BSBL-BO Algorithm,
+also it is compared with the BCS techniques proposed in [43]. Our proposed
+method outperforms both these EEG CS methods. The recovery of our
+proposed technique yields more accurate results even for the cases having
+high compression rates. It is hence concluded that our proposed method
+achieves maximal power savings for EEG WBAN applications solving the
+
+73
+
+under-sampling problem, hence achieving maximal power savings and high
+recovery accuracy at high compression rates.
+
+74
+
+Chapter 6
+
+Conclusions and Future
+Directions
+6.1
+
+Conclusions
+
+This thesis proposes two novel energy efficient compression techniques for
+the wireless transmission of EEG signals, using Compressive Sensing (CS).
+The aim is to elongate the battery life at the EEG sensor node. Two CS
+frameworks were studied. The first one samples the signals fully by multiplying the signal with a sparse binary matrix to obtain an aggregation of
+random samples. The second framework under-samples the analog samples
+directly, i.e. the samples are obtained randomly by Dirac basis.
+The first proposed CS technique takes advantage of the inherent structure present in EEG signals to efficiently decompress these signals. The
+under-sampling framework takes advantage of the infinite support structure
+of the Meyer Wavelet function to construct an over complete dictionary
+of several scales and shifts. This over complete dictionary is enough to
+represent the time-frequency decompositions of EEG signals. We used the
+analysis prior formulation CS recovery technique and the over-complete dic-
+
+75
+
+tionary to recover the data.
+In Chapter 3, we presented a simple CS-based framework. We discussed
+the two state of the art compression techniques BSBL-BO, and STBSL-BO
+that were been proposed to solve the CS framework for EEG signals. We
+showed that both techniques do not achieve high recovery accuracy at high
+compression rate. However, more power savings and thus higher the battery
+life was achieved at high compression rates. We showed that at a high
+compression rate such as 10:1, the seizure detection accuracy deteriorates
+when compared to the no compression case. This means that even the
+current state of the art techniques may not be reliable enough for use in
+WBAN applications. Therefore, it is essential to develop new techniques
+that can maintain a high quality signal recovery at high compression rates.
+In Chapter 4, we presented a modification to the BSBL-BO recovery
+technique. The first modification involves restructuring the signal representation to give the EEG signals a better block sparse representation that can
+be exploited during the recovery of the compressed signals. This block structure is exploitable by the BSBL-BO and leads to higher accuracy results at
+high compression rates.
+In chapter 4 we discussed the previous studies that showed that EEG
+signals have temporal and spatial both linear dependencies and non-linear
+dependencies. The modifications we proposed to the signal representation
+enables the BSBL-BO to only exploit the linear dependencies in the EEG
+signals. This is because the BSBL-BO only exploits the correlation in the
+signals and correlation is a linear dependency measure. In addition to enabling BSBL-BO to exploit the correlation in the signals, we also introduced
+76
+
+an additional hyper-parameter in BSBL-BO to enable it to also exploit the
+Phase Locking Values in addition to correlation. The Phase Locking Value
+is a non-linear dependency measure. The seizure detection accuracies and
+the recovery accuracies of the proposed techniques shows to be superior in
+compared to the state of the art techniques.
+In Chapter 5, we presented a recovery technique for the CS framework
+that captures the under-samples directly from the complete analog EEG signals. We built an over-complete dictionary using Meyer wavelet functions.
+Each column in the dictionary matrix contains multiple levels of scales and
+translations of the Meyer wavelet functions. We showed that this dictionary
+sparsifies the EEG signals and was compared with the Gabor dictionary.
+We showed that the analysis prior formulation using Nesta algorithm was
+sufficient to reconstruct the compressed signals. The seizure detection accuracies and the recovery accuracies of the proposed techniques are shown
+to be superior compared to the state of the art techniques.
+
+6.2
+
+Future Directions
+
+It is important to verify the reliability of these techniques in other applications such as Brain Computer Interface, sleeping pattern recognition, and
+seizure source localization. If it achieves high accuracy recovery compared
+to other techniques then we will look into a better real time implementation
+of these techniques to improve scalability and speed. Parallel computing
+technologies such as Hadoop and Apache Spark are good potentials to implement these techniques on the server side to obtain fast processing, and
+
+77
+
+hence to achieve real-time scalable processing.
+We demonstrated the block sparsity of the highly correlated signals using the DCT coefficients of vec(X T ). We suggest to take advantage of this
+structure and apply Expected Maximization approximation to obtain means
+and covariances of multi-variate Gaussian distribution. The means and covariances are basically the compression of the signals, and the signals are
+recovered by solving the maximum likely-hood of this representation.
+
+78
+
+Bibliography
+[1] Quasar Sensing a world of potential.
+
+Eeg:dsi 10/20.
+
+//www.quasarusa.com/technology_publications.htm.
+
+http:
+Accessed:
+
+09/11/2015.
+[2] Casson A.J. Rodriguez-Villegas E. Abdulghani, A.M. Quantifying the
+performance of compressive sensing on scalp EEG signals. Applied Sciences in Biomedical and Communication Technologies (ISABEL), 2010
+3rd International Symposium on, pages 1–5, 2010.
+[3] Adhemar B. Learning to swim in a sea of wavelets. Bull. Belg. Math.
+Soc., 2:146, 1995.
+[4] Blanco-Velasco M. Cruz Roldan F. Bazan-Prieto C., CardenasBarrera J. Electroencephalographic compression based on modulated
+filter banks and wavelet transform. In Annual International Conference of the IEEE Engineering in Medicine and Biology Society, page
+70677070, 2011.
+[5] Krauledat M. Mller-K. Curio G. Blankertz B., Dornhege G. The noninvasive berlin brain-computer interface: Fast acquisition of effective
+performance in untrained subjects. NeuroImage, 2007.
+
+79
+
+[6] Becker S. Bobin J. Nesta: A fast and accurate first-order method for
+sparse recovery. Technical report, California Institute of Technology,
+2009.
+[7] Terry J.R. Breakspear M. Detection and description of non-linear interdependence in normal multichannel human eeg data. Clinical Neurophysiology, 113:735–753, 2002.
+[8] Valens C. A really friendly guide to wavelets. Technical report, University of New Mexico, 1999.
+[9] Wakin M. B. Candes E. J. An introduction to compressive sampling.
+IEEE Signal Processing Magazine, 25(2):21–30, 2008.
+[10] Rodrguez Valdivia E. Cardenas-Barrera J. L., Lorenzo-Ginori J. V. A
+wavelet-packets based algorithm for eeg signal compression. Informatics
+for Health and Social Care, 29(1):15–27, 2004.
+[11] Huo X. Chen J.
+
+Theoretical results on sparse representations
+
+of multiple-measurement vectors.
+
+IEEE Trans. Signal Process,
+
+54(12):4634–4643, 2006.
+[12] Ward R. Chiang J. Energy-efcient data reduction techniques for wireless
+seizure detection systems. Sensors, 14:2036–2051, 2014.
+[13] Pedersen M.G. Pedersen C.B. Olsen J. Sidenius P. Christensen J.,
+Vestergaard M.
+
+Incidence and prevalence of epilepsy in denmark.
+
+Epilepsy Res, 76:60–65, 2007.
+
+80
+
+[14] Kjersti E. Kreutz-Delgado K. Cotter S.F., Rao B.D. Sparse solutions
+to linear inverse problems with multiple measurement vectors. IEEE
+Transactions on Signal Processing, 2005.
+[15] Katznelson R. D. Neuroelectric measures of mind. In: PL Nunez (Au),
+Neocortical Dynamics and Human EEG Rhythms. Oxford University
+Press, New York, 1995.
+[16] Meyer Y. Daubechies I., Grossmann A. Painless nonorthogonal expansions. J. Math. Phys., 27(5):1271–1283, 1986.
+[17] Labeau F. Dehkordi V.R., Daou H. A channel dierential ezw coding
+scheme for eeg data compression. IEEE Transactions on Information
+Technology in Biomedicine, 15(6):831838, 2011.
+[18] Digi-Key.
+
+Battery
+
+life
+
+calculator.
+
+http://www.
+
+digikey.ca/en/resources/conversion-calculators/
+conversion-calculator-battery-life. Accessed: 16/11/2015.
+[19] Wakin M. B. Baron D. Baraniuk R. G. Duarte M. F., Sarvotham S.
+Joint sparsity models for distributed compressed sensing. Signal Processing with Adaptive Sparse Structured Representations in online proceedings of Workshop, 2005.
+[20] Tipping M. E. Sparse bayesian learning and the relevance vector machine. Journal of Machine Learning Research 1, pages 211–244, 2001.
+[21] Mishali M. Eldar Y. C. Robust recovery of signals from a structured
+union of subspaces. IEEE Trans. Inf. Theory, 55:5302–5316, 2009.
+81
+
+[22] Bolcskei H. Eldar Y.C., Kuppinger P. Block-sparse signals: Uncertainty
+relations and efficient recovery. IEEE Transactions, Signal Processing,
+58(6), 2010.
+[23] Mishali M. Eldar Y.C. Block sparsity and sampling over a union of
+subspaces. 16th International Conference on Digital Signal Processing,
+pages 1–8, 2009.
+[24] Emotiv. Epoc specications. https://emotiv.com/epoc.php. Accessed:
+09/11/2015.
+[25] Ward R.K. Fauvel S. An energy efficient compressed sensing framework for the compression of electroencephalogram signals. Sensors,
+14(1):1474–1496, 2014.
+[26] Ozgur Y. Felix J. H., Michael P. F. Fighting the curse of dimensionality:
+Compressive sensing in exploration seismology. IEEE Signal Processing
+Magazine, 29:88–100, 2012.
+[27] Mallat S. G. A Wavelet Tour of Signal Processing. Academic Press,
+2008.
+[28] Cutillo B. A. Gevins A. S. Neuroelectric measures of mind. In: PL
+Nunez (Au), Neocortical Dynamics and Human EEG Rhythms. Oxford
+University Press, New York, 1995.
+[29] Glass L. et-al Goldberger A. L., Amaral L. A. N. Physiobank, physiotoolkit, and physionet: Components of a new research resource for
+
+82
+
+complex physiologic signals. circulation.
+
+Technical report, Stanley,
+
+2000.
+[30] Glass L. Hausdorff J. M.-Ivanov P. Mark R. G. Mietus J. E. Moody G.
+B. Peng C. K. Stanley H. E. Goldberger A. L., Amaral L. Components
+of a new research resource for complex physiologic signals. PhysioBank,
+PhysioToolkit, and PhysioNet.
+[31] Yarman B. S. Gurkan H., Guz U. Eeg signal compression based on
+classified signature and envelope vector sets. International Journal of
+Circuit Theory and Applications, 37(2):351–363, 2009.
+[32] Felix J. H. Randomized sampling and sparsity: getting more information from fewer samples. Geophysics, 75:173–187, 2010.
+[33] Charles C. Harrison R. A low-power low-noise cmos amplifier for neural recording applications. IEEE J. Solid State Circuits, 38(6):958–965,
+2003.
+[34] Glavin M. Jones E. Higgins G., McGinley B. Low power compression of
+eeg signals using jpeg2000. 4th International Conference on Pervasive
+Computing Technologies for Healthcare, pages 1–4, 2010.
+[35] Glavin M. Jones E. Higgins G., McGinley B.
+of eeg signals using spiht. electronics letters.
+
+Lossy compression
+Electronics Letters,
+
+47(18):10171018, 2011.
+[36] Yan-ling W. Pei-hua L. Hong-xin Z., Can-feng C. Decomposition and
+compression for ecg and eeg signals with sequence index coding method
+83
+
+based on matching pursuit. The Journal of China Universities of Posts
+and Telecommunications, 19:92–95, 2012.
+[37] Imec.
+
+Holst centre and panasonic present wireless low-power
+
+active-electrode eeg headset.
+
+http://www2.imec.be/be_en/press/
+
+imec-news/imeceeg2012.html. Accessed: 09/11/2015.
+[38] Gabor J. Seizure detection using a self-organizing neural network:
+validation and comparison with other detection strategies. Electroencephalogr Clin Neurophysiol, 107:27–32, 1998.
+[39] Jacques M.-Francisco J. V. Jean-Philippe L., Eugenio R. Measuring
+phase synchrony in brain signals. Human Brain Mapping, 8:194–208,
+1999.
+[40] Chun-Lin L. A tutorial of the wavelet transform. Technical report,
+National Taiwan University, 2010.
+[41] Donoho D. L. Compressed sensing. IEEE Transactions on Information
+Theory, 52(4):1289–1306, 2006.
+[42] Polastre J. Szewczyk R. Whitehouse K.-Woo A. Gay D. Hill J. Welsh
+M. Brewer E. et al. Levis P., Madden S. Tinyos: An operating system
+for sensor networks. In Ambient Intelligence, Springer: New York, NY,
+USA,, page 115148, 2005.
+[43] Ward R. Majumdar A. Energy efficient eeg sensing and transmission
+for wireless body area networks: A blind compressed sensing approach.
+Biomed. Signal Process. Control, 20:19, 2015.
+84
+
+[44] Ward R. Majumdar A., Gogna A. Low-rank matrix recovery approach
+for energy efficient eeg acquisition for wireless body area network. Sensors: Special Issue on State of the Art Sensor Technologies in Canada,
+14(9):15729–15748, 2014.
+[45] Ward R. Majumdar A., Shukla A. Row-sparse blind compressed sensing
+for reconstructing multi-channel eeg signals. Biomed. Signal Process.
+Control, 18(4):174178, 2015.
+[46] Atienza D. Vandergheynst P. Mamaghanian H., Khaled N.
+
+Com-
+
+pressed sensing for real-time energy-efficient ECG compression on wireless body sensor nodes. IEEE Transactions on Biomedical Engineering,
+58(9):2456–2466, 2011.
+[47] De Vos M. Van Huffel S. Mijovic B., Matic V. Independent component
+analysis as a per-processing step for data compression of neonatal EEG.
+Engineering medicine and Biology Society, EMBC, pages 7316–7319,
+2011.
+[48] Advanced Brain Monitoring.
+
+B-alert x24 eeg system.
+
+//www.advancedbrainmonitoring.com/xseries/x24/.
+
+http:
+Accessed:
+
+09/11/2015.
+[49] Muse.
+
+The brainwave sensing headband tech spec sheet.
+
+https:
+
+//cdn.shopify.com/s/files/1/0348/7053/files/Muse-Tech_
+Spec_Sheet_as_of_July_2014.pdf. Accessed: 09/11/2015.
+[50] neuroelectrics.
+
+Enobio 32.
+
+http://www.neuroelectrics.com/
+
+products/enobio/enobio-32/. Accessed: 09/11/2015.
+85
+
+[51] NeuroSky. Mindwave headsets. http://neurosky.com/biosensors/
+eeg-sensor/biosensors/. Accessed: 09/11/2015.
+[52] Sreenan C. O’Reilly P. Sammon D. O’Donovan T., O’Donoghue J. and
+O’Connor K. A context aware wireless body area network (ban). In
+proceedings of the Pervasive Health Conference, 47, 2009.
+[53] Bhattacharya J. Pereda E., Quiroga R. Q. Nonlinear multivariate analysis of neurophysiological signals, progress in neurobiology. Clinical
+Neurophysiology, 77, 2005.
+[54] Aviyente S.
+
+Compressed sensing framework for EEG compression.
+
+IEEE Statistical Signal Processing 14th Workshop 2007, pages 181–184,
+2007.
+[55] Fauvel S. Energy-efficient compressed sensing frameworks for the compression of electroencephalogram signals. Master’s thesis, University of
+British Columbia, Vancouver, Canada, 2013.
+[56] Morsdorf J. Bernhard J. von der Grun T. Schmidt R., Norgall T. Body
+area network ban–a key infrastructure element for patient-centered
+medical applications. Biomed Tech, 47, 2002.
+[57] Ghosh J. Strehl A. Cluster ensembles - a knowledge reuse framework
+for combining multiple partitions. The Journal of Machine Learning
+Research, 3:583–617, 2003.
+[58] Sherieri A. Chervin R. Chokroverty S. Guilleminault C. Hirshkowitz M.
+Mahowald M. Moldofsky H. Rosa A. et al. Terzano M.G., Parrino L. At86
+
+las, rules, and recording techniques for the scoring of cyclic alternating
+pattern (cap) in human sleep. Sleep Med., 2001.
+[59] Palsberg J. A. Titzer B.L., Lee D.K. Scalable sensor network simulation
+with precise timing. In Proceedings of Fourth International Symposium
+on Information Processing in Sensor Networks (IPSN 2005), Los Angeles, CA, USA, page 477482, 2005.
+[60] Chandrakasan A. Verma N. An ultra low energy 12-bit rate-resolution
+scalable sar adc for wireless sensor nodes. IEEE J. Solid State Circuits,
+42(6):1196–1205, 2007.
+[61] De-Oliveira H.M. Vermehren V. Close expressions for meyer wavelet
+and scale function. Technical report, Cornell University Library, 2015.
+[62] Nakamura E. Grant M. Sovero E. Ching D. Yoo J. Romberg J. EmamiNeyestanak A. Candes E. Wakin M., Becker S. A nonuniform sampler
+for wideband spectrally-sparse environments. IEEE J. Emerg. Sel. Top.
+Circuits Syst. environments, 2:516529, 2012.
+[63] Tanaka T. Rao K.R. Wongsawat Y., Oraintara S. Lossless multi-channel
+eeg compression. IEEE International Symposium on Circuits and Systems, pages 161–1617, 2006.
+[64] Merken P. Penders J. Leonov V. Puers R. Gyselinckx B. van Hoof C.
+Yazicioglu R.F., Torfs T. Ultra-low-power biopotential interfaces and
+their applications in wearable and implantable systems. Microelectron.
+J., 40:13131321, 2009.
+
+87
+
+[65] Rao A.S. Naraghi S. Flynn M.P. Gilbert A.C. Yenduri P.K., Rocca A.Z.
+low-power compressive sampling time-based analog-to-digital converter.
+IEEE J. Emerg. Sel. Top. Circuits Syst., 2:502515, 2012.
+[66] Bhaskar D. R. Zhang Z. Sparse signal recovery with temporally correlated source vectors using sparse bayesian learning. IEEE Journal of
+Selected Topics in Signal Processing, Special Issue on Adaptive Sparse
+Representation of Data and Applications in Signal and Image Processing, 2011.
+[67] Makeig S. Pi Z. Rao B. Zhang Z., Jung T. Spatiotemporal sparse
+bayesian learning with applications to compressed sensing of multichannel physiological signals. IEEE Trans. on Neural Systems and Rehabilitation Engineering, 22(6):1186–1197, 2014.
+[68] Makeig S. Rao B. Zhang Z., Jung T. Compressed sensing of EEG for
+wireless telemonitoring with low energy consumption and inexpensive
+hardware. IEEE Transactions on Biomedical Engineering, 60(1):221–
+224, 2013.
+[69] Makeig S. Rao B. D. Zhang Z., Jung T. P. Compressed sensing for
+energy-efficient wireless tele-monitoring of noninvasive fetal ecg via
+block sparse bayesian learning. IEEE Trans. on Biomedical Engineering, 60(2):300–309, 2013.
+[70] Rao B. D. Zhang Z. Sparse signal recovery in the presence of correlated multiple measurement vectors. IEEE International Conference
+on Acoustics, Speech and Signal Processing, 2010.
+88
+
+[71] Rao B. D. Zhang Z. Extension of SBL algorithms for the recovery of
+block sparse signals with intra-block correlation. IEEE Transactions
+on Signal Processing, 61(8):2009–2015, 2013.
+[72] Rao B. D. Zhilin Z. Iterative re-weighted algorithms for sparse signal
+recovery with temporally correlated source vectors. ICASSP, 2011.
+
+89
+
+

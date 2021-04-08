@@ -1,0 +1,540 @@
+Chapter 27
+
+Anfis-Based P300 Rhythm Detection Using
+Wavelet Feature Extraction on Blind
+Source Separated Eeg Signals
+Juan Manuel Ramirez-Cortes, Vicente Alarcon-Aquino,
+Gerardo Rosas-Cholula, Pilar Gomez-Gil, and Jorge Escamilla-Ambrosio
+
+27.1
+
+Introduction
+
+This article presents a revised and extended version of a paper presented at the World
+Congress on Engineering and Computer Science 2011, International Conference on
+Signal Processing and Imaging Engineering (Ramı́rez-Cortes et al. 2010). In recent
+years, there has been a growing interest in the research community on signal
+processing techniques oriented to solve the multiple challenges involved in Brain
+Computer Interfaces (BCI) applications (Paul et al. 2008; Theodore et al. 2007;
+Bashashati et al. 2007). Brain Computer Interfaces (BCIs) are systems which allow
+people to control some devices using their brain signals. An important motivation to
+develop BCI systems, among some others, would be to allow an individual with
+motor disabilities to have control over specialized devices such as computers, speech
+synthesizers, assistive appliances or neural prostheses. A dramatic relevance arises
+when thinking about patients with severe motor disabilities such as locked-in syndrome, which can be caused by amyotrophic lateral sclerosis, high-level spinal cord
+injury or brain stem stroke. In its most severe form people are not able to move any
+limb. BCIs would increase an individual’s independence, leading to an improved
+quality of life and reduced social costs. Among the possible brain monitoring
+methods for BCI purposes, the EEG constitutes a suitable alternative because of its
+good time resolution, relative simplicity and noninvasiveness when compared to
+other methods such as functional magnetic resonance imaging, positron emission
+tomography (PET), magnetoencephalography or electrocorticogram systems.
+There are several signals which can be extracted from the EEG in order to develop
+BCI systems, including the slow cortical potential (Bashashati et al. 2007), m and b
+
+J.M. Ramirez-Cortes (*)
+Department of Electronics and Department of Computational Science,
+National Institute of Astrophysics, Optics and Electronics, Luis Enrique Erro No. 1
+Tonantzintla, Puebla 72840, Mexico
+e-mail: jmramirez@inaoep.mx
+S.‐I. Ao et al. (eds.), Intelligent Automation and Systems Engineering,
+Lecture Notes in Electrical Engineering 103, DOI 10.1007/978-1-4614-0373-9_27,
+# Springer Science+Business Media, LLC 2011
+
+353
+
+354
+
+J.M. Ramirez-Cortes et al.
+
+rhythms (Royer et al. 2009; Delaram et al. 2009), motor imagery (Thomas et al.
+2009), static-state visually evoked potentials (Zhu et al. 2010; Christian et al. 2009),
+or P300 evoked potentials (David 2005; Seno et al. 2010; Brice et al. 2006). P300
+evoked potentials occur with latency around 300 ms in response to target stimuli
+that occur unexpectedly. In a P300 controlled experiment, subjects are usually
+instructed to respond in a specific way to some stimuli, which can be auditory,
+visual, or somatosensory. P300 signals come from the central-parietal region of the
+brain and can be found more or less throughout the EEG on a number of channels.
+The P300 is an important signature of cognitive processes such as attention and
+working memory and an important clue in the field of neurology to study mental
+disorders and other psychological disfunctionalities (Kun et al. 2009).
+In this work, an experiment on P-300 rhythm detection using wavelet-based
+feature extraction, and an ANFIS algorithm is presented. The experiment has been
+designed in such a way that the P300 signals are generated when the subject is
+exposed to some visual stimuli, consisting of a sequential group of slides with a
+landscape background. Images of a ship are inserted using a controlled non-uniform
+sequence, and the subject is asked to press a button when the ship unexpectedly
+appears. The EEG signals are preprocessed using an Independent Component
+Analysis (ICA) algorithm, and the P300 is located in a time-frequency plane
+using the Discrete Wavelet Transform (DWT) with a sub-band coding scheme.
+The rest of the paper is organized as follows: Sect. 27.2 presents the theory
+associated to the wavelet sub-band coding algorithm. Section 27.3 describes Independent Component Analysis (ICA) as part of the pre-processing stage. Section 27.4
+reports the evoked potential experiment and the proposed method on P300 signal
+detection. Section 27.5 describes the ANFIS model and its application to the EEG
+signals. Section 27.6 presents obtained results, and Sect. 27.7 presents some
+concluding remarks, perspectives, and future direction of this research oriented to
+the implementation of a BCI system.
+
+27.2
+
+Discrete Wavelet Transform
+
+The Discrete Wavelet Transform (DWT) is a transformation that can be used to
+analyze the temporal and spectral properties of non-stationary signals. The DWT is
+defined by the following equation (Priestley 2008):
+Wð j; kÞ ¼
+
+XX
+j
+
+f ðxÞ2j=2 cð2j x  kÞ
+
+(27.1)
+
+k
+
+The set of functions cj;k ðnÞis referred to as the family of wavelets derived from
+cðnÞ, which is a time function with finite energy and fast decay called the mother
+wavelet. The basis of the wavelet space corresponds then, to the orthonormal
+functions obtained from the mother wavelet after scale and translation operations.
+
+27
+
+Anfis-Based P300 Rhythm Detection Using Wavelet Feature Extraction. . .
+
+355
+
+Fig. 27.1 Two-level wavelet
+filter bank in the sub-band
+coding algorithm
+
+The definition indicates the projection of the input signal into the wavelet
+space through the inner product, then, the function f(x) can be represented in the
+form:
+f ðxÞ ¼
+
+X
+
+dj ðkÞcj;k
+
+(27.2)
+
+j;k
+
+where dj(k) are the wavelet coefficients at level j. The coefficients at different levels
+can be obtained through the projection of the signal into the wavelets family as
+expressed in Eqs. 27.3 and 27.4.
+D
+
+E X D
+E
+dl f ; fj;kþl
+f ; cj;k ¼
+
+(27.3)
+
+l
+
+D
+E
+E
+1 X D
+f ; fj;k ¼ pﬃﬃﬃ
+cl f ; fj1;2kþl
+2 l
+
+(27.4)
+
+The DWT analysis can be performed using a fast, pyramidal algorithm described
+in terms of multi-rate filter banks. The DWT can be viewed as a filter bank with
+octave spacing between filters. Each sub-band contains half the samples of the
+neighboring higher frequency sub-band. In the pyramidal algorithm the signal is
+analyzed at different frequency bands with different resolution by decomposing the
+signal into a coarse approximation and detail information. The coarse approximation is then further decomposed using the same wavelet decomposition step. This is
+achieved by successive high-pass and low-pass filtering of the time signal and a
+down-sampling by two (Pinsky et al. 2009), as defined by the following Eqs. 27.5
+and 27.6:
+aj ðkÞ ¼
+
+X
+
+hðm  2kÞ ajþ1 ðmÞ
+
+(27.5)
+
+gðm  2kÞ ajþ1 ðmÞ
+
+(27.6)
+
+m
+
+dj ðkÞ ¼
+
+X
+m
+
+Figure 27.1 shows a two-level filter bank. Signals aj(k), and dj(k) are known as
+approximation and detail coefficients, respectively.
+
+356
+
+J.M. Ramirez-Cortes et al.
+
+This process may be executed iteratively forming a wavelet decomposition tree
+up to any desired resolution level. In this work the analysis was carried out up to
+the 11 decomposition level (16 s windows with sampling frequency of 128 sps)
+applied on the signals separated from the ICA process described in the next
+section.
+
+27.3
+
+Preprocessing of Eeg Signals Using Independent
+Component Analysis
+
+Independent Component Analysis (ICA), an approach to the problem known as
+Blind Source Separation (BSS), is a widely used method for separation of mixed
+signals (Amar et al. 2008; Keralapura et al. 2011). The signals xi ðtÞare assumed to
+be the result of linear combinations of the independent sources, as expressed in
+Eq. 27.7.
+xi ðtÞ ¼ ai1 si ðtÞ þ ai2 s2 ðtÞ þ    þ ain sn ðtÞ
+
+(27.7)
+
+x ¼ As
+
+(27.8)
+
+or in matrix form:
+
+where A is a matrix containing mixing parameters and S the source signals. The goal
+of ICA is to calculate the original source signals from the mixture by estimating a
+de-mixing matrix U that gives:
+_
+
+s ¼ Ux
+
+(27.9)
+
+This method is called blind because both the mixing matrix A and the matrix
+containing the sources S are unknown, i.e., little information is available. The demixing matrix U is found by optimizing a cost function. Several different cost
+functions can be used for performing ICA, e.g. kurtosis, negentropy, etc., therefore, different methods exist to estimate U. For that purpose the source signals are
+assumed to be non-gaussian and statistically independent. The requirement of
+non-gaussianity stems from the fact that ICA relies on higher order statistics to
+separate the variables, and higher order statistics of Gaussian signals are zero
+(John 2008).
+EEG consists of measurements of a set of N electric potential differences
+between pairs of scalp electrodes. Then the N-dimensional set of recorded signals
+can be viewed as one realization of a random vector process. ICA consists in
+looking for an overdetermined (N  P) mixing matrix A (where P is smaller than
+or equal to N) and a P-dimensional source vector process whose components are the
+most statistically independent as possible. In the case of the P300 experiment
+
+27
+
+Anfis-Based P300 Rhythm Detection Using Wavelet Feature Extraction. . .
+
+357
+
+described in this paper, ICA is applied with two objectives; denoising the EEG signal
+in order to enhance the signal to noise ratio of the P-300, and separating the evoked
+potential from some artifacts, like myoelectric signals derived from eye-blinking,
+breathing, or head motion.
+
+27.4
+
+Experimental Setup and Proposed Methodology
+for P-300 Signal Detection
+
+In this work the EPOC headset, recently released by the Emotiv Company, has been
+used (Emotiv Systems Inc.). This headset consists of 14 data-collecting electrodes
+and 2 reference electrodes, located and labeled according to the international 10–20
+system (John 2008). Following the international standard, the available locations
+are: AF3, F7, F3, FC5, T7, P7, O1, O2, P8, T8, FC6, F4, F8 and AF4. The EEG
+signals are transmitted wirelessly in the frequency of 2.4 GHz to a laptop computer.
+This experiment consists of presenting a non-persistent image to cause a P300
+response from the user. The block diagram of the system to evoke and capture P300
+signals, and a picture of the described setup are shown in Figs. 27.2 and 27.3,
+respectively. The subject is resting in a comfortably position during the testing.
+A simple graphical application shows in the screen a starship attacking a neighborhood in a fixed time sequence not known by the subject, as represented in
+Table 27.1. Recognition of the ship by the subject, when it suddenly appears in
+the screen, is expected to generate a P300 evoked potential in the brain central zone.
+The serial port is used for sending time markers to the Emotive testbench, in
+synchrony with the moments when the ship appears in the screen. The Testbench
+application provided by Emotiv System Co., is used to capture raw data from the 14
+electrodes, as shown in Fig. 27.4.
+
+Stimulus
+application
+
+Serial
+Comm
+
+Capture
+System
+
+Subject using
+EEG headset
+
+Bluetooth
+
+Fig. 27.2 Block diagram of the experimental setup used during the P300 signals detection
+
+358
+
+J.M. Ramirez-Cortes et al.
+
+Fig. 27.3 Headset and stimulus used for the experiment on P300 signal detection
+
+Table 27.1 Event time
+examples
+Event
+Time difference
+1
+4000
+2
+3000
+3
+4000
+4
+3000
+5
+5500
+6
+3000
+7
+4000
+8
+4500
+
+sequence
+Time (mS)
+4000
+7000
+11000
+14000
+19500
+22500
+26500
+31000
+
+Fig. 27.4 Block diagram of the proposed system for ANFIS-based P-300 signal detection
+
+27
+
+Anfis-Based P300 Rhythm Detection Using Wavelet Feature Extraction. . .
+
+359
+
+Fig. 27.5 ANFIS structure
+
+The operations proposed to detect the P300 rhythm are summarized in the block
+diagram of Fig. 27.5. First, a band-pass filter selects the required frequency
+components and cancels the DC value. Then, ICA blind source separation is applied
+with the purpose of denoising the EEG signal and separating the evoked potential
+from artifacts, like myoelectric signals derived from eye-blinking, breathing, or
+head motion, as well as cardiac signals.
+The P300 is further located in time and scale through a wavelet sub-band coding
+scheme. This information is further fed into an Adaptive Neurofuzzy Inference
+System (ANFIS), as described in the next section.
+
+27.5
+
+Adaptive Neurofuzzy Inference System
+
+Adaptive Neuro Fuzzy Inference Systems (ANFIS) combine the learning
+capabilities of neural networks with the approximate reasoning of fuzzy inference
+algorithms. Embedding a fuzzy inference system in the structure of a neural
+network has the benefit of using known training methods to find the parameters
+of a fuzzy system. Specifically, ANFIS uses a hybrid learning algorithm to identify
+the membership function parameters of Takagi-Sugeno type fuzzy inference
+systems. In this work, the ANFIS model included in the MATLAB toolbox has
+been used for experimentation purposes. A combination of least-squares and
+backpropagation gradient descent methods is used for training the FIS membership
+function parameters to model a given set of input/output data through a multilayer
+neural network. ANFIS systems have been recently used for optimization,
+modeling, prediction, and signal detection, among others (Douglas et al. 2004;
+Chang and Chang 2006; Subasi 2007). In this paper, the ANFIS system is proposed
+to be used for the detection of the P-300 rhythm in an EEG signal, for BCI
+applications. Frequency bands with the most significant energy content, in the
+
+360
+
+J.M. Ramirez-Cortes et al.
+
+Fig. 27.6 Control surfaces of input B1 and B2 related to the output
+
+Fig. 27.7 Gaussian membership functions corresponding to the input B1
+
+range of the P-300 signal, are selected from the wavelet decomposition, as the input
+for the ANFIS system. These bands are 8–4, 4–2, 2–1, and 1–0.5 Hz, which are
+considered as the linguistic variables B1, B2, B3 and B4, respectively. The ANFIS
+structure is depicted in Fig. 27.6. Figure 27.7 shows the control surfaces
+corresponding to inputs B1 and B2 related to the output. Figure 27.7 shows the
+input Gaussian membership functions for input B1.
+
+27
+
+Anfis-Based P300 Rhythm Detection Using Wavelet Feature Extraction. . .
+
+361
+
+Fig. 27.8 ANFIS output and triangle pulses
+
+The ANFIS is used to map the P300 signal composition to a triangle pulse
+occurring simultaneously during the training stage. Figure 27.8 shows the ANFIS
+output following triangle pulses after a 400 epochs training. A trained ANFIS is
+further used during a verification stage, using the EEG signals obtained from eight
+test subjects performing the same experiment with 10 trials of 16 s each.
+
+27.6
+
+Results
+
+The captured signals were analyzed using a time window of 16 s, with a sampling
+frequency of 128 samples per second. Figure 27.9 shows the 14 electrodes raw
+signals obtained from the emotive headset. As described before, a band-pass
+filtering stage is applied to the raw data. Figure 27.10 shows information from the
+electrodes T8, FC6, F4, F8 and AF4 signals, after the filter is applied.
+The P300 signals are predominant in the brain central area, thus the P300 is
+typically measured from the Pz, Cz, Fz electrodes. The Emotive headset does not
+include specific electrodes over the brain central area, however, the headset can be
+positioned in such a way that the electrodes AF3, AF4, F3, and F4, are able to
+collect the EEG signals relevant to the P300 experiment described in this work. The
+EEG signals obtained from the 14 electrodes are then processed through the ICA
+algorithm. The 14 channels are shown in Fig. 27.11. Typically, the P300 signals are
+embedded in artifacts, and they appear in two different channels; in this case
+channel 2 and 3. After the blind source separation applied to electrodes AF3,
+AF4, F3, and F4 signals, it can be noticed that P300 signals are visible on channel 2,
+while the others separated channels show some artifacts such as the myoelectric
+signal from blinking, which is predominant in AF3 and AF4 electrodes, cardiac
+rhythm, and system noise. The signals obtained after the ICA separation, are shown
+in Fig. 27.12.
+
+362
+
+Fig. 27.9 Raw data obtained from the EEG headset
+
+Fig. 27.10 Prefiltered EEG signals
+
+Fig. 27.11 Fourteen channels entered to the ICA algorithm
+
+J.M. Ramirez-Cortes et al.
+
+27
+
+Anfis-Based P300 Rhythm Detection Using Wavelet Feature Extraction. . .
+
+Fig. 27.12 Separated signals obtained from the ICA algorithm
+
+Fig. 27.13 Scalogram of signal obtained from channel 2
+
+Fig. 27.14 ANFIS output showing detection of P-300 events
+
+363
+
+364
+
+J.M. Ramirez-Cortes et al.
+
+Table 27.2 Results obtained
+on the P300 rhythm
+detection
+
+Result
+Detected
+Undetected
+Detected taking account false positive events
+
+Rate
+85%
+15%
+60%
+
+A time-scale analysis in the wavelet domain was then performed in order to
+locate the energy peaks corresponding to the P300 rhythm. DWT sub-band coding
+with 11 decomposition levels, using a Daubechies-4 wavelet was applied to channel
+2, as shown in Fig. 27.13. It can be seen that the P300 peaks are easily distinguished
+in the wavelet domain. The energy peaks in the scalogram of Fig. 27.13, are located
+in the bands 0.5–1 Hz and 1–2 Hz, as expected. It was noted that P300 rhythms were
+distinguished better in the EEG signals corresponding to the eight first events in the
+experiment. After that time lapse, the experiment became tedious for most of the
+users, with the consequence of generating low-level P300 signals, undetectable in
+the experiments. Figure 27.14 shows a typical obtained signal, corresponding to the
+detection of P300 rhythms, as the output of the ANFIS system. Table 27.2
+summarizes the total detection accuracy obtained with the proposed system.
+
+27.7
+
+Concluding Remarks
+
+This paper presented an experiment on P300-rhythm detection based on ICA-based
+blind source separation, wavelet analysis, and an ANFIS model. The results
+presented in this paper are part of a project with the ultimate goal of designing
+and developing brain computer interface systems. These experiments support the
+feasibility to detect P300 events using the Emotiv headset through an ANFIS
+approach. The proposed method is suitable for integration into a brain-computer
+interface, under a proper control paradigm. DWT coefficients could be used further
+as input to a variety of classifiers using different techniques, such as distance-based,
+k-nearest neighbor or Support Vector Machines (SVM).
+
+References
+Bashashati A, Fatourechi M, Ward RK, Birch GE (2007) A survey of signal processing algorithms
+in brain-computer interfaces based on electrical brain signals. J Neural Eng 4(2):R32–R57
+Berger TW, Chapin JK, Gerhardt GA, McFarland DJ, Principe JC, Soussou WV, Taylor DM,
+Tresco PA (2007) WTEC panel report on international assessment of research and development in brain-computer interfaces. World Technology Evaluation Center, Inc., Baltimore
+Rebsamen B, Burdet E, Guan C, Zhang H, Teo CL, Zeng Q, Ang M, Laugier C (2006) A braincontrolled wheelchair based on P300 and path guidance. Proceedings of IEEE/RAS-EMBS
+International Conference on Biomedical Robotics and Biomechatronics, 1101–1106
+
+27
+
+Anfis-Based P300 Rhythm Detection Using Wavelet Feature Extraction. . .
+
+365
+
+Chang F-J, Chang Y-T (2006) Adaptive neuro-fuzzy inference system for prediction of water level
+in reservoir. Adv Water Res 29(1):1–10
+Mandel C, Luth T, Laue T, Rofer T, Graser A, Krieg-Bruckner B (2009) Navigating a smart
+wheelchair with a brain-computer interface interpreting steady-state visual evoked potentials.
+Proceedings of the IEEE/RSJ International Conference On Intelligent Robots and Systems,
+St Louis, MO, USA, pp 1118–1125
+David E (2005) Linden, “The P300: where in the brain is it produced and what does it tell us?”. The
+Neuroscientist 11(6):563–576
+Jarchi D, Abolghasemi V, Sanei S (2009) Source localization of brain rhythms by empirical mode
+decomposition and spatial notch filtering. 17th European signal processing conference
+(EUSIPCO 2009), Glasgow, Scotland, 24–28 Aug
+Emotiv Systems Inc. Researchers. http://www.emotiv.com/researchers/
+Kachenoura A, Albera L, Senhadji L, Comon P (Jan 2008) ICA: A potential tool for BCI systems.
+IEEE Signal Process Mag 25(1):57–68
+Keralapura M, Pourfathi M, Sirkeci-Mergen B (2011) Impact of contrast functions in fast-ICA on
+twin ECG separation. IAENG Int J Comput Sci 38(1):38–47
+Li K, Sankar R, Arbel Y, Donchin E (2009) P300-based single trial independent component
+analysis on EEG signal. Lecture notes, foundations of augmented cognition. Neuroergonomicsand Operational Neuroscience, vol 16, Springer, pp 404–410
+Pinsky MA (2009) Introduction to fourier analysis and wavelets, Graduate studies in mathematics,
+vol 102. American Mathematical Society, Providence
+Priestley MB (2008) Wavelets and time-dependent spectral analysis. J Time Series Anal 17
+(1):85–103
+Ramı́rez-Cortes JM, Alarcon-Aquino V, Rosas G, Gomez-Gil P, Escamilla-Ambrosio J (2010)
+P-300 rhythm detection using ANFIS algorithm and wavelet feature extraction in EEG signals.
+Lecture notes in engineering and computer science: proceedings of the world congress on
+engineering and computer science 2010 (WCECS 2010), San Francisco, USA, 20–22 Oct 2010
+Royer AS, He B (2009) Goal selection vs. Process control in a brain-computer interface based on
+sensorimotor rhythms. J Neural Eng 6(1), 016005
+Sajda P, Muller KR, Shenoy KV (Jan 2008) Brain computer interfaces. IEEE Signal Proc Mag
+16:16–28
+Semmlow JL (2008) Biosignal and medical image processing, 2nd ed. CRC Press/Taylor and
+Francis Group, New York
+Bernardo dal Seno, Matteucci M, Mainardi L (2010) Online detection of P300 and error potentials
+in a BCI speller. Comput Intelligence Neurosci 307254, pp 1–5
+Subasi A (2007) Application of adaptive neuro-fuzzy inference system for epileptic seizure
+detection using wavelet feature extraction. Comput Biol Med 37(2):227–244
+Thomas KP, Guan C, Chiew Tong Lau AP, Vinod AP, Ang KK (2009) A new discriminative
+common spatial pattern method for motor imagery brain computer interfaces. IEEE Trans
+Biomed Eng 56(11):2730–2733
+Vieira DAG, Caminhas WM, Vasconcelos JA (March 2004) Extracting sensitivity information of
+electromagnetic device models using a modified ANFIS topology. IEEE Trans Magnetics 40
+(2):1180–1183
+Zhu D, Bieger J, Garcia-Molina G, Aarts RM (2010) A survey of stimulation methods used
+in SSVEP-based BCIs, Computational intelligence and neuroscience. Hindawi Publishing
+Corporation 702357:1–12
+
+

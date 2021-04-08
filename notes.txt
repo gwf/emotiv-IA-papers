@@ -1,0 +1,64 @@
+How I normalized text:
+  1. Downcase all letters
+  2. Convert any non-letter into a space
+  3. Discard:
+     a. words less than 2 characters in length
+     b. words greater than 20 characters in length
+     c. words that occur less than 10 times in the entire corpus.
+
+To get the "good words" out a text file, in python:
+   file = open('1.txt')
+   str = file.read()
+   file.close()
+   import re
+   text = re.sub('[^a-z ]', ' ', str.replace('\n', ' ').lower())
+   words = re.sub(' +', ' ', text).split(' ')
+   for w in words:
+       if len(w) > 2 and len(w) <= 20:
+          print(w)
+
+You can also read in a dictionary of the words in 'unigrams.txt' and only
+accept words within that list.
+
+
+Files in this directory:
+  maps.txt - mapping of files in ../pdf to ./txt
+  unigrams.txt - viable unigrams after filtering
+  unigram-len-freq.txt - histogram data for unigram length frequency
+  txt/ - all text files from pdftotext but w/ filename as ints.
+
+
+Scripts that I used:
+
+# Run pdftotext in bulk:
+rm -f map.txt; \
+((x=1)); \
+for f in ../pdf/*; do \
+  echo "$x".txt "$f" >> map.txt; \
+  pdftotext "$f" txt/"$x".txt;  \
+  ((x=x+1)); \
+ done
+
+# Calculate words / unigrams that are worth considering
+cat txt/* \
+  | tr '[A-Z]' '[a-z]' \
+  | tr -C '[a-z\n]' ' '
+  | tr ' ' '\n' \
+  | egrep '^[a-z]+$' \
+  | awk '{x[$0]++}; END{
+    for(w in x) {
+      if (length(w) > 2 && length(w) <= 20 && x[w] >= 10) {
+        print x[w], w;
+    }}}' \
+  | sort -rn \
+  > unigrams.txt 
+
+# Sanity check on word frequencies by word length
+cat unigrams.txt \
+  | awk '{l[length($2)] += $1}; END{for(i in l){ print i, l[i]; }}' \
+  | sort -n \
+  > unigram-len-freq.txt
+
+
+
+

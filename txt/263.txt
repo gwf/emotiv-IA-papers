@@ -1,0 +1,288 @@
+Detecting Driver’s Distraction using Long-term Recurrent Convolutional Network
+
+arXiv:2004.11839v1 [eess.SP] 14 Apr 2020
+
+Chang Wei Tan1∗ , Mahsa Salehi1 , Geoffrey Mackellar2
+1
+Faculty of Information Technology, Monash University
+2
+Emotiv Research
+chang.tan@monash.edu, mahsa.salehi@monash.edu, geoff@emotiv.com
+
+Abstract
+
+Brain wearable
+(Emotiv EPOC Headset)
+
+In this study we demonstrate a novel Brain Computer Interface (BCI) approach to detect driver distraction events to improve road safety. We use a
+commercial wireless headset that generates EEG
+signals from the brain. We collected real EEG signals from participants who undertook a 40-minute
+driving simulation and were required to perform
+different tasks while driving. These signals are segmented into short windows and labelled using a
+time series classification (TSC) model. We studied different TSC approaches and designed a Longterm Recurrent Convolutional Network (LCRN)
+model for this task. Our results showed that our
+LRCN model performs better than the state of
+the art TSC models at detecting driver distraction
+events.
+
+1
+
+Introduction
+
+Every year, nearly 1.25 million people die from car accidents.
+On average 3,287 die every day and the numbers are still rising [1]. According to two news sources, distracted driving
+is the major cause of car accidents for the past decades [2;
+3]. Drivers are now more easily distracted than ever and frequently stop paying attention to the road in response to mobile devices, navigation systems and complex control systems
+[2]. It is predicted that road traffic injuries will become the
+fifth leading cause of death by 2030 if no actions are taken [1].
+Therefore, it is important to detect driver distraction events.
+Various video (eye tracking) and speech processing approaches have been proposed to detect driver distraction [4;
+5; 6; 7]. These approaches are sometimes infeasible. For
+example, video processing approaches are less effective with
+insufficient lighting especially at night when the driver has a
+higher chance of being less focused on the road. In car racing environments, drivers are required to wear fire protective
+suits and helmets that cover their faces, making video processing methods ineffective [8]. High levels of background
+noise during driving, for example sound from the engine, radio or wind noise, may decrease the effectiveness of sound
+processing approaches.
+∗
+
+Contact Author
+
+Distracted 1 {AF3,F3,F7}
+
+Focused {AF3,F3,T8} Distracted 2{AF3,F3} Focused {F3,T8}
+
+AF3
+Driver Distraction Experiment
+F3
+
+F7
+
+EEG Signals
+{AF3,...,T8}
+
+.
+.
+.
+T8
+
+Time
+Feature Extraction
+Sliding Window
+
+ML Model: Time series analytics
+
+(266 Features)
+
+Figure 1: Overview of our driver’s distraction detection framework
+
+Hence, in this work, we designed a framework to detect
+driver distraction events with a Brain Computer Interface
+(BCI) approach, illustrated in Figure 1. We use a commercial Electroencephalogram (EEG) headset from Emotiv, that
+is wireless and can easily be worn by a driver. The EEG data
+from the device is split into 11.75s segments of time series
+data using a sliding window and classified using multivariate
+time series classification (TSC) techniques into one of the two
+states, the driver is focused or distracted. To the best of our
+knowledge, none of the previous approaches detect episodes
+of driver distraction using time series analytics on EEG data
+[9].
+
+2
+
+Driver distraction detection
+
+Our driver distraction detection framework1 consists of two
+stages, illustrated in Figure 1. First we extract 266 features
+from the EEG signal. Then we segment the EEG signal features into short subsequences and train our LCRN model to
+classify each of the segments.
+
+2.1
+
+Stage 1: Feature extraction
+
+We use the lightweight and wireless Emotiv EPOC headset2
+to monitor the driver’s brain in real-time with 14 EEG channel. In this work, we recorded the EEG signal data from a
+40 minutes driving simulation completed by 18 participants.
+1
+2
+
+https://github.com/ChangWeiTan/EmotivDriverDistraction
+http://www.emotiv.com/epoc.php
+
+2.2
+
+Stage 2: Multivariate Time Series
+Classification
+
+The state of a driver at any given point in time is detected
+using multivariate time series classification (TSC), where the
+objective is to classify every segment of the EEG signal as
+focused or driving. The 266 dimensional EEG feature set,
+updated at 4Hz, was segmented into short subsequences of
+11.75s windows with 50% overlaps, creating subsequences
+with a length of 40 samples. Each subsequence was labelled
+with the majority label in that segment and then translated
+into the state of the driver, i.e., focused and driving. A multivariate TSC model is trained to classify each of these subsequences. In this work, we investigated the feasibility of the
+following multivariate TSC models for this task:
+1. Euclidean1NN: One nearest neighbour classifier with
+Euclidean distance. This is one of the baseline for multivariate TSC [10].
+2. Rocket: The fastest and most accurate univariate TSC
+algorithm to date [11]. The original univariate algorithm
+was adapted for multivariate case by the authors.
+3. Residual Network (ResNet): ResNet is the most accurate Deep Learning model for univariate TSC [12]
+4. Fully Convolutional Network (FCN): FCN is the most
+accurate Deep Learning model for multivariate TSC [12]
+These models were evaluated using classification accuracy,
+and F1 scores for both distracted and driving state. For the
+safety of the driver, it is more important to predict the distracted state with high accuracy compared to predicting driving state. However, our initial results, illustrated in Figure
+2 showed that these models were not able to predict the distracted state very well. The best overall classifier was Rocket
+with an accuracy of 0.63 and F1 score of 0.45 and 0.72 for
+distracted and driving state respectively. Although ResNet
+had the highest accuracy, it had the worst distracted F1 score
+of 0.22. Hence, we designed a LRCN model to improve our
+framework [13].
+
+0.8
+
+0.6
+Metrics
+
+Each of them was asked to do 16 tasks (which are the labels
+of the EEG signal) such as using a phone for text or voice
+calls, talking to a passenger and solving maths questions to
+simulate distracted driving. Note that 12 participants were
+randomly selected to be in the training set, 2 in validation set
+and the remaining were used to evaluate our models.
+The raw 14 channel EEG signals generated at 128Hz were
+processed before passing into a time series classifier. A 440Hz band-pass filter was applied to reduce ocular artifacts.
+Then, Fast Fourier Transform (FFT) was applied to every
+2 seconds window with 0.25 second intervals. Each of the
+channels was further split into five frequency bands: theta,
+alpha, low beta, high beta and gamma. Then features such
+as the average power, peak power and peak frequency are extracted from each of the frequency bands. Additional features
+were also generated based on the accumulated power in the
+left and right frontal regions, left and right hemispheres, left
+and right temporal/parietal region and occipital power within
+each specified band, and by accumulating EEP power over
+the main processing bands (beta and gamma). This results in
+266 features per EEG signal.
+
+Metrics
+accuracy
+precision_distracted
+recall_distracted
+f1_score_distracted
+precision_driving
+recall_driving
+f1_score_driving
+
+0.4
+
+0.2
+
+0.0
+
+Euclidean1NN
+
+Rocket
+
+FCN
+Classifier
+
+ResNet
+
+FCN-LSTM
+
+Figure 2: Results comparing the different multivariate TSC models
+averaged over 5 repetitions
+
+Our LRCN Model
+The intuition behind our proposed model is to extract features from the subsequences using the convolutional layers
+and to learn the relationships between current and past subsequences using a LSTM layer. LCRN has achieved good performance in other human activity recognition research [14;
+13]. Our LCRN model utilises the FCN layers as the convolutional layer because it performs better than ResNet in the
+previous experiment (Figure 2). The FCN layers consist of
+3 convolutional layers with 128, 256 and 128 filters respectively [12; 15]. It is then followed by two LSTM layers and
+a fully connected softmax layer at the end. We trained our
+LRCN (we call it FCN-LSTM) model with 4 subsequences
+of length 40, each passed into a FCN for feature extraction.
+As shown in Figure 2, our FCN-LSTM network was clearly
+able to predict the distracted state significantly better than the
+other models in terms of precision, recall and F1 scores. We
+observe that the F1 score for distracted state can still be improved and we believe that this is due to imbalanced class in
+the dataset and the lack of data. The current dataset was only
+generated by 18 participants with only 12 of them being in the
+training set. The total training set consists of less than 7000
+time series subsequences with only 36% being in the distracted class. Furthermore, these subsequences are “weakly
+labelled”, meaning that there are extraneous/irrelevant sections in the subsequence that may exist in any other subsequence of different labels [16], thus making it extremely challenging to differentiate.
+
+3
+
+Conclusion
+
+Overall, we implemented a proof of concept framework to
+detect driver distraction by classifying EEG signals using a
+LRCN model. We found that our LRCN model performs significantly better than the various existing multivariate TSC
+algorithms for this problem. However, the performance can
+still be improved because of the imbalanced class issue and
+lack of data to generalise well. In the future, we plan to improve the framework using AutoEncoders as well as adding
+some post-processing techniques to the framework.
+Acknowledgements
+We would like to thank Emotiv for providing the Epoc headset and data for this research and Professor Geoff Webb for
+his comments and guidance. We are also grateful to the authors of Rocket, FCN and ResNet for providing their code.
+
+References
+[1] “Top 15 causes of car accidents and how you can prevent them.”
+[2] “Find out what are the leading causes for most car accidents — markets insider.”
+[3] E. L. King, “Top 15 causes of car accidents and how you
+can prevent them,” Dec 2017.
+[4] F. Vicente, Z. Huang, X. Xiong, F. De la Torre,
+W. Zhang, and D. Levi, “Driver gaze tracking and
+eyes off the road detection system,” IEEE Transactions
+on Intelligent Transportation Systems, vol. 16, no. 4,
+pp. 2014–2027, 2015.
+[5] J. Jo, S. J. Lee, J. Kim, H. G. Jung, and K. R. Park,
+“Vision-based method for detecting driver drowsiness
+and distraction in driver monitoring system,” Optical
+Engineering, vol. 50, no. 12, p. 127202, 2011.
+[6] R. O. Mbouna, S. G. Kong, and M.-G. Chun, “Visual
+analysis of eye state and head pose for driver alertness
+monitoring,” IEEE transactions on intelligent transportation systems, vol. 14, no. 3, pp. 1462–1469, 2013.
+[7] J. Yang, S. Sidhom, G. Chandrasekaran, T. Vu, H. Liu,
+N. Cecan, Y. Chen, M. Gruteser, and R. P. Martin, “Detecting driver phone use leveraging car speakers,” in
+Proceedings of the 17th annual international conference on Mobile computing and networking, pp. 97–108,
+2011.
+[8] M. Salehi, G. Mackellar, and C. Leckie, “Car racing
+driver distraction detection using brain eeg,” Workshop
+on Large-Scale Sports Analytics in conjunction with the
+21st ACM SIGKDD Conference on Knowledge Discovery and Data Mining (KDD-2015), 2015.
+[9] S. Kaplan, M. A. Guvensan, A. G. Yavuz, and Y. Karalurt, “Driver behavior analysis for safe driving: A sur-
+
+vey,” IEEE Transactions on Intelligent Transportation
+Systems, vol. 16, no. 6, pp. 3017–3032, 2015.
+[10] A. Bagnall, H. A. Dau, J. Lines, M. Flynn, J. Large,
+A. Bostrom, P. Southam, and E. Keogh, “The uea multivariate time series classification archive, 2018,” arXiv
+preprint arXiv:1811.00075, 2018.
+[11] A. Dempster, F. Petitjean, and G. I. Webb, “Rocket: Exceptionally fast and accurate time series classification
+using random convolutional kernels,” arXiv preprint
+arXiv:1910.13051, 2019.
+[12] H. I. Fawaz, G. Forestier, J. Weber, L. Idoumghar, and
+P.-A. Muller, “Deep learning for time series classification: a review,” Data Min Knowl Discov, vol. 33, no. 4,
+pp. 917–963, 2019.
+[13] J. Donahue, L. Anne Hendricks, S. Guadarrama,
+M. Rohrbach, S. Venugopalan, K. Saenko, and T. Darrell, “Long-term recurrent convolutional networks for
+visual recognition and description,” in Proceedings of
+the IEEE conference on computer vision and pattern
+recognition, pp. 2625–2634, 2015.
+[14] J. Sun, Y. Fu, S. Li, J. He, C. Xu, and L. Tan, “Sequential
+human activity recognition based on deep convolutional
+network and extreme learning machine using wearable
+sensors,” Journal of Sensors, vol. 2018, 2018.
+[15] Z. Wang, W. Yan, and T. Oates, “Time series classification from scratch with deep neural networks: A strong
+baseline,” in 2017 International joint conference on
+neural networks (IJCNN), pp. 1578–1585, IEEE, 2017.
+[16] B. Hu, Y. Chen, and E. Keogh, “Time series classification under more realistic assumptions,” in Proceedings
+of the 2013 SIAM International Conference on Data
+Mining, pp. 578–586, SIAM, 2013.
+
+

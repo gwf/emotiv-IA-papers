@@ -1,0 +1,827 @@
+Article
+
+On Assessing Driver Awareness of Situational
+Criticalities: Multi-modal Bio-sensing and Vision-based
+Analysis, Evaluations, and Insights
+Siddharth Siddharth 1 and Mohan M. Trivedi 1
+1
+
+arXiv:1910.00444v2 [cs.HC] 5 Nov 2019
+
+*
+
+Department of Electrical and Computer Engineering, University of California San Diego, La Jolla, CA, 92093,
+USA; ssiddhar@eng.ucsd.edu, mtrivedi@eng.ucsd.edu
+Correspondence: ssiddhar@eng.ucsd.edu
+
+Received: date; Accepted: date; Published: date
+
+Abstract: Automobiles for our roadways are increasingly utilizing advanced driver assistance systems.
+These changes require us to develop novel perception systems not only for accurately understanding
+the situations and context of these vehicles, but also to understand the awareness of the driver in
+differentiating between safe and critical situations. The research presented in this paper focused on this
+specific problem. Even after the development of wearable and compact multi-modal bio-sensing systems
+in recent years, their application in driver awareness context has been scarcely explored. The capability of
+simultaneously recording different kinds of bio-sensing data in addition to traditionally used computer
+vision systems provide exciting opportunities to explore the limitations of these modalities. In this work,
+we explore the applications of three different bio-sensing modalities namely electroencephalogram (EEG),
+photoplethysmogram (PPG) and galvanic skin response (GSR) along with a camera-based vision system
+in driver awareness context. We assess the information from these sensors independently and together
+using both signal processing and deep learning tools. We show that our methods outperform previously
+reported studies in the context of monitoring driver awareness and detecting hazardous/non-hazardous
+situations for short time scales of two-seconds. We verify our methods by collecting user data on twelve
+subjects for two real-world driving datasets among which one is publicly available (KITTI dataset) and
+one that we collect ourselves (LISA dataset) with the vehicle being driven in an autonomous mode.
+This work presents an exhaustive evaluation of multiple sensor modalities on two different datasets for
+attention monitoring and hazardous events classification.
+Keywords: Bio-sensing, Brain-computer Interfaces, EEG, PPG, GSR, Deep Learning, Human-machine
+Interaction
+
+1. Introduction
+With the development of increasingly intelligent vehicles, it has been possible to assess the criticality
+of a situation much before the event actually happens. This makes it imperative to understand from the
+driver’s perspective about when the situation becomes critical. While computer vision continues to be the
+preferred sensing modality for achieving the goal of assessing driver awareness, the use of bio-sensing
+systems in this context has received wide attention in recent times [1–3]. Most of these studies have used
+electroencephalogram (EEG) as the preferred bio-sensing modality.
+The emergence of wearable multi-modal bio-sensing systems [4,5] has opened a new possibility to
+overcome the limitations of individual bio-sensing modalities through the fusion of features from multiple
+modalities. For example, the information related to driver’s drowsiness extracted from EEG (which suffers
+from low spatial resolution especially when not using a very large number of sensors) may be augmented
+by the use of galvanic skin response (GSR) which does not suffer from electromagnetic noise (but has a low
+
+2 of 18
+
+temporal resolution). Similarly, the fusion of information in EEG with computer vision systems currently
+in use has not been explored in the driving context.
+Driver awareness depends highly on the driver’s physiology since different people react differently
+to fatigue and to their surroundings. This means that one-fit-for-all type of approach using computer
+vision based on eye blinks/closure etc. might not scale very well across drivers. It is here that the
+use of bio-sensing modalities (EEG, GSR, etc.) may play a useful role in assessing driver awareness
+by continuously monitoring the human physiology. The fusion of data from vision-based systems and
+bio-sensors might be able to generate more robust models for the same. Furthermore, EEG with its higher
+temporal resolution than other common bio-sensors may prove to be very useful for detecting hazardous
+vs. non-hazardous situations on short time scales (such as 1-2 seconds) if such situations do not register
+in the driver’s facial expressions in such short time periods. Additionally, the driver’s physiology can
+provide insights into how they react to various situations during the drive which may have a correlation
+with the driver’s safety. For example, heart-rate variability that has been shown to model human stress [6]
+may be used to assess driver’s safety since s/he should not be allowed to drive when heavily stressed.
+Deep Learning has many applications in vision-based driver-monitoring systems [7,8]. But, these
+advances have not translated towards the data from bio-sensing modalities. This is primarily due to the
+difficulty in collecting very large scale bio-sensing data, a prerequisite for training deep neural networks.
+Collecting bio-sensing data on a large scale is costly, laborious and time-consuming. It requires sensor
+preparation and instrumentation on the subject before the data collection can be started whereas for
+collecting images/videos even a smartphone’s camera may suffice without the need to undergo any sensor
+preparation in most cases.
+This study focuses on driver awareness and his/her perception of hazardous/non-hazardous
+situations from bio-sensing as well as vision-based perspectives. We individually use features from
+three bio-sensing modalities namely EEG, PPG, GSR, and vision data to compare the performance of
+these modalities. We also use the fusion of features to understand if and in what circumstances can it
+be advantageous. To this end, we present a novel feature extraction and classification pipeline that has
+the ability to work with real-time capability. The pipeline utilizes pre-trained deep neural networks even
+in the absence of very large scale bio-sensing data. To the best of our knowledge, this study is the most
+comprehensive view of using such widely varying sensing modalities towards assessing driver awareness
+and attention. Finally, we would like to emphasize that the bio-sensors used in this study are very practical
+to use in “real-world” i.e. they are compact in design, wireless and comfortable to use for prolonged
+time intervals. This choice of bio-sensors was consciously carried out so as to bridge the gap between
+laboratory-controlled experiments and “real-world” driving scenarios.
+The framework presented in this paper is not just a user study but a complete scalable framework for
+signal acquisition, feature extraction, and classification that has been designed with the intent to work
+in real-world driving scenarios. The framework is capable of working in real-time and is modular since
+we extract the information from each sensor modality separately. Finally, we test two hypotheses in this
+paper. First, we test if the modalities with low-temporal resolution (but easily wearable) namely PPG and
+GSR can work as well as EEG and vision modality for assessing driver’s attention. Second, we test if (and
+when) the fusion of features from different sensor modalities boost the classification performance over
+using each modality independently for attention and hazardous/non-hazardous event classification. In
+the process of studying these two hypotheses, we extract traditional and deep learning-based features
+from each modality.
+
+3 of 18
+
+2. Related Studies
+Driver monitoring for assessing attention, awareness, behavior prediction, etc. has usually been
+done using vision as the preferred modality [10–12]. This is carried out by monitoring the subject’s
+facial expressions and eye-gaze [13] which are used to train machine learning models. But, almost all
+such studies utilizing “real-world” driving scenarios have been conducted during daylight when ample
+ambient light is present. Even if infra-red cameras are used to conduct such experiments at night, vision
+modality suffers from occlusion and widely varying changes in illumination [10], both of which are not
+uncommon in such scenarios. Furthermore, it has been shown that the use of EEG can classify hazardous
+vs. non-hazardous situations over short time periods which is not possible with images/videos [14].
+On the other hand, if we focus on the bio-sensing hardware, more than a decade ago, those studies
+in driving scenarios that utilized the use of bio-sensing modalities suffered from impracticality in the
+“real-world” situations. This is because the bio-sensors were usually bulky, required wet electrodes, and
+were very prone to noise in the environment. Hence, the studies carried out with such sensors required
+wet electrode application and monitors in front of participants with minimal motion [15,16]. In the early
+years of this decade, such bio-sensing systems gave way to more compact ones capable of transmitting
+data wirelessly while being more resistant to the noise by better EM shielding and advances in mechanical
+design. Finally, recent advances have led to the development of multi-modal bio-sensing systems and the
+ability to design algorithms utilizing the fusion of features from various modalities. This has been utilized
+for various applications such as in affective computing and virtual reality [17,18].
+The use of deep learning for various applications relating to driver safety and autonomous driving
+systems has skyrocketed in the past few years. These studies have ranged from understanding driving
+behavior [19] to autonomous driving systems on highways [20] to detecting obstacles for cars [21] among
+other applications. All such studies only use vision modality since as pointed out before due to the
+prevalence of large-scale image datasets. However, the use of “pre-trained” neural networks for various
+applications [22,23] may provide a new opportunity. Hence, if bio-sensing data can be represented in
+the form of an image, it should be possible to use such networks to extract deep learning-based optimal
+feature representation of the image (henceforth called most significant features) even in the absence of
+large-scale bio-sensing datasets.
+Finally, our system pipeline uses multiple bio-sensing modalities in addition to the vision which is not
+the case with previous state-of-the-art evaluations done on the KITTI dataset [24]. Our previous work on
+EEG and visual modality data with the KITTI dataset [31] shows the utility of using these two modalities
+for driver attention monitoring but do not present a holistic view of multiple bio-sensing modalities with
+short-time interval analysis on other datasets. The use of another dataset collected by us while driving a
+car in autonomous mode with the driver strapped with bio-sensing modalities and a holistic comparison
+of multiple sensing modalities is a chief feature of this research study. Also, the previous research studies
+generally [14,25] use a single modality and traditional features (i.e. not based on deep neural networks)
+for classification. Through our evaluation, we show that we easily beat their results with higher-order
+features and also evaluate our pipeline on a new driving dataset collected in this study.
+3. Research Methods
+In this section, we discuss the various research methods that we employed to pre-process the data
+and extract features from each of the modalities used in this study.
+3.1. EEG-based Feature Extraction
+The cognitive processes pertaining to attention and mental load such as while driving are not
+associated with only one part of the brain. Hence, our goal was to map the interaction between various
+
+4 of 18
+
+regions of the brain to extract relevant features related to attention. The EEG was initially recorded
+from a 14-channel Emotiv EEG headset at 128 Hz sampling rate. The EEG channel locations as per the
+International 10-20 system were AF3, AF4, F3, F4, F7, F8, FC5, FC6, T7, T8, P7, P8, O1, and O2. We used
+the artifact subspace reconstruction (ASR) pipeline in the EEGLAB [27] toolbox to remove artifacts related
+to eye blinks, muscle movements, line noise, etc. [28]. This pipeline is capable of working in real-time
+and unlike ICA [9] has the added advantage of being able to remove noise without much loss of EEG
+data when a very large number of EEG sensors are not present. For each subject, we verified the output
+from ASR manually as well as observing the algorithm’s output parameters to make sure that the noise
+removal is being performed correctly. Then, we band-pass filtered the EEG data between 4-45 Hz. On this
+processed EEG data, we employed two distinct and novel methods to extract EEG features that capture
+the interplay between various brain regions to map human cognition.
+3.1.1. Features based on Mutual Information
+To construct the feature space that can map the interaction of EEG information between various
+regions of the brain, we calculated the mutual information between signals from different parts of the
+brain. EEG-based mutual information features were used since they measure the changes in EEG across
+the various regions of the brain as opposed to power spectrum-based features that are local. This is because
+unlike a steady-state visual-evoked potential (SSVEP) or a P300 type of EEG response which mostly affects
+a single brain region, driving is a high-level cognition task and hence multiple systems of the brain are
+involved: vision, auditory, motor, etc. The mutual information I ( X; Y ) of discrete random variables X and
+Y is defined as
+I ( X; Y ) =
+
+∑ ∑
+
+x ∈ X y ∈Y
+
+
+p( x, y)log
+
+p( x, y)
+p( x ) p(y)
+
+
+(1)
+
+The desired feature of conditional entropy H (Y | X ) is related to the mutual information I ( X; Y ) by
+I ( X; Y ) = H (Y ) − H (Y | X )
+
+(2)
+
+We calculated the conditional entropy using mutual information between all possible pairs of EEG
+electrodes for a given trial. Hence, for 14 EEG electrodes, we calculated 91 EEG features based on this
+measure.
+3.1.2. Features based on Deep Learning
+The most commonly used EEG features are the calculation of power-spectrum density (PSD) of
+different EEG bands. But, these features in themselves do not take into account the EEG-topography i.e.
+the location of EEG electrodes for a particular EEG band. Hence, we try to exploit EEG-topography to
+extract information regarding the interplay between different brain regions.
+We calculated the PSD of three EEG bands namely theta (4-7 Hz), alpha (7-13 Hz) and Beta (13-30 Hz)
+for all the EEG channels. The choice of these three specific EEG bands was made since they are the most
+commonly used bands and thought to carry a lot of information about human cognition. We averaged the
+PSD for each band thus calculated over the complete trial. These features from different EEG channels
+were then used to construct a two-dimensional EEG-PSD heatmap for each of the three EEG bands using
+bicubic interpolation. These heat-maps now contain the information related to EEG topography in addition
+to spectrum density at each of these locations.
+Fig. 1 shows these 2-D heatmaps for each of the three EEG bands. As can be seen from the figure, we
+plot each of the three EEG bands using a single color channel i.e. red, green and blue. We then add these
+
+5 of 18
+
+Figure 1. PSD heat-maps of the three EEG bands i.e. theta (red), alpha (green), and beta (blue) EEG bands
+are added according to respective color-bar range to get combined RGB heat-map image.(Circular outline,
+nose, ears, and color-bars have been added for visualization only. All units are in Watt per Hz.)
+
+three color band images to get a color RGB image containing information from the three EEG bands. The
+three color band images are added in proportion to the amount of EEG power in the three bands using
+alpha blending [32] by giving weights to the three individual bands’ images by normalizing them using
+the highest value in the image. Hence, following this procedure we are able to represent the information
+in the three EEG bands along with their topography using a single color image. The interaction through
+the mixture of these three colors (thus forming new colors by adding these primary colors) in various
+quantities is responsible for information regarding how power in the three bands is distributed at various
+regions of the brain.
+Since it is not possible to train a deep neural network from scratch without thousands of trials from
+the EEG data (and no such dataset currently exists in driving scenario), the combined colored image
+representing EEG-PSD with topography information is then fed to a pre-trained deep learning-based
+VGG-16 convolution neural network [33] to extract features from this image. This network consists of 16
+weight layers and has been trained with more than a million images for 1,000 object categories using the
+Imagenet Database [34]. Previous research studies [22,23] have shown that using features from such an
+“off-the-shelf" neural network can be used for various classification problems with good accuracy. Even for
+the research problems where the neural networks were trained on a different vision-based problem and
+applied to a totally different application they still worked very well [23,35,36]. This is mostly because the
+low-level features such as texture, contrast, etc. reflected in the initial layers of CNN are ubiquitous in
+any type of image. The EEG-PSD colored image is resized to 224×224×3 for input to the network. The
+last layer of the network classifies the image into one of the 1000 classes but since we are only interested
+in “off-the-shelf” features, we extract 4,096 features from the last but one layer of the network. The EEG
+features from this method are then combined with those from the previous one for further analysis.
+3.2. PPG-based feature extraction
+PPG measures the changes in blood volume in the microvascular tissue bed. This is done in order to
+assess the blood flow as being modulated by the heart beat. Using a simple peak detection algorithm on
+the PPG signal, it is possible to calculate the peaks of the blood flow and measure the subject’s heart rate
+in a much more wearable manner than a traditional electrocardiogram (ECG) system. The PPG signal was
+recorded using an armband (Biovotion) that measures PPG at a sampling rate of 51.2 Hz.
+3.2.1. HRV and statistical time-domain features
+Heart-rate variability (HRV) has shown to be a good measure for classifying cognitive states such as
+emotional valence and stress [38]. HRV is much more robust than heart rate (HR) which changes slowly
+and generally only correspond to physical exertion. A moving-average filter with a window length of 0.25
+seconds for filtering the noise in the PPG data was first used for each trial. The PPG data so obtained was
+
+6 of 18
+
+then scaled between 0 and 1 and then a peak-detection algorithm [39] was applied to find the inter-beat
+intervals (RR) for the calculation of HRV. The minimum distance between successive peaks was taken to
+be 0.5 seconds to remove any false positives as in Fig. 2.
+
+Figure 2. For a trial, PPG signal with peaks (in red) being detected for the calculation of RRs and HRV
+(above), and PPG spectrogram (below).
+
+HR is defined as the total number of peaks per minute in the PPG. To obtain HRV from the PPG we
+utilize the inter-beat interval (RR) between successive peaks. pNN50 algorithm [40] was then used to
+calculate HRV from RR intervals.
+To explore the statistics related to the PPG wave itself in time-domain, we calculated six statistical
+features on the PPG wave as defined in [41]. These features map various trends in the signal by the
+calculation of mean, standard deviation, etc. at first and subsequent difference signals formed using the
+original signal.
+3.2.2. Spectrogram Deep Learning features
+Recent research studies have shown the applications of PPG analyzed in the frequency domain for
+blood pressure estimation and gender identification implying that it might be useful to analyze PPG in
+frequency domain [42,43]. The frequency range of PPG signals is low and hence we focus only on 0-5
+Hz range. Fig. 2 shows the generated frequency spectrogram [44] for this frequency range for the PPG
+
+7 of 18
+
+signal in a trial. The different color values generated using the ‘Parula’ color-map shows the intensity of
+the spectrogram at a specific frequency bin. Then, we resized the spectrogram images to feed them to the
+VGG-16 network (as we did above for the color EEG-PSD images), and after which the 4,096 extracted
+features were extracted from the VGG-CNN network. Time-domain statistical and HRV features from the
+method above were concatenated with these features for further analysis.
+3.3. GSR-based feature extraction
+The feature extraction pipeline on the GSR signal was similar to that on the PPG. The same two
+methods that were applied on the PPG were utilized for GSR too. Same as PPG, the signals are sampled at
+51.2 Hz by the device.
+3.3.1. Statistical features
+The GSR data were first low-pass filtered with a moving average window of 0.25 seconds to remove
+any bursts in the data. Eight features based on the profile of the signal were then calculated. The first two
+of these features were the number of peaks and the mean of absolute heights of the peaks in the signal.
+Such peaks and their time differences may prove to be a good measure of arousal. The remaining six
+features were calculated as in [41] like the PPG signal above.
+3.3.2. Applying Deep Learning to the spectrogram
+Since GSR signals change very slowly we focus only on the 0-2 Hz frequency range. We then generate
+the spectrogram image for GSR in the above frequency range for each trial. We then send the spectrogram
+image to the VGG-16 deep neural network and extract the most significant 4,096 features from the same.
+These features are then concatenated with the features from the time-domain analysis.
+3.4. Facial expression-based feature extraction
+As discussed above, the analysis of facial expressions has been the preferred modality for driver
+attention analysis. Hence, our goal has been to use this method to compare it against the bio-sensing
+modalities. Furthermore, most of the research work in this area has been done by tracking fixed localized
+points on the face based on face action units (AUs). Hence, below we show a novel deep learning-based
+method to extract relevant features from the faces for driver attention and hazardous conditions detection.
+First, we extract the face region from the frontal body image of the person captured by the camera for
+each frame. This is done by fixing a threshold on the image size to reduce its extreme ends and placing
+a threshold of minimum face size to be 50×50 pixels. This was done to remove any false positives and
+decrease the computational space for face detection. We then used the Viola-Jones object detector with
+Haar-like features [45] to detect the most likely face candidate.
+3.4.1. Facial points localization based features
+Face action units (AUs) has been used for a variety of applications ranging from affective computing
+to face recognition [47]. Facial Action Coding System (FACS) is the most commonly used method to code
+facial expressions and map them to different emotional states [48]. Our goal was to use face localized
+points similar to the ones used in FACS without identifying facial expression such as anger, happiness, etc.
+since they are not highly relevant in the driving domain and short time intervals. The use of FACS needs
+first to identify multiple facial landmarks that are then tracked to map the changes in facial expressions.
+We applied the state-of-the-art Chehra algorithm [46] to the extracted face candidate region from above.
+This algorithm outputs the coordinates of 49 localized points (landmarks) representing various features of
+the face as in Fig. 3. The choice of this algorithm was done because of its ability to detect these landmarks
+
+8 of 18
+
+Figure 3. Detected face (marked in red) and face localized points (marked in green) for two participants
+(left and center) in the study, and some of the features (marked in yellow) computed using the coordinates
+of the face localized points. These features were then normalized using the size of the face in the camera i.e.
+number of pixels in height (H) and width (W)
+
+Figure 4. Network architecture for EEG-PSD trend based Deep Learning method.
+
+through its pre-trained models and hence not needing training for any new set of images. These face
+localized points are then used to calculate 30 different features based on the distances such as between
+the center of the eyebrow to the midpoint of the eye, between the midpoint of nose and corners of the
+lower lip, between the midpoints of two eyebrows, etc. and the angles between such line segments. To
+remove variations by factors such as distance from the camera and face tilt, we normalized these features
+using the dimensions of the face region. All these features were calculated for individual frames, many
+of which make a trial. Hence, to map the variation in these features across a trial (which may directly
+correspond to driver’s attention and driving condition) we calculate the mean, 95th percentile (more robust
+than maximum), and the standard deviation of these 30 features across the frames in the trial. In this
+manner, we get 90 features based on face-localized points from a particular trial.
+3.4.2. Deep Learning-based features
+For the extraction of deep learning-based features, we use the VGG-Faces networks instead of VGG-16.
+This is done to extract features more relevant to faces since the VGG-Faces network has been trained on
+more than 2.6 million face images from more than 2,600 people rather than on various object categories in
+the VGG-16 network. We send each face region part to the network and extract the most significant 4,096
+features. To represent the changes in these features across the trial i.e. across the frames, we calculate the
+mean, 95th percentile, and standard deviation of the features across the frames in a trial. We then separately
+analyze the features from this method to those from the traditionally used face-localized points-based
+method from above to compare the two.
+
+9 of 18
+
+3.5. Assessing trends of EEG features using Deep Learning
+The EEG features discussed in section III.B above were computed over the whole trial such as by
+generating a single EEG-PSD image for a particular trial. This is a special case when the data from the
+whole trial is being averaged. Here, we propose a novel method to compute the trend of EEG features i.e.
+their variation in a trial based on deep learning. To compute features with more resolution we generate
+multiple EEG-PSD images for successive time durations in a trial. Fig. 4 shows the network architecture
+for this method. The EEG-PSD images are generated for multiple successive time durations in a trial
+each of which is then sent to the VGG-16 network to obtain 4,096 most significant features. Similarly,
+this process is done for conditional entropy features by calculating this over multiple periods in a trial
+rather than once on the whole trial. We then use principal components analysis (PCA) [37] to reduce the
+feature size to 60 to save computational time in the next step. These 60× N (N = number of successive
+time intervals) features are then sent as input to a Long Short Term Memory (LSTM) network [50]. The
+LSTM treats each of these features as a time-series and is trained so as to capture the trend in each of them
+for further analysis. This method can only be applied when the time duration of the trials is fixed since the
+length of each time series should be the same. Hence, we apply this method only in the trials used for
+detecting hazardous/non-hazardous situations. However, since the analysis of such situations is done on
+a short time intervals basis, we cannot use this method for PPG and GSR modalities since they take a few
+seconds to react physiologically to the situation.
+
+Figure 5. Experiment setup for multi-modal data collection. (A) EEG Headset, (B) PPG and GSR armband,
+(C) External camera, and (D) Driving videos displayed on the screen. The subject sits with her/his arms
+and feet on a driving simulator with which s/he interacts while watching the driving videos.
+
+Figure 6. Various image instances with varying illumination conditions and type of road (street, single-lane,
+highway, etc.) from (A) LISA Dataset and (B) KITTI Dataset.
+
+10 of 18
+
+4. Dataset Description
+Fig. 5 shows the experimental setup for data collection with driving videos used as the stimulus in our
+dataset. Twelve participants (most of them in their 20s with two older than 30 years) based in San Diego
+participated in our study. The participants were comfortably seated equipped with EEG headset (Emotiv
+EPOC) containing 14 EEG channels (sampling rate of 128 Hz.) and an armband (Biovotion) for collecting
+PPG and GSR (sampling rate of 51.2 Hz.). This EEG headset was chosen since it is easily wearable and
+does not require the application of electrode gel, making it ideal for use in the driving context but at the
+cost of a very high sampling rate and a greater number of EEG channels. The positioning of the GSR sensor
+is however sub-optimal since we do not place the sensor at the palm or the feet. This choice was driven by
+the practicality of data collection in the driving scenario since users interact with multiple vehicle modules
+from their palms and feet during driving. The facial expressions of the subject were recorded using a
+camera in front of him/her. The participants were asked to use a driving simulator which they were
+instructed to control as per the situation in the driving stimulus. For example, if there was a “red light" or
+“stop sign" at any point in a driving stimulus video, the participants should press and hold the brake.
+For consistency between our work and other previous studies [14,25], we use 15 video sequences
+from the KITTI dataset [24]. These video sequences range from 14 to 105 seconds. These videos in the
+dataset were recorded at 1242×375 resolution at 10 frames-per-second (fps). We resized the videos to
+1920×580 to fit the display screen in a more naturalistic manner. These video sequences were chosen
+based on external annotation by two subjects to judge them based on potential hazardous events in them.
+But, video sequences from the KITTI dataset suffer from three limitations namely low resolution, low
+fps, and few sequences of driving on highways. Additionally, since the videos in the KITTI dataset were
+captured at 10fps it may produce steady-state visual-evoked potential (SSVEP) effect in EEG [26]. This is
+undesirable since we only focus on driver attention and hazardous/non-hazardous events analysis and
+SSVEP might act as a noise in the process.
+Hence, we collected our own dataset of 20 video sequences containing real-world driving data on
+freeways and downtown San Diego, California. This dataset was collected using our LISA-T vehicle testbed
+in which a Tesla Model 3 is equipped with 6 external facing GoPro cameras. It is also to be noted that while
+capturing these videos the vehicle was in the autonomous driving mode making LISA dataset the first of its
+kind. The cameras were operating at 122 degrees field-of-view which is very representative of the human
+vision. Furthermore, we presented these video sequences on a large screen (45.9 inches diagonally) at a
+distance of a meter from the participants to model a real-world driving scenario. These video sequences
+ranged from 30 to 50 seconds in length and were shown to the participants with 1920×1200 resolution
+at 30 fps. External annotation was done to classify parts of the video sequences from both datasets into
+hazardous/non-hazardous events. For example, an event where a pedestrian suddenly appears to cross
+the road illegally was termed hazardous whereas an event where a stop sign can be seen from a distance
+and the vehicle’s speed is decreasing was termed non-hazardous. External annotation was performed to
+classify every video sequence into how attentive the driver ought to be in that particular sequence.
+5. Quantitative analysis of multi-modal bio-sensing and vision sensor modalities
+In this section, we present the various singular modality and multi-modal evaluation results for driver
+attention analysis and hazardous/non-hazardous instances classification. First, the videos in both datasets
+were externally annotated by two annotators for low/high driver attention required. For example, the
+video instances where the car is not moving at all were characterized as low attention instances whereas
+driving through narrow streets with pedestrians on the road were labeled as instances with high driver
+attention required. Hence, among the 35 videos, 20 were characterized as requiring low-attention and 15
+as high-attention ones.
+
+11 of 18
+
+Second, 70 instances, each two-second long were found in the videos and were characterized as
+hazardous/non-hazardous. Fig. 7 presents some examples of instances from both categories. As an
+example, a pedestrian suddenly crossing the road “unlawfully” or a vehicle overtaking suddenly represents
+hazardous events whereas “red” traffic sign at a distance and a pedestrian at a crossing with ego vehicle
+not in motion are examples of non-hazardous events. Among the 70 instances, 30 instances were labeled
+as hazardous whereas rest were labeled as non-hazardous. Hence, the goal is to classify such instances in
+a short time period of two seconds using the above modalities. Since PPG and GSR have low temporal
+resolution and do not reflect changes in such short time intervals, we used only facial features and EEG for
+hazardous/non-hazardous event classification.
+For each modality, we first used PCA [37] to reduce the number of features from the above algorithms
+to 30. We then used extreme learning machines (ELM) [51] for classification. The choice of using ELM over
+other feature classification methods was driven by previous studies that have shown how ELM’s performs
+better for features derived from bio-signals [52,53]. These features were normalized between -1 and 1
+across the subjects before training. A single hidden layer ELM was used with a triangular basis function
+for activation. For the method with trend-based temporal EEG and face feature data, we used two-layer
+LSTM with 200 and 100 neurons in respective layers instead of ELM for classification. The LSTM network’s
+training was done using stochastic gradient descent with a momentum (SGDM) optimizer. We performed
+leave-one-subject-out cross-validation for each case. This meant that the data from 11 subjects (385 trials)
+were used for training at a time and the classification was done on the 35 trials from the remaining 12th
+subject. This choice of cross-validation was driven by two factors. First, this method of cross-validation is
+much more robust and less prone to bias than models such as leave-one-sample-out cross-validation that
+constitutes training data from all the subjects at any given time. Second, since the data contained 420 trials
+only as opposed to thousands of trials for any decent image-based deep-learning dataset, it does not make
+sense to randomly divide such a small number of trials to training, validation and test sets since it might
+introduce bias by uneven division across trials from individual subjects.
+Both of the feature classification methods i.e. LSTM-based and ELM-based were used independently
+for feature classification with labels. When a higher temporal resolution was taken into consideration i.e.
+trends in a series of EEG-PSD images, then the LSTM-based method was used for feature classification.
+This is because now the features vary as a time series for each trial and ELM cannot be used for such a
+time-series based classification. The ELM-based method was performed for the other case when the data
+from the complete trial is represented by a single (non-varying in time) value for each feature.
+
+Figure 7. (A) Examples of 2-seconds incidents classified as hazardous. Examples include pedestrians
+crossing the street without a crosswalk while the ego vehicle is being driven and another vehicle overtaking
+suddenly. (B) Examples of 2-seconds incidents classified as non-hazardous. Examples include stop signs
+and railway crossing signs. For each category, the top images are from KITTI dataset whereas the bottom
+images are from LISA dataset.
+
+12 of 18
+
+5.1. Evaluating attention analysis performance
+In this section, we evaluate single and multi-modality performance for assessing the driver’s attention
+across the video trials. For all the four modalities, the features as defined above were calculated for data
+from each video trial. The ELM-based classifier was then trained based on each video trial divided into
+one of the two classes representing low-attention and high-attention required by the driver.
+
+Figure 8. Single modality classification performance for driver attention analysis.
+
+5.1.1. Singular modality analysis
+To compare the performance among the different modalities, the number of neurons in the hidden
+layer was set to 170 for each of the modality. In Fig. 8 we show these results. Clearly, EEG performs the best
+among the four modalities for driver attention classification. The average classification accuracy for EEG,
+PPG, GSR, and face-videos are 95.71 ± 3.95%, 81.54 ± 6.67%, 56.02 ± 3.04%, and 80.11 ± 3.39% respectively.
+The p-values for the above four classification cases were 10−5 , 10−6 , 10−3 , and 10−6 respectively. Hence,
+GSR performs only at about chance level (may have to do with its suboptimal positioning on the body in
+driving context as pointed out by a reviewer) whereas on average PPG and face videos perform equally
+well. Hence, we see that the sensor modalities with good temporal resolution i.e. EEG and vision perform
+better than the ones with low temporal resolution (PPG and GSR) thus evaluating our first hypotheses.
+We can see that for all the subjects except one, EEG’s classification accuracy is above 90% while for three
+modalities (EEG, GSR, and vision) the standard deviation in performance across the subjects is not too
+high. We also performed statistical t-test on our observations.
+5.1.2. Multi-modality analysis
+Since EEG performs best among the four modalities by far, we do not expect much further increase in
+classification accuracy while combining it with other modalities that perform much worse. Fig. 9 shows
+that on combining EEG with PPG and GSR there is no increase in the performance across the subjects
+(it might be that for a few subjects this is not the case). On the contrary, when the features from the
+low-performing (and poor temporal resolution) modalities i.e. PPG and GSR are combined with EEG,
+the performance is not as good as EEG alone for most of them. The mean accuracy across all the subjects
+were 92.58 ± 3.96%, 80.11 ± 3.39%, and 80.01 ± 6.78% for the three cases respectively, all of which were
+significantly above the chance accuracy. The p-values for the above four classification cases were 10−6 ,
+10−6 , and 10−3 respectively. Hence, we see that it is not always beneficial to use features from multiple
+sensor modalities. For most of the subjects and modalities, the fusion of features does not perform better
+at all and hence may not be advantageous in this case. We think that this is because of the vast difference
+
+13 of 18
+
+Figure 9. Multi-modality classification performance for driver attention analysis.
+
+in the performance of each modality when used independently, based on the subject’s physiology. This
+leads to an increase in performance for some of the subjects but not for all.
+5.2. Evaluating hazardous/non-hazardous incidents classification
+In this section, we present the results of the evaluation of the modalities over very short time intervals
+(2 seconds) pertaining to hazardous/non-hazardous driving incidents as shown in Fig. 7. Since GSR and
+PPG do not provide such a fine temporal resolution, we do not use these modalities for this evaluation.
+This is because GSR changes very slowly i.e. take more than a few seconds to vary and PPG for a very
+short time period such as 2 seconds would mean only 2-4 heartbeats which are not enough for computing
+heart-rate or heart-rate variability. Previous studies to assess human emotions using GSR and PPG on
+the order of multiple seconds (significantly greater than two seconds hazardous incident evaluation for
+driving context) [54]. Also, it is not possible for the subjects to tag the incidents while they are participating
+in the driving simulator experiment and hence these incidents were marked by the external annotators as
+mentioned above in Section V.
+
+Figure 10.
+Single-modality classification
+hazardous/non-hazardous incidents.
+
+performance
+
+for
+
+driver
+
+attention
+
+during
+
+14 of 18
+
+5.2.1. Single-modality analysis
+Fig. 10 shows the results for classifying hazardous/non-hazardous incidents using EEG and
+face-expression features. As we can see from the figure, the accuracy for both modalities for all the
+subjects is well above chance level (50%). It is interesting to note that depending on the subject, one of
+the two modalities outperforms the other one though features from EEG outperforms face-based features
+for half of the participants. This proves our earlier point: it may be so that bio-sensing modality (here
+EEG) may outperform vision modality depending on the user’s physiology. This variation in results is
+natural since some people tend to be more expressive with their facial expressions while on the other
+hand, the “perceived hazardousness" of a situation varies across subjects. The mean accuracy among
+subjects were 91.43 ± 5.17% and 88.10 ± 3.82% for EEG- and face-based features respectively. The p-values
+for the above four classification cases were 10−5 , 10−5 , and 10−6 respectively. Since the evaluation was
+done on 2-second time intervals i.e. without a lot of data we note that such a high mean accuracy for
+both modalities was only possible due to using deep learning-based features in addition to the traditional
+features for both modalities. This is further substantiated by the fact that we used an EEG system with
+a much lesser number of channels than such previous studies using EEG [14]. We show that using such
+deep learning features our method outperforms the previous results for EEG on the KITTI dataset [14,25]
+in a similar experimental setup with hazardous/non-hazardous event classification.
+
+Figure 11. Multi-modality classification performance for driver attention during hazardous/non-hazardous
+incidents.
+
+5.2.2. Multi-modality analysis
+In this section, we present the results for classifying hazardous/non-hazardous incidents combining
+features from EEG and face modalities. We do this in two ways. First, directly combining the features from
+single modality analysis by concatenating them. Second, as mentioned in Section III.E, we use an LSTM
+classifier over the features from both modalities calculated for every frame in the 2-second long sequence.
+The trend of these features is then fed to LSTM for training. Fig. 11 shows the results of the two approaches.
+As is clear from the figure, combining the features from the two modalities may or may not increase the
+performance further compared to using individual modalities shown earlier in Fig. 10. But, we not that
+that on taking the trend of features i.e. increased temporal resolution into account, the performance of
+combining the modalities increases further for most of the subjects. The average accuracy across subjects
+being 92.38 ± 4.10% and 94.76 ± 3.41% respectively are also more than for singular modality analysis. The
+
+15 of 18
+
+p-values for the above four classification cases were 10−6 and 10−7 respectively. Hence, to use multiple
+modalities with high temporal resolution (EEG and vision) may prove to be best when computing features
+over a short time duration with their trend.
+Table 1. Single vs. Multi-modality Performance Evaluation
+Modality
+EEG
+Faces
+EEG + Faces
+EEG
++
+Faces
+(LSTM)
+
+Attention
+Analysis
+95.71 ± 3.95%
+80.11 ± 3.39%
+95.10 ± 3.62%
+—
+
+Incident
+Analysis
+91.43 ± 5.17%
+88.10 ± 3.82%
+92.38 ± 4.10%
+94.76 ± 3.41%
+
+The average accuracy across subjects using EEG and face-based features for driver attention analysis over
+the whole video and 2-second hazardous/non-hazardous incident classification. EEG features generally
+outperform Face features for both cases. Using LSTM i.e. better temporal resolution also increases the
+accuracy. LSTM could not be used in attention analysis since the duration of the videos varies widely
+among the datasets.
+Since EEG and Face modalities can be used in short-time intervals, in Table 1 we show the mean
+accuracy across subjects for using EEG and faces i.e. vision modality alone and combining them for the
+two types of analysis done above. We can see that the performance of EEG combined with faces can
+be better than when either modality is used independently for hazardous incident analysis when using
+features from the LSTM i.e. trend over the changes in features. However, adding multiple modalities
+together without using trend-based LSTM analysis may not prove much beneficial. This answers our
+second hypotheses by showing that it is beneficial to use a fusion of the modalities if both modalities have
+a good temporal resolution so as to extract short-duration features over them to map the trend.
+6. Concluding Remarks
+The use of multiple bio-sensing modalities combined with audio-visual ones is rapidly expanding.
+With the advent of compact bio-sensing systems capable of collecting data during real-world tasks such
+as driving, it is natural that this research area will gather more interest in the coming years. This work
+evaluated multiple bio-sensing modalities with the vision modality for driver attention and hazardous
+event analysis. We also presented a pipeline to process data from individual modalities by being able to
+use pre-trained convolution neural networks to extract deep learning-based features from these modalities
+in addition to traditionally used ones. In this process, we were able to compare the performance of
+the modalities against each other while also combining them. As the next step to this preliminary
+study, we would also like to collect data in the future in more complex and safety-critical situations
+from “real-world" driving. The current system for data collection, noise removal, feature extraction, and
+classification works in real-time but the data tagging for hazardous/non-hazardous events is still manual.
+This makes the relevance of our current system restricted to gaming, attention monitoring, etc. in driving
+simulators. Hence, we would like to make a model based on computer vision that can automatically
+predict hazardous/non-hazardous events during a real-world drive instead of manual tagging so that
+our system can be deployed in the “real-world" drives. We would also like to devise a real-time feedback
+system based on the driver’s attention so as to verify our pipeline’s performance during the real-world
+driving scenario.
+
+16 of 18
+
+Author Contributions: conceptualization, S.S. and M.M.T.; methodology, S.S. and M.M.T.; software, S.S..; validation,
+S.S. and M.M.T.; formal analysis, S.S.; investigation, S.S. and M.M.T..; writing–original draft preparation, S.S.;
+writing–review and editing, S.S. and M.M.T.; supervision, M.M.T.;
+Funding: This research received no external funding.
+Acknowledgments: We would like to thank Dr. Tzyy-Ping Jung for helping us in revising the manuscript and
+providing helpful suggestions regarding the same. We would also like to thank our colleagues at the LISA Lab for
+helping us in the data collection for this study.
+Conflicts of Interest: The authors declare no conflict of interest.
+
+References
+1.
+2.
+
+3.
+4.
+5.
+
+6.
+
+7.
+8.
+9.
+10.
+11.
+12.
+13.
+14.
+15.
+
+16.
+17.
+
+Guo, Z.; Pan, Y.; Zhao, G.; Cao, S.; Zhang, J. Detection of Driver Vigilance Level Using EEG Signals and Driving
+Contexts. IEEE Transactions on Reliability 2018, 67(1), 370-380.
+Chai, R.; Naik, G.R.; Nguyen, T.N.; Ling, S.H.; Tran, Y.; Craig, A.; Nguyen, H.T. Driver fatigue classification with
+independent component by entropy rate bound minimization analysis in an EEG-based system. IEEE journal of
+biomedical and health informatics 2017, 21(3), 715-724.
+Chai, R.; Ling, S.H.; San, P.P.; Naik, G.R.; Nguyen, T.N.; Tran, Y.; Craig, A.; Nguyen, H.T. Improving eeg-based
+driver fatigue classification using sparse-deep belief networks. Frontiers in neuroscience 2017, 11, 103.
+Siddharth, S.; Patel, A.; Jung, T.P.; Sejnowski, T. A Wearable Multi-modal Bio-sensing System Towards Real-world
+Aications. IEEE Transactions on Biomedical Engineering 2018.
+Wyss, T.; Roos, L.; Beeler, N.; Veenstra, B.; Delves, S.; Buller, M.; Friedl, K. The comfort, acceptability and accuracy
+of energy expenditure estimation from wearable ambulatory physical activity monitoring systems in soldiers.
+Journal of Science and Medicine in Sport 2017, 20, S133-S134.
+Dishman, R.K.; Nakamura, Y.; Garcia, M.E.; Thompson, R.W.; Dunn, A.L.; Blair, S.N. Heart rate variability, trait
+anxiety, and perceived stress among physically fit men and women. International Journal of Psychophysiology 2000,
+37(2), 121-133.
+Kuefler, A.; Morton, J.; Wheeler, T.; Kochenderfer, M. Imitating driver behavior with generative adversarial
+networks. In Intelligent Vehicles Symposium (IV) 2017, 204-211.
+Dwivedi, K.; Biswaranjan, K.; Sethi, A. February. Drowsy driver detection using representation learning. In IEEE
+International Advance Computing Conference (IACC) 2014, 995-999.
+Makeig, S.; Bell, A.J.; Jung, T.P.; Sejnowski, T.J. Independent component analysis of electroencephalographic data.
+In Advances in neural information processing systems 1996, 145-151.
+Dong, Y.; Hu, Z.; Uchimura, K.; Murayama, N. Driver inattention monitoring system for intelligent vehicles: A
+review. IEEE transactions on intelligent transportation systems 2011, 12(2), 596-614.
+Doshi, A.; Trivedi, M.M. Tactical driver behavior prediction and intent inference: A review. In Intelligent
+Transportation Systems (ITSC), 14th International IEEE Conference on 2011, 1892-1897.
+Ohn-Bar, E.; Trivedi, M.M. Looking at humans in the age of self-driving and highly automated vehicles. IEEE
+Transactions on Intelligent Vehicles 2016, 1(1), 90-104.
+Martin, S.; Vora, S.; Yuen, K.; Trivedi, M.M. Dynamics of Driver’s Gaze: Explorations in Behavior Modeling and
+Maneuver Prediction. IEEE Transactions on Intelligent Vehicles 2018, 3(2), 141-150.
+Kolkhorst, H.; Burgard, W.; Tangermann, M. Decoding Hazardous Events in Driving Videos, Proceedings of the
+7th Graz Brain-Computer Interface Conference 2017.
+Papadelis, C.; Kourtidou-Papadeli, C.; Bamidis, P.D.; Chouvarda, I.; Koufogiannis, D.; Bekiaris, E.; Maglaveras,
+N. Indicators of sleepiness in an ambulatory EEG study of night driving. In Engineering in Medicine and Biology
+Society, 28th Annual International Conference of the IEEE 2006, 6201-6204.
+Lal, S.K.; Craig, A.; Boord, P.; Kirkup, L.; Nguyen, H. Development of an algorithm for an EEG-based driver
+fatigue countermeasure. Journal of safety Research 2003, 34(3), 321-328.
+Siddharth, S.; Jung, T.P.; Sejnowski, T.J. Utilizing Deep Learning Towards Multi-modal Bio-sensing and
+Vision-based Affective Computing. IEEE Transactions on Affective Computing 2019.
+
+17 of 18
+
+18.
+19.
+
+20.
+
+21.
+22.
+23.
+24.
+25.
+
+26.
+27.
+28.
+
+29.
+
+30.
+31.
+32.
+33.
+34.
+35.
+
+36.
+
+37.
+38.
+
+Ma, X.; Yao, Z.; Wang, Y.; Pei, W.; Chen, H. Combining Brain-Computer Interface and Eye Tracking for High-Speed
+Text Entry in Virtual Reality. In 23rd International Conference on Intelligent User Interfaces 2018, 263-267.
+Liu, H.; Taniguchi, T.; Tanaka, Y.; Takenaka, K.; Bando, T. Visualization of driving behavior based on hidden
+feature extraction by using deep learning. IEEE Transactions on Intelligent Transportation Systems 2017, 18(9),
+2477-2489.
+Huval, B.; Wang, T.; Tandon, S.; Kiske, J.; Song, W.; Pazhayampallil, J.; Andriluka, M.; Rajpurkar, P.; Migimatsu,
+T.; Cheng-Yue, R.; Mujica, F. An empirical evaluation of deep learning on highway driving 2015. arXiv preprint
+arXiv:1504.01716.
+Ramos, S.; Gehrig, S.; Pinggera, P.; Franke, U.; Rother, C. Detecting unexpected obstacles for self-driving cars:
+Fusing deep learning and geometric modeling. In Intelligent Vehicles Symposium (IV) 2017, 1025-1032.
+A. S. Razavian, H. Azizpour, J. Sullivan, and S. Carlsson, CNN Features off-the-shelf: an Astounding Baseline for
+Recognition, 2014 arXiv:1403.6382v3
+Siddharth, Rangesh, A.; Ohn-Bar, E.; Trivedi, M.M. Driver hand localization and grasp analysis: A vision-based
+real-time aoach. In Intelligent Transportation Systems (ITSC), IEEE 19th International Conference on 2016, 2545-2550
+Geiger, A.; Lenz, P.; Stiller, C.; Urtasun, R. Vision meets robotics: The KITTI dataset. The International Journal of
+Robotics Research 2013, 32(11), 1231-1237.
+Kolkhorst, H.; Tangermann, M.; Burgard, W. Decoding Perceived Hazardousness from User’s Brain States to
+Shape Human-Robot Interaction. In Proceedings of the Companion of the ACM/IEEE International Conference on
+Human-Robot Interaction 2017, 349-350.
+Zhu, D.; Bieger, J.; Molina, G.G.; Aarts, R.M. A survey of stimulation methods used in SSVEP-based BCIs.
+Computational intelligence and neuroscience 2010, p.1.
+Delorme, A.; Makeig, S. EEGLAB: an open source toolbox for analysis of single-trial EEG dynamics including
+independent component analysis. Journal of neuroscience methods 2004, 134(1), 9-21.
+Mullen, T.; Kothe, C.; Chi, Y.M.; Ojeda, A.; Kerth, T.; Makeig, S.; Cauwenberghs, G.; Jung, T.P. Real-time modeling
+and 3D visualization of source dynamics and connectivity using wearable EEG. In 35th annual international
+conference of the IEEE engineering in medicine and biology society (EMBC) 2013, 2184-2187.
+Peng, H.; Long, F.; Ding, C. Feature selection based on mutual information criteria of max-dependency,
+max-relevance, and min-redundancy. IEEE Transactions on pattern analysis and machine intelligence 2005, 27(8),
+1226-1238.
+Bashivan, P.; Rish, I.; Yeasin, M.; Codella, N. Learning representations from EEG with deep
+recurrent-convolutional neural networks. 2015. arXiv preprint arXiv:1511.06448.
+Siddharth S.; Trivedi, M.M.; Attention Monitoring and Hazard Assessment with Bio-Sensing and Vision:
+Empirical Analysis Utilizing CNNs on the KITTI Dataset 2019. arXiv preprint arXiv:1905.00503.
+Hunter, J.D. Matplotlib: A 2D graphics environment. Computing in science & engineering 2007, 9(3), 90-95.
+Simonyan, K.; Zisserman, A. Very deep convolutional networks for large-scale image recognition. 2014. arXiv
+preprint arXiv:1409.1556.
+Russakovsky, O.; Deng, J.; Su, H.; et al. ImageNet Large Scale Visual Recognition Challenge. International Journal
+of Computer Vision 2015. Vol 115, Issue 3, 211–252
+Carneiro, G.; Nascimento, J.; Bradley, A.P. Unregistered multiview mammogram analysis with pre-trained deep
+learning models. In International Conference on Medical Image Computing and Computer-Assisted Intervention 2015,
+652-660.
+Schwarz, M.; Schulz, H.; Behnke, S. RGB-D object recognition and pose estimation based on pre-trained
+convolutional neural network features. In Robotics and Automation (ICRA), IEEE International Conference on 2015,
+1329-1335.
+Wold, S.; Esbensen, K.; Geladi, P. Principal component analysis. Chemometrics and intelligent laboratory systems
+1987, 2(1-3), 37-52.
+Orini, M.; Bailón, R.; Enk, R.; Koelsch, S.; Mainardi, L.; Laguna, P. A method for continuously assessing the
+autonomic response to music-induced emotions through HRV analysis. Medical & biological engineering &
+computing 2010, 48(5), 423-433.
+
+18 of 18
+
+39.
+40.
+41.
+42.
+
+43.
+44.
+45.
+46.
+47.
+48.
+49.
+50.
+51.
+52.
+53.
+54.
+
+Billauer, E. peakdet: Peak detection using MATLAB. Detect Peaks in a Vector, Billauer, E.; Haifa, Israel, accessed
+July, 20, 2012.
+Ewing, D.J.; Neilson, J.M.; Travis, P.A.U.L. New method for assessing cardiac parasympathetic activity using 24
+hour electrocardiograms. Heart 1984, 52(4), 396-402.
+Mera, K.; Ichimura, T. Emotion analyzing method using physiological state. In Knowledge-Based Intelligent
+Information and Engineering Systems 2004, 195-201.
+Ding, X.R.; Zhang, Y.T.; Liu, J.; Dai, W.X.; Tsang, H.K. Continuous cuffless blood pressure estimation using pulse
+transit time and photoplethysmogram intensity ratio. IEEE Transactions on Biomedical Engineering 2016, 63(5),
+964-972.
+Djawad, Y.A.; Mu’nisa, A.; Rusung, P.; Kurniawan, A.; Idris, I.S.; Taiyeb, M. Essential Feature Extraction of
+Photoplethysmography Signal of Men and Women in Their 20s. Engineering Journal 2017, 21(4), 259-272.
+Fulop, S.A.; Fitz, K. Algorithms for computing the time-corrected instantaneous frequency (reassigned)
+spectrogram, with aications. The Journal of the Acoustical Society of America 2006, 119(1), 360-371.
+Viola, P.; Jones, M. Rapid object detection using a boosted cascade of simple features. In Computer Vision and
+Pattern Recognition, Proceedings of the IEEE Computer Society Conference on 2001 (Vol. 1, I-I).
+Asthana, A.; Zafeiriou, S.; Cheng, S.; Pantic, M. Incremental face alignment in the wild. In Proceedings of the IEEE
+Conference on Computer Vision and Pattern Recognition 2014, 1859-1866.
+Tian, Y.I.; Kanade, T.; Cohn, J.F. Recognizing action units for facial expression analysis. IEEE Transactions on
+pattern analysis and machine intelligence 2001, 23(2), 97-115.
+Ekman, P.; Rosenberg, E.L. eds. What the face reveals: Basic and aied studies of spontaneous expression using
+the Facial Action Coding System (FACS) Oxford University Press 1997, USA.
+Parkhi, O.M.; Vedaldi, A.; Zisserman, A. September. Deep Face Recognition 2015. In BMVC, Vol. 1, No. 3, p. 6
+Hochreiter, S.; Schmidhuber, J. Long short-term memory. Neural computation 1997, 9(8), 1735-1780.
+Huang, G.B.; Zhu, Q.Y.; Siew, C.K. Extreme learning machine: theory and aications. Neurocomputing 2006, 70(1-3),
+489-501.
+Zheng, W.L.; Zhu, J.Y.; Lu, B.L. Identifying stable patterns over time for emotion recognition from EEG. IEEE
+Transactions on Affective Computing 2017.
+Yuan, Q.; Zhou, W.; Li, S.; Cai, D. Epileptic EEG classification based on extreme learning machine and nonlinear
+features. Epilepsy research 2011, 96(1-2), 29-38.
+Cheng, K.S.; Chen, Y.S.; Wang, T. Physiological parameters assessment for emotion recognition. In Biomedical
+engineering and sciences (IECBES), IEEE EMBS conference on 2012, 995-998.
+
+

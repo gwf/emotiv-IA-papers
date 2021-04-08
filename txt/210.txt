@@ -1,0 +1,1827 @@
+arXiv:1801.05394v2 [cs.LG] 26 Jan 2018
+
+Time Series Segmentation through Automatic Feature
+Learning
+Wei-Han Lee
+
+Jorge Ortiz
+
+Princeton University
+weihanl@princeton.edu
+
+IBM Research
+jjortiz@us.ibm.com
+
+Bongjun Ko
+
+Ruby Lee
+
+IBM Research
+bongjun ko@us.ibm.com
+
+Princeton University
+rblee@princeton.edu
+
+ABSTRACT
+
+CCS CONCEPTS
+
+Internet of things (IoT) applications have become increasingly popular in recent years, with applications ranging from
+building energy monitoring to personal health tracking and
+activity recognition. In order to leverage these data, automatic knowledge extraction – whereby we map from observations to interpretable states and transitions – must be
+done at scale. As such, we have seen many recent IoT data
+sets include annotations with a human expert specifying
+states, recorded as a set of boundaries and associated labels in a data sequence. These data can be used to build
+automatic labeling algorithms that produce labels as an expert would. Here, we refer to human-speciﬁed boundaries
+as breakpoints. Traditional changepoint detection methods
+only look for statistically-detectable boundaries that are deﬁned as abrupt variations in the generative parameters of
+a data sequence. However, we observe that breakpoints occur on more subtle boundaries that are non-trivial to detect
+with these statistical methods. In this work, we propose a
+new unsupervised approach, based on deep learning, that
+outperforms existing techniques and learns the more subtle,
+breakpoint boundaries with a high accuracy. Through extensive experiments on various real-world data sets – including
+human-activity sensing data, speech signals, and electroencephalogram (EEG) activity traces – we demonstrate the effectiveness of our algorithm for practical applications. Furthermore, we show that our approach achieves signiﬁcantly
+better performance than previous methods.
+
+•Information systems → Information systems applications; •Computing methodologies → Machine learning approaches; Machine learning algorithms;
+
+Permission to make digital or hard copies of part or all of this work for
+personal or classroom use is granted without fee provided that copies are
+not made or distributed for proﬁt or commercial advantage and that copies
+bear this notice and the full citation on the ﬁrst page. Copyrights for thirdparty components of this work must be honored. For all other uses, contact
+the owner/author(s).
+,
+© 2018 Copyright held by the owner/author(s).
+123-4567-24567/08/06. . . $15.00
+DOI: 10.475/123 4
+
+KEYWORDS
+Time-series Segmentation; Deep Learning; Automatic Feature Extraction;
+ACM Reference format:
+Wei-Han Lee, Jorge Ortiz, Bongjun Ko, and Ruby Lee. 2018. Time
+Series Segmentation through Automatic Feature Learning. In Proceedings of , , , 13 pages.
+DOI: 10.475/123 4
+
+1 INTRODUCTION
+Changepoint detection is an important, fundamental technique used in the analysis of time series data. It has been
+generally applied in analyzing stock data [19, 22, 33], sensor data from Internet of things (IoT) deployments [34, 45],
+physiological data analysis [10, 38], and many others [14, 24,
+39, 43]. Changepoint detection is fundamental for discovering how distinct sequences of values might be associated
+with states in a process that are not directly observable. By
+examining changepoints, analysts can build models of those
+sequences or look for patterns of sequences across multiple
+data sets. Changepoint detection is a fundamental primitive
+for building state-space process models.
+As the amount of available data grows, we observe that
+a large fraction of it is now annotated with human labels
+provided by a domain expert. These labels are useful for
+modeling latent states and state-transition sequences. By
+examining the temporal boundaries for states as speciﬁed in
+the annotated data, analysts can look for similar transition
+patterns and feed more complex models that capture the relationship between those states. For example, many IoT mobile phone applications infer a user’s activity using onboard
+sensors. In order to train these models, the user must provide information about their activity. This is recorded as an
+
+,,
+
+Wei-Han Lee, Jorge Ortiz, Bongjun Ko, and Ruby Lee
+
+Groud truth
+
+Bayesian Method
+
+Amplitude
+
+Input Signal
+
+Time
+
+(a)
+
+(b)
+Groud truth
+
+Our Method
+
+Amplitude
+
+Input Signal
+
+Time
+
+(c)
+
+Figure 1: The performance of breakpoint detection under diﬀerent methods using a smartphone sensor data set
+for activity recognition [11]. The green line represents the original signal and the red circle line is the ground
+truth of breakpoints. The yellow star lines in (a) and (b) represent the detected breakpoints by using existing
+Bayesian method with prior distribution of Gamma and Gaussian, respectively [2]. The blue triangle lines in (c)
+represent the detected breakpoints by using our method. We can see that our method signiﬁcantly outperforms
+the previous approaches in ﬁnding breakpoints for real-world applications.
+annotation in the data with a start time and end time. Similarly, experts spend a great deal of time annotating electrocardiogram (ECG) data with labels that separate traces into
+the various cardiac states of the patient.
+Changepoints are abrupt changes in the trends of a data
+sequence. Bayesian techniques [2, 4, 5, 13, 35] discover these
+by looking for changes in the parameters of the distribution that generates the sequence. Considering the generality of this problem, many techniques exist in the literature. These techniques attempt to capture the generative
+process through a pre-determined model and aim to look
+for changes in the parameters of the generative process. For
+learning expert-speciﬁed boundaries, these models often fail
+– since such changes are not easily captured by a pre-speciﬁed
+model of the generative process and changepoints do not
+typically fall along parameter-shift boundaries.
+The changepoints speciﬁed by experts often arise when
+the state transition is a function of latent temporal properties of an underlying process that are diﬃcult to capture
+in a pre-speciﬁed model. These rules are encoded as latent
+features in these traces and practically impossible to detect
+
+with the existing generative-model based changepoint detection algorithms [2, 4, 5, 13, 35]. We observe that existing methods do a poor job of identifying human-speciﬁed
+changepoints. In summary, existing changepoint detection
+methods have two main weaknesses: 1) they rely on a prior
+parametric model of the time series data, and 2) they often
+utilize simple features extracted from the input data such
+as the mean, variance, spectrum, etc. Therefore, previous
+methods can only discover statistically-detectable boundaries.
+To diﬀerentiate from these statistically-detectable changepoints, we hereafter refer to the human-speciﬁed changepoints as breakpoints. Furthermore, we propose a novel algorithm that uses deep learning techniques to detect breakpoints without any prior assumptions about the generative
+process. Our method automatically learns the features that
+are most useful to represent the input data and thus can discover hidden structure in real-world time series data. Note
+that our approach has broad applicability for general changepoint detection even outside of its application to breakpoint
+detection as considered in this paper.
+Figure 1 shows a comparison of our approach to a Bayesian
+changepoint detection technique from the literature [2] by
+
+Time Series Segmentation through Automatic Feature Learning
+using a smartphone sensor data set for activity detection [11].
+Note that even after careful tuning of the parameters in [2],
+their method still could not accurately detect these breakpoint boundaries. Furthermore, their technique is sensitive
+to parameter changes and one can easily over or under estimate the number of breakpoints. Moreover, it is not at all
+clear how to adapt the parameters to capture the statistical
+properties of a true segment. In comparison, our approach
+learns this automatically. We will explain how we choose
+the hyperparameters of our model through a simple set of
+heuristics we learn through direct observation and analysis
+on real-world traces.
+In summary, we make the following contributions:
+• We introduce a new kind of changepoint called a
+breakpoint and show that it is nearly impossible to
+detect with existing changepoint detection techniques.
+• We propose a novel method that utilizes deep learning to automatically learn useful features that represent data sequences generated from an expert-speciﬁed
+sequential segments. Our technique does not rely
+on the assumption that the changepoints are caused
+by abrupt changes of the parameters in the generative process as previous methods do, making it applicable for a broad coverage of real-world applications.
+• We demonstrate the eﬀectiveness of our method through
+extensive experimental analysis using multiple realworld data sets. Furthermore, we show how to choose
+the hyperparameters of our model from a simple
+heuristic derived from the association between statistical properties of the data and the performance
+of our model. These experimental analysis demonstrate that our approach can serve as a key enabler
+for real-world applications.
+• Furthermore, we compare our method with several
+existing approaches and introduce a new metric that
+measures the eﬀectiveness of a changepoint detection scheme with respect to accuracy in the number
+of predicted changepoints and their overlap with
+true changepoint coordinates. The experimental results show the signiﬁcant advantage our approach
+has over existing methods.
+
+2
+
+RELATED WORK
+
+Changepoint detection has attracted researchers in the statistics and data mining communities for decades [10, 19, 22,
+29, 33, 34, 36, 38, 44, 45, 47]. Changepoint detection techniques have been applied in various applications such as
+stock data analysis [19, 22, 33], sensor data analysis in IoT
+systems [29, 34, 45], physiological data analysis [10, 38], climate change detection [36], genetic time-series analysis [44],
+and intrusion detection in computer networks [47].
+
+,,
+One important thread of changepoint detection compares
+the probability distributions of time-series samples over the
+past and present intervals. As both the intervals move forward, a typical strategy is to issue an alarm for a changepoint when the two distributions become ‘signiﬁcantly’ different. Various changepoint detection methods apply this
+strategy such as the cumulative sum method [6], the generalized likelihood-ratio method [17] and the change ﬁnder
+method [46]. A similar strategy has also been employed in
+novelty detection [16] and outlier detection [20].
+Another common thread is the subspace method [23, 26,
+31]. By using a pre-designed time-series model, a subspace
+is discovered by principal component analysis (PCA) from
+trajectories in the past and present intervals, and their dissimilarity is measured by the distance between the subspaces.
+However, a key challenge for these methods is how to accurately estimate the density. To solve this problem, previous
+work tries to estimate the density-ratio instead of the density itself. The rationale is that knowing the two densities
+implies knowing the density ratio, but not vice versa since
+such a decomposition is not unique. Thus, direct densityratio estimation is substantially easier than density estimation [41]. Following this idea, methods of direct densityratio estimation have been developed such as the kernel
+mean matching method [15], the logistic-regression method
+[7] and the Kullback-Leibler importance estimation procedure (KLIEP) [40].
+Most of the existing changepoint detection methods are
+fundamentally limited in the type of changepoints they can
+detect because: 1) they rely on pre-designed parametric models such as underlying probability distributions [6, 18], autoregressive models [46], and state-space models [23, 26]. In
+practice, we observe that the pre-speciﬁed parametric models are diﬃcult to parameterize so that the predicted changepoints align with annotation boundaries in the data; and 2)
+they utilize simple statistical properties such as the mean,
+variance, and spectrum [6, 9, 18, 31, 41] to serve as features
+for changepoint detection. However, these features do not
+generalize well and performance varies substantially across
+diﬀerent data sets. Therefore, existing changepoint detection methods can only detect statistically-detectable boundaries (and not the human-speciﬁed breakpoints).
+To overcome these problems, we propose a novel breakpoint detection scheme to detect human-speciﬁed boundaries, through learning the most representative features speciﬁc to the input time-series data and exploiting these features for segmentation. Our technique utilizes an autoencoder model [21, 28, 42] to automatically learn the features
+that are most useful to represent the input time-series data,
+which can be generally applied to a broad coverage of realworld applications.
+
+,,
+
+Wei-Han Lee, Jorge Ortiz, Bongjun Ko, and Ruby Lee
+Window 3
+
+Window 2
+Window 1
+
+Depth 1
+Encoder
+
+Depth 2
+Encoder
+
+Depth 2
+Decoder
+
+Depth 2
+Decoder
+
+...
+
+Calculate distance
+between consecutive
+windows
+
+s1
+
+s2 s3
+
+Find local maximum as
+detected breakpoints
+
+Output
+Features
+
+Input
+Data
+
+Figure 2: Pipeline for our breakpoint detection system. We ﬁrst segment the input data into a series of windows
+and then apply autoencoder models in deep learning to extract representative features for the input data. These
+extracted features can then be utilized to calculate the distance between consecutive windows and the timestamps
+corresponding to local-maximal distance can be detected as breakpoints.
+
+3
+
+AUTOENCODER-BASED
+BREAKPOINT DETECTION
+
+In this section, we describe our breakpoint detection approach,
+which utilizes a deep autoencoder model to extract the most
+representative features in time-series data. The key idea is
+that the autoencoder models in deep learning techniques
+can automatically and eﬀectively extract the unique features
+speciﬁc to the input data without making any prior assumption about the generative process which produced the data.
+In this way, we can obtain a deeper understanding about
+the temporal dynamics of the input data and achieve better
+performance for detecting user-speciﬁed breakpoints. The
+end-to-end pipeline of our method is shown in Figure 2, and
+detailed steps are described below.
+
+3.1
+
+Data Preprocessing
+
+For a given time series, consisting of Nc channels (such as
+diﬀerent sensors in an IoT system) across T timestamps, the
+input data matrix IDM ∈ RNc ×T is a real matrix where
+IDM(i, j) is the measurement recorded by the i-th channel
+at the j-th timestamp. To fully explore the temporal characteristics of the data, we follow common practice and partition it into a series of segments according to a user-speciﬁed
+time window size, Nw . For the t-th (t = 1, 2, · · · ,T /Nw ) window, we stack all the recordings within it to form a column
+vector which is denoted by st ∈ RNc Nw ×1 . The input data
+matrix can thus be reformulated as S = [s 1 ; s 2 ; · · · ]. Note
+that the segmented data may have some overlapping recordings as shown in Figure 2.
+
+3.2
+
+Automatic Feature Extraction
+
+Deep learning models learn multi-layer transformations from
+the input data to the output representations, which is more
+
+powerful in feature extraction than hand-crafted shallow
+models. Moreover, deep learning models can progressively
+capture more compact features at higher layers, corresponding to the hierarchical human vision systems. Among the
+building blocks of these models, autoencoders [21, 28, 42]
+automatically learn a non-parametric feature mapping function by minimizing the reconstruction error between the input and its reconstructed output. Therefore, we ﬁrst aim to
+explore the autoencoder techniques to extract features that
+are most useful for representing the input data.
+Autoencoders [21, 28, 42], as the name suggests, consist
+of two stages: encoding and decoding. A single-layer autoencoder, which is a kind of neural network consisting of
+only one hidden layer, aims to ﬁnd a common feature basis
+from the input data. It was ﬁrst used to reduce dimensionality by setting the number of the extracted features less than
+the input. If the dimension of the encoding output is set
+higher, the encoding result will be enriched and more expressive. The autoencoder model is usually trained by the
+back-propagation techniques [8] in an unsupervised manner, aiming at minimizing the error of the reconstructed results from the original inputs. By stacking multiple autoencoders, the deep autoencoders will generate more compact
+and higher-level semantic features which are beneﬁcial for
+feature representation.
+In autoencoder model, the encoder is a function Enc (·)
+that maps the input data s ∈ Rds ×1 to f ∈ Rd f ×1 hidden
+units to obtain the feature representation as
+f = Enc (s) = дenc (W s + be )
+
+(1)
+
+where д(·) is a nonlinear activation function, typically a
+sigmoid function:
+д(r ) =
+
+1
+1 + e −r
+
+(2)
+
+Time Series Segmentation through Automatic Feature Learning
+Algorithm 1 Our Deep Learning Based Breakpoint Detection Approach.
+
+or a hyperbolic tangent function:
+er
+
+− e −r
+
+(3)
+e r + e −r
+The parameters of the encoder consist of a weight matrix
+W ∈ Rd f ×ds and a bias vector be ∈ Rd f ×1 .
+The decoder function D ec (·) maps the outputs of the hidden units (feature representations) back to the original input
+space according to
+д(r ) = tanh(r ) =
+
+e
+s = D ec ( f ) = дdec (W ′ f + bd )
+
+(4)
+
+where дdec (·) is usually the same form as that in the encoder. The parameters of the decoder also consist of a weight
+matrix W ′ ∈ Rds ×d f and a bias vector bd ∈ Rds ×1 .
+Here, we choose both the encoding and decoding activation function to be sigmoid function and only consider the
+tied weights case, in which W ′ = W T (where W T is the
+transpose of W ) as most existing deep learning methods
+do [21, 28, 42].
+The objective of autoencoder model is to minimize the
+error of the reconstructed result D ec (Enc (st )) from the input
+data st as
+min J (W , be , bd ,W ′) = min
++λ
+
+TÕ
+/Nw
+
+Õ
+
+L(st , D ec (Enc (st )))
+
+t =1
+
+,,
+
+(5)
+
+2
+Wt,i
+
+/Nw
+Input: The input data {st }tT=1
+, α is the learning rate;
+Output: The set of detected breakpoints C;
+/*****Optimize W , be , bd ,W ′ for Feature Extraction*****/
+1. Initialize W , be , bd randomly and set the tied weights
+W ′ = W T according to [21, 28, 42];
+Initialize the set of breakpoints as C = ∅;
+2. For each iteration = 1, 2, 3 · · · do
+3.
+Set ∆W = 0, ∆be = 0, ∆bd = 0, ∆W ′ = 0;
+4.
+Compute the partial derivatives with respect to
+W , be , bd ,W ′ as
+∂J (W , be , bd ,W ′)
+∆W =
+∂W
+∂J (W , be , bd ,W ′ )
+∆be =
+∂be
+(8)
+∂J (W , be , bd ,W ′)
+∆bd =
+∂bd
+∂J (W , be , bd ,W ′ )
+′
+∆W =
+∂W ′
+5.
+Update W , be , bd ,W ′ by gradient descent as
+W := W − α ∆W
+
+be := be − α ∆be
+bd := bd − α ∆bd
+
+t,i
+
+where L(u, v) is a loss function which is usually decided
+according to the input range. Typical error functions include the cross-entropy loss:
+
+(9)
+
+W ′ := W ′ − α ∆W ′
+
+(7)
+
+/******************
+Breakpoint
+Detection
+*****************/
+6. For each segmented time window st do
+7.
+Extract features ft according to Eq. 1;
+8.
+Compute distances Dist t between consecutive
+feature vectors according to Eq. 10;
+9.
+If Dist t is a local-maximal distance do
+10.
+Classify t as a breakpoint, i.e., C ← C ∪ t;
+
+The second term in Eq. 5 is a regularization term (also
+called a weight decay term) that tends to decrease the magnitude of the weights, and helps prevent overﬁtting [21, 28,
+42].
+Model Learning and Stacking: Our objective for feature
+representation is to minimize J (W , be , bd ,W ′ ) in Eq. 5 with
+respect to W , be , bd ,W ′ . We explore the stochastic gradient
+descent technique [8] to solve such an optimization problem, which has been shown to perform fairly well in practice. To train our autoencoder network, we ﬁrst initialize
+each parameter W , be , bd ,W ′ to a small random value near
+zero, and then apply the stochastic gradient descent technique for iterative optimization. Note that we can compute
+the exact gradient for this objective function with respect to
+each variable W , be , bd ,W ′.
+
+Although the stochastic gradient descent method is eﬀective for solving Eq. 5, the learnt result heavily relies on the
+seeds used to initialize the optimization process. Therefore,
+we use multiple hidden layers to stack the model in order to
+achieve more stable performance. In other words, similar to
+previous autoencoder variants [21, 28, 42], our mechanism
+can also be used to build a deep network through model
+stacking. For the ﬁrst layer in the deep learning model, we
+ﬁnd the optimal layer by minimizing the objective function
+in Eq. 5 using the stochastic gradient descent technique. The
+representations learned by the ﬁrst layer are then used as
+the input of the second layer, and so on so forth.
+
+L(u, v) =
+
+du
+Õ
+
+ui log(vi ) + (1 − ui ) log(1 − vi )
+
+(6)
+
+i =1
+
+or the square loss:
+L(u, v) = ku − v k 2
+
+,,
+
+Wei-Han Lee, Jorge Ortiz, Bongjun Ko, and Ruby Lee
+
+Input Data
+
+Gound Truth Changepoints
+
+Input Data
+
+10
+5
+0
+0
+
+2
+
+4
+
+6
+
+8
+
+Time
+Distance
+
+10
+x 10
+
+Time
+
+4
+
+Our Detected Changepoints
+
+Distance
+
+Our Detected Changepoints
+
+Distance
+
+Distance
+
+1
+
+0.5
+
+0
+0
+
+Ground Truth Changepoints
+
+Amplitude
+
+Amplitude
+
+15
+
+2
+
+4
+
+6
+
+8
+
+Time
+
+10
+x 10
+
+Time
+
+4
+
+(a) Synthetic data using Generative Models
+
+(b) Crowdsignal.io Data Set
+
+Figure 3: Experiments of our approach on a synthetic data produced using generative models and the real-world
+Crowdsignal.io data set [11]. The upper ﬁgures show the raw input signals (shown as green lines) with the ground
+truth of changepoints shown as red lines. The bottom ﬁgures show the distance between features in two consecutive time windows (shown as blue lines) with the detected changepoints shown as red dash lines. We can see
+that our method is eﬀective in detecting both statistically-detectable changepoints (using a synthetic data) and
+human-speciﬁed breakpoints (using the real-world Crowdsignal.io data).
+
+3.3
+
+Breakpoint Detection
+
+After we extract the representative features of the input data
+through the deep learning technique described above, we
+calculate the distance between two features corresponding
+to consecutive time windows. For the t-th timestamp, the
+distance between the consecutive features ft and ft −1 can
+be computed as
+Dist t = p
+
+|| ft − ft −1 ||2
+|| ft ||2 × || ft −1 ||2
+
+(10)
+
+where the numerator is the Euclidean distance [12] between
+features corresponding to consecutive time windows, and
+the denominator serves as a normalization term.
+/Nw
+Based on the computed distance of {Dist t }tT=1
+in Eq. 10,
+we construct a distance curve and select all the peaks (localmaximal) in the curve as breakpoints detected by our approach (see details in Figure 2).
+We summarize our overall process for automatic breakpoint detection in Algorithm 1. It is worth noting that our
+approach can be broadly applied for general changepoint detection even outside of its application to breakpoint detection as considered in this paper. Compared with the stateof-the-art methods [2, 4, 5, 13, 35], our approach 1) has no
+assumption on the generative models for the input data and
+2) the features are automatically extracted from the input
+
+data making them representative for analysis. Through extensive experimental analysis in Section 4, we will show that
+our method signiﬁcantly outperforms previous approaches.
+
+4 EVALUATION
+In this section, we aim to validate the eﬀectiveness of our
+deep learning based breakpoint detection method. We apply
+our method to real-world data sets including the Crowdsignal.io sensor data set [11], an EEG eye state data set [37],
+the UCI human activity recognition data set [3], and the
+DCASE2016 sound data set [1]. We systematically analyze
+the robustness of our approach under diﬀerent parameter
+settings, with respect to the window size, codebook (feature
+set) size, and the number of layers in autoencoder models, in
+order to provide practical hyperparameter selection guidelines. Furthermore, we show the signiﬁcant advantage our
+method has over the state-of-the-art techniques.
+
+4.1
+
+Fundamental Intuition
+
+We demonstrate the fundamental intuition of our method
+for detecting both statistically-detectable changepoints (using a synthetic data) and human-speciﬁed breakpoints (using the real-world Crowdsignal.io sensor data set [11]), as
+shown in Figure 3. For the synthetic data, we generate a
+number of changepoints from a uniform distribution and
+each segment is generated by sampling from an exponential
+
+,,
+
+1
+
+1
+
+0.8
+
+0.8
+
+0.8
+
+0.6
+
+0.6
+
+0.6
+Windowsize=25
+Windowsize=50
+Windowsize=100
+Windowsize=200
+Windowsize=400
+Windowsize=800
+
+0.4
+0.2
+
+0.4
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+WindowSize
+WindowSize
+WindowSize
+WindowSize
+WindowSize
+WindowSize
+
+0.2
+
+0
+0
+
+TPR
+
+1
+
+TPR
+
+TPR
+
+Time Series Segmentation through Automatic Feature Learning
+
+=
+=
+=
+=
+=
+=
+
+0.2
+
+0
+
+0
+
+1
+
+0
+
+FPR
+
+WindowSize=2500
+WindowSize=5000
+WindowSize=10000
+WindowSize=20000
+WindowSize=40000
+WindowSize=80000
+
+0.4
+
+25
+50
+100
+200
+400
+800
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+0
+
+1
+
+0.2
+
+0.4
+
+(a)
+
+0.6
+
+0.8
+
+1
+
+FPR
+
+FPR
+
+(b)
+
+(c)
+
+1
+
+1
+
+0.8
+
+0.8
+
+0.8
+
+0.6
+
+0.6
+
+0.6
+
+CDF
+
+1
+
+CDF
+
+CDF
+
+Figure 4: The ROC curve of EEG data set, UCI data set and DCASE data set under diﬀerent window size Nw . The
+best performance occurs at Nw = 25 in EEG data set, Nw = 400 in UCI data set, and Nw = 20000 in DCASE data set,
+respectively.
+
+0.4
+0.2
+0
+0
+
+500
+
+1000
+
+1500
+
+2000
+
+2500
+
+0.4
+
+0.4
+
+0.2
+
+0.2
+
+0
+
+0
+0
+
+500
+
+1000
+
+Segment Size
+
+(a)
+
+1500
+
+2000
+
+Segment Size
+
+(b)
+
+2500
+
+3000
+
+0
+
+5
+
+10
+
+Segment Size
+
+15
+× 104
+
+(c)
+
+Figure 5: The CDF of the true segment sizes of the EEG data set, UCI data set and DCASE data set, respectively.
+The red dot line represents the average size of true segments for each data.
+distribution whose parameter is sampled from a uniform distribution. The Crowdsignal.io (CI) sensor data set [11] contains mobile sensor recordings associated with users’ activity information – taking an elevator, riding an escalator and
+walking.
+In Figure 3, the upper ﬁgures describe the raw input signals (shown as green lines) where the red lines represent
+the ground truth of changepoints. The bottom ﬁgures show
+the distance between features in two consecutive windows
+(shown as blue lines and recall Distt in Eq. 10), where the
+red dashed lines represent our detected changepoints. From
+Figure 3, we show that higher distance measurements in
+our method correspond to ground-truth changepoints in the
+raw data, thus resulting in accurate changepoint detection,
+which lays the foundations of our approach for real-world
+applications.
+
+4.2
+
+Evaluation on Real Traces
+
+We further demonstrate the eﬀectiveness of our method by
+using three more real-world data sets (EEG eye state data
+
+set [37], UCI human activity recognition data set [3] and
+the DCASE2016 sound data set [1]).
+The EEG eye state data set [37] is constructed from one
+continuous EEG measurement with the Emotiv EEG Neuroheadset. The duration of the measurement is 117 seconds.
+Eye state is classiﬁed using camera during the EEG measurement phase and manually added to the ﬁle after analyzing
+the video. A ‘1’ indicates the eye-closed and ‘0’ the eye-open
+state. All values are in chronological order with the ﬁrst
+measured value at the top of the data.
+The UCI human activity recognition data set [3] contains
+activity mode recordings carried out with a group of 30 volunteers within an age bracket of 19-48 years. Each person
+performed six activities wearing a smartphone (Samsung
+Galaxy S2) on their waist. Using its embedded accelerometer and gyroscope, it captures 3-axial linear acceleration
+and 3-axial angular velocity at a constant rate of 50Hz. The
+experiments are video-recorded to generate labels manually.
+The DCASE2016 sound data set [1] contains sounds (44.1
+kHz) that carry a large amount of information about our everyday environment and physical events that take place in
+
+,,
+
+Wei-Han Lee, Jorge Ortiz, Bongjun Ko, and Ruby Lee
+
+it. Humans identify diﬀerent sounds scenes (busy street, ofﬁce, etc.), and recognize individual sound sources (car passing by, footsteps, etc.). The data set contains 11 classes of
+sound events. Each class is represented by 20 recordings.
+We choose a time-series data set by randomly selecting sound
+events.
+4.2.1 Quantification Metrics. For fair comparsion with the
+state-of-the-art techniques, we use the receiver operating characteristic (ROC) curve to measure the performance of our approach. The true positive rate and false positive rate in the
+ROC curve is deﬁned as follows (similar applications can
+also be found in [25, 30]).
+N CR
+N GT
+(11)
+N AL − N CR
+False Positive Rate (FPR) =
+N AL
+where N CR denotes the number of times that the breakpoints are correctly detected, N GT denotes the number of
+ground-truth breakpoints, and N AL is the number of all detection alarms.
+Let us deﬁne a toleration distance τ . For each detected
+breakpoint a ∈ AL, and its corresponding closest true breakpoint b ∈ GT (i.e., b = arдmini ∈GT |a − i |), the detected
+breakpoint a can be seen as a correctly detected breakpoint
+(i.e., a ∈ N CR ) if the following two conditions are satisﬁed:
+Condition 1): a is the closest detected breakpoint of b (i.e.,
+a = arдmin j ∈AL |b − j |) and Condition 2): the time distance between a, b is smaller than the toleration distance,
+i.e., |a − b | < τ . We obtain the ROC curve for our method
+through varying the toleration distance τ .
+True Positive Rate (TPR) =
+
+4.2.2 Sensitivity Analysis. We examine the sensitivity of
+our method under diﬀerent parameter settings in order to
+provide practical guidelines for hyperparameter selection.
+Eﬀects of Window Size: First, we show the sensitivity of
+our approach with respect to the window size Nw , by setting the depth of the model to two and the ratio between
+the codebook (feature set) size and the input data size as
+dim( ft )/dim(st ) = 0.1. Figure 4 shows the ROC curve of
+each data set using diﬀerent window sizes, where each curve
+is generated by calculating the false-positive and corresponding true-positive rate as we vary the guard band around the
+true breakpoint, as described in Section 4.2.1.
+From Figure 4, we observe that the best window size (for
+achieving the best breakpoint detection performance) is 25
+for EEG data set, 400 for UCI data set, and 20000 for DCASE
+data set. To investigate how to select the best window size
+for a data set, we show the relationship between the true
+segment distribution of the input data and its corresponding best window size. In Figure 5, we describe the cumulative distribution function (CDF) of true segment sizes of the
+
+input data, where the red line is the average size of all the
+true segments. By comparing Figure 4 and Figure 5, we observe that the best window size for a data set is roughly the
+true segment size corresponding to CDF = 0.1. Therefore,
+our experiments suggest that the best window size should
+be set to the size which corresponds to CDF = 0.1 in the
+true segment distribution.
+Eﬀects of Model Depth: Since we use stacked autoencoders
+to achieve stable detection results (recall Section 3.2), we
+further show how its depth inﬂuences our method’s performance. We set the ratio between the codebook (feature set)
+size and the input data size as dim( ft )/dim(st ) = 0.1 and
+the window size to 25 for EEG data set, 400 for UCI data
+set, and 20000 for DCASE data set, respectively (according
+to Figure 4). From the experimental results as shown in Figure 6, we can ﬁnd that the best detection performance is
+achieved with two hidden layers in the autoencoder models
+for all the three data sets. Similar observations have been
+made in related work [32] and the two hidden layers are
+most commonly used in existing deep learning research.
+Eﬀects of Codebook (Feature Set) Size: We further examine the eﬀect of the codebook (feature set) size on our
+method. We set the model depth to two (according to Figure 6) and the window size to 25 for EEG data set, 400 for
+UCI data set, and 20000 for DCASE data set (according to
+Figure 4). Figure 7 shows the ROC curve under diﬀerent
+codebook (feature set) sizes for the three data sets. We can
+see that the size of the codebook only has negligible inﬂuence on the detection performance of our method.
+Hyperparameter Selection Heuristic: Figures 4, 6, 7, provide a guide for choosing hyperparameters in our method: 1)
+set the window size to the size corresponding to CDF = 0.1
+in the true segment size distribution; 2) set the model depth
+as 2; and 3) randomly select the codebook (feature set) size.
+The performance of our method can be further improved by
+feeding the detection results back into the network, which
+will ﬁne-tune these hyperparameters automatically. This
+technique will be explored in future work.
+
+4.3
+
+Comparison with Existing Methods
+
+We further compare our method with existing changepoint
+detection techniques. Bayesian changepoint detection has
+been well studied in the literature and several important
+variants have been developed [2, 4, 5, 13, 35]. We compare
+our method with these approaches on each of the three realworld data sets, as shown in Figure 8. BG1 and BG2 represent online Bayesian method proposed by Adams et al. [2]
+with prior distribution of Gamma, and Gaussian, respectively.
+PE, PM, PV, PP represent the Pruned Exact Linear Time (PELT)
+method proposed by Killick et al. [27], with prior distribution of Exponential, Mean-shift, Mean-variance shift, and
+
+Time Series Segmentation through Automatic Feature Learning
+
+1
+
+Depth=1
+Depth=2
+Depth=3
+Depth=4
+
+0.4
+
+1
+
+0.8
+
+0.8
+
+0.6
+
+0.6
+Depth=1
+Depth=2
+Depth=3
+Depth=4
+
+0.4
+
+0.2
+
+TPR
+
+0.6
+
+1
+
+TPR
+
+TPR
+
+0.8
+
+,,
+
+0.4
+
+0.2
+
+0
+0
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+0.2
+
+0
+
+1
+
+0
+0
+
+FPR
+
+Depth=1
+Depth=2
+Depth=3
+Depth=4
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+1
+
+0
+
+0.2
+
+0.4
+
+FPR
+
+(a)
+
+0.6
+
+0.8
+
+1
+
+FPR
+
+(b)
+
+(c)
+
+Figure 6: The ROC curve of EEG data set, UCI data set and DCASE data set under diﬀerent model depth. From the
+experimental results, we can observe that the best detection performance is achieved with two hidden layers. Similar observations have been found in deep learning community where the two hidden layers are most commonly
+used [32].
+1
+
+0.6
+
+0.8
+
+0.8
+
+0.6
+
+Codebook
+Codebook
+Codebook
+Codebook
+
+0.4
+
+0.4
+
+0.2
+
+0.6
+
+size=0.5× Window size
+size=0.2× Window size
+size=0.1× Window size
+size=0.05× Window size
+
+TPR
+
+Codebook size=0.5 × Window size
+Codebook size=0.2 × Window size
+Codebook size=0.1 × Window size
+Codebook size=0.05 × Window size
+
+1
+
+TPR
+
+TPR
+
+0.8
+
+1
+
+0.4
+
+0.2
+
+0
+0
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+0
+
+1
+
+Size=0.5× Window Size
+Size=0.2× Window Size
+Size=0.1× Window Size
+Size=0.05× Window Size
+
+0
+0
+
+FPR
+
+Codebook
+Codebook
+Codebook
+Codebook
+
+0.2
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+1
+
+0
+
+0.2
+
+0.4
+
+FPR
+
+(a)
+
+(b)
+
+FPR
+
+0.6
+
+0.8
+
+1
+
+(c)
+
+Figure 7: The ROC curve of EEG data set, UCI data set and DCASE data set under diﬀerent codebook (feature set)
+size. We can observe that the size of the codebook has negligible inﬂuence on the performance of our detection
+method.
+1
+
+0.8
+
+0.6
+
+TPR
+
+TPR
+0.4
+
+Our
+BG1
+BG2
+PE
+PM
+PV
+PP
+DE
+
+0.8
+
+Our
+BG1
+BG2
+PE
+PM
+PV
+PP
+DE
+
+0.6
+
+1
+
+0.4
+
+0.2
+
+0.6
+
+0.4
+
+0.2
+
+0
+
+0.2
+
+0
+0
+
+0.2
+
+0.4
+
+0.6
+
+FPR
+
+(a)
+
+0.8
+
+1
+
+Our
+BG1
+BG2
+PE
+PM
+PV
+PP
+DE
+
+0.8
+
+TPR
+
+1
+
+0
+0
+
+0.2
+
+0.4
+
+0.6
+
+FPR
+
+(b)
+
+0.8
+
+1
+
+0
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+1
+
+FPR
+
+(c)
+
+Figure 8: The ROC curve of EEG data set, UCI data set and DCASE data set under diﬀerent methods. BG1 and BG2
+represent online Bayesian method proposed by Adams et al. [2] with prior distribution of Gamma and Gaussian,
+respectively. PE, PM, PV, PP represent the Pruned Exact Linear Time (PELT) method proposed by Killick et al. [27]
+with prior distribution of Exponential, Mean-shift, Mean-variance shift, and Poisson, respectively. DE represents
+the density-ratio estimation method proposed by Liu et al. [30]. From the experimental results, we can observe
+that our approach signiﬁcantly outperforms previous techniques.
+
+,,
+Poisson, respectively. DE represents the density-ratio estimation method proposed by Liu et al. [30].
+4.3.1 Parameter Settings. Based on the analysis in Section 4.2.2, we set the model depth to 2, the ratio between
+the codebook (feature set) size and the input data size as
+dim( ft )/dim(st ) = 0.1, the window size to 25 for EEG data
+set, 400 for UCI data set, and 20000 for DCASE data set. For
+fair comparison with the state-of-the-art approaches, we use
+the same parameter settings used in their papers [2, 27, 30].
+Speciﬁcally, for BG1, we use a Gamma prior on the inverse
+variance, with a = 1 and b = 1. The rate of the exponential
+prior on the segment size is 1000. For BG2, we use a univariate Gaussian model with prior parameters µ = 1.15 × 105
+and σ = 1 × 104 . The rate of the exponential prior is 250. For
+DE, we use n = 50, k = 10, and α = 0.1.
+4.3.2 Experimental Results. In Figure 8, we observe that
+our method consistently achieves higher TPR’s over other
+approaches under the same level of FPR. For instance, when
+the FPR equals to 0.2, we achieve signiﬁcantly higher TPR
+over other methods with up to 7×, 3×, and 2× improvement,
+corresponding to the EEG data set, UCI data set and DCASE
+data set respectively. Therefore, our method signiﬁcantly
+outperforms the state-of-the-art approaches.
+Table 1 compares them with a diﬀerent evaluation criteria. Rather than varying the guard band to calculate a true
+and false positive rate (recall Section 4.2.1), we use the closest predicted breakpoint to each true breakpoint to calculate the mean-squared error (MSE). To measure the rate of
+over/under prediction of breakpoints, we also calculate the
+prediction ratio (PR), between the number of detected breakpoints N AL and the number of true breakpoints NGT .
+N AL
+prediction ratio =
+(12)
+NGT
+A higher prediction ratio means that the algorithm tends
+to over-predict while a lower one means it under-predicts.
+A ratio of 1 means the algorithm predicted the exact number of actual breakpoints. Algorithms with high prediction
+ratios will tend to have lower MSE’s, since there is a higher
+probability that a predicted breakpoint will be close to an
+actual one. Conversely, algorithms with low prediction ratios will tend to have higher MSE’s. To capture this tradeoﬀ
+we introduce a new measure prediction loss (PL) deﬁned as
+follows.
+N AL
+× MSE
+prediction loss = 1 −
+NGT
+(13)
+= |1 − prediction ratio| × MSE
+The smaller the prediction loss the better the algorithm is
+performing. However, there are two situations where the
+prediction loss does not capture the performance well: 1)
+when the number of predicted breakpoints is 0; and 2) when
+
+Wei-Han Lee, Jorge Ortiz, Bongjun Ko, and Ruby Lee
+the algorithm predicts a breakpoint at each timestamp. Both
+will result in perfect prediction loss of 0. To prevent this the
+prediction loss is denoted as undeﬁned when the number of
+predicted breakpoints is zero (N AL = 0) or we note a high
+prediction ratio. From Table 1, we observe that our deep
+learning based method, achieves the lowest prediction loss
+among all algorithms, often producing prediction ratio near
+1 and small MSE. These experimental results further demonstrate the advantage of our approach over existing methods.
+
+4.4
+
+Discussion
+
+From Section 4.3, we observe that our method achieves signiﬁcant improvement over the state-of-the-art approaches
+[2, 27, 30]. The reason is that these previous methods may
+suﬀer from one or several of the following limitations:
+• Assume that the input data points are generated from
+certain distributions and that each data point is independently and identically distributed (i.i.d.).
+• Assume that the segments of the input data are generated
+from certain distributions.
+• Lack of explicit guide for tuning the hyperparameters under diﬀerent types of data sets.
+However, these assumptions may not be applicable for
+real-world data sets for the following reasons 1) the input
+data points and the segments may not be generated from
+certain distributions (as shown in Figure 5 which plots the
+CDF of the true segment size in the three data sets, and Figure 9 which plots the probability density function (PDF) of
+the data points in the three data sets); 2) the data points may
+be correlated with each other (e.g., smartphone sensor data
+corresponding to human activity modes); and 3) ﬁxed parameter settings may not be optimal for all the data sets. For
+instance, the average size of true segments in the three data
+sets (EEG data set, UCI data set and the DCASE data set)
+is 671, 1574 and 53156, respectively, as shown in Figure 5.
+In order to achieve good detection performance, an optimal
+window size should be selected to adapt to each data set. As
+shown in Figure 4, the optimal window size automatically
+tuned in our algorithm is 25, 400, 20000 for the three data
+sets respectively.
+In summary, our deep learning based method can overcome all the above limitations of previous work, by enabling
+the system to automatically learn the hidden structures and
+extract the most useful features of the time-series data. Therefore, our approach can be generally applied to a broad coverage of real-world applications.
+
+5 CONCLUSION
+In this paper, we propose a novel method to detect humanspeciﬁed breakpoints through exploiting deep learning techniques for automatically extracting features that can well
+
+Time Series Segmentation through Automatic Feature Learning
+EEG Data Set
+
+,,
+
+UCI Data Set
+
+DCASE Data Set
+
+PR
+
+MSE
+
+PL
+
+PR
+
+MSE
+
+PL
+
+PR
+
+MSE
+
+PL
+
+Our Method
+
+0.96
+
+5.11
+
+0.22
+
+1.06
+
+20.04
+
+1.25
+
+1.13
+
+12.82
+
+1.71
+
+BG1
+
+500
+
+6.38
+
+3183
+
+0.66
+
+34.48
+
+11.85
+
+0
+
+inf
+
+undef
+
+BG2
+
+0.173
+
+5.95
+
+4.92
+
+4.16
+
+16.19
+
+51.09
+
+23.87
+
+20.03
+
+457.98
+
+PE
+
+0.09
+
+19.27
+
+17.60
+
+1.84
+
+3.01
+
+2.54
+
+3027.6
+
+0.08
+
+234.56
+
+PM
+
+0.09
+
+19.27
+
+17.60
+
+4.19
+
+8.69
+
+27.68
+
+0.93
+
+133.27
+
+8.88
+
+PV
+
+0.09
+
+19.27
+
+17.60
+
+0.06
+
+29.38
+
+27.54
+
+0.93
+
+133.27
+
+8.88
+
+PP
+
+0.087
+
+19.27
+
+17.60
+
+0.06
+
+29.38
+
+27.55
+
+3027.67
+
+0.08
+
+234.57
+
+DE
+
+47.96
+
+5.78
+
+271.8
+
+621
+
+6.52
+
+4043
+
+2052
+
+0.28
+
+576.5
+
+Table 1: Comparison of existing approaches with our deep learning based method. BG1, BG2 represent online
+Bayesian method proposed by Adams et al. [2] with prior distribution of Gamma, Gaussian, respectively. PE,
+PM, PV, PP represent the Pruned Exact Linear Time (PELT) method proposed by Killick et al. [27] with prior
+distribution of Exponential, Mean-shift, Mean-variance shift, and Poisson, respectively. DE represents the densityratio estimation method proposed by Liu et al. [30]. We calculate the prediction ratio (PR), mean-squared error
+(MSE), and prediction loss (PL) for the EEG data set, UCI data set, and DCASE data set, respectively. We can observe
+the signiﬁcant advantage our approach has over previous methods.
+
+0.12
+0.1
+
+0.5
+
+0.25
+
+0.4
+
+0.2
+
+0.3
+
+0.15
+
+0.06
+
+PDF
+
+PDF
+
+PDF
+
+0.08
+
+0.2
+
+0.1
+
+0.1
+
+0.05
+
+0.04
+0.02
+0
+4150
+
+4200
+
+4250
+
+4300
+
+Data Point Value
+
+4350
+
+4400
+
+0
+0
+
+0.5
+
+1
+
+1.5
+
+2
+
+Data Point Value
+
+(a)
+
+(b)
+
+0
+-0.3
+
+-0.2
+
+-0.1
+
+0
+
+0.1
+
+0.2
+
+0.3
+
+Data Point Value
+
+(c)
+
+Figure 9: The PDF of the data points of the EEG data set, UCI data set and DCASE data set, respectively.
+represent the input time-series data. It is worth noting that
+our approach is of independent interest for general changepoint detection even outside the context of breakpoint detection as considered in this paper. Unlike previous methods,
+our approach does not rely on specifying a prior generative
+model of the input data. Furthermore, we introduce a simple hyperparameter tuning criteria through careful sensitivity analysis on the window size, codebook size, and depth
+of the network. Through extensive experiments on multiple
+types of real-world data sets including human-activity sensing, speech, and EEG traces, we demonstrate the eﬀectiveness of our proposed method and show that it signiﬁcantly
+outperforms existing approaches. Our technique can serve
+
+as a key primitive for analyzing a broad range of real-world
+time series data.
+
+REFERENCES
+[1] [n. d.]. Detection and Classiﬁcation of Acoustic Scenes and Events
+2016. http://www.cs.tut.ﬁ/sgn/arg/dcase2016/. ([n. d.]).
+[2] Ryan Prescott Adams and David JC MacKay. 2007. Bayesian online
+changepoint detection. arXiv preprint arXiv:0710.3742 (2007).
+[3] Davide Anguita, Alessandro Ghio, Luca Oneto, Xavier Parra Perez,
+and Jorge Luis Reyes Ortiz. 2013. A public domain dataset for human
+activity recognition using smartphones. In Proceedings of the 21th International European Symposium on Artiﬁcial Neural Networks, Computational Intelligence and Machine Learning. 437–442.
+[4] Jushan Bai. 1997. Estimation of a change point in multiple regression
+models. Review of Economics and Statistics 79, 4 (1997), 551–563.
+
+,,
+[5] Daniel Barry and John A Hartigan. 1993. A Bayesian analysis for
+change point problems. J. Amer. Statist. Assoc. 88, 421 (1993), 309–
+319.
+[6] Michèle Basseville, Igor V Nikiforov, et al. 1993. Detection of abrupt
+changes: theory and application. Vol. 104. Prentice Hall Englewood
+Cliﬀs.
+[7] Steﬀen Bickel, Michael Brückner, and Tobias Scheﬀer. 2007. Discriminative learning for diﬀering training and test distributions. In Proceedings of the 24th international conference on Machine learning. ACM,
+81–88.
+[8] Léon Bottou. 1991. Stochastic gradient learning in neural networks.
+Proceedings of Neuro-Nımes 91, 8 (1991).
+[9] E Brodsky and Boris S Darkhovsky. 2013. Nonparametric methods in
+change point problems. Vol. 243. Springer Science & Business Media.
+[10] Jie Chen and Arjun K Gupta. 2011. Parametric statistical change point
+analysis: with applications to genetics, medicine, and ﬁnance. Springer
+Science & Business Media.
+[11] CrowdSignals. [n. d.]. CrowdSignals.io. http://crowdsignals.io/. ([n.
+d.]).
+[12] Michel Marie Deza and Elena Deza. 2009. Encyclopedia of distances.
+In Encyclopedia of Distances. Springer, 1–583.
+[13] Chandra Erdman and John W Emerson. 2008. A fast Bayesian change
+point analysis for the segmentation of microarray data. Bioinformatics 24, 19 (2008), 2143–2148.
+[14] Piotr Fryzlewicz. 2014. Wild binary segmentation for multiple
+change-point detection. The Annals of Statistics 42, 6 (2014), 2243–
+2281.
+[15] Arthur Gretton, Alex Smola, Jiayuan Huang, Marcel Schmittfull,
+Karsten Borgwardt, and Bernhard Schölkopf. 2009. Covariate shift by
+kernel mean matching. Dataset shift in machine learning 3, 4 (2009),
+5.
+[16] Valery Guralnik and Jaideep Srivastava. 1999. Event detection from
+time series data. In Proceedings of the ﬁfth ACM SIGKDD international
+conference on Knowledge discovery and data mining. ACM, 33–42.
+[17] Fredrik Gustafsson. 1996. The marginalized likelihood ratio test for
+detecting abrupt changes. IEEE Transactions on automatic control 41,
+1 (1996), 66–78.
+[18] Fredrik Gustafsson and Fredrik Gustafsson. 2000. Adaptive ﬁltering
+and change detection. Vol. 1. Wiley New York.
+[19] Abeer Hasan, Wei Ning, and Arjun K Gupta. 2014. An informationbased approach to the change-point problem of the noncentral skew
+t distribution with applications to stock market data. Sequential Analysis 33, 4 (2014), 458–474.
+[20] Shohei Hido, Yuta Tsuboi, Hisashi Kashima, Masashi Sugiyama, and
+Takafumi Kanamori. 2011. Statistical outlier detection using direct
+density ratio estimation. Knowledge and information systems 26, 2
+(2011), 309–336.
+[21] Geoﬀrey E Hinton and Ruslan R Salakhutdinov. 2006. Reducing the
+dimensionality of data with neural networks. Science (2006).
+[22] DA Hsu. 1982. A Bayesian robust detection of shift in the risk structure of stock market returns. J. Amer. Statist. Assoc. 77, 377 (1982),
+29–39.
+[23] Tsuyoshi Idé and Koji Tsuda. 2007. Change-point detection using
+krylov subspace learning. In Proceedings of the 2007 SIAM International Conference on Data Mining. SIAM, 515–520.
+[24] Daniela Jaruskova. 1997. Some problems with application of changepoint detection methods to environmental data. Environmetrics 8, 5
+(1997), 469–484.
+[25] Yoshinobu Kawahara and Masashi Sugiyama. 2012. Sequential
+change-point detection based on direct density-ratio estimation. Statistical Analysis and Data Mining 5, 2 (2012), 114–127.
+
+Wei-Han Lee, Jorge Ortiz, Bongjun Ko, and Ruby Lee
+[26] Yoshinobu Kawahara, Takehisa Yairi, and Kazuo Machida. 2007.
+Change-point detection in time-series data based on subspace identiﬁcation. In Seventh IEEE International Conference on Data Mining
+(ICDM 2007). IEEE, 559–564.
+[27] Rebecca Killick, Paul Fearnhead, and Idris A Eckley. 2012. Optimal
+detection of changepoints with a linear computational cost. J. Amer.
+Statist. Assoc. 107, 500 (2012), 1590–1598.
+[28] Honglak Lee, Chaitanya Ekanadham, and Andrew Y Ng. 2008. Sparse
+deep belief net model for visual area V2. In Advances in neural information processing systems. 873–880.
+[29] Wei-Han Lee and Ruby B Lee. 2017. Implicit Smartphone User Authentication with Sensors and Contextual Machine Learning. In Dependable Systems and Networks (DSN), 2017 47th Annual IEEE/IFIP International Conference on. IEEE, 297–308.
+[30] Song Liu, Makoto Yamada, Nigel Collier, and Masashi Sugiyama. 2013.
+Change-point detection in time-series data by relative density-ratio
+estimation. Neural Networks 43 (2013), 72–83.
+[31] Valentina Moskvina and A Zhigljavsky. 2001. Application of the singular spectrum analysis for change-point detection in time series.
+Journal of Time Series Analysis (2001).
+[32] University of Illinois at Urbana-Champaign. Center for Supercomputing Research, Development, and G Cybenko. 1988. Continuous valued
+neural networks with two hidden layers are suﬃcient.
+[33] Kyong Joo Oh and Kyoung-jae Kim. 2002. Analyzing stock market
+tick data using piecewise nonlinear model. Expert Systems with Applications 22, 3 (2002), 249–255.
+[34] Rychelly Glenneson da S Ramos, Paulo Ribeiro, and José Vinı́cius
+de M Cardoso. 2016. Anomalies Detection in Wireless Sensor Networks Using Bayesian Changepoints. In Mobile Ad Hoc and Sensor Systems (MASS), 2016 IEEE 13th International Conference on. IEEE, 384–
+385.
+[35] Bonnie K Ray and Ruey S Tsay. 2002. Bayesian methods for changepoint detection in long-range dependent processes. Journal of Time
+Series Analysis 23, 6 (2002), 687–705.
+[36] Jaxk Reeves, Jien Chen, Xiaolan L Wang, Robert Lund, and Qi Qi Lu.
+2007. A review and comparison of changepoint detection techniques
+for climate data. Journal of Applied Meteorology and Climatology 46,
+6 (2007), 900–915.
+[37] Oliver Roesler. [n. d.].
+EEG Eye State Data Set.
+http://archive.ics.uci.edu/ml/datasets/EEG+Eye+State. ([n. d.]).
+[38] David Rosenﬁeld, Enlu Zhou, Frank H Wilhelm, Ansgar Conrad, Walton T Roth, and Alicia E Meuret. 2010. Change point analysis for longitudinal physiological data: Detection of cardio-respiratory changes
+preceding panic attacks. Biological psychology 84, 1 (2010), 112–120.
+[39] Vasilios A Siris and Fotini Papagalou. 2004. Application of anomaly
+detection algorithms for detecting SYN ﬂooding attacks. In Global
+Telecommunications Conference, 2004. GLOBECOM’04. IEEE, Vol. 4.
+IEEE, 2050–2054.
+[40] Masashi Sugiyama, Shinichi Nakajima, Hisashi Kashima, Paul V Buenau, and Motoaki Kawanabe. 2008. Direct importance estimation
+with model selection and its application to covariate shift adaptation.
+In Advances in neural information processing systems. 1433–1440.
+[41] Masashi Sugiyama, Taiji Suzuki, and Takafumi Kanamori. 2012. Density ratio estimation in machine learning. Cambridge University Press.
+[42] Pascal Vincent, Hugo Larochelle, Yoshua Bengio, and Pierre-Antoine
+Manzagol. 2008. Extracting and composing robust features with denoising autoencoders. In Proceedings of the 25th international conference on Machine learning. ACM, 1096–1103.
+[43] Haining Wang, Danlu Zhang, and Kang G Shin. 2004. Change-point
+monitoring for the detection of DoS attacks. IEEE Transactions on
+dependable and secure computing 1, 4 (2004), 193–208.
+
+Time Series Segmentation through Automatic Feature Learning
+[44] Yao Wang, Chunguo Wu, Zhaohua Ji, Binghong Wang, and Yanchun
+Liang. 2011. Non-parametric change-point method for diﬀerential
+gene expression detection. PloS one 6, 5 (2011), e20060.
+[45] Yao Xie and David Siegmund. 2013. Sequential multi-sensor changepoint detection. In Information Theory and Applications Workshop
+(ITA), 2013. IEEE, 1–20.
+[46] Kenji Yamanishi and Jun-ichi Takeuchi. 2002. A unifying framework
+for detecting outliers and change points from non-stationary time
+series data. In Proceedings of the eighth ACM SIGKDD international
+conference on Knowledge discovery and data mining. ACM, 676–681.
+[47] Kenji Yamanishi, Jun-Ichi Takeuchi, Graham Williams, and Peter
+Milne. 2004. On-line unsupervised outlier detection using ﬁnite mixtures with discounting learning algorithms. Data Mining and Knowledge Discovery 8, 3 (2004), 275–300.
+
+,,
+
+

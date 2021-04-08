@@ -1,0 +1,764 @@
+Active Semi-supervised Transfer Learning (ASTL)
+for Offline BCI Calibration
+
+arXiv:1805.05781v1 [cs.LG] 12 May 2018
+
+Dongrui Wu
+DataNova, NY USA
+E-mail: drwu09@gmail.com
+Abstract—Single-trial classification of event-related potentials
+in electroencephalogram (EEG) signals is a very important
+paradigm of brain-computer interface (BCI). Because of individual differences, usually some subject-specific calibration data
+are required to tailor the classifier for each subject. Transfer
+learning has been extensively used to reduce such calibration data requirement, by making use of auxiliary data from
+similar/relevant subjects/tasks. However, all previous research
+assumes that all auxiliary data have been labeled. This paper
+considers a more general scenario, in which part of the auxiliary
+data could be unlabeled. We propose active semi-supervised
+transfer learning (ASTL) for offline BCI calibration, which
+integrates active learning, semi-supervised learning, and transfer
+learning. Using a visual evoked potential oddball task and three
+different EEG headsets, we demonstrate that ASTL can achieve
+consistently good performance across subjects and headsets, and
+it outperforms some state-of-the-art approaches in the literature.
+Index Terms—Brain-computer interface, event-related potential, EEG, active learning, domain adaptation, semi-supervised
+learning, transfer learning
+
+I. I NTRODUCTION
+Single-trial classification of event-related potentials (ERPs)
+in electroencephalogram (EEG) signals has been used in many
+real-world brain-computer interface (BCI) systems [2], [18],
+[28]. However, because of large individual differences [3], we
+need to calibrate the classifier for each subject, using some
+labeled subject-specific data. This paper investigates how to
+reduce the amount of labeled subject-specific calibration data.
+As in our previous research [23], we distinguish between
+two types of calibration in BCI:
+1) Offline calibration: A pool of unlabeled EEG epochs
+from a subject have been obtained a priori, and the
+subject is queried to label some of these epochs, which
+are then used to train a classifier to label the remaining
+epochs in that pool.
+2) Online calibration: Some labeled EEG epochs from a
+subject are obtained on-the-fly, and then a classifier is
+trained from them to classify future EEG epochs from
+the same subject.
+There are two main differences between these two calibration
+scenarios [23]: 1) In offline calibration, the unlabeled EEG
+epochs can be used to help design the ERP classifier, whereas
+in online calibration there are no unlabeled EEG epochs; and,
+2) in offline calibration we can query any epoch in the pool
+for the label, but in online calibration usually the sequence of
+the epochs is pre-determined.
+
+This paper proposes a new offline calibration approach, by
+integrating regularization [13], [19], active learning (AL) [14],
+[24], transfer learning (TL) [10], [27], and semi-supervised
+learning (SSL) [5], [11]. We use a visual evoked potential
+(VEP) oddball task and three different EEG headsets to
+demonstrate that the proposed approach can achieve consistently good performance across subjects and headsets, and
+it outperforms our latest approach in [23]. The experiment
+and dataset used in this paper are identical to those in [23];
+however, the approaches are different:
+1) [23] assumed data from every auxiliary subject are
+labeled, whereas in this paper data from some auxiliary
+subjects are unlabeled.
+2) [23] did not include AL in offline calibration.
+3) This paper introduces a more sophisticated way to fuse
+the base TL models from multiple auxiliary subjects.
+The remainder of the paper is organized as follows: Section II introduces the details of the offline calibration algorithm. Section III describes the experiment setup that is used to
+evaluate the performances of different algorithms. Section IV
+presents performance comparison of different offline calibration algorithms. Finally, Section V draws conclusions.
+II. ACTIVE S EMI - SUPERVISED T RANSFER L EARNING
+(ASTL) FOR O FFLINE BCI C ALIBRATION
+This section introduces the iterative active semi-supervised
+transfer learning (ASTL) algorithm for offline BCI classifier
+calibration, which integrates AL [20], weighted adaptation
+regularization (wAR) [23], and spectral meta-learner (SML)
+[16].
+A. Problem Definition
+A domain [12], [15] D in TL consists of a feature space
+X and a marginal probability distribution P (x), i.e., D =
+{X , P (x)}, where x ∈ X . Two domains Ds and Dt are
+different if Xs 6= Xt , and/or Ps (x) 6= Pt (x).
+A task [12], [15] T in TL consists of a label space Y and a
+conditional probability distribution Q(y|x). Two tasks Ts and
+Tt are different if Ys 6= Yt , or Qs (y|x) 6= Qt (y|x).
+Given a source domain Ds with n labeled samples,
+{(x1 , y1 ), ..., (xn , yn )}, and a target domain Dt with ml
+labeled samples {(xn+1 , yn+1 ), ..., (xn+ml , yn+ml )} and mu
+unlabeled samples {xn+ml +1 , ..., xn+ml +mu }, domain adaptation TL learns a target prediction function f : xt 7→ yt with
+
+low expected error on Dt , under the assumptions Xs = Xt ,
+Ys = Yt , Ps (x) 6= Pt (x), and Qs (y|x) 6= Qt (y|x).
+For example, in single-trial classification of VEPs studied
+in this paper, the source domain consists of EEG epochs
+from an existing subject, and the target domain consists of
+EEG epochs from a new subject. When there are Z source
+domains, we perform domain adaptation TL for each of them
+separately and then aggregate the Z classifiers. Because of
+individual differences, the source domain samples are usually
+not completely consistent with the target domain samples, and
+must be integrated with some labeled target domain samples
+to train an accurate target domain classifier.
+Let m1 and m2 be the true number of target domain samples
+from Classes 1 and 2, respectively. Let m̂1 and m̂2 be the
+number of target domain samples that are correctly classified
+by ASTL as Classes 1 and 2, respectively. ASTL optimizes
+the following balanced classification accuracy (BCA):
+a1 + a2
+BCA =
+≡π
+(1)
+2
+where
+m̂2
+m̂1
+,
+a2 =
+a1 =
+m1
+m2
+i.e., ac is the classification accuracy for Class c, c = 1, 2.
+Assume there are Zl source domains with labeled samples,
+and Zu source domains with unlabeled samples. The flowchart
+of the iterative ASTL is shown in Fig. 1. Based on the Zl
+labeled source domains, it first uses wAR and SML to estimate
+the pseudo labels separately for each of the Zu unlabeled
+source domains. Then, with the help of a few labeled target
+domain samples (selected by AL), ASTL uses wAR and SML
+on the Z = Zl + Zu source domains to estimate the labels
+for the remaining target domain samples. We emphasize that
+ASTL uses SSL because: 1) it makes use of unlabeled samples
+in the Zu source domains in wAR and SML, and, 2) it also
+makes use of the unlabeled target domain samples in wAR.
+The three main components of ASTL (wAR, SML, and AL)
+are introduced in more details next.
+B. Weighted Adaptation Regularization (wAR)
+The wAR algorithm has been introduced in our previous
+research [23], [27] for classification. Recently it has also been
+extended to regression problems [26].
+Let the binary classifier be f (x) = wT φ(x), where w is the
+classifier parameters, and φ : X 7→ H is the feature mapping
+function that projects the original feature vector to a Hilbert
+space H. The learning framework of wAR is formulated as:
+f = argmin
+
+n
+X
+
+ws,i ℓ(f (xi ), yi )... + wt
+
+f ∈HK i=1
++ σkf k2K +
+
+n+m
+Xl
+
+·wt,i ℓ(f (xi ), yi )
+
+larger than 1 so that more emphasis is given to target domain
+samples than source domain samples. ws,i and wt,i are the
+weight for the ith sample in the source domain and target
+domain, respectively, i.e.,
+
+1,
+xi ∈ Ds,1
+ws,i =
+(3)
+n1 /(n − n1 ), xi ∈ Ds,2
+
+1,
+xi ∈ Dt,1
+wt,i =
+(4)
+m1 /(ml − m1 ), xi ∈ Dt,2
+in which Ds,c = {xi |xi ∈ Ds ∧ yi = c, i = 1, ..., n} is the set
+of samples in Class c of the source domain, Dt,c = {xj |xj ∈
+Dt ∧ yj = c, j = n + 1, ..., n + ml } is the set of samples in
+Class c of the target domain, nc is the number of elements in
+Ds,c , and mc is the number of elements in Dt,c .
+Briefly speaking, the 1st term in (2) minimizes the loss
+on fitting the labeled samples in the source domain, the 2nd
+term minimizes the loss on fitting the labeled samples in the
+target domain, the 3rd term minimizes the structural risk of the
+classifier, and the 4th term minimizes the distance between the
+marginal probability distributions Ps (xs ) and Pt (xt ), and also
+the distance between the conditional probability distributions
+Qs (xs |ys ) and Qt (xt |yt ).
+Let
+X = [x1 , ..., xn+ml +mu ]T
+y = [y1 , ..., yn+ml +mu ]
+
+i=n+1
+
+λ[Df,K (Ps , Pt ) + Df,K (Qs , Qt )]
+
+Fig. 1. ASTL for offline calibration.
+
+(2)
+
+where ℓ is the loss function, K ∈ R(n+ml +mu )×(n+ml +mu )
+is the kernel matrix with K(xi , xj ) = hφ(xi ), φ(xj )i, and σ
+and λ are non-negative regularization parameters. wt is the
+overall weight for target domain samples, which should be
+
+T
+
+(5)
+(6)
+
+where {y1 , ..., yn } are known labels in the source domain,
+{yn+1 , ..., yn+ml } are known labels in the target domain, and
+{yn+ml +1 , ..., yn+ml +mu } are pseudo labels for the unlabeled
+target domain samples, i.e., labels estimated using available
+sample information in both source and target domains.
+
+Define E, M0 , M ∈ R(n+ml +mu )×(n+ml +mu ) as:
+
+1≤i≤n
+ ws,i ,
+Eii =
+wt · wt,i , n + 1 ≤ i ≤ n + ml
+
+0,
+otherwise
+ 1
+,
+1 ≤ i ≤ n, 1 ≤ j ≤ n
+2
+
+
+ n 1
+,
+n + 1 ≤ i ≤ n + ml + mu ,
+(ml +mu )2
+(M0 )ij =
+n + 1 ≤ j ≤ n + ml + mu
+
+
+
+−1
+,
+otherwise
+n(ml +mu )
+M = M1 + M2
+
+C. Spectral Meta-Learner (SML)
+(7)
+
+(8)
+
+qzj = E [(fz (x) − µz )(fj (x) − µj )]
+(9)
+
+in which
+
+1/n2c ,
+
+
+
+
+ 1/m2c ,
+−1/(nc mc ),
+(Mc )ij =
+
+
+
+
+
+0,
+
+xi , xj ∈ Ds,c
+xi , xj ∈ Dt,c
+xi ∈ Ds,c , xj ∈ Dt,c ,
+or xj ∈ Ds,c , xi ∈ Dt,c
+otherwise
+
+(10)
+
+n+m
+l +mu
+X
+
+αi K(xi , x) = αT K(X, x)
+
+(11)
+
+i=1
+
+where
+α = [(E + λM0 + λM )K + σI]−1 Ey
+
+(12)
+
+The complete wAR algorithm is given in Algorithm 1.
+Algorithm 1: The offline wAR algorithm [23], [27].
+Input: Z source domains, where the z th (z = 1, ..., Z)
+domain has nz labeled samples
+{xzi , yiz }i=1,...,nz ;
+ml labeled target domain samples,
+{xtj , yjt }j=1,...,ml ;
+mu unlabeled target domain samples,
+{xtj }j=ml +1,...,ml +mu ;
+Parameters wt , σ and λ in (2);
+Output: The wAR classifier.
+Choose a kernel function K(xi , xj );
+for z = 1, 2, ..., Z do
+Construct the feature matrix X in (5);
+Compute the kernel matrix K from X;
+t
+(j = nz + ml + 1, ..., nz + ml + mu ),
+Set yj = ȳj−n
+z
+t
+if ȳj−nz are available; otherwise, build another
+classifier (e.g., an SVM) to estimate them;
+Construct y in (6), E in (7), M0 in (8), and M in (9);
+Compute α by (12) and record it as αz ;
+Use α to classify the nz + ml labeled samples and
+record the accuracy, az ;
+end
+P
+Return f (x) = Z
+z=1 az αz Kz (X, x).
+
+(13)
+
+where E is the expectation, and µz = E[fz (x)]. Parisi et al.
+[16] showed that:
+
+1 − µ2z ,
+z=j
+qzj =
+(14)
+(1 − b2 )(2πz − 1)(2πj − 1), z 6= j
+where πz is computed by (1) for each base classifier, and
+b ∈ (−1, 1) is the class imbalance, i.e.,
+b = Prob(y in Class 1) − Prob(y in Class 2)
+
+Then, according to [23], [27], the solution of f (x) in (2) is:
+f (x) =
+
+SML is a simple yet effective way to optimally combine
+multiple base machine learning models. It was first proposed
+for binary classification problems [16], and recently extended
+to regression problems [25].
+Let Q ∈ RZ×Z be the population covariance matrix of Z
+binary classifiers, i.e.,
+
+(15)
+
+(14) shows that the off-diagonal entries of Q are identical to
+those of a rank-one matrix R = λvvT , where
+
+λ = 1 − b2
+(16)
+v = [2π1 − 1, 2π2 − 1, ..., 2πZ − 1]T
+In other words, the BCAs of the M classifiers can be computed
+from the first leading eigenvector of R. Given the empirical
+Q, several different approaches [16] can be used to estimate
+R. The simplest is to use Q directly as R, as in Algorithm 2.
+Once {πz }z=1,2,...,Z are estimated, they can be used to
+replace wz in Algorithm 1, i.e., the following weighted average
+is used to aggregate the M base binary classifiers:
+f (x) =
+
+Z
+X
+
+πz αz Kz (X, x)
+
+(17)
+
+z=1
+
+Algorithm 2: The SML algorithm [16].
+u
+Input: mu unlabeled samples, {xj }m
+j=1 ;
+Z
+Z binary classifiers, {fz }z=1 .
+Output: The estimated BCAs of the Z binary classifiers,
+{πz }Z
+z=1 .
+for z = 1, 2, ..., Z do
+u
+Compute {fz (xj )}m
+j=1 ;
+end
+Compute the Z × Z covariance matrix Q of {fz (x)}Z
+z=1 ;
+Compute the first leading eigenvector, v, of Q;
+Return πz = (vz + 1)/2, z = 1, 2, ..., Z, where vz is the
+zth element of v.
+
+D. Active Learning (AL)
+Many AL approaches have been proposed in the literature
+[20]. In ASTL we use the most popular idea: we identify the p
+most informative samples as the p most uncertain ones, based
+on the latest classification boundary.
+More specifically, we rank the uncertainties of the unlabeled target domain samples by their distance to the current
+
+classification boundary: a sample closer to the classification
+boundary means the classifier has more uncertainty about its
+class, and hence we should select it for labeling in the next
+iteration. To do this, we first sort the unlabeled target domain
+samples in ascending order according to |f (x)| in (17). Then,
+we select the first p samples for labeling in the next iteration,
+as illustrated in Algorithm 3.
+Algorithm 3: The AL algorithm.
+u
+Input: {f (xj )}m
+j=1 in (17).
+Output: The p most uncertain samples to label.
+u
+Sort {|f (xj )|}m
+j=1 in ascending order;
+Return The first p samples corresponding to the sorted
+u
+{|f (xj )|}m
+j=1 .
+III. T HE VEP O DDBALL E XPERIMENT
+This section describes the setup of the VEP oddball experiment, which is identical to that used in [23]. It is used in the
+next three sections to evaluate the performances of different
+algorithms.
+A. Experiment Setup
+A two-stimulus VEP oddball task [17] was used. Participants were seated in a sound-attenuated recording chamber,
+and image stimuli were presented to them at a rate of 0.5
+Hz. The images (152×375 pixels), presented for 150 ms at
+the center of a 24 inch Dell P2410 monitor at a distance
+of approximately 70 cm, were either an enemy combatant
+(target) or a U.S. Soldier (non-target). The subjects were
+instructed to maintain fixation on the center of the screen
+and identify each image as being target or non-target with
+a unique button press as quickly and accurately as possible.
+A total of 270 images were presented to each subject, among
+which 34 were targets. The experiments were approved by
+U.S. Army Research Laboratory Institutional Review Board.
+The voluntary, fully informed consent of the persons used in
+this research was obtained as required by federal and Army
+regulations [21], [22]. The investigator has adhered to Army
+policies for the protection of human subjects.
+Signals for each subject were recorded with three different
+EEG headsets, including a 64-channel 512Hz BioSemi ActiveTwo system, a 9-channel 256Hz Advanced Brain Monitoring (ABM) X10 system, and a 14-channel 128Hz Emotiv
+EPOC headset. Complete data from 14 subjects were recorded
+and analyzed in this paper.
+B. Preprocessing and Feature Extraction
+The preprocessing and feature extraction method for all
+three headsets was the same, except that for ABM and Emotiv
+headsets we used all the channels, but for the BioSemi headset
+we only used 21 channels (Cz, Fz, P1, P3, P5, P7, P9, PO7,
+PO3, O1, Oz, POz, Pz, P2, P4, P6, P8, P10, PO8, PO4, O2)
+mainly in the parietal and occipital areas, as in [23].
+EEGLAB [6] was used for EEG signal preprocessing and
+feature extraction. For each headset, we first band-passed the
+
+EEG signals to [1, 50] Hz, then downsampled them to 64
+Hz, performed average reference, and next epoched them to
+the [0, 0.7] second interval timelocked to stimulus onset. We
+removed mean baseline from each channel in each epoch and
+removed epochs with incorrect button press responses1 . The
+final numbers of epochs from the 14 subjects are shown in
+Table I. Observe that there is significant class imbalance for
+every subject.
+Each [0, 0.7] second epoch contains hundreds of raw EEG
+magnitude samples (e.g., 64 × 0.7 × 21 = 941 for BioSemi).
+To reduce the dimensionality, we performed a simple principal
+component analysis (PCA) to take the scores on the first 20
+principal components as features. We then normalized each
+feature dimension separately to [0, 1].
+IV. P ERFORMANCE E VALUATION OF O FFLINE
+C ALIBRATION A LGORITHMS
+This selection presents performance comparison of ASTL
+with three other offline calibration algorithms.
+A. Offline Calibration Scenario
+Although we knew the labels of all EEG epochs for all
+14 subjects in the VEP experiment, we simulated a realistic
+offline calibration scenario: we had labeled EEG epochs from
+7 random subjects, unlabeled EEG epochs from another 6
+random subjects, and also all epochs from the 14th subject, but
+initially none of those was labeled. Our goal was to iteratively
+label epochs from the 14th subject and build a classifier so that
+his/her remaining unlabeled epochs can be reliably classified.
+Assume the 14th subject has m unlabeled epochs, and we
+want to add p (p = 5 was used in this paper) labeled epochs
+in each iteration, starting from zero. In the first iteration,
+ASTL (see Fig. 1) uses the m unlabeled epochs from the 14th
+subject and epochs from the other 13 subjects to build an SML
+classifier and computes its BCA. It also uses AL to select the
+p epochs that should be labeled next, and queries their labels.
+In the second iteration, ASTL builds a new classifier using the
+p labeled epochs and m − p unlabeled epochs from the 14th
+subject and epochs from the other 13 subjects, computes its
+BCA, selects another p unlabeled target domain samples, and
+queries their labels. ASTL iterates until the maximum number
+of iterations is reached.
+To obtain statistically meaningful results, the above process
+was repeated 30 times for each subject: each time we randomly
+selected 7 subjects to have labeled EEG epochs, and the
+remaining 6 subjects to have unlabeled EEG epochs. We
+repeated this procedure 14 times so that each subject had a
+chance to be the “14th” subject.
+B. Offline Calibration Algorithms
+We compared the performance of ASTL in Fig. 1 with three
+other offline calibration algorithms [23]:
+1) Baseline 1 (BL1), which combines data from all 7
+subjects with labeled epochs, builds a weighted support
+1 Button press responses were not recorded for most subjects using the ABM
+headset, so we used all 270 epochs for them.
+
+TABLE I
+N UMBER OF EPOCHES FOR EACH SUBJECT AFTER PREPROCESSING . T HE NUMBERS OF TARGET EPOCHS ARE GIVEN IN THE PARENTHESES .
+Subject
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+BioSemi 241 (26) 260 (24) 257 (24) 261 (29) 259 (29) 264 (30) 261 (29) 252 (22) 261 (26) 259 (29) 267 (32) 259 (24) 261 (25) 269 (33)
+Emotiv 263 (28) 265 (30) 266 (30) 255 (23) 264 (30) 263 (32) 266 (30) 252 (22) 261 (26) 266 (29) 266 (32) 264 (33) 261 (26) 267 (31)
+ABM
+270 (34) 270 (34) 235 (30) 270 (34) 270 (34) 270 (34) 270 (34) 270 (33) 270 (34) 239 (30) 270 (34) 270 (34) 251 (31) 270 (34)
+
+vector machine (SVM) classifier, and applies it to the
+target domain epochs. The SVM classifier does not
+update itself as new labeled target domain samples come
+in.
+2) Baseline 2 (BL2), which is an iterative approach on
+available labeled target domain samples: in each iteration we randomly select 5 unlabeled samples from the
+14th subject to label, and then train a weighted SVM
+classifier by 5-fold cross-validation. BL2 iterates until
+the maximum number of iterations is reached.
+3) wAR in Algorithm 1, on the 7 subjects with labeled
+epochs. That is, it completely ignores the information
+in the unlabeled epochs from the other 6 subjects.
+Weighted libSVM [4] with radial basis function (RBF) kernel
+was used as the classifier in BL1 and BL2. The optimal RBF
+parameter was found by cross-validation. We chose wt = 2,
+σ = 0.1, and λ = 10, following the practice in [23].
+
+0.8
+
+BCA
+
+BCA
+
+C. Offline Calibration Results
+The BCAs of the four algorithms, averaged over the 30 runs
+and across the 14 subjects, are shown in Fig. 2 for the three
+headsets. Observe that:
+
+0.7
+0.6
+
+0.8
+0.7
+0.6
+
+0.5
+
+0.5
+0 10 20 30 40 50
+
+BCA
+
+(a)
+
+0 10 20 30 40 50
+(b)
+
+BL1
+BL2
+wAR
+ASTL
+
+0.8
+0.7
+0.6
+0.5
+0 10 20 30 40 50
+(c)
+
+Fig. 2. Average BCAs of the four offline calibration algorithms across the 14
+subjects, using different EEG headsets. (a) BioSemi; (b) ABM; (c) Emotiv.
+ml is the number of labeled samples from the “14th” subject.
+
+1) Generally the performances of BL2, wAR and ASTL
+increased as more labeled subject-specific samples were
+available, which is intuitive.
+
+2) BL2 cannot build a classifier when there were no labeled
+subject-specific samples at all (observe that the BCA for
+ml = 0 on the BL2 curve in Fig. 2 was always 0.5,
+representing random guess), but wAR and ASTL can,
+because they can make use of information from other
+subjects. Moreover, without any labeled subject-specific
+samples, ASTL can build a classifier with a BCA of
+69.31% for BioSemi, 60.48% for ABM, and 65.12%
+for Emotiv, much better than random guess.
+3) wAR significantly outperformed BL1 and BL2 (except
+for BL1 on ABM when ml is small), as demonstrated
+in our previous research [23].
+4) ASTL significantly outperformed all the other three
+algorithms, except for BL1 on ABM when ml is small.
+As in [23], we also performed comprehensive statistical
+tests to check if the performance differences among BL2,
+wAR and ASTL (BL1 was not included because it is not
+iterative) were statistically significant. We used the area-underperformance-curve (AUPC) to assess overall performance differences among these algorithms. The AUPC is the area under
+the curve of the BCAs obtained at each of the 30 runs, and is
+normalized to [0, 1]. A larger AUPC value indicates a better
+overall classification performance.
+We used Friedman’s test [9], a two-way non-parametric
+ANOVA where column effects are tested for significant differences after adjusting for possible row effects. We treated
+the algorithm type (BL2, wAR, and ASTL) as the column
+effects, with subjects as the row effects. Each combination of
+algorithm and subject had 30 values corresponding to 30 runs
+performed. Friedman’s test showed statistically significant differences among the three algorithms for each headset (df = 2,
+p = 0.00).
+Then, non-parametric multiple comparison tests using
+Dunn’s procedure [7], [8] was used to determine if the
+difference between any pair of algorithms was statistically
+significant, with a p-value correction using the false discovery
+rate method [1]. The results showed that the performances
+of ASTL were statistically significantly different from BL2
+and wAR for each headset (p = 0.0000 for all cases, except
+p = 0.0116 for ASTL vs wAR on ABM).
+Recall that the differences between ASTL and wAR are: i)
+ASTL makes use of information in the unlabeled samples from
+6 additional subjects, whereas wAR does not; ii) ASTL uses
+SML to fuse the Z classifiers, whereas wAR uses the training
+cross-validation accuracies as classifier weights in a weighted
+average; and, iii) ASTL uses AL to optimally select the
+unlabeled target domain samples to label, whereas wAR uses
+random selection. The significant performance improvement
+
+of ASTL over wAR demonstrated that our three modifications
+were very effective.
+In summary, we have demonstrated that given the same
+number of labeled subject-specific training samples, ASTL
+can significantly improve the offline calibration performance.
+In other words, given a desired classification accuracy, ASTL
+can significantly reduce the number of labeled subject-specific
+training samples. For example, in Fig. 2(c), the average BCA
+of BL2 is 66.32%, given 50 labeled subject-specific training
+samples. However, to achieve that BCA, on average ASTL
+only need 5 samples, corresponding to 90% saving of the
+labeling effort. Moreover, Fig. 2(c) also shows that, without
+using any labeled subject-specific samples, ASTL can achieve
+similar performance as BL2 which uses 40 samples. Similar
+observations can also be made for the BioSemi and ABM
+headsets.
+V. C ONCLUSIONS
+Single-trial classification of ERPs in EEG signals has been
+used in many real-world BCI systems. Because of individual
+differences, usually some subject-specific calibration data are
+required to tailor the classifier for each subject. Many different
+approaches have been proposed for reducing such calibration
+data requirement, including regularization, TL, AL, SSL, etc,
+with TL being perhaps the most popular approach. TL makes
+use of auxiliary data from similar/relevant subjects/tasks.
+However, according to the author’s knowledge, all previous
+applications of TL to BCI assume that all auxiliary data have
+been labeled. This paper considered a more general scenario,
+in which part of the auxiliary data could be unlabeled. We
+proposed ASTL for offline BCI calibration, which integrates
+regularization, AL, SSL, and TL. Using a VEP oddball task
+and three different EEG headsets, we demonstrated that ASTL
+can achieve consistently good performance across subjects and
+headsets, and it significantly outperformed wAR proposed in
+our recent research.
+R EFERENCES
+[1] Y. Benjamini and Y. Hochberg, “Controlling the false discovery rate:
+A practical and powerful approach to multiple testing,” Journal of the
+Royal Statistical Society, Series B (Methodological), vol. 57, pp. 289–
+300, 1995.
+[2] N. Bigdely-Shamlo, A. Vankov, R. Ramirez, and S. Makeig, “Brain
+activity-based image classification from rapid serial visual presentation,”
+IEEE Trans. on Neural Systems and Rehabilitation Engineering, vol. 16,
+no. 5, pp. 432–441, 2008.
+[3] K. B. Bulayeva, T. A. Pavlova, and G. G. Guseynov, “Visual evoked
+potentials: Phenotypic and genotypic variability,” Behavior Genetics,
+vol. 23, no. 5, pp. 443–447, 1993.
+[4] C.-C. Chang and C.-J. Lin, “LIBSVM: A library for support vector machines,” ACM Trans. on Intelligent Systems and Technology, vol. 2, no. 3, pp. 27:1–27:27, 2011, software available at
+http://www.csie.ntu.edu.tw/$\sim$cjlin/libsvm.
+[5] O. Chapelle, B. Scholkopf, and A. Zien, Eds., Semi-Supervised Learning.
+The MIT Press, 2006.
+[6] A. Delorme and S. Makeig, “EEGLAB: an open source toolbox for
+analysis of single-trial EEG dynamics including independent component
+analysis,” Journal of Neuroscience Methods, vol. 134, pp. 9–21, 2004.
+[7] O. Dunn, “Multiple comparisons among means,” Journal of the American Statistical Association, vol. 56, pp. 62–64, 1961.
+[8] O. Dunn, “Multiple comparisons using rank sums,” Technometrics,
+vol. 6, pp. 214–252, 1964.
+
+[9] M. Friedman, “A comparison of alternative tests of significance for the
+problem of m rankings,” The Annals of Mathematical Statistics, vol. 11,
+no. 1, pp. 86–92, 1940.
+[10] V. Jayaram, M. Alamgir, Y. Altun, B. Scholkopf, and M. GrosseWentrup, “Transfer learning in brain-computer interfaces,” IEEE Computational Intelligence Magazine, vol. 11, no. 1, pp. 20–31, 2016.
+[11] Y. Li and C. Guan, “Joint feature re-extraction and classification using
+an iterative semi-supervised support vector machine algorithm,” Machine
+Learning, vol. 71, no. 1, pp. 33–53, 2008.
+[12] M. Long, J. Wang, G. Ding, S. J. Pan, and P. S. Yu, “Adaptation
+regularization: A general framework for transfer learning,” IEEE Trans.
+on Knowledge and Data Engineering, vol. 26, no. 5, pp. 1076–1089,
+2014.
+[13] F. Lotte and C. Guan, “Learning from other subjects helps reducing
+brain-computer interface calibration time,” in Proc. IEEE Int’l. Conf. on
+Acoustics Speech and Signal Processing (ICASSP), Dallas, TX, March
+2010.
+[14] A. Marathe, V. Lawhern, D. Wu, D. Slayback, and B. Lance, “Improved
+neural signal classification in a rapid serial visual presentation task using
+active learning,” IEEE Trans. on Neural Systems and Rehabilitation
+Engineering, vol. 24, no. 3, pp. 333–343, 2016.
+[15] S. J. Pan and Q. Yang, “A survey on transfer learning,” IEEE Trans.
+on Knowledge and Data Engineering, vol. 22, no. 10, pp. 1345–1359,
+2010.
+[16] F. Parisi, F. Strino, B. Nadler, and Y. Kluger, “Ranking and combining
+multiple predictors without labeled data,” Proc. National Academy of
+Science, vol. 111, no. 4, pp. 1253–1258, 2014.
+[17] A. J. Ries, J. Touryan, J. Vettel, K. McDowell, and W. D. Hairston, “A
+comparison of electroencephalography signals acquired from conventional and mobile systems,” Journal of Neuroscience and Neuroengineering, vol. 3, no. 1, pp. 10–20, 2014.
+[18] P. Sajda, E. Pohlmeyer, J. Wang, L. Parra, C. Christoforou, J. Dmochowski, B. Hanna, C. Bahlmann, M. Singh, and S.-F. Chang, “In a
+blink of an eye and a switch of a transistor: Cortically coupled computer
+vision,” Proc. of the IEEE, vol. 98, no. 3, pp. 462–478, 2010.
+[19] B. Scholkopf and A. J. Smola, Learning with kernels: support vector
+machines, regularization, optimization, and beyond. Cambridge, MA:
+MIT Press, 2001.
+[20] B. Settles, “Active learning literature survey,” University of Wisconsin–
+Madison, Computer Sciences Technical Report 1648, 2009.
+[21] US Department of Defense Office of the Secretary of Defense, “Code of
+federal regulations protection of human subjects,” Government Printing
+Office, no. 32 CFR 19, 1999.
+[22] US Department of the Army, “Use of volunteers as subjects of research,”
+Government Printing Office, no. AR 70-25, 1990.
+[23] D. Wu, “Online and offline domain adaptation for reducing BCI calibration effort,” IEEE Trans. on Human-Machine Systems, vol. 47, no. 4,
+pp. 550–563, 2017.
+[24] D. Wu, V. J. Lawhern, S. Gordon, B. J. Lance, and C.-T. Lin, “Offline
+EEG-based driver drowsiness estimation using enhanced batch-mode
+active learning (EBMAL) for regression,” in Proc. IEEE Int’l Conf. on
+Systems, Man and Cybernetics, Budapest, Hungary, October 2016, pp.
+730–736.
+[25] D. Wu, V. J. Lawhern, S. Gordon, B. J. Lance, and C.-T. Lin, “Spectral
+meta-learner for regression (SMLR) model aggregation: Towards calibrationless brain-computer interface (BCI),” in Proc. IEEE Int’l Conf.
+on Systems, Man and Cybernetics, Budapest, Hungary, October 2016,
+pp. 743–749.
+[26] D. Wu, V. J. Lawhern, S. Gordon, B. J. Lance, and C.-T. Lin, “Driver
+drowsiness estimation from EEG signals using online weighted adaptation regularization for regression (OwARR),” IEEE Trans. on Fuzzy
+Systems, vol. 25, no. 6, pp. 1522–1535, 2017.
+[27] D. Wu, V. J. Lawhern, W. D. Hairston, and B. J. Lance, “Switching
+EEG headsets made easy: Reducing offline calibration effort using active
+weighted adaptation regularization,” IEEE Trans. on Neural Systems and
+Rehabilitation Engineering, vol. 24, no. 11, pp. 1125–1137, 2016.
+[28] T. O. Zander and C. Kothe, “Towards passive brain-computer interfaces:
+applying brain-computer interface technology to human-machine systems in general,” Journal of Neural Engineering, vol. 8, no. 2, 2011.
+
+

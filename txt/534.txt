@@ -1,0 +1,486 @@
+EEG tabanlı bir beyin bilgisayar arayüzü için
+yazılımsal altyapı geliştirme
+Developing computational infrastructure for an
+EEG-based brain computer
+Murat Kaya1 , Hilmi Yanar2 , Yuriy Mishchenko1
+1
+
+Bilgisayar ve Yazılım Mühendisliği Bölümü, Toros üniversitesi, Mersin, Türkiye
+{yuriy.mishchenko, ug.murat.kaya}@toros.edu.tr
+2
+Fizik Bölümü, Mersin üniversitesi, Mersin, Türkiye
+{hilmiyanar}@mersin.edu.tr
+
+Özetçe —Beyin bilgisayar arayüzleri, insan sinir sistemi ile
+doğrudan bağlantı kurarak harici robotik ve bilgisayar cihazlarının kontrolü için gelişen teknolojileri hedef alan yeni bir
+araştırma alanıdır. EEG tabanlı beyin bilgisayar arayüzleri,
+beyin aktiviteleri için noninvaziv elektroensefalografi görüntüleme tekniği kullanan bir cihaz tipidir. Esnek ve ayrıca kapsamlı yazılımsal altyapının geliştirilmesi, beyin bilgisayar arayüzleri araştırmalarını genel olarak kolaylaştırmasının yanı sıra bu
+tip cihazların bir laboratuvarda geliştirilmesinin sağlanması için
+de önemlidir. Burada EEG tabanlı beyin bilgisayar arayüzleri
+geliştirmenin bir parçası olarak laboratuvarımızda oluşturulan
+bir Matlab araçlar kümesi sunulmaktadır. Bu araç kutusu,
+EMOTİV EPOC ve Nihon Kohden EEG 1200 kullanılarak farklı
+deney formatlarında elde edilen verileri, temel veri işlemeyi,
+özniteliklerin ön seçimini ve SVM tabanlı örnek sınıflandırmayı
+desteklemektedir.
+Anahtar Kelimeler—EEG, BBA, SVM, özniteliklerin ön-seçimi.
+Abstract—Brain-computer interfaces is a new field of research
+aimed at developing technologies for the control of external
+robotic and computer devices by interfacing directly with the
+human nervous system. EEG-based brain-computer interfaces
+is a type of such devices that uses for brain activity imaging
+noninvasive technique of electroencephalography. Development
+of flexible yet comprehensive computational infrastructure is
+important for enabling the development of such devices in
+a laboratory as well as facilitating brain-computer interfaces
+research more generally. Here we present a set of Matlab tools
+created in our laboratory as a part of the development of
+EEG-based brain-computer interface. The toolbox supports data
+acquisition in different experimental formats using EMOTIV
+EPOC and Nihon Kohden EEG-1200, basic data processing, preselection of features, and SVM-based trial classification.
+Keywords—EEG, BCI, SVM, Pre-selection of features.
+
+I.
+
+G İR İ Ş
+
+EEG tabanlı beyin bilgisayar arayüzleri (EEG-BBA),
+EEG kullanılarak kafa derisi yüzeyinden cerrahi müdahaleye
+gerek duyulmadan kaydedilen beyin aktivitelerini kullanarak
+978-1-5090-1679-2/16/$31.00 c 2016 IEEE
+
+beyin ile bilgisayar arasında doğrudan iletişim kuran sistemlerdir. EEG-BBA’lerinin gelişmesi 1970’li yıllarda P300
+olarak adlandırılan olaya ilişkin potansiyellerin (ERP) keşfi
+ile başlamıştır [1]–[3]. P300, deneğin uyarıcıya dikkatini vermesinden sonra 300-500 ms içinde EEG sinyalindeki pozitif sapmadır. Bu EEG olgusu kullanılarak en temel beyin
+bilgisayar arayüzü sistemi geliştirilmiştir [4]. Teknolojinin
+gelişmesi ile birlikte son 10-15 yılda EEG-BBA’leri için
+önemli çalışmalar yapılmıştır. Mcfarland ve arkadaşları, sağ
+ve sol el hareket düşüncelerine bağlı olarak oluşan EEG
+sinyalini kullanarak bilgisayar ekranı üzerindeki imlecin iki ve
+üç boyutlu hareketini kontrol eden bir BBA sistemi geliştirmişlerdir [5]–[9]. Berlin beyin bilgisayar arayüzü projesinden bir ekip beyin bilgisayar arayüzü sisteminde makine
+öğrenme metodlarından Linear Discriminant Analysis (LDA)
+modelini kullanarak sağ/sol el ve ayak hareketi düşünceleri
+gibi farklı zihinsel durumların ayrıştırılması ile ilgili çalışmalar yapmışlardır [10]–[12]. Bu üç zihinsel durumun %80%90 doğrulukla belirlenebildiği gösterilmiştir. Farklı makine
+öğrenme tekniklerinin uygulandığı başka bir çalışmada ise
+dört zihinsel durumun %70-%90 doğrulukla belirlenebildiği
+gösterilmiştir [13]. Bu çalışmalara ek olarak, Benevides ve
+arkadaşları Kullback-Leibler (KL) uzaklık yaklaşımını kullanarak daha verimli öznitelik vektör seçimi yapmak ve bu
+seçimi makine öğrenme sınıflandırıcılarında kullanarak üç ve
+dört zihinsel durumun ayrışma doğruluğunu arttırmak üzerine çalışmalar yapmışlardır [14]. üç zihinsel durumun %94,
+dört zihinsel durumun ise %70 doğrulukla belirlenebileceğini
+göstermişlerdir. Laboratuvarımızda, bu tip bir EEG tabanlı
+beyin bilgisayar arayüzünün geliştirilmesi için çalışılmaktadır.
+Bu girişimin bir parçası olarak, bu tip cihazların gelişimi için
+yazılımsal altyapı ve destek sağlayan bir Matlab araçlar kümesi
+oluşturuldu. Esnek ve kapsamlı yazılımsal altyapının geliştirilmesi ve paylaşımı, beyin bilgisayar arayüzü cihazlarının
+belirli bir laboratuvarda geliştirilmesini sağlamak ve ayrıca
+Türkiye’de beyin bilgisayar arayüzleri araştırmalarını genel
+olarak kolaylaştırmak için önemlidir. Bu Matlab araç kutusu,
+EMOTİV EPOC ve Nihon Kohden EEG 1200 kullanılarak
+farklı deney formatlarında elde edilen verileri, örnek sıralamayı ve ortalama ERP’lerin hesaplanmasını ve gösterilmesini
+kapsayan temel veri işlemeyi, örneklerin sınıflandırılmaları
+için özniteliklerin ranklanmasını ve ön-seçimini ve SVM ta-
+
+banlı örnek sınıflandırmayı desteklemektedir. Bu çalışmada,
+geliştirilen yazılım paketinin altyapısı ve bu yazılım paketinin kullanılması ile elde edilen bazı sonuçlar tartışılacaktır. Geliştirilen bu yazılım paketine; "http://srv.yumishch.me:
+8444/summary/~yuriy%2Fprjbcitoolbox.git" Git repositorisinden ulaşılabilmektedir.
+II.
+
+YÖNTEM
+
+EEG-BBA sistemlerinde sinyal işleme, i) EEG cihazından
+veri elde edilmesi ve kaydı, ii) EEG verilerinde öznitelik
+değerlendirilmesi ve seçiminin yapılması, iii) EEG verilerinin
+BBA durumuna göre sınıflandırılması işlemlerinden oluşmaktadır. EEG-BBA sinyal işleme yazılımsal MATLAB paketi
+bahsedilen işlemler için uygulanmıştır.
+
+Asenkron sağ/sol el hareket deney modelinde, arayüz herhangi bir sinyal vermeden, katılımcılar serbest şekilde hafif
+sağ veya sol el hareketi ile bir klavye tuşuna basmaktaydı.
+Bu deney modelinin amacı, serbest şekilde uygulanan hareketlerin ERP dalgalarının algılanabilmesidir. Bu BBA modelinde
+katılımcıların eylemleri ile ilgili EEG sinyalindeki değişiklik,
+eylem olmadan yaklaşık olarak 200-300 milisaniye önce 10/20
+standart EEG elektrot yerleşim sistemine göre C3 ve C4
+elektrotlarındaki sinyalde görülmektedir.
+Son BBA deney modelimizde ise arayüzden ilgili görsel
+uyarıcı sinyal geldiğinde katılımcılar, sağ elinin beş parmağının
+hareketlerini uygulamaktaydı. Motor korteksi açısından bir elin
+tüm parmakları beynin aynı bölgesinden yürütülür, dolayısıyla
+bu deney modelinde katılımcıların eylemlerini EEG sinyalinden algılamak daha zordur.
+
+A. EEG veri elde edilmesi ve kaydı
+
+B. EEG verilerinin temel analiz işlemleri
+
+Yazılım paketimizde EEG veri elde edilmesi ve kaydı için,
+EMOTIV EPOC ve Nihon Kohden EEG-1200 EEG cihazları
+için arayüz programları uygulanmıştır. Sözü geçen programlar laboratuvarımızda gerçekleştirilen senkron, genişletilmiş
+senkron ve asenkron sağ/sol el hareket ile senkron sağ el beş
+parmak hareket olmak üzere dört deney modeli için hazırlanmıştır (şekil 1).
+
+Yukarıdaki dört deney modelinin kullanılması ile elde
+edilen EEG verilerini EMOTIV EPOC ve Nihon Kohden
+EEG-1200 cihazlarından Matlab’a aktarmak için ilgili programlar MATLAB yazılım paketimizde geliştirilmiştir. Bu
+program EEG cihazındaki EEG verileri ve deney protokolü
+ile ilgili kayıtları, belirttiğimiz Matlab formatına, bir Matlab
+nesnesi olarak kaydetmektedir. Ayrıca bu şekilde elde edilen
+ve Matlab’a kaydedilen ham EEG verilerinden, farklı BBA
+olaylarının verilerinin ortaya çıkartılmasi, bu olaylara ilişkin
+EEG potansiyellerin (Event Related Potentials, ERP) hesaplanması, ortalama ERP eğrilerinin oluşturulması, incelenmesi,
+karşılaştırılması ve kaydedilmesi, ERP’lerde var olan olaydan
+olaya değişimin veya gürültünün değerlendirilmesi ile ilgili
+işlemler yazılım paketimizde uygulanmıştır.
+C. Öznitelik seçilip hesaplanması
+
+Şekil 1: Matlab için BBA deney arayüzleri. Soldan Sağa,
+senkron ve genişletilmiş senkron sağ/sol el hareket artı ayak
+ve dil hareket deneylerinde kullanılabilen, senkron sağ el beş
+parmak hareket deneyinde kullanılabilen ve asenkron sağ/sol
+el hareket deneyinde kullanılabilen arayüzler.
+Sözü geçen arayüzler, ikişer dakikalık aralarla onbeş
+dakikalık üç oturum olarak yaklaşık olarak bir saat süren
+BBA deneylerini yürütür. Her bir deneyde yaklaşık olarak
+400-500 farklı olay denetlenebilmektedir. Senkron sağ/sol el
+hareket deney modeli, klasik BBA deneysel modelidir. Bu
+modelde, Matlab arayüzünden bir görsel uyarıcı geldiğinde
+katılımcılar sağ veya sol elinin hareketini uygulamakta veya
+pasif kalmaktadır. Bu BBA modeli, motor eylemlerle ilgilenen
+beynin bölgelerinin, hareketlere göre kontralateral yerleşmesine dayanmaktadır. Buna göre, en büyük beyin bilgisayar
+arayüzü sinyali 10/20 standart EEG elektrot yerleşim sistemine
+göre C3 ve C4 elektrotları arasında görülüp, C3 ile C4 elektrotlarındaki sinyalin farkı olarak ifade edilebilir. Genişletilmiş
+senkron sağ/sol el hareket deney modelinde, arayüzden ilgili
+görsel uyarıcı sinyali geldiğinde katılımcılar sağ veya sol el
+hareketi, ayak hareketi veya dil hareketi uygulamakta, ayrıca
+pasif de kalabilmektedir. Bu BBA modeli, C3/C4 elektrodunun
+altındaki sağ ve sol el hareketi ile ilgili korteks bölgelerini, Cz
+elektrodunun altındaki ayak motor bölgelerini ve T3 ile T4
+elektrotlarının altındaki dil motor bölgelerini kullanmaktadır.
+
+EEG ham verileri kullanılarak BBA durumlarının ayrılmasında kullanılabilecek öznitelikler ile ilgili yöntemler, Matlab yazılım paketimizde uygulanmıştır. İlgili öznitelikler EEG
+sinyalinin frekans uzayında belirtilen özniteliklerdir. Geliştirilen yazılım, belirli EEG frekans bantlarının sinyal güçleri
+(EEG band powers), güç dağılımını (Power Spectrum Distribution, PSD) ve ayrıca özel şekilde faz eşleşmiş EEG sinyalinin
+karmaşık fourier genliklerini hesaplamaktadır. EEG bantları
+genellikle 0-4 Hz arası "delta", 4-8 Hz arası "theta", 8-12
+Hz arası "alt-alfa", 12-16 Hz arası "üst-alfa", 16-32 Hz arası
+"beta" ve 32 Hz üstü "gama" bandı olarak tanımlanmaktadır.
+Eğer anch (f ), belirli bir BBA olayı için ayrık Fourier dönüşümü
+kullanılarak elde edilmiş EEG sinyallerinin karmaşık Fourier
+genlikleri, yani n-inci olayın, ch-inci EEG kanalındaki f
+frekansının Fourier genliği ise, n-inci olaydaki EEG bant
+güçleri şu şekilde tanımlanır:
+n
+BAN T GU CUbant
+(f ) =
+
+f =bantmax
+X
+
+|anch (f )|2
+
+(1)
+
+f =bantmin
+
+Sinyal güç dağılımı ise şu şekilde tanımlanır:
+n
+P SDch
+(f ) = |akch (f )|2
+
+(2)
+
+Ayrıca EEG sinyalinin genlik faz bilgilerine hassaslığını
+sağlayan, fakat olaydan olaya sürekli değişen ERP dalgalarının başlangıcının olayın başlangıcına göre kontrolsüz
+kayma olasılığından dolayı e−i2πf ∆t gibi kontrolsüz faz
+
+değişikliklerine hassas olmayan, özel faz eşleşmiş karmaşık
+genlik öznitelikleri tanımladık. Burada ilk olarak belirli BBA
+olayindaki karmaşık Fourier genlikleri akch (f ) için çarpım fazı
+buluyoruz:
+max
+ch=chmax
+Y
+Y f =f
+
+ϕk = angle(
+
+ch=1
+
+akch (f ))
+
+(3)
+
+f =1
+
+Burada angle(z) = Im(ln z). Bir BBA olayında katılımcının
+tepki ve dolayısıyla ERP başlangıç kayması
+ile ilgili ∆t zaman
+Pf =f max
+ofseti olursa, ϕk değerinde chmax · f =1
+2πf ∆t ek faz
+yaratılır. Bu tip faz kaymalarını çıkartmak için, ϕk ’yı sıfır
+yapacak biçimde, hesaplanmış ERP Fourier genlikleri ek bir
+faz θ ile çarpılır (akch (f ) → akch (f )e−i2πf θ ). Bu şekilde standartlaştırılmış ERP Fourier genliklerine faz eşleşmiş genlikler
+denir. Bu genliklerin gerçel ve sanal kısımları öznitelik olarak
+EEG-BBA durumlarının ayrılması için başarılı bir şekilde
+kullanılır.
+Yaptığımız BBA deneylerinde faz eşleşmiş genlik özniteliklerinin güç spektrum ve zaman serisi özniteliklerine göre
+BBA olaylarının ayrılmasında daha kullanışlı olduğu bulunmuştur (Tablo I).
+Öznitelik
+ERP ayrılma doğruluğu
+
+Zaman Serisi
+%55-%60
+
+Güç Dağılımı
+%55-%60
+
+Faz eşleşmiş genlikler
+%75-%85
+
+Tablo I: Faz eşleşmiş genlik, güç spektrum ve zaman serisi
+özniteliklerine göre ERP ayrılma doğruluğu
+
+biçiminde hesaplanır; öznitelikler KL ölçeği azalacak şekilde
+sıralanıp, en üst öznitelikler seçilir. Ortak bilgi, normal korelasyon r2 ’e benzemekle birlikte, r2 ’nin aksine iki rastgele
+değişken arasındaki çizgisel olmayan ilişkiler için de kullanılabilir. İki rastgele değişken X ve Y için, ortak bilgi şu biçimde
+tanımlanır:
+M U I(X, Y ) = H(X, Y ) − H(X) − H(Y )
+= H(X, Y ) − H(X|Y )
+
+Genel EEG tabanlı BBA uygulamalarında öznitelik sayısı
+tipik olarak deney sayısından çok fazladır. örneğin, deneylerimizde tipik Fourier genlik özniteliklerinin sayısı 4,000’e
+varabilmekteyken aynı zamanda bir deneyden tipik olarak
+toplanabilen BBA olaylarının örnek sayısı 300-500 civarındadır. Bu durumda tüm öznitelikler kullanılarak genel makine
+öğrenme sınıflandırıcıları eğitilemez. Genellikle, bir BBA
+sınıflandırıcısının eğitime girecek öznitelik sayısının en azından olay sayısının civarında olması gerekmektedir.
+Bunu sağlamak için, tüm öznitelik kümesinden en etkili
+özniteliklerin seçilip öznitelik sayısının azaltılması gerekmektedir. Bunun için Matlab yazılım paketimizde r2 (olay-sinyal
+korelasyon), Kullback-Leibler (KL) uzaklık (KL-divergence),
+ortak bilgi (mutual information), EEG kanallarının devamlı
+artırılıp azaltılması yöntemleri uygulanmıştır. Olay-sinyal korelasyonda r2 , eğer fin n-inci BBA olayının i-inci özniteliği ve
+sn n-inci BBA olayının durum değişkeni ise, ilgili özniteliğin
+ranklama skoru aşağıdaki biçimde tanımlanır:
+(4)
+
+En yüksek korelasyonlu öznitelikler seçilir. KL-uzaklığı, P(x)
+ve Q(y) iki olasılık dağılımına göre dağıtılmış olan X ve Y
+rastgele değişkeni için aşağıdaki biçimde tanımlanır:
+X
+P (a)
+(5)
+KL(X||Y ) =
+P (a) ln
+Q(a)
+a
+KL uzaklığı, ilgili değişkenlerin dağılımlarının farklılığını
+gösterir. Eğer KL(X||Y ) = 0 ise iki rastgele değişkenin
+
+(7)
+
+Burada H(X) bir rastgele değişken entropisi veya belirsizliğidir:
+X
+H(X) = −
+P (x) ln P (x)
+(8)
+x
+
+Ortak bilgi Y değişkeninin bir değeri belli olunca X
+değişkeninin belirsizliğinde azalışı ifade eder. Eğer X ve
+Y değişkenler istatistiksel olarak bağımsız ise H(X, Y ) =
+H(X) + H(Y ) ve M U I(X, Y ) = 0 olur. Eğer X ve Y
+değişkenler birbirlerine bir monoton f fonksiyonu ile fonksiyonel olarak bağlı ise, Y = f (X), H(X, Y ) = H(X) ve
+M U I(X, Y ) = H(X) olur. Ortak bilgi yönteminde, ilgili
+ölçek, BBA öznitelik fik ve BBA durum değişkeni sk arasında
+hesaplanır:
+M U I(fi , s) = H(fi , s) − H(fi |s).
+
+D. Öznitelik değerlendirme, ranklama ve ön-seçimi
+
+ri2 = corr(fi , s)
+
+dağılımlarında bir fark oluşmaz, aksi halde KL(X||Y ) ne
+kadar büyükse o kadar büyük fark oluşur. BBA uygulamasında,
+ikili sn durum değişkeni için sn = 1 ve sn = 0 durumlarının
+fin dağılımları arasında KL uzaklığı,
+X
+P (fi |s = 1)
+KLi =
+P (fi |s = 1) ln
+(6)
+P (fi |s = 0)
+
+(9)
+
+öznitelikler, ortak bilgi ölçeği azalacak şekilde sıralanır ve
+en üst öznitelikler seçilir. Ekle-bir ve çıkart-bir algoritmaları,
+ayrı öznitelikleri değil, BBA için önemli olan EEG kanallarını seçmeye çalışmaktadır. Ekle-bir yönteminde, EEG kanalları öznitelik kümesine birer birer eklenir. Algoritmanın her
+adımında, daha önce eklenmiş kanallara göre her bir yeni kanal
+için sınıflandırıcı doğrudan eğitilmiş olarak denetlenir. Bu
+şekilde her adımda, en yüksek performans artışını sağlayacak
+EEG kanalı öznitelik kümesine eklenir. Böylece EEG kanalları,
+ERP sınıflandırıcısının performans önemine göre sıralanmış
+olur ve kanal sayısına göre sınıflandırıcının performans eğrisi
+elde edilir. Belirli performansı sağlayacak asgari EEG kanal
+sayısı bu eğriden sonra da seçilebilmektedir. çıkart-bir yönteminde benzer şekilde, tüm EEG kanalları ile başlanmakta ve
+EEG kanalları birer birer öznitelik kümesinden çıkartılmaktadır. Sınıflandırıcının performansı doğrudan hesaplanarak, bu
+performansı en az etkileyecek EEG kanalı her adımda kaldırılmakta ve bu şekilde EEG kanallarının ranklanması sağlanarak
+performans eğrisi elde edilebilmektedir. Bu algoritmalar, başka
+öznitelik ranklama yöntemleri ile birlikte kullanılabilir.
+E. BBA olaylarının sınıflandırılması
+EEG-BBA’lerinde durumların ayrılması için Matlab paketimizde SVM makine öğrenme yöntemine dayalı iki yazılım
+programı uygulandı. Programlardan biri, yukarıda hesaplanan
+özniteliklerin bir alt kümesini seçerek sınıflandırıcı oluşturur
+ve deneysel ham EEG verilerinden BBA durumlarını ayırmaya
+çalışır. Eğitilmiş sınıflandırıcının performansı, çapraz doğrulama yöntemi kullanılarak değerlendirilir. İkinci program, aynı
+
+Öznitelik önseçme yöntemi
+
+Hiç
+
+r 2 , KL ve ortak bilgi
+
+5 Hz düşük frekans filtreleme
+
+5 Hz düşük frekans filtreleme ve ekle bir kanal
+
+sağ/sol el hareket algılanma doğruluğu
+Kullanılan öznitelik sayısı
+
+%55-%60
+4000
+
+%85-%90
+50-100
+
+%85-%90
+200-250
+
+%90-%95
+100-150
+
+Tablo II: Farklı öznitelik önseçme yöntemlerine göre, faz-eşleşmiş öznitelik kullanılarak EEG BBA’da sağ/sol el hareket algılanma
+doğruluğu
+
+SVM yöntemini kullanarak belirli deneysel EEG veri kümesi
+için eğitim eğrileri oluşturur. Eğitim eğrileri, eğitimde kullanılan örnek sayısına göre sınıflandırıcının performansını gösterir ve bu şekilde eğitiminin başarılı olup olmadığını, daha çok
+örneğe ihtiyaç olup olmadığını görmek ve sonuçta beklenebilir
+performansını tahmin etmek için kullanılabilirler.
+
+Bu sonuçlar Tablo II’de verilmiştir. Geliştirilen yazılım paketi
+şu an için gerçek zamanlı olmayan BBA çalışmalarında kullanılabilmektedir ancak gerçek zamanlı BBA uygulamalarında
+kullanılacak yazılım paketinin geliştirilmesi için yapılan çalışmalar devam etmektedir.
+B İLG İLEND İRME
+
+III.
+
+BULGULAR VE SONUÇLAR
+
+Bu çalışmada, EEG verilerinin kaydı ve analizi, özniteliklerin bulunması ve bu özniteliklerden en etkili özniteliklerin seçilmesi ve EEG verilerindeki farklı zihinsel durumların
+sınıflandırılması ile ilgili yazılım paketi geliştirilmiştir. Oluşturulan yazılım paketimiz kullanılarak dört katılımcının katılımı
+ile yapılan BBA deneylerimizin bazı sonuçları aşağıdaki şekil
+2 ve Tablo III’de gösterilmiştir.
+
+Bu araştırma TUBİTAK ARDEB 1001 projesi 113E611 ve Bilim
+Akademisi BAGEP burs ödülü tarafından desteklenmiştir.
+
+K AYNAKÇA
+[1]
+
+[2]
+[3]
+[4]
+
+[5]
+
+[6]
+
+Şekil 2: (Sol) BBA deneylerimizde görülen sağ/sol el hareketleri ile ilgili olaya ilişkin potansiyeller, mavi eğri sol el
+hareketi, kırmızı eğri sağ el hareketi, yeşil eğri ise pasif durum
+ile ilgili ortalama ERP sinyalidir. (Sağ) SVM sınıflandırıcısı
+kullanılarak sol el hareketinin BBA olayları arasından ayrılma
+doğruluğunu gösterir.
+
+[7]
+
+[8]
+
+[9]
+[10]
+
+Katılımcı
+Sağ/sol el hareket
+algılanma doğruluğu
+
+Katılımcı 1
+
+Katılımcı 2
+
+Katılımcı 3
+
+Katılımcı 4
+
+%80-%90
+
+%75-%85
+
+%80-%85
+
+%90-%95
+
+Tablo III: Dört denek için BBA deneylerinde görülen sağ/sol
+el hareket algılanma doğrulukları
+
+[11]
+
+[12]
+
+Tablo III’de görülebileceği gibi her katılımcı için ayrılma
+doğruluklari %75-%90 aralığında olması ile beraber, bir
+katılımcı için BBA olay ayrılma doğruluğumuz %90-%95
+oranına varmıştır. Ayrıca senkron sağ/sol el hareket EEG
+verileri kullanılarak ERP ayrılma doğruluğuna göre uygulanan
+farklı öznitelik ön değerlendirme yöntemleri karşılaştırılmıştır.
+Korelasyon, KL uzaklık ve ortak bilgi yöntemlerinin performanslarının birbirlerine yakın olduğu görülmüştür. Her durumda, gereken öznitelik sayısı 50-100 olarak belirlenmiştir.
+En yüksek BBA performansı deneylerimizde ekle-bir yöntemi
+ve düşük frekans filtreleme ile birlikte sağlanmıştır. Bu durumda, gereken öznitelik sayısı 100-150 olarak belirlenmiştir.
+
+[13]
+
+[14]
+
+R. M. Chapman, H. R. Bragdon, "Evoked responses to numerical and
+non-numerical visual stimuli while problem solving", Nature 203, 11551157, 1964.
+S. Sutton, M. Braren, J. Zubin, E. R. John, "Evoked-potential correlates
+of stimulus uncertainty", Science 150, 3700, 1187-1188, 1965.
+S. Sutton, P. Tueting, J. Zubin, E. R. John, "Information delivery and the
+sensory evoked potential", Science 155, 3768, 1436-1439, 1967.
+L. A. Farwell, E. Donchin, "Talking off the top of your head: toward
+a mental prosthesis utilizing event-related brain potentials", Electroencephalogr. Clin. Neurophysiol. 70, 510-523, 1988.
+J. R. Wolpaw, D. J. McFarland, "Control of a two-dimensional movement
+signal by a noninvasive brain-computer interface in humans", Proc. Natl.
+Acad. Sci. U. S. A. 101, 17849-17854, 2004.
+D. J. McFarland, W. A Sarnacki, J. R. Wolpaw, "Electroencephalographic
+(EEG) control of three-dimensional movement", J. Neural Eng. 7, 036007
+(2010).
+D. J. McFarland, D. J. Krusienski, W. A Sarnacki, J. R. Wolpaw, "Emulation of computer mouse control with a noninvasive brain-computer
+interface", J. Neural Eng. 5, 101-110 (2008).
+D. J. Mcfarland, J. R. Wolpaw, "Sensorimotor rhytm-based braincomputer interface (BCI): model order selection for autoregressive spectral analysis", J. Neural Eng. 5, 155-162 (2008).
+E. V. C. Friedrich et al., "A scanning protocol for sensorimotor rhytmbased brain computer interface", Biol. Psychol. 80, 169-175 (2009).
+B. Blankertz, G. Dornhege, M. Krauledat, K. Müller, G. Curio, "The
+non-invasive Berlin Brain – Computer Interface: Fast acquisition of
+effective performance in untrained subjects", Neuroimage 37, 539-550,
+2007.
+B. Blankertz et al., "The Berlin Brain-Computer Interface: Accurate
+Performance From First-Session Naive Subjects", IEEE Trans. Biomed.
+Eng. 55, 2452-2462, 2008.
+B. Blankertz, G. Dornhege, S. Lemm, M. Krauledat, G. Curio, K. R.
+Müller, "The Berlin Brain-Computer Interface: Machine Learning Based
+Detection of User Specific Brain States", J. UCS, 12(6), 581-607, 2006.
+A. O. G. Barbosa, D. R. A. Diaz, M. M. B. R. Vellasco, M. A.
+Meggiolaro, R. Tanscheit, "Mental Tasks Classification for a Noninvasive
+BCI Application", Lect. Notes Comput. Sci. 5769, 495-504, 2009.
+A. B. Benevides, T. F. Bastos, M. Sarcinelli-Filho, "A pseudo-online
+Brain-Computer Interface with automatic choice for EEG channel and
+frequency", IEEE International Symposium on Circuits and Systems,
+(Ieee, 2011), pp. 81-84, 2011.
+
+

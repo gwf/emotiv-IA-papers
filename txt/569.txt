@@ -1,0 +1,843 @@
+2014 IEEE Conference on Biomedical Engineering and Sciences, 8 - 10 December 2014, Miri, Sarawak, Malaysia
+
+A Generalized Preprocessing and Feature Extraction Platform for
+Scalp EEG Signals on FPGA
+L.P Wijesinghe*, D.S Wickramasuriya, and Ajith A. Pasqual
+
+
+Abstract— Brain-computer interfaces (BCIs) require realtime feature extraction for translating input EEG signals
+recorded from a subject into an output command or decision.
+Owing to the inherent difficulties in EEG signal processing and
+neural decoding, many of the feature extraction algorithms are
+complex and computationally demanding. Presently, software
+does exist to perform real-time feature extraction and
+classification of EEG signals. However, the requirement of a
+personal computer is a major obstacle in bringing these
+technologies to the home and mobile user affording ease of use.
+We present the FPGA design and novel architecture of a
+generalized platform that provides a set of predefined features
+and preprocessing steps that can be configured by a user for BCI
+applications. The preprocessing steps include power line noise
+cancellation and baseline removal while the feature set includes
+a combination of linear and nonlinear, univariate and bivariate
+measures commonly utilized in BCIs. We provide a comparison
+of our results with software and also validate the platform by
+implementing a seizure detection algorithm on a standard
+dataset and obtained a classification accuracy of over 96%. A
+gradual transition of BCI systems to hardware would prove
+beneficial in terms of compactness, power consumption and
+much faster response to stimuli.
+
+I. INTRODUCTION
+Research into brain-computer interfaces (BCIs) has been
+carried out over several decades as a means of enabling
+persons suffering from severe neuromuscular disabilities
+interact with their environment, have more autonomy and
+enjoy improved quality of life. BCIs typically consist of a
+signal acquisition front end, where, for instance, neuroelectric
+or haemodynamic activity of the brain is recorded, a
+preprocessing and feature extraction stage followed by a final
+classification stage connected to an output device. Present day
+BCIs include brain-controlled wheelchairs, spelling and
+communication devices, cursor control applications and
+robotic arm control systems which permit the brain to perform
+tasks bypassing conventional physiological output pathways.
+Although initially envisioned for the benefit of patients
+suffering from “locked-in syndrome” due to spinal cord injury,
+Amyotrophic Lateral Sclerosis (ALS), brain stem stroke etc.,
+present day BCIs also target people who retain significant
+neuromuscular capabilities as a novel means of providing
+gaming and entertainment experience.
+Despite the amount of research conducted in this field,
+many promising systems still remained confined to research
+L.P Wijesinghe, D.S Wickramasuriya and Ajith A. Pasqual are with the
+Electronic and Telecommunication Engineering Department of the
+University of Moratuwa, Moratuwa 10400, Sri Lanka, (Email of the
+Corresponding author – lakshithapw@ent.mrt.ac.lk)
+
+978-1-4799-4084-4/14/$31.00 ©2014 IEEE
+
+laboratories with studies investigating their long term use for
+patients who have most need of them just beginning [1]. One
+of the reasons for this delay in bringing BCIs to the home user
+has been the need for a bulky personal computer performing
+the analysis of brain signals and translation into output
+commands. Hence, there has been growing interest in
+developing BCIs on mobile platforms [2]. We present a
+generalized preprocessing and feature extraction platform for
+EEG signals on FPGA where features to be computed can be
+selected by a user. While in a typical BCI system only the
+initial stages of signal acquisition and amplification would be
+performed in hardware and the remaining ones (artefact
+suppression, feature extraction and translation) implemented
+in software, shifting this hardware-software interface even
+further would afford lower power consumption, greater
+compactness and parallel feature computation.
+II. LITERATURE REVIEW
+Complete BCI implementation on FPGA has been quite a
+recent concept. In 2010, Shyu et al. [3] published their work
+of a phase-encoded Steady-State Visually Evoked Potential
+(SSVEP) BCI multimedia control system and claim that, “this
+BCI system, to the authors' best knowledge, is the first design
+of a low-cost FPGA-based BCI.” The design essentially
+features an analog front end, an SSVEP processing module on
+FPGA and a wireless link to a multimedia device which also
+functions as a means to provide immediate feedback to the
+user. Although 3 electrodes are used to acquire EEG signals,
+the channels are combined at the pre-amplifier stage and the
+FPGA module only processes a single EEG signal. Shyu et al.
+[4] developed an SSVEP based BCI enabling a user to control
+the attitude of a hospital bed. An accuracy of 92.5% was
+achieved with an architecture very similar to the one used for
+the multimedia device controller. Both systems were
+developed using an Altera Cyclone EPC2C20Q FPGA.
+Khurana et al. [2] developed an FPGA-based real-time
+P300 spelling device to detect letters and digits on a 6x6 grid
+utilizing 7 EEG channels corresponding to electrode locations
+Cz, C3, C4, Pz, P3, P4 and Oz. They obtained a classification
+accuracy of 65.37% when 2 rounds of data per character was
+used. The system was designed with 3 MicroBlaze processors
+using a Spartan 3E FPGA. Lin and Huang [6] implemented a
+BCI system for controlling an electric wheelchair. They
+captured 2-channel EEG signals using NeuroSky ASICs
+which were transmitted to an FPGA-based controller via a
+Bluetooth link. A winking signal and an 𝛼 rhythm were
+processed to determine direction and motion of the
+
+137
+
+2014 IEEE Conference on Biomedical Engineering and Sciences, 8 - 10 December 2014, Miri, Sarawak, Malaysia
+
+wheelchair. The system was implemented on a Spartan FPGA
+with a XC3S500E-PQ208 chip.
+There has also been considerable interest in developing
+energy efficient biomedical processors and System on Chip
+(SoC) architectures suitable for long term signal monitoring
+and alarm triggering. Kwong and Chandrakasan [5]
+developed a low power biomedical signal processing platform
+featuring a 16-bit microcontroller, SRAM and accelerators.
+The SoC is programmable and capable of running different
+types of algorithms in an energy efficient manner for long
+term monitoring. Sridhara et al. [7] developed an ultralow
+power embedded processor platform chip for medical signal
+processing. The processor comprises of an FFT, SRAM and
+DC-DC converter. They demonstrate the functionality of the
+SoC by implementing a seizure detection algorithm which
+utilizes band energies for threshold calculation. Verma et al.
+[8] developed a low-power SoC for continuous EEG
+monitoring and seizure onset detection. Band energies in 7
+frequency bands are computed using a bank of bandpass
+filters and a user may wear up to 18 channels. Classification
+was performed on a separate processing platforms.
+Most of the existing BCI implementations on FPGA
+process just a few channels of EEG recordings whereas a
+typical EEG headcap would have between 14-256 electrode
+locations. Also, due to inherent complexities in EEG signal
+processing, several applications that have shown promise
+require multiple types of features to be computed
+simultaneously (e.g. [9]). Currently, on-chip implementations
+of medical signal processors are only capable of extracting a
+single type of feature at a time. Moreover, each signal requires
+its own processing module. To overcome some of these
+drawbacks we present the FPGA implementation of a
+platform for EEG signal analysis capable of computing
+multiple types of features in realtime. We exploit the low
+bandwidth of scalp EEG signals to develop an architecture
+that reuses each basic feature extraction module through
+multiplexing. Section III of this paper details the overall
+architecture of the platform and the preprocessing stage, while
+Section IV describes the features we provide. Thereafter we
+provide a comparison of the results we obtained with existing
+software using recordings from the EMOTIV neuroheadset.
+We conclude with Section VI noting several possible future
+directions of work.
+III. PLATFORM ARCHITECTURE
+We utilize a multirate design in our system and partition the
+platform into two subsystems with a set of shared memories
+functioning as the interface between them. The first
+subsystem comprises of a bank of highpass and notch filters.
+Each digitized 24-bit EEG signal is filtered and read into 𝑛
+separate shared memories (𝑀𝑖 ). The first subsystem runs at
+the sampling frequency 𝑓𝑠 of the signal acquisition device.
+Once all sample points corresponding to a predefined epoch
+of EEG have been read in, data is read off from each of the
+shared memories in turn and fed into the feature extractors
+(FE) which belong to the second subsystem. This is run at a
+conventional FPGA clock frequency of 50 MHz. The limited
+bandwidth of the EEG signals enables us to extract features
+
+Figure 1: Platform architecture ( Mi - Shared Memory, FE - Feature
+Extractor )
+
+from each of the 𝑛 epochs serially (reusing an FE) before the
+next new EEG sample is read into the memory bank after 1/𝑓𝑠
+s. In this design we utilize three multiplexers to feed in the
+EEG samples into the FEs. The first one, first allows the EEG
+epoch recorded from the first electrode, stored in 𝑀1 , to pass
+through whichever FEs have been enabled. Likewise, this is
+repeated for all the other (𝑛 − 1) single EEG epochs. The
+other two multiplexers serve to feed in any combination of
+two single EEG epochs into the bivariate FEs. If the FE
+modules require a large number of clock cycles for
+computation or signals from a large number of electrode
+positions are recorded, a multiple set of FEs could be utilized
+in parallel. A single set of FEs is sufficient for the set of
+measures we propose in this system. The architecture of the
+system is illustrated in Figure 1 and is capable of calculating
+multiple types of features simultaneously in realtime for nonoverlapping epochs as are typically required in asynchronous
+BCI applications. Typically the entire set of features in the
+platform would not be required at a time and a user has the
+ability to select whichever FEs that need to be activated by an
+enable signal.
+EEG signal processing frequently involves the calculation
+of multivariate features, hence we provide 2 bivariate
+measures in our design. Overall, the proposed system makes
+more efficient use of hardware by reusing resources instead
+of using a set of FEs for each channel. The set of features we
+provide include,
+
+
+
+
+
+
+
+
+Discrete Wavelet Transform coefficients
+(Haar, Daubechies 4 and 6)
+Power spectral density
+Band energies
+Correlation
+Zero crossing histogram
+Autoregressive coefficients
+Phase synchronization
+
+In this paper we have implemented the platform for 14
+channels and 7 different feature vectors. This makes the
+variable 𝑛 = 14 and 𝑘 = 7 according to the architecture
+diagram in Figure 1.
+
+138
+
+2014 IEEE Conference on Biomedical Engineering and Sciences, 8 - 10 December 2014, Miri, Sarawak, Malaysia
+
+1) Harr
+(0)
+
+(1.1)
+(1.2)
+(1.3)
+(1.4)
+
+𝑠𝑙 = 𝑥2𝑙
+(0)
+𝑑𝑙 = 𝑥2𝑙+1
+(0)
+(0)
+𝑑𝑙 = 𝑑𝑙 − 𝑠𝑙
+(0)
+𝑠𝑙 = 𝑠𝑙 − (1/2) 𝑑𝑙
+
+2) Daubechies 4
+(1)
+𝑑𝑙 = 𝑥2𝑙+1 − √3𝑥2𝑙
+(1)
+𝑠𝑙
+(2)
+𝑑𝑙
+
+√3
+
+(1)
+= 𝑥2𝑙 + ( ) 𝑑𝑙
+4
+(1)
+(1)
+= 𝑑𝑙 + 𝑠𝑙−1
+
+(2.1)
++(
+
+√3−2
+
+(1)
+) 𝑑𝑙+1
+4
+
+(2.3)
+(2.4)
+(2.5)
+
+(1)
+𝑠𝑙 = (√3 + 1)/√2𝑠𝑙
+(2)
+𝑑𝑙 = (√3 − 1)/√2𝑑𝑙
+
+3) Daubechies 6
+(0)
+𝑠𝑙 = 𝑥2𝑙
+(0)
+𝑑𝑙 = 𝑥2𝑙+1
+(1)
+(0)
+(0)
+(0)
+𝑑𝑙 = 𝑑𝑙 + 𝛼(𝑠𝑙 + 𝑠𝑙+1 )
+(1)
+(0)
+(1)
+(1)
+𝑠𝑙 = 𝑠𝑙 + 𝛽(𝑑𝑙 + 𝑑𝑙−1 )
+(2)
+(1)
+(1)
+(1)
+𝑑𝑙 = 𝑑𝑙 + 𝛾(𝑠𝑙 + 𝑠𝑙+1 )
+(2)
+(1)
+(2)
+(2)
+𝑠𝑙 = 𝑠𝑙 + 𝛿(𝑑𝑙 + 𝑑𝑙−1 )
+(2)
+𝑠𝑙 = 𝜁𝑠𝑙
+(2)
+𝑑𝑙 = 𝑑𝑙 /𝜁
+
+Figure 2 : Decomposition of 2s EEG epoch with Harr wavelet
+
+A. Preprocessing Stage
+Scalp EEG recordings in the microvolt range are
+susceptible to a number of internal and external sources of
+contamination. These include muscle noise, ocular artefacts,
+power line noise, baseline wander and motion artefacts. In our
+design, we utilize a set of 0.5 Hz highpass and 50 Hz notch
+Finite Impulse Response (FIR) filters to eliminate baseline
+drift and power line interference. Each of the 𝑛 channels of
+EEG pass through two separate 64-tap FIRs having 16-bit
+coefficients with quantization selected to maximize dynamic
+range. A window-based method was used to design both
+filters.
+IV. FEATURE EXTRACTION
+A. Discrete Wavelet Transform (DWT)
+Joint time-frequency analysis has been an invaluable tool
+in the study of non-stationary EEG signals. Temporal and
+spatial resolution in conventional spectrum analysis
+techniques are highly dependent on EEG segment length,
+model order and other parameters. Wavelet decomposition
+provides a time-frequency representation of EEG signals as a
+solution. The DWT has been used in applications such as the
+detection of seizures [10] and feature extraction based on
+Event Related Potentials [11].
+We apply the DWT on each of the non-overlapping epochs
+of EEG data and perform 4-level decomposition into 5
+frequency sub-bands. Haar and Daubechies (db4 and db6)
+mother wavelets are used with a lifting-based structure.
+Classically, the WT is performed using a bank of highpass and
+lowpass filters. The lifting scheme provides an alternate, more
+efficient implementation of extracting DWT coefficients.
+Lifting steps for the three wavelets are indicated below.
+Let 𝑥 = {𝑥𝑙 | 𝑙 ∈ Ζ} be the EEG segment. The lowpass filter
+output is the sequence 𝑠 = {𝑠𝑙 | 𝑙 ∈ Ζ} while the highpass
+filter output is 𝑑 = {𝑑𝑙 | 𝑙 ∈ Ζ}. The intermediate sequences
+computed during lifting are indicated by 𝑠 (𝑖) and 𝑑 (𝑖) .
+
+(2.2)
+
+(3.1)
+(3.2)
+3.3)
+(3.4)
+(3.5)
+(3.6)
+(3.7)
+(3.8)
+
+Here, 𝛼 = −1.586134342 𝛽 = −0.05298011854 𝛾 =
+0.8829110762 𝛿 = 0.4435068522 𝜁 = 1.149604398.
+The lifting scheme is implemented on FPGA as one of the
+feature extraction blocks and it will be capable of performing
+Discrete Wavelet Transform. Figure 2 illustrates the first three
+detail components of a four level decomposition using Harr
+wavelet.
+B. Power Spectral Density (PSD)
+Power spectral density of EEG signals has been utilized in
+the detection of seizures [12], diagnosis of depression [13],
+motor imagery based BCIs [14] and several other
+applications. The Welch method [15] is a non-parametric
+approach to estimate PSD of a time series using modified
+periodograms. In this design, we split each epoch of EEG
+samples into smaller sized fixed windows 𝑥𝑖 [𝑛] with 50%
+overlap and a final circular overlap as proposed in [16]. Each
+segment is multiplied with a Hamming window 𝑤[𝑛] and its
+FFT is computed to yield the 𝑖 𝑡ℎ modified periodogram,
+𝑖
+𝑃̃𝑋𝑋
+=
+
+Here,
+
+1
+𝑀𝑈
+
+2
+
+−𝑗2𝜋𝑓𝑛
+|∑𝑀−1
+|
+𝑛=0 𝑥𝑖 [𝑛]𝑤[𝑛]𝑒
+
+𝑈=
+
+1
+𝑀
+
+2
+∑𝑀−1
+𝑛=0 𝑤 [𝑛]
+
+(4)
+(5)
+
+The final PSD is obtained by averaging,
+1
+𝑊 (𝑓)
+̃𝑖
+𝑃𝑋𝑋
+= ∑𝐿−1
+𝑖=0 𝑃𝑋𝑋 (𝑓)
+𝐿
+
+(6)
+
+EEG samples are read from a shared memory and are
+multiplied by the coefficients of the Hamming window which
+are stored in a ROM. A separate address generator module is
+
+139
+
+2014 IEEE Conference on Biomedical Engineering and Sciences, 8 - 10 December 2014, Miri, Sarawak, Malaysia
+
+Figure 4 : A 2s EEG epoch and its positive zero crossing histogram
+Figure 3 : MATLAB and FPGA estimates of PSD for a 2s EEG epoch
+
+used to generate the correct indices of each of the windows.
+The modified EEG window samples are then scaled and fed
+to an FFT module and their outputs are stored in separate
+memories. While the FFT output of the final modified
+window is valid, the values of all other stored periodograms
+are read off from memory, added and multiplied by a scaling
+term to yield the final PSD estimate. FPGA and MATLAB
+estimates of an epoch of EEG are depicted in Figure 3 (log
+values have been plotted for convenience).
+C. Band Energies
+An EEG signal can typically be decomposed into 5 separate
+frequency bands: 𝛿 (0.5-4 Hz), 𝜃 (4-8 Hz), 𝛼 (8-12 Hz), 𝛽
+(12-30 Hz) and 𝛾 (30-60 Hz). EEG band energies have been
+studied in numerous applications ranging from seizure
+detection and motor imagery identification to on-screen
+primitive shape classification [17].
+Energy values of the 5 frequency bands are calculated by
+first computing the FFT of each EEG epoch and then
+summing the squares of the spectral components in each of
+the bands using separate accumulators. Energy of the 𝛾 band
+is calculated for the frequency range 30-45 Hz.
+D. Correlation
+Correlation measures the similarity between two EEG
+epochs. Cross-correlation refers to the correlation between
+two completely different EEG signals and the accompanying
+plot is known as a “correlogram”. Siuly and Li [18] used
+statistical features based on cross-correlation for motor
+imagery classification using a Least Square Support Vector
+Machine (LSSVM) and achieved an accuracy of 95.72%.
+Let 𝑥[𝑛] and 𝑦[𝑛] be the 2 EEG epochs, each having
+𝑁 samples. The 𝑚𝑡ℎ coefficient (𝑚𝑡ℎ lag) of the crosscorrelation is given by,
+𝑅[𝑚] = ∑𝑁−|𝑚|−1
+𝑥[𝑖]𝑦[𝑖 − 𝑚]
+𝑖=0
+
+(7)
+
+𝑚 = −(𝑁 − 1), −(𝑁 − 2), … ,0,1,2, … , (𝑁 − 2), (𝑁 − 1)
+
+In feature extractor block implementation 20 correlation
+coefficients are calculated for two different EEG epochs. The
+architecture is designed in a way that it can be extended easily.
+Each correlation coefficient is computed in parallel.
+Architecture is similar to a set of parallel FIR filters, while
+samples of 𝑥[𝑛] are used as filter coefficients and 𝑦[𝑛] being
+the signal that is filtered.
+E. Zero Crossing Histogram
+Zero crossing intervals of scalp EEG signals have been
+analyzed in the past and has been demonstrated to yield good
+results in detecting probable Alzeimer's disease and Vascular
+dementia [19], predicting seizures [20] and characterizing
+sleep spindles [21]. The zero crossing histogram is more
+robust in the presence of contaminating artefacts and is a
+convenient means of extracting dynamical information about
+the brain. Here, we provide a single-sample bin positive zero
+crossing histogram (i.e. number of samples between two
+successive points during which the signal crosses from
+negative to positive). A user may concatenate adjacent bins to
+create larger bins or variable bin sizes at a latter stage as may
+be required.
+The module utilizes simple logic to detect a positive zero
+crossing by comparing each sample and its predecessor to
+zero. If a positive sample is detected along with a preceding
+negative one, a counter is incremented until the next zero
+crossing occurs, at which point the counter is reset. At this
+instant, the last value held by the counter is utilized to
+increment the corresponding bin of the histogram which is
+stored in memory. After detecting all crossing in the EEG
+epoch, the values are read out and the memory is reset to
+contain all zeros. An example histogram for a 2s epoch of
+recorded EEG is shown in Figure 4.
+F. Autoregressive (AR) Coefficients
+Autoregressive modelling is an alternative to conventional
+Fourier-based methods for representing frequency
+information of a signal. In AR modelling the signal being
+modelled is considered as the output of an Infinite Impulse
+Response (IIR) filter when the input to this filter is white
+noise. In most of the applications the IIR filter coefficients are
+used as feature vectors. Anderson et al. [22] used multivariate
+AR models to discriminate between mental tasks of a human
+
+140
+
+2014 IEEE Conference on Biomedical Engineering and Sciences, 8 - 10 December 2014, Miri, Sarawak, Malaysia
+
+subject. Pfurtscheller et al. [23] distinguished right and left
+motor imagery EEG using adaptive AR parameters to control
+an on-screen cursor.
+We compute AR coefficients for each EEG epoch. The
+order of an AR model should be increased proportional to the
+sampling frequency [24]. In our approach, Burg's algorithm
+proposed in [25] is used to estimate AR coefficients for a
+model of order 6. Each iteration of the Burg’s algorithm is
+implemented as a separate module and cascaded to compute
+6 AR coefficients.
+According to the Burg’s algorithm 𝑓𝑚 (𝑛) and 𝑏𝑚 (𝑛) are
+the forward and backward errors of order 𝑚 related to an EEG
+epoch 𝑥(𝑛). Let the AR coefficients are indicated by the
+symbols 𝑎1,1 , 𝑎2,2 , … , 𝑎𝑚,𝑚 . For an intermediate stage 𝑟 of the
+algorithm, the inputs are the forward and backward errors of
+the previous stage ( 𝑓𝑟−1 (𝑛) and 𝑏𝑟−1 (𝑛)). The outputs of the
+𝑟 𝑡ℎ stage are the new set of forward and backward
+errors 𝑓𝑟 (𝑛) , 𝑏𝑟 (𝑛) and 𝑎1,1 , 𝑎2,2 , … , 𝑎𝑟,𝑟 coefficients. The
+nature of the algorithm makes the current stage depend on the
+previous stage outputs. Hence a cascaded system is suggested
+for the implementation.
+G. Phase Synchronization
+Extensive research has been pursued over the past several
+years into the analysis of EEG signals (both intracranial and
+scalp EEG) for developing algorithms to automatically detect
+and predict epileptic seizures. Algorithms that use bivariate or
+multivariate measures have been investigated in this
+particular field as they have shown to yield superior
+performance to univariate measures which lack spatial
+specificity. Phase synchronization has been one such measure
+that has yielded promising classification results [26], [27].
+Phase synchronization is calculated to quantify the
+instantaneous phase lock between 2 EEG channels separated
+in space. The phase locking between 2 EEG signals 𝑉𝑜 and 𝑉1
+is estimated by first applying the Hilbert Transform to the
+signals to compute their real and imaginary components. The
+Hilbert Transform is approximated by a 64-tap FIR filter. The
+instantaneous phases of the 2 channels are then computed to
+yield 𝜙𝑘 ,
+𝜙𝑘 = arctan
+
+𝐼𝑚{𝑉𝑘 }
+𝑅𝑒{𝑉𝑘 }
+
+; 𝑘 = 0,1
+
+(8)
+
+The phase difference is then obtained as Δ𝜙 = 𝜙1 − 𝜙0 . The
+phase locking value (PLV) between the 2 channels is then
+calculated as,
+1
+
+𝑁−1
+2
+2
+𝑃𝐿𝑉 = √[∑𝑁−1
+𝑖=0 sin(Δ𝜙𝑖 )] + [∑𝑖=0 cos(Δ𝜙𝑖 )]
+𝑁
+
+(9)
+
+The module makes use of 4 CORDIC blocks to calculate 4quadrant arctan, sine, cosine and square roots of the incoming
+data points to obtain PLV for each EEG epoch in real time.
+The sine and cosine values of the phase differences are
+summed using 2 separate accumulators whose final output
+corresponding to all samples in the epoch is fed into the
+square root CORDIC block.
+
+V. RESULTS
+The platform was implemented on a Virtex 7 FPGA. We
+utilized the 14-channel EMOTIV neuroheadeset with a
+sampling frequency of 128 Hz for testing. For testing out each
+individual FE block, we used a 1 hour long single channel
+recording. This signal was then split into 1800 epochs of 2s
+(256 samples) duration. For each feature vector 𝑥̂ calculated
+in hardware, we compute the corresponding vector 𝑥 in
+MATLAB. The mean absolute error between the two
+estimates which occurs due to the fixed point arithmetic on
+FPGA is calculated as follows,
+
+error =
+
+∑𝑖|𝑥̂𝑖 −𝑥𝑖 |
+×
+∑𝑖|𝑥𝑖 |
+
+(10)
+
+100%
+
+Table 1 : Comparison of Computed Features with Software
+Feature
+DWT Coefficients (Haar)
+DWT Coefficients (db-4)
+DWT Coefficients (db-6)
+Power Spectral Density
+Autoregressive Coefficients
+Zero-crossing Histogram
+Band Energies ( 𝛿, 𝜃, 𝛼, 𝛽, 𝛾 )
+Correlation
+Phase Synchronization
+
+Error
+2.9808 × 10−6 %
+0.0043%
+0.002957%
+0.2286%
+
+0.0568%
+0%
+0.0727%
+0.000351%
+17.058%
+
+Clock Cycles
+288
+608
+768
+1130
+2839
+515
+874
+270
+423
+
+The error per feature vector of each epoch is obtained by
+averaging and the comparison of results is shown in Table 1
+along with the number of clock cycles (at 50 MHz clock
+frequency) taken for computation of each feature. The
+functionality of the complete multirate system was tested
+separately for all EEG channels and after computing features
+for the 𝑛 epochs (requiring 𝑛 × cycles per feature), over
+300000 spare clock cycles remain for any further application
+prior to receiving the next sample.
+Secondly, we validate our platform by implementing the
+seizure detection algorithm in [28]. db-4 and db-6 wavelet
+coefficients are extracted for the EEG epochs using hardware
+co-simulation for a dataset publicly available form University
+of Bonn (a detailed description about the dataset can be found
+in [29]). The best features for discriminating between the 2
+classes were selected using the Mann-Whitney test at a
+significance of 1%. We utilize 60% of the data for training
+and use the remainder for testing on an LSSVM classifier. We
+achieved an overall accuracy of 96.93% with a sensitivity of
+88.43% and a specificity of 99.06% on the test dataset.
+VI. CONCLUSION
+The need for a bulky PC has been one of the primary
+drawbacks in bringing BCIs to the home user. Consequently,
+there has been a recent interest in complete hardware
+implementation of these systems. However, many of the
+existing FPGA based BCIs process just a limited number of
+EEG channels and extract only a single type of feature. We
+present the FPGA design of a generalized preprocessing and
+feature extraction platform that is capable of computing
+multiple features in parallel as required by a user. We evaluate
+our platform twofold. Firstly, we use data recorded from the
+
+141
+
+2014 IEEE Conference on Biomedical Engineering and Sciences, 8 - 10 December 2014, Miri, Sarawak, Malaysia
+
+EMOTIV neuroheadset and obtain results comparable with
+software. Secondly, we utilize our platform to extract features
+for a seizure detection algorithm and obtain good
+classification accuracy. Future work would include pushing
+the hardware interface of BCIs even further to include a set of
+classification algorithms. Extending the platform to include
+features commonly utilized in other biomedical signal
+processing applications (e.g. R-R intervals and area of QRS
+complexes in electrocardiograms) would also be another
+useful contribution.
+
+[16]
+[17]
+[18]
+
+[19]
+
+REFERENCES
+[1]
+[2]
+
+[3]
+
+[4]
+
+[5]
+[6]
+[7]
+
+[8]
+
+[9]
+
+[10]
+
+[11]
+
+[12]
+[13]
+
+[14]
+
+[15]
+
+J. J. Shih, D. J. Krusienski, and J. R. Wolpaw, “Brain-computer
+interfaces in medicine,” Mayo Clinic Proceedings, vol. 87, no. 3, pp.
+268– 279, 2012.
+K. Khurana, P. Gupta, R. Panicker, and A. Kumar, “Development of
+an FPGA-based real-time P300 speller,” in 22nd International
+Conference on Field Programmable Logic and Applications (FPL),
+pp. 551–554, 2012.
+K. K. Shyu, P. L. Lee, M. H. Lee, M. H. L. R. J. Lai, and Y. J.
+Chiu, “Development of a low-cost FPGA-based SSVEP BCI
+multimedia control system,” IEEE Trans. Biomed. Circuits Syst., vol.
+4, pp. 125–132, April 2010.
+K. K. Shyu, Y. J. Chiu, P. L. Lee, M. H. Lee, J. J. Sie, C. H. Wu, Y. T.
+Wu, and P. C. Tung, “Total design of an FPGA-based brain computer
+interface control hospital bed nursing system,” IEEE Trans. Ind.
+Electron., vol. 60, pp. 2731–2739, July 2013.
+J. Kwong and A. Chandrakasan, “An energy-efficient biomedical
+signal processing platform,” IEEE J. Solid-State Circuits, vol. 46, no.
+7, pp. 1742–1753, 2011.
+J.S. Lin and S.M. Huang, “An FPGA-based brain-computer interface
+for wireless electric wheelchairs,” Appl. Mech. and Mater, vol. 284287, pp. 1616–1621, 2013.
+S. Sridhara, M. DiRenzo, S. Lingam, S.J. Lee, R. Blazquez, J. Maxey,
+S. Ghanem, Y.H. Lee, R. Abdallah, P. Singh, and M. Goel,
+“Microwatt embedded processor platform for medical system-on-chip
+applications,” IEEE J. Solid-State Circuits, vol. 46, no. 4, pp. 721–
+730, 2011.
+N. Verma, A. Shoeb, J. Bohorquez, J. Dawson, J. Guttag, and A.
+Chandrakasan, “A micro-power EEG acquisition SoC with integrated
+feature extraction processor for a chronic seizure detection system,”
+IEEE J. Solid-State Circuits, vol. 45, no. 4, pp. 804–816, 2010.
+H. Adeli, S. Ghosh-Dastidar, and N. Dadmehr, “A wavelet-chaos
+methodology for analysis of EEGs and EEG sub bands to detect
+seizure and epilepsy,” IEEE Trans. Biomed. Eng., vol. 54, no. 2, pp.
+205–211, 2007.
+R. Panda, P. S. Khobragade, P. D. Jambhule, S. N. Jengthe, P. Pal, and
+T. Gandhi, “Classification of EEG signal using wavelet transform and
+support vector machine for epileptic seizure diction,” in International
+Conference on Systems in Medicine and Biology (ICSMB), pp. 405–
+408, 2010.
+C. D. Avanzo, V. Tarantino, P. Bisiacchi, and G. Sparacino, “A
+wavelet methodology for EEG time-frequency analysis in a time
+discrimination task,” Int. Jour. Bioelectromagnetism, vol. 11, no. 4,
+pp. 185–188, 2009.
+A. Alkan and M. Kiymik, “Comparison of AR and Welch methods in
+epileptic seizure detection,” Jour. of Med. Syst., vol. 30, no. 6, pp. 13–
+419, 2006.
+B. Hosseinifard, M. H. Moradi, and R. Rostami, “Classifying
+depression patients and normal subjects using machine learning
+techniques and nonlinear features from EEG signal,” Comput.
+Methods Prog. Biomed.,vol. 109, pp. 339–345, Mar. 2013.
+F. Cincotti, D. Mattia, C. Babiloni, F. Carducci, S. Salinari, L.
+Bianchi, M. Marciani, and F. Babiloni, “The use of EEG
+modifications due to motor imagery for brain-computer interfaces,”
+IEEE Trans. Neural Syst. Rehabil. Eng., vol. 11, no. 2, pp. 131–133,
+2003.
+P. D. Welch, “The use of fast Fourier transform for the estimation of
+power spectra: A method based on time averaging over short,
+
+[20]
+
+[21]
+[22]
+
+[23]
+
+[24]
+
+[25]
+[26]
+[27]
+
+[28]
+[29]
+
+142
+
+modified periodograms,” IEEE Trans. Audio Electroacoust., vol. 15,
+no. 2, pp. 70–73, 1967.
+K. Barbe, R. Pintelon, and J. Schoukens, “Welch method revisited:
+nonparametric power spectrum estimation via circular overlap,” IEEE
+Trans. Signal Process., vol. 58, no. 2, pp. 553–565, 2010.
+E. Esfahani and V. Sundararajan, “Classification of primitive shapes
+using brain-computer interfaces,” Comp. Aided Design, vol. 44, pp.
+1011–1019, 2012.
+S. Siuly and Y. Li, “Improving the separability of motor imagery EEG
+signals using a cross correlation-based least square support vector
+machine for brain computer interface,” IEEE Trans. Neural Syst.
+Rehabil. Eng, vol. 20, no. 4, pp. 526–538, 2012.
+G. Henderson, E. Ifeachor, N. Hudson, C. Goh, N. Outram, S.
+Wimalaratna, C. Del Percio, and F. Vecchio, “Development and
+assessment of methods for detecting dementia using the human
+electroencephalogram,” IEEE Trans. Biomed. Eng., vol. 53, no. 8, pp.
+1557–1568, 2006.
+A. Shahidi Zandi, R. Tafreshi, M. Javidan, and G. Dumont,
+“Predicting epileptic seizures in scalp EEG based on a variational
+Bayesian Gaussian mixture model of zero-crossing intervals,” IEEE
+Trans. Biomed. Eng., vol. 60, no. 5, pp. 1401–1413, 2013.
+J. Smith, “Automated EEG analysis with microcomputers,” Med.
+Instrum., vol. 14, no. 6, pp. 319–321, 1980.
+C. W. Anderson, E. A. Stolz, and S. Shamsunder, “Multivariate
+autoregressive models for classification of spontaneous
+electroencephalographic signals during mental tasks,” IEEE Trans.
+Biomed. Eng., vol. 45, no. 3, pp. 277–286, 1998.
+G. Pfurtscheller, C. Neuper, A. Schlogl, and K. Lugger, Separability
+of EEG signals recorded during right and left motor imagery using
+adaptive autoregressive parameters,” IEEE Trans. Rehabil. Eng., vol.
+6, no. 3, pp. 316–325, 1998.
+D. J. McFarland and J. R. Wolpaw, “Sensorimotor rhythm-based
+braincomputer interface (BCI): model order selection for
+autoregressive spectral analysis,” J. Neural Eng., vol. 5, no. 2, pp.
+155–162, 2008.
+B. Jiao, “High level FPGA implementation of adaptive signal
+segmentation and autoregressive modeling techniques,” Master’s
+thesis, Ryerson University, 2009.
+K. Abdelhalim, V. Smolyakov, and R. Genov, “Phase-synchronization
+early epileptic seizure detector VLSI architecture,” IEEE Trans.
+Biomed. Circuits Syst., vol. 5, no. 5, pp. 430–438, 2011.
+F. Mormann, K. Lehnertz, P. David, and C. E. Elger, “Mean phase
+coherence as a measure for phase synchronization and its application
+to the EEG of epilepsy patients,” Physica D: Nonlinear Phenomena,
+vol. 144, no. 34, pp. 358 – 369, 2000.
+I. Guler and E. D. Ubeyli, “Adaptive neuro-fuzzy inference system for
+classification of EEG signals using wavelet coefficients,” J. Neurosci.
+Methods, vol. 148, no. 2, pp. 113 – 121, 2005.
+R. G. Andrzejak, K. Lehnertz, F. Mormann, C. Rieke, P. David, and
+C. E. Elger, “Indications of nonlinear deterministic and
+finitedimensional structures in time series of brain electrical activity:
+Dependence on recording region and brain state,” Phys. Rev. E, vol.
+64, p. 061907, Nov 2001.
+
+

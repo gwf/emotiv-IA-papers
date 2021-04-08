@@ -1,0 +1,766 @@
+Heliyon 6 (2020) e03425
+
+Contents lists available at ScienceDirect
+
+Heliyon
+www.elsevier.com/locate/heliyon
+
+Research article
+
+A feasibility study of a complete low-cost consumer-grade brain-computer
+interface system
+Victoria Peterson a,b,∗ , Catalina Galván b , Hugo Hernández b , Ruben Spies a,c
+a
+b
+c
+
+Instituto de Matemática Aplicada del Litoral, IMAL, CONICET-UNL, Santa Fe, Argentina
+Facultad de Ingeniería, Universidad Nacional de Entre Ríos, FIUNER, Oro Verde, Entre Ríos, Argentina
+Departamento de Matemática, Facultad de Ingeniería Química, Universidad Nacional del Litoral, Santa Fe, Argentina
+
+A R T I C L E
+
+I N F O
+
+Keywords:
+Biomedical engineering
+Brain-computer interfaces
+Consumer-grade EEG
+Motor imagery
+Open-source software
+
+A B S T R A C T
+Brain-computer interfaces (BCIs) are technologies that provide the user with an alternative way of communication. A BCI measures brain activity (e.g. EEG) and converts it into output commands. Motor imagery (MI), the
+mental simulation of movements, can be used as a BCI paradigm, where the movement intention of the user
+can be translated into a real movement, helping patients in motor recovery rehabilitation. One of the main limitations for the broad use of such devices is the high cost associated with the high-quality equipment used for
+capturing the biomedical signals. Diﬀerent low-cost consumer-grade alternatives have emerged with the objective of bringing these systems closer to the ﬁnal users. The quality of the signals obtained with such equipments
+has already been evaluated and found to be competitive with those obtained with well-known clinical-grade
+devices. However, how these consumer-grade technologies can be integrated and used for practical MI-BCIs has
+not yet been explored. In this work, we provide a detailed description of the advantages and disadvantages of
+using OpenBCI boards, low-cost sensors and open-source software for constructing an entirely consumer-grade
+MI-BCI system. An analysis of the quality of the signals acquired and the MI detection ability is performed. Even
+though communication between the computer and the OpenBCI board is not always stable and the signal quality
+is sometimes aﬀected by ambient noise, we ﬁnd that by means of a ﬁlter-bank based method, similar classiﬁcation performances can be achieved with an MI-BCI built under low-cost consumer-grade devices as compared to
+when clinical-grade systems are used. By means of this work we share with the BCI community our experience on
+working with emerging low-cost technologies, providing evidence that an entirely low-cost MI-BCI can be built.
+We believe that if communication stability and artifact rejection are improved, these technologies will become a
+valuable alternative to clinical-grade devices.
+
+1. Introduction
+
+A brain-computer interface (BCI) provides an alternative way of
+communication between the brain of a person and the outside world.
+More speciﬁcally, a BCI measures the brain activity and converts it into
+an artiﬁcial output which is able to replace, restore, enhance, supplement or improve the natural central nervous system outputs used by a
+person to communicate with or control his/her external or internal environment [1]. For improving motor loss functions, BCIs based on motor
+imagery (MI), i.e. the mental simulation of movement, can be used as a
+complement to facilitate neurorehabilitation after neurological injures
+[2].
+
+*
+
+As a communication system, a BCI treats the measured brain activity as input. Although diﬀerent non-invasive brain imaging technologies can be used to measure neuronal activity, electroencephalography
+(EEG) is one of the predominant tools in the BCI ﬁeld to safely acquire
+electric brain signals with high temporal resolution [3]. For a correct
+interpretation of the registered brain activity, a good signal quality is
+required. Most of the existing works make their EEG registration in controlled environments with prepared shielded labs, where the subject is
+free of any visual or auditory external noise. The electrode montage is
+generally a multi-channel setup with high quality gel-based electrodes
+connected to a clinical-grade ampliﬁer. In addition, the EEG ampliﬁer
+is usually wire-connected to a computer, where the signals are saved
+and processed to ﬁnally perform the BCI communication. These con-
+
+Corresponding author.
+E-mail address: vpeterson@santafe-conicet.gov.ar (V. Peterson).
+
+https://doi.org/10.1016/j.heliyon.2020.e03425
+Received 26 June 2019; Received in revised form 9 December 2019; Accepted 12 February 2020
+2405-8440/© 2020 Published by Elsevier Ltd. This is an open access article under the CC BY-NC-ND license (http://creativecommons.org/licenses/by-nc-nd/4.0/).
+
+V. Peterson et al.
+
+Heliyon 6 (2020) e03425
+
+ditions, are obviously highly impractical for most of the typical BCI
+end-users, who not only spend most of their time in noisy environments,
+but also might feel their mobility restricted due to the wire-connections
+[4]. In addition, due to the high cost of such ampliﬁers, the usability of
+EEG-based BCI systems is limited to research and clinical environments,
+reducing BCI applications outside the lab.
+Wolpaw deﬁnes the “perfect” BCI as a safe and aﬀordable system
+which works all the time, does not require the permanent assistance of
+a technician or a scientist, restores communication at “normal” speed, is
+aesthetically acceptable, is reliable and, for the same function, does not
+require more concentration for a patient user than what it does for an
+able-bodied person [1]. Despite recent development aimed at improving the current state of BCI systems, there are still several challenges
+that must be overcome before building an usable and eﬀective BCI, like
+for example, the high cost associated with the required EEG recording
+system.
+Diﬀerent aﬀordable consumer-grade EEG devices have appeared in
+both Academia (e.g. [5, 6, 7, 8]) and the market (e.g. B-Alert X10, NeuroSky, OpenBCI, Emotiv), oﬀering diﬀerent alternatives from easy-tomount electrode systems to low-cost ampliﬁers. Considering the rapid
+development and advancement of such devices there is a growing need
+for exploring the feasibility of using low-cost EEG ampliﬁers for possible
+motor therapy in natural environments. Several authors have studied
+the advantages and disadvantages of both types of devices for BCI applications, from electrode-skin contact interface issues (dry, gel-based
+or saline-based electrodes) to signal quality matters [7, 9, 10, 11, 12],
+as well as from the user’s comfort perspective [4, 13, 14]. As a drawback, most of the existing low-cost consumer EEG systems present a
+low electrode count with ﬁxed localization (generally not covering the
+whole sensorimotor cortex of interest for MI detection) and they are
+all-in-one black box devices depriving of a user-friendly interplay and
+precluding the addition for further development tools. OpenBCI1 is an
+open-source, versatile and aﬀordable biosensing system which can be
+used to acquire not only EEG signals but also to measure electrical activity of muscle (EMG) and heart (ECG). All OpenBCI boards are based
+on the open-source electronic platform Arduino with wireless connection to the computer. OpenBCI oﬀers a variety of low-cost ampliﬁers
+(boards), electrode systems (e.g. 3D-printed headware) and a software
+for viewing and recording the biosignals (OpenBCI GUI).2
+The use of OpenBCI for aﬀordable BCI applications has already
+been studied. While some authors have shown that low-cost BCIs could
+be built [15, 16], others have compared the quality of the acquired
+signals by the OpenBCI board with those obtained by research-grade
+ampliﬁers [17, 18]. However, for the BCI community it is of interest to know how to integrate and use these devices for constructing
+a complete consumer-grade low-cost BCI. In addition, there is a need
+for reporting the accuracy and reliability of these systems for in-home
+measurements [12]. In this work, we aim at evaluating the applicability and feasibility of the OpenBCI devices in informal real-world
+environments for intended home MI-BCI use. Thus, following the aforementioned Wolpaw’s deﬁnition and taking advantages of the current
+aﬀordable OpenBCI boards, we have designed, implemented and evaluated a consumer-grade low-cost open-source robust MI-BCI system in
+an uncontrolled-environment, encouraging motor function rehabilitation at home. By means of this work we share with the BCI community
+our experience in the construction of a consumer-grade BCI system, being of highly relevance for aﬀordable BCI use. A critical evaluation of
+OpenBCI systems from the user’s point of view, as well as in regard to
+communication stability and MI detection performance is made. For
+a better contribution to the BCI community, the raw data, the syntax and settings used for acquisition and post-processing will be pub-
+
+licly available together with the ﬁnal low-cost EEG dataset at https://
+github.com/vpeterson/MI-OpenBCI.
+The organization of this paper is as follows. In Section 2 we give
+detail on how the database was built. A brief review of the low-cost
+hardware and open-source software used is made in Subsection 2.1.
+Subsection 2.2 describes the protocol and experimental design. Experiments and results are detailed in Section 3, while discussions and
+concluding remarks are presented in sections 4 and 5, respectively.
+2. An MI-BCI dataset based on consumer-grade systems
+Is it possible to construct a complete low-cost BCI? Can we use it for
+MI detection in real-time? Which are the advantages and disadvantages
+of using consumer-grade devices? Is the signal quality good enough to
+establish communication in uncontrolled environments? For answering
+these and other related questions, we developed a complete consumergrade MI-BCI system based on low-cost devices and free multi-platform
+software. In particular, the OpenBCI Cyton + Daisy Module (OpenBCI, USA) together with the Electrocap System II (Electrocap, USA)
+were used for the EEG signal recording. For EMG monitoring the OpenBCI Ganglion board (OpenBCI, USA) connected to the Myoware sensors (Advancer Technologies, USA) were used. The EEG and EMG data
+recording was made by the OpenViBE and the OpenBCI GUI software,
+respectively, on diﬀerent computers, the former one running on a Linux
+based-platform and the latter one on a Window based computer. Fig. 1
+summarizes the consumer-grade devices and free software used for both
+EEG and EMG acquisition.
+2.1. Hardware and software description
+2.1.1. The OpenBCI boards
+OpenBCI is an open-source, low-cost and programmable platform
+based on the ADS1299 Texas Instrument micro-controller. OpenBCI is
+speciﬁcally designed for biopotential measurements, mainly oriented to
+make BCI aﬀordable to everyone. Two diﬀerent battery-powered boards
+(ampliﬁers), named Cyton and Ganglion, have been developed by the
+OpenBCI team. Both biosensing ampliﬁers can be used to measure cardiac, muscle and brain electrical activity. They wirelessly connect to
+PCs, laptops, smartphones and to any bluetooth compatible device.
+Multi-channel acquisition is possible by both OpenBCI boards. In
+particular, the Cyton board allows a maximum of 8 electrodes with a
+sampling frequency of 250 Hz. By using the expansion Daisy Module
+(Cyton + Daisy) 16 channels can be recorded at 125 Hz. On the other
+hand, the Ganglion board is built to record with up to 4 channels at a
+sampling frequency of 200 Hz. If for some reason, a higher sampling
+frequency is desired, a WiFi shield can be added to the boards in order
+to increase the communication rate of the devices.
+The electrode connection of the OpenBCI boards is quite simple.
+They can be used either with the OpenBCI 3D-printed headset (Ultracortex Mark IV) or with any traditional gold cup electrode system. In
+addition, Myoware Muscle Sensor,3 Pulse Sensor4 and the Electro-Cap
+International cap5 are also compatible with these boards.
+2.1.2. Low-cost sensors
+The Ultracortex Mark IV is a 3D printable headset developed by
+OpenBCI team that has dry electrodes attached at ﬁxed locations. For
+acquiring good quality signal, the electrodes must be in contact with
+the scalp. This might produce some degree of discomfort and pain after several minutes of usage as well as information loss due to bad
+electrode-skin contact. In addition, this headset has only 8 electrodes
+
+1
+
+3
+
+2
+
+4
+
+http://www.openbci.com.
+Visit http://docs.openbci.com/FAQ/02-HowProductsGoTogether for a better understanding of the OpenBCI oﬀers and products.
+
+5
+
+2
+
+http://www.advancertechnologies.com/p/myoware.html.
+https://pulsesensor.com/.
+https://electro-cap.com/.
+
+V. Peterson et al.
+
+Heliyon 6 (2020) e03425
+
+Fig. 1. Schematic representation of the hardware and software used for EEG (top) and EMG (bottom) acquisition, respectively.
+
+Fig. 2. Ampliﬁer and electrodes systems used for measuring brain (a) and muscle (b) activity. A 3D-printed case was built for protecting the boards.
+
+localized over the sensorimotor area, and since for MI the more covered the sensorimotor cortex the better, we decided to look for another low-cost alternative. Electro-Cap International Inc. oﬀers low-cost
+electro-caps made of an elastic spandex-type fabric with recessed, pure
+tin electrodes attached to the fabric (see Fig. 2a). The standard cap
+comprises 20 electrodes positioned following the International 10-20
+electrode placement. In particular, the Electro-Cap System II, provides
+two electro-caps with all the needed supplies (electro-gel, ear electrodes, disposable sponge disks and electrode board adapter).
+The MyoWare are Arduino-powered all-in-one EMG sensors. These
+sensors provide the raw EMG signal as well as the ﬁltered and rectiﬁed
+electrical activity of a muscle as output. The system is built with embedded electrode connectors and since it is powered by the board being
+used, it does not require of any external energy supply, leading to a
+more wearable EMG acquisition.
+
+regard, diﬀerent neurofeedback software alternatives can be used to
+present and acquire the signal of interest in real-time. OpenViBE6 is a
+free open-source multi-platform software which is very easy to use and
+it does not require any technical programming knowledge, making it
+accessible to almost everyone. The OpenViBE Acquisition Server acquires
+data from an EEG device and sends them to the other OpenViBE client
+on the network. In the OpenViBE Designer application, the acquisition
+client is the main block of any OpenViBE scenario, where the signal can,
+for example, be visualized, ﬁltered, on-line processed and sent to other
+program at the same time that the stimulus are presented and the data,
+with mark time stamps, are being recorded. Given that OpenViBE supports the OpenBCI drivers and has compatibility with other high-level
+programming languages (e.g. Matlab and Python), we decided to use
+OpenViBE for EEG acquisition.
+In summary, for the present work, brain and muscle activity have
+been measured by using low-cost devices and free multi-platform software. In particular, for the EEG acquisition the OpenBCI Cyton + Daisy
+board together with wet EEG electrodes attached to the Electro-Cap
+were used. A dedicated computer with the OpenViBE software was
+utilized for signal acquisition, visualization and stimulation protocol
+presentation. In the case of the EMG signal, measured only for MItask control purposes (more information below), the OpenBCI Ganglion
+
+2.1.3. Free software
+The OpenBCI team has also developed its own multi-platform software called OpenBCI GUI. This software can be used for visualizing,
+recording and streaming data from the diﬀerent OpenBCI boards. As a
+drawback, this GUI does not provide the possibility of acquiring data
+under a particular BCI paradigm nor does it allow for the on-line process of the biosignals.
+For exogenous and synchronized BCI paradigms, the mental task
+should be performed after a cue is presented to the subject. In this
+
+6
+
+3
+
+http://openvibe.inria.fr/.
+
+V. Peterson et al.
+
+Heliyon 6 (2020) e03425
+
+board with two attached MyoWare sensors were used. The EMG signal was streamed and saved to another computer (Laptop) by using the
+OpenBCI GUI software. Fig. 2 shows both the ampliﬁer and their corresponding sensor systems for EEG and EMG data recording, respectively.
+A 3D-printed cover was built for protecting the boards.
+2.2. Experimental paradigm
+The experiment was approved in Feb. 2018 by the “Comité Asesor de
+Ética y Seguridad en el Trabajo Experimental” (CEySTE, CCT-CONICET,
+Santa Fe, Argentina).7 Twelve healthy subjects (four females, righthanded, mean age ± SD = 25.9 ± 3.7 years) without any previous
+BCI experience participated in the experiment and gave their informed
+consent. The study was conducted in a non-shielded oﬃce, with a room
+divider between the experimenters and the participant. Each subject
+participated in one single session, of about 1.5 hours.
+The EEG signal was acquired by using the Electro-Cap connected to
+the OpenBCI Cyton + Daisy board. Fifteen (15) electrodes covering the
+sensorimotor cortex (Fz, F3, F4, F7, F8, Cz, C3, C4, T3, T4, Pz, P3, P4,
+T5, T6), were selected. The reference and ground electrodes were placed
+at the left and right ear lobes, respectively (see Fig. 3). The sampling
+frequency of the OpenBCI ampliﬁer was 125 Hz. The OpenBCI board
+was wirelessly connected to a dedicated PC (OS Linux, Intel® CoreTM
+i7-6700K CPU @ 4.00 GHz × 8) by the USB Dongle. The OpenViBE
+platform, acquisition server and designer, was used for the protocol
+presentation, visualization and storage of both the EEG signals and the
+time mark stamps. During acquisition, the EEG signals were ﬁltered between 0.5 and 45 Hz with a 3rd order Butterworth bandpass-ﬁlter. In
+order to ensure that the subject was not making any hand movement
+during the MI trial, surface EMG was also acquired during the experiment. For the EMG signal recording the OpenBCI Ganglion board was
+set at 200 Hz. It was connected to two MyoWare sensors located at two
+forearm antagonist muscles, compromised in ﬁnger ﬂexion and extension movement (ﬂexor digitorum superﬁcialis and extensor digitorum).
+Disposable pre-gelled Ag-AgCl foam electrodes were employed. Due to
+stability problems for simultaneous acquisition of both EEG and EMG,
+the Ganglion board was wirelessly connected to another dedicated laptop (OS Windows 10, Intel® CoreTM i7-6500U CPU @ 2.50 GHz × 2 ),
+where the OpenBCI GUI was running for visualization and storage of
+the EMG signals. Care was taken in manually synchronizing the EMG
+and EEG data recording.
+The BCI protocol consisted of two conditions, namely the kinesthetic
+imagination of grasping movement of the dominant hand and rest/idle
+condition. The session comprised four (4) runs of 40 trials (20 trials per
+class, randomly presented), yielding a total of 160 trials at the end of the
+session. A modiﬁed version of the Graz protocol [19] was used for the
+EEG data acquisition. Before the stimulation protocol began, 20 seconds
+of baseline EEG were registered. Each trial of the stimulation protocol
+began with a ﬁxation cross (𝑡 = −3 s), followed by an audible beep cue
+two seconds later (𝑡 = −1 s). At 𝑡 = 0 s, the subject was asked to imagine
+either grasping movements of the dominant hand or just to relax for
+a period of 4 s. The visual cue, red arrow pointing to the right, was
+presented only for the MI trials. Between trials, a break of randomly
+selected duration (between 2.5 and 4.5 s) followed. At the end of each
+run, the subject could distend and relax for a longer period of time
+(>2 min). The stimulation protocol used is schematically depicted in
+Fig. 4.
+At the beginning of the session each subject was clearly instructed
+about the tasks. To assess motor imagery ability, ﬁve kinesthetic mental exercises of the KVIQ-10 questionnaire [20] were performed. The
+KVIQ-10 is a fast questionnaire which aims to assess the intensity of MI
+sensation on a ﬁve-point ordinal scale, ranging from 1 (“no kinesthetic
+sensation”) to 5 (“as clear as executing the action”). At the end of the
+
+7
+
+Fig. 3. Electrode conﬁguration of the Electro-cap. Red colored circles illustrate
+the location of the 15 electrodes used for acquisition. The A1 (left ear lobe) and
+the A2 (right ear lobe) electrodes were used as reference and ground, respectively.
+
+questionnaire the ability of each subject to perform MI was evaluated
+according to his/her ﬁnal score value (maximal value: KVIQ-10=25).
+Before the experiment started, the EMG rest signal was acquired for
+a period of 20 seconds. During the experiment, the subject was comfortably seated in front of a computer screen with both arms resting on
+a desk. In order to ensure kinesthetic (and no visual) MI, the dominant
+hand was placed inside a cardboard box, as shown in Fig. 5. Five experimental protocol runs were made. The ﬁrst one (called RUN0), was
+used for better explaining the protocol to the subject. In addition, in
+this run the subject was asked to actually perform the grasping movement, to focus on the sensation of such movement in order to further
+try to invoke those feelings in the following MI runs. Fig. 6 summarized
+the experiment’s stages in a block diagram design.
+3. Data analysis and results
+3.1. Detection of corrupted EEG trials with actual muscle activity
+The database comprised EEG and EMG signals of 12 healthy subjects
+under the MI-BCI paradigm. The EMG signals were acquired in order
+to determine if any EEG trial was corrupted by real hand movement.
+The most commonly used method for detecting EMG activation is based
+on the single-threshold method, where the envelope of an EMG signal
+is compared to a ﬁxed threshold based on the envelope of a rest EMG
+period (no activity) [21]. Since during the EMG acquisition no ﬁlter was
+used, a digital IIR Notch ﬁlter was applied for the 50 Hz power-noise,
+and then a high-pass 5th order Butterworth with 10 Hz cutoﬀ frequency
+was implemented. The envelope of the EMG signal was estimated by
+means of a low-pass 3rd order zero-phase Butterworth ﬁlter with 40 Hz
+cut-oﬀ frequency applied to the zero-mean rectiﬁed EMG signals. Since
+we were interested in detecting muscle activation within an MI trial,
+we extracted forty (40) EMG segments of 5 s length in correspondence
+with each EEG trial. Given that EEG and EMG acquisition was manually
+synchronized, each EMG segment was extracted starting 0.5 s before,
+and ending 0.5 s after, each EEG trial began and ended, respectively.
+The onset activity threshold was calculated as the standard deviation of
+the envelope of a rest segment of 0.25 s extracted from RUN0. A sliding
+window of 0.05 s was considered as having EMG activity if its mean
+value was greater than 5 times the prescribed threshold. An EEG trial
+was considered contaminated with EMG activity if 50% or more of the
+sliding windows detected muscle activity. For one of the subjects, more
+than 50% of the trials were contaminated with EMG activations, reason
+
+https://santafe.conicet.gov.ar/ceytse/.
+4
+
+V. Peterson et al.
+
+Heliyon 6 (2020) e03425
+
+Fig. 4. Stimulation protocol used, with timing references, in seconds.
+
+much as possible the electrode-to-skin contact resistance [22]. In our
+experiments, data were recorded in a non-shielded oﬃce. Before signal recording, the electrode impedance was checked to be below 5 KΩ.
+During acquisition a digital bandpass ﬁlter (implemented in OpenViBE)
+was applied. Despite all these cautions regarding signal quality acquisition, in some situations the electromagnetic artifacts were high enough
+to wrap the ongoing EEG signal. Fig. 7 shows the temporal and frequency domain information of four selected EEG data segments in four
+diﬀerent signal-to-noise conditions. The plots are ordered from lower
+(𝑎) to higher (𝑑) 50 Hz amplitude noise component (AC frequency in
+Argentina). In order to get rid of such noise, in a post-processing step
+a backward-forward bandpass 5th order Butterworth ﬁlter between 1
+and 40 Hz was applied to the acquired signal. Note how after ﬁltering, the signal quality in the temporal domain improves and the 50 Hz
+frequency component is discarded, as expected.
+3.3. MI detection performance
+The most commonly and widely used method for MI detection is the
+well-known common spatial patterns (CSP) algorithm. The CSP method
+performs feature extraction based on learned spatial ﬁlters. Given a set
+𝑛𝑐
+of 𝑛𝑐 band-pass ﬁltered EEG trials {𝐗𝑖𝑐 }𝑖=1
+, let 𝐗𝑐 ∈ ℝ𝑛𝑐 ×𝑝 be the ma𝑖
+trix whose 𝑖th row is 𝐗𝑐 , where 𝑐 = 1, 2 represents each one of the two
+considered MI conditions. The 𝑝 spatial ﬁlters 𝐰1 , … , 𝐰𝑝 ∈ ℝ𝑝 , are optimized by maximizing the variance for one class while minimizing it for
+the other class:
+
+Fig. 5. Experiment set-up. The subject seated in front of a computer screen,
+where the stimulation protocol was being presented. The EEG cap was connected to the OpenBCI Cyton + Daisy board and the EMG Myoware electrodes
+were connected to the OpenBCI Ganglion board. Each board was wirelessly connected to a dedicated PC.
+
+𝐰𝑗 = arg max
+𝐰∈ℝ𝑝
+
+for which this subject was not taken into account in the subsequent
+analyses. In addition to this, due to a bad wire welding in one Myoware,
+for one subject the EMG data information was lost in the middle of
+the session. Thus, our OpenBCI dataset ﬁnally includes EEG recording
+coming from 10 subjects.
+
+‖𝐰𝐗′1 ‖
+‖𝐰𝐗′2 ‖
+
+,
+
+𝑗 = 1, … , 𝑝,
+
+where “′ ” denotes transpose. The projections of the bandpass ﬁltered
+EEG signals into the spatial ﬁlter space are called “spatial patterns”, and
+they can be easily computed by 𝐙 = 𝐖′ 𝐗. Since 𝐖 is non-singular, 𝐗
+can be obtained as 𝐗 = (𝐖−1 )′ 𝐙, where each column 𝐚𝑗 ∈ ℝ𝑝 , 𝑗 = 1, … , 𝑝,
+of the matrix 𝐀 = (𝐖−1 )′ ∈ ℝ𝑝×𝑝 is a spatial pattern.
+As shown in Fig. 8 the spatial patterns inherit the variance separation property of the spatial ﬁlters. Given that the variance of a bandpass
+ﬁltered signal is similar to its bandpower, the CSP features are obtained
+as the variance of a small number of pairs of spatial patterns [23].
+Since motor imagery, as well as motor execution, produces amplitude
+increments (event related synchronization, ERS) and decrements (event
+related desynchronization, ERD) on the ongoing EEG signal, namely
+
+3.2. Temporal and frequency information
+The signal quality of the EEG data can be compromised by physiological and non-physiological noise. In most hospitals and laboratories,
+the use of electromagnetic shields can reduce such noise level. If such
+equipment is not available, it is highly recommended to reduce as
+5
+
+V. Peterson et al.
+
+Heliyon 6 (2020) e03425
+
+Fig. 6. Schematic representation of the experiment in a block diagram. The experiment started with the KVIQ questionnaire. After the electrode setting, the EMG
+rest signal was acquired. Five protocol runs were asked to be performed by the user. The ﬁrst run, called RUN0, involved real grasping movement in order to better
+explain the protocol and to help the subject to focus on the sensation of making the movement. The rest of the runs (RUN1-RUN4) were equal, consisting of MI vs.
+Rest conditions.
+
+Fig. 7. Time and frequency domain information of the EEG acquired signals corresponding to four diﬀerent subjects, showing four diﬀerent levels of noise artifacts
+during acquisition.
+
+in the mu (8-12 Hz) and beta (13-30 Hz) bands [24], CSP constitutes
+an easy to implement tool for distinguishing between two MI conditions in terms of their corresponding bandpowers [25]. Unfortunately,
+the success in detecting MI highly depends on both the prescribed
+time segment and frequency band used to process the EEG signal. In
+this direction, the penalized time-frequency band common spatial pattern (PTFBCSP) method [26] has been proposed in order to improve
+MI detection. Roughly speaking, by means of PTFBCSP, multichannel
+EEG data are decomposed into predeﬁned 𝑇 temporal and 𝐹 frequency
+bands. Then, pairs of CSP features are extracted at each 𝑡-𝑓 band. The
+
+selection and classiﬁcation of the most discriminative features are simultaneously made by means of the generalized sparse discriminant
+analysis (GSDA) algorithm [27], a fast procedure which allows the inclusion of a-priori discriminative information into the model.
+In order to answer whether it is possible to detect MI by using lowcost EEG acquisition devices, we oﬀ-line evaluated the classiﬁcation
+performance of each subject by using both the traditional CSP method
+and PTFBCSP in two conﬁgurations: by using a single-time window
+(called PFBCSP) and multiple-time windows. For the single-time window approach, EEG segments were extracted from 0.5 to 2.5 s after each
+6
+
+V. Peterson et al.
+
+Heliyon 6 (2020) e03425
+
+Fig. 8. Spatial patterns obtained by projection of the ﬁrst two (CSP:F1 and CSP:F2) and the last two (CSP:L1 and CSP:L2) spatial ﬁlters which discriminate between
+hand MI and rest condition. The graphs show two band-pass ﬁltered EEG segments after applying CSP. The spatial patterns associated to CSP:F1 and CSP:F2 present
+larger variances for the rest condition, while CSP:L1 and CSP:L2 have larger variances for the MI EEG segment.
+
+stimulus onset. In the case of the CSP method, each EEG segment was
+bandpass ﬁltered between 8 and 30 Hz with a 5th order Butterworth ﬁlter. The number of spatial ﬁlters in CSP was set to 3, as recommended
+in [28]. On the other hand, for PFBCSP, 17 sub-bands (𝐹 = 17) between
+4 and 40 Hz with 4 Hz bandwith with overlapping of 2 Hz were extracted (𝑓 𝑏1 = 4 − 8 Hz, 𝑓 𝑏2 = 6 − 10 Hz , … , 𝑓 𝑏𝐹 = 36 − 40 Hz). Here
+only one CSP pair of spatial ﬁlters was used for feature extraction. For
+the multiple time-windows approach, PTFBCSP was implemented following the methodology used in [26]. Thus, ﬁve time segments of 2 s
+length and overlapping of 1.5 s were extracted. At each time segment
+the same ﬁlter-bank and feature extraction procedure implemented in
+PFBCSP was followed. For the CSP implementation the Matlab RCSP8
+toolbox was used [28].
+The binomial cumulative distribution function (BCDF) can be used
+to provide the minimum classiﬁcation accuracy threshold (MCAT)
+needed for BCI control [29, 30]. For a balanced binary classiﬁcation
+problem, the percentage of theoretical chance level of classiﬁcation is
+50%. This threshold only holds for an inﬁnite number of samples. In
+practice, the minimum chance level depends on the available number
+of samples. For Subject 1, due to communication problems between the
+boards and OpenViBE, the 4th run (RUN4) presents only 30 trials instead of 40. Thus, for this subject we have 150 trials to compute the
+MCAT, and 160 trials for all the other subjects. By using BCDF with a
+conﬁdence level of 95%, and based on the number of trials performed
+by each subject, the minimum threshold is found to be 56.66% for Subject 1 and 56.25% for all the other subjects.
+The algorithms were implemented by 10 × 10-fold cross-validation.
+The accuracy achieved for each subject and each tested method is
+presented in Fig. 9. In addition, the minimum classiﬁcation accuracy
+thresholds are plotted as horizontal red lines. The last columns show
+the average performance over all subjects yielded by each method considered.
+
+Fig. 9. Mean and standard deviation of the classiﬁcation performance (accuracy
+%) for each subject and each method considered. Horizontal red lines represent
+the minimum accuracy level for conﬁdent MI-BCI control for each subject.
+
+pattern (associated to the most relevant feature) for a randomly selected
+trial of Subject 2 for each method considered.
+3.5. Motor imagery assessment via KVIQ results
+The ability of each subject in performing MI was measured by ﬁve
+kinesthetic items classiﬁed from “poor” (between 5 and 10) to “very
+good” (from 20 to 25) MI ability. In order to investigate whether correlation exists between classiﬁcation accuracy and the reported MI ability,
+a pairwise correlation analysis was performed between the mean accuracy value reached by CSP, PFBCSP and PTFBCSP for each subject (over
+the 10×10 cross-validation) and the corresponding KVIQ-10 score (sum
+of the 5 items considered). The pairwise correlation, or Pearson’s correlation, is a measure of the strength and direction of association between
+two variables. The method attempts to draw the line that best ﬁt the two
+data variables and the associated Pearson correlation coeﬃcient 𝑅 indicates how far away all the data points are from this line of best ﬁt. In
+our analyses, as presented in Fig. 11, no statistically signiﬁcant correlation was found between the KVIQ-10 score and either one of the three
+methods considered.
+
+3.4. Topographical maps
+The topographical maps of the most relevant spatial ﬁlters and spatial patterns learned by CSP allow for a neurophysiological interpretation of the solution [31]. In fact, while the spatial ﬁlter maps may
+resemble the brain patterns associated to a speciﬁc MI task, the spatial
+pattern maps illustrate how the presumed brain sources are projected
+into the scalp [25]. Fig. 10 shows the most signiﬁcant spatial ﬁlter and
+
+8 Available at https://sites.google.com/site/fabienlotte/research/code-andsoftwares.
+
+7
+
+V. Peterson et al.
+
+Heliyon 6 (2020) e03425
+
+Fig. 10. Topographical maps of the most relevant spatial ﬁlter and pattern corresponding to the most signiﬁcant feature for a right-handed subject. a) CSP, b)
+PFBCSP, c) PTFBCSP.
+
+Fig. 11. Correlation analysis between KVIQ score and classiﬁcation accuracy yielded by CSP (a), PFBCSP (b) and PTFBCSP (c). The 𝑅-correlation coeﬃcient and the
+associated 𝑝-value appear on the upper right corner of each subﬁgure.
+
+4. Discussion
+
+Although by eye inspection the quality of the EEG signal was not
+always good enough, after a proper post-processing ﬁltering step the
+signal quality improved by discarding the high frequency noise components (mainly 50 Hz), as shown in Fig. 7. In addition, the reached
+average classiﬁcation levels are comparable to those reported in the literature for commercial BCI systems. In fact, in a previous work [26]
+a 10-subject MI-BCI dataset was acquired following exactly the same
+protocol used here, but using clinical-grade devices. In particular, this
+dataset was recorded by using a 64-channel EEG system (eego™rt Ant
+Neuro, Netherlands) at 512 Hz. A bandpass 3rd order Butterworth ﬁlter
+from 0.5 and 45 Hz was also applied within acquisition by using also
+OpenViBE designer. At the processing stage, a bandpass ﬁlter was applied between 0.5 to 40 Hz and the signals were downsampled at 128
+Hz. An analysis of the classiﬁcation results provided on average by this
+high-quality system, allows us to compare (from a user concern point
+of view) the MI detection ability of the OpenBCI system. Thus, for fair
+comparison purposes, following the methodology used here, CSP, PFBCSP and PTFBCSP were evaluated over this Ant Neuro MI dataset by
+using the 15 electrode positions employed for the OpenBCI MI dataset.
+For this clinical-grade dataset the average accuracy reached by each
+method was 77.12 ±1.46, 78.29 ±1.95 and 84.84 ±2.62, respectively, while
+for the OpenBCI dataset those values were found to be 73.15 ± 2.12,
+77.21 ± 1.82 and 83.80 ± 3.08, respectively (see Fig. 9). This high accuracy values were possible in spite of the noisy signals due to the fact
+that the MI detecting algorithms are based on ﬁltered EEG data segments within the frequency bands of interest. In fact, from the classiﬁer
+
+In this work a complete consumer-grade low-cost BCI system was
+built and evaluated. A detailed description of the materials and methods used for constructing an MI-BCI dataset acquired in an uncontrolled
+environment was made. Two biomedical signals were registered using
+low-cost devices and open-source software. The muscle activity, measured by the MyoWare sensors connected to the OpenBCI Ganglion
+board, was used for protocol controlling reasons. Thus, we were only
+interested in detecting muscle movement within an MI trial. In the case
+of the EEG signal, the OpenBCI Cyton + Daisy board connected to the
+Electro-Cap were used. Both temporal and frequency information of the
+EEG signals were shown in Fig. 7. Although eﬀorts were made in order
+to reduce at a minimum level the noise artifacts, we noticed that during
+acquisition, in some situations (sessions, subjects) the electromagnetic
+noise amplitude (50 Hz) was from 2 to 4 times higher than the ongoing EEG (e.g. Figs. 7 c and d). This can be explained by the fact that the
+electronic components of the boards are not physically isolated from
+the outside, being in direct contact with the air. It is well-known that
+certain climate conditions (humidity, temperature and pressure) aﬀect
+the behavior of the electronic components and their connections. Although a 3D-printed case for the boards was built (see Fig. 2), those
+boxes cannot be considered as electromagnetic isolations but only as
+handle protectors. In spite of the fact that this is far beyond the scope of
+this manuscript, an analysis of the impact of humidity-room conditions
+on the OpenBCI boards functionality might better explain this issue.
+8
+
+V. Peterson et al.
+
+Heliyon 6 (2020) e03425
+
+point of view, no diﬀerences were found when using the clean signals
+or the noisy ones. Although by performing artifact detection due to eye
+movement and heart beats better signal-to-noise ratio can be obtained,
+this pre-processing step could lead to signal deviation and information
+loss if data is not clean enough and the electrode count is small, such as
+in the presented dataset.
+By analyzing the topographical maps of the ﬁlter and spatial patterns, a strong correlation between the MI mental task and the motor
+brain area is observed for the single time window methods (CSP and
+PFBCSP). For a right-handed subject, changes over the contralateral
+sensorimotor brain area (around electrode C3) should emerge while
+performing MI of the dominant hand. On the contrary, for the rest/relax condition the brain associated patterns may vary between subjects,
+which it is expected to be better characterized by the multiple timewindows approach (PTFBCSP) [26]. In this sense, the maps presented
+in Fig. 10 increase the credibility and conﬁdence of the acquired signals
+for MI-BCI control.
+By observing the classiﬁcation performances presented in Fig. 9, we
+see that Subject 9 does not reach the minimum classiﬁcation accuracy
+threshold (MCAT) when CSP is used for MI detection. This may be a
+case of BCI-illiteracy [32]. For naive BCI users, it may be diﬃcult at
+ﬁrst to learn how to modulate their brain signals for controlling a BCI
+system. Several works ([32, 33, 34], to name a few) have tried to address this issue by ﬁnding a neurophysiological marker to predict the
+MI-BCI performance of the participants. On the other hand, the KVIQ10 questionnaire was built to assess MI ability and help to detect “bad”
+BCI users to avoid frustrating training procedures. Although the authors
+in [20] claim that this type of questionnaires present good psychometric properties and can be reliably used for assessing the subject’s MI
+ability, in this work, no statistical signiﬁcant correlation was found between the KVIQ score and the classiﬁcation accuracy reached by the
+three methods considered, raising the question if KVIQ is a reliable MI
+assessment tool for MI-BCI control.
+The accuracy levels reached by the traditional CSP and our two
+ﬁlter bank-based methods encourage the use of the OpenBCI technology for MI detection. In fact, from the product-cost point of view, we
+show that it is possible to construct a complete BCI (with simultaneous
+EEG and EMG recording) by spending between 10 and 20 percent of
+the cost of a clinical-grade device. By no means we are saying that by
+these low-cost technologies the commercial equipment can entirely be
+replaced. Actually, one limitation for the use of such consumer-grade
+devices is that they do not possess any certiﬁcation, and thus medical
+applications are not possible. In addition to this, and based on our own
+experience, the user may ﬁnd the use of these technologies in long-term
+applications not always practical. This is so because during the experiments, several communication problems between the boards and the
+computer appeared. Besides the fact we were using a Linux OS computer, which may aﬀect communication due to driver dependences,
+there was always the need to reboot the board for reestablishing the
+wireless communication. Although in the end the communication could
+always be established and the experiment was always successfully conducted, this problem hindered the acquisition of the signals by adding
+delays to the experiment and stress to the practitioners. In addition to
+this, simultaneous acquisition of both EEG and EMG was not possible.
+Several conﬁgurations of OpenViBE were designed for acquiring the
+EEG and EMG in a synchronized manner. These conﬁgurations not only
+occasionally frozen the computer, but also added delays to the streaming of the signals, reason for which we decided to use two diﬀerent
+computers to make the recordings. Nevertheless, this could also be another consequence of using a computer running Linux OS. Besides these
+software issues, another limitation regarding the boards is the care that
+must be taken to handle the devices. For instance, we had problems during EMG acquisition due to a welding disconnection, which produced
+data loss in one session.
+A clear limitation of this work is that we were not able to test the
+consumer-grade device with a clinical-grade device neither simultane-
+
+ously (one electrode, two ampliﬁers) nor with the same control group.
+In addition, a quantiﬁed analysis of the noise level of the non-shielded
+oﬃce should be performed to detect the sources of the main artifact.
+On the other hand, no feedback was presented to the users during the
+experiments, thus we cannot predict how accurate the user-interface
+communication will be in on-line settings. Future works include the
+analysis of on-line communication, feedback strategies, multi-class MIBCI applications and the study of wavelet transform for performing the
+ﬁlter-bank analysis, among others.
+Anyhow, even with those limitations in mind, this work provides
+strong evidence that the OpenBCI technology constitutes a good alternative to traditional EEG ampliﬁers for BCI control, yielding similar
+accuracy levels for MI detection in oﬀ-line experiment. In addition, with
+an improvement in the communication stability and artifact rejection,
+we strongly believe that these technologies will become a valuable alternative to clinical-grade devices, spreading the realm of applications
+and increasing the number of potential BCI users.
+5. Conclusions
+Low-cost, easy-to-use systems make BCIs more accessible to not only
+researchers, but also to clinicians and their ﬁnal users: patients. In this
+regard, as the system becomes more portable and practical it increases
+the number of possible applications in which a BCI can be used. In
+this work a complete low-cost consumer-grade BCI was built. Although
+in some situations noise level was high enough to mask the ongoing
+EEG, good classiﬁcation performances were achieved (> 73%) even with
+traditional CSP, rising up to 83% when multiple time-frequency bands
+were used for MI detection. Despite of the communication problems perceived by the practitioners during acquisition, the OpenBCI boards oﬀer
+user-friendly interfaces, allowing to non-EEG experimented researchers
+to acquire their own biosignals in non-controlled environments. In this
+work we have shown that it is possible to successfully construct an entirely low-cost BCI system for MI detection. We strongly believe that
+by this research, practitioners of all over the world will feel invited to
+use this technologies in their class-rooms, laboratories and/or any other
+research activities. In order to contribute to the BCI community, the acquired dataset will be made publicly available.
+Declarations
+Author contribution statement
+V. Peterson: Conceived and designed the experiments; Analyzed and
+interpreted the data; Wrote the paper.
+C. M. Galván, H. S. U. Hernández: Performed the experiments; Analyzed and interpreted the data; Wrote the paper.
+Funding statement
+This work was supported in part by Consejo Nacional de Investigaciones Cientíﬁcas y Técnicas, CONICET, Argentina, through PIP
+2014-2016 No. 11220130100216-CO, the Air Force Oﬃce of Scientiﬁc
+Research, AFOSR/SOARD, through Grant FA9550-14-1-0130, by Universidad Nacional del Litoral, UNL, through CAI+D-UNL 2016 PIC No.
+50420150100036LI and by Universidad Nacional de Entre Ríos through
+PID NOVEL 6215.
+Competing interest statement
+The authors declare no conﬂict of interest.
+Additional information
+No additional information is available for this paper.
+9
+
+V. Peterson et al.
+
+Heliyon 6 (2020) e03425
+
+References
+
+[17] J. Frey, Comparison of an open-hardware electroencephalography ampliﬁer with
+medical grade device in brain-computer interface applications, preprint, arXiv:1606.
+02438, 2016.
+[18] U. Rashid, I. Niazi, N. Signal, D. Taylor, An EEG experimental study evaluating the
+performance of texas instruments ADS1299, Sensors 18 (11) (2018).
+[19] G. Pfurtscheller, C. Neuper, Motor imagery and direct brain-computer communication, Proc. IEEE 89 (7) (2001) 1123–1134.
+[20] F. Malouin, C.L. Richards, P.L. Jackson, M.F. Laﬂeur, A. Durand, J. Doyon, The
+kinesthetic and visual imagery questionnaire (KVIQ) for assessing motor imagery in
+persons with physical disabilities: a reliability and construct validity study, J. Neuro.
+Phys. Ther. 31 (1) (2007) 20–29.
+[21] M.B.I. Reaz, M. Hussain, F. Mohd-Yasin, Techniques of EMG signal analysis: detection, processing, classiﬁcation and applications, Biol. Proced. Online 8 (1) (2006)
+11.
+[22] M. Teplan, et al., Fundamentals of EEG measurement, Meas. Sci. Rev. 2 (2) (2002)
+1–11.
+[23] H. Ramoser, J. Muller-Gerking, G. Pfurtscheller, Optimal spatial ﬁltering of single
+trial EEG during imagined hand movement, IEEE Trans. Rehabil. Eng. 8 (4) (2000)
+441–446.
+[24] R.P. Rao, Brain-Computer Interfacing: An Introduction, Cambridge University Press,
+2013.
+[25] B. Blankertz, R. Tomioka, S. Lemm, M. Kawanabe, K.-R. Muller, Optimizing spatial
+ﬁlters for robust EEG single-trial analysis, IEEE Signal Process. Mag. 25 (1) (2008)
+41–56.
+[26] V. Peterson, D. Wyser, O. Lambercy, R. Spies, R. Gassert, A penalized time-frequency
+band feature selection and classiﬁcation procedure for improved motor intention
+decoding in multichannel EEG, J. Neural Eng. 16 (1) (2019) 016019.
+[27] V. Peterson, H.L. Ruﬁner, R.D. Spies, Generalized sparse discriminant analysis for
+event-related potential classiﬁcation, Biomed. Signal Process. Control 35 (2017)
+70–78.
+[28] F. Lotte, C. Guan, Regularizing common spatial patterns to improve BCI designs: uniﬁed theory and new algorithms, IEEE Trans. Biomed. Eng. 58 (2) (2011) 355–362.
+[29] G. Müller-Putz, R. Scherer, C. Brunner, R. Leeb, G. Pfurtscheller, Better than random:
+a closer look on BCI results, Int. J. Bioelectromagn. 10 (1) (2008) 52–55.
+[30] E. Combrisson, K. Jerbi, Exceeding chance level by chance: the caveat of theoretical
+chance levels in brain signal classiﬁcation and statistical assessment of decoding
+accuracy, J. Neurosci. Methods 250 (2015) 126–136.
+[31] S. Haufe, F. Meinecke, K. Görgen, S. Dähne, J.-D. Haynes, B. Blankertz, F. Bießmann,
+On the interpretation of weight vectors of linear models in multivariate neuroimaging, NeuroImage 87 (2014) 96–110.
+[32] B. Blankertz, C. Sannelli, S. Halder, E.M. Hammer, A. Kübler, K.-R. Müller, G. Curio,
+T. Dickhaus, Neurophysiological predictor of SMR-based BCI performance, NeuroImage 51 (4) (2010) 1303–1309.
+[33] C. Jeunet, B. N’Kaoua, S. Subramanian, M. Hachet, F. Lotte, Predicting mental
+imagery-based BCI performance from personality, cognitive proﬁle and neurophysiological patterns, PLoS ONE 10 (12) (2015) e0143962.
+[34] M. Ahn, H. Cho, S. Ahn, S.C. Jun, High theta and low alpha powers may be indicative
+of BCI-illiteracy in motor imagery, PLoS ONE 8 (11) (2013) e80886.
+
+[1] J. Wolpaw, E.W. Wolpaw, Brain-Computer Interfaces: Principles and Practice, Oxford University Press, USA, 2012.
+[2] J.d.R. Millán, R. Rupp, G. Mueller-Putz, R. Murray-Smith, C. Giugliemma, M.
+Tangermann, C. Vidaurre, F. Cincotti, A. Kubler, R. Leeb, et al., Combining braincomputer interfaces and assistive technologies: state-of-the-art and challenges,
+Front. Neurosci. 4 (2010) 161.
+[3] T.O. Zander, C. Kothe, S. Jatzev, M. Gaertner, Enhancing human-computer interaction with input from active and passive brain-computer interfaces, in: BrainComputer Interfaces, Springer, 2010, pp. 181–199.
+[4] T. Radüntz, Signal quality evaluation of emerging EEG devices, Front. Physiol. 9
+(2018) 98.
+[5] L.-D. Liao, C.-Y. Chen, I.-J. Wang, S.-F. Chen, S.-Y. Li, B.-W. Chen, J.-Y. Chang, C.T. Lin, Gaming control using a wearable and wireless EEG-based brain-computer
+interface device with novel dry foam-based sensors, J. NeuroEng. Rehabil. 9 (1)
+(2012) 5.
+[6] M. De Vos, M. Kroesen, R. Emkes, S. Debener, P300 speller BCI with a mobile EEG
+system: comparison to a traditional ampliﬁer, J. Neural Eng. 11 (3) (2014) 036008.
+[7] C.M. McCrimmon, J.L. Fu, M. Wang, L.S. Lopes, P.T. Wang, A. Karimi-Bidhendi, C.Y.
+Liu, P. Heydari, Z. Nenadic, A.H. Do, Performance assessment of a custom, portable,
+and low-cost brain–computer interface platform, IEEE Trans. Biomed. Eng. 64 (10)
+(2017) 2313–2320.
+[8] T. Uktveris, V. Jusas, Development of a modular board for EEG signal acquisition,
+Sensors 18 (7) (2018).
+[9] S. Pathirana, D. Asirvatham, G. Johar, A critical evaluation on low-cost consumergrade electroencephalographic devices, in: 2018 2nd International Conference on
+BioSignal Analysis, Processing and Systems (ICBAPS), IEEE, 2018, pp. 160–165.
+[10] W.D. Hairston, K.W. Whitaker, A.J. Ries, J.M. Vettel, J.C. Bradford, S.E. Kerick,
+K. McDowell, Usability of four commercially-oriented EEG systems, J. Neural Eng.
+11 (4) (2014) 046018.
+[11] F. Nijboer, B. Van De Laar, S. Gerritsen, A. Nijholt, M. Poel, Usability of three
+electroencephalogram headsets for brain–computer interfaces: a within subject comparison, Interact. Comput. 27 (5) (2015) 500–511.
+[12] E. Ratti, S. Waninger, C. Berka, G. Ruﬃni, A. Verma, Comparison of medical and
+consumer wireless EEG systems for use in clinical trials, Front. Human Neurosci. 11
+(2017) 398.
+[13] D. Lacko, J. Vleugels, E. Fransen, T. Huysmans, G. De Bruyne, M.M. Van Hulle, J.
+Sijbers, S. Verwulgen, Ergonomic design of an EEG headset using 3D anthropometry,
+Appl. Ergon. 58 (2017) 128–136.
+[14] S. Verwulgen, D. Lacko, H. Justine, S. Kustermans, S. Moons, F. Thys, S. Zelck, K.
+Vaes, T. Huysmans, J. Vleugels, et al., Determining comfortable pressure ranges for
+wearable EEG headsets, in: International Conference on Applied Human Factors and
+Ergonomics, Springer, 2018, pp. 11–19.
+[15] Y. Han, Y. Ma, L. Zhu, Y. Zhang, L. Li, W. Zheng, J. Guo, Y. Che, Study on mind controlled robotic arms by collecting and analyzing brain alpha waves, in: 2018 2nd
+International Conference on Applied Mathematics, Modelling and Statistics Application (AMMSA 2018), Atlantis Press, 2018.
+[16] R. Spicer, J. Anglin, D.M. Krum, S.-L. Liew, REINVENT: a low-cost, virtual reality
+brain-computer interface for severe stroke upper limb motor recovery, in: 2017 IEEE
+Virtual Reality (VR), IEEE, 2017, pp. 385–386.
+
+10
+
+

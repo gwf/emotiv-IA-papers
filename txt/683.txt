@@ -1,0 +1,1491 @@
+Noname manuscript No.
+(will be inserted by the editor)
+
+Electroencephalography as implicit communication channel
+for proximal interaction between humans and robot swarms
+Luca Mondada · Mohammad Ehsanul Karim ·
+Francesco Mondada
+
+Received: date / Accepted: date
+
+Abstract Search and rescue, autonomous construction, and many other semi-autonomous
+multi-robot applications can benefit from proximal interactions between an operator
+and a swarm of robots. Most research on proximal interaction is based on explicit
+communication techniques such as gesture and speech. This study proposes a new
+implicit proximal communication technique to approach the problem of robot selection. We use electroencephalography (EEG) signals to select the robot at which
+the operator is looking. This is achieved using steady-state visually evoked potential
+(SSVEP), a repeatable neural response to a regularly blinking visual stimulus that
+varies predictively based on the blinking frequency. In our experiments, each robot
+was equipped with LEDs blinking at a different frequency, and the operator’s SSVEP
+neural response was extracted from the EEG signal to detect and select the robot without requiring any conscious action by the user. This study systematically investigates
+several parameters affecting the SSVEP neural response: blinking frequency of the
+LED, distance between the robot and the operator, and color of the LED. Based on
+these parameters, we study two signal processing approaches and critically analyze
+their performance on 10 subjects controlling a set of physical robots. Our results show
+that despite numerous artifacts, it is possible to achieve a recognition rate higher than
+85% on some subjects, while the average over the ten subjects was 75%.
+Keywords human-robots interaction · EEG · SSVEP · Emotiv EPOC · Thymio
+robot
+
+Luca Mondada
+Department of Physics, Swiss Federal Institute of Technology ETHZ, Zürich, Switzerland
+E-mail: lmondada@ethz.ch
+Mohammad Ehsanul Karim
+Laboratoire de Systèmes Robotiques, Ecole Polytechnique Fédérale de Lausanne, Lausanne, Switzerland
+E-mail: ehsan.mce@gmail.com
+Francesco Mondada
+Laboratoire de Systèmes Robotiques, Ecole Polytechnique Fédérale de Lausanne, Lausanne, Switzerland
+E-mail: francesco.mondada@epfl.ch
+
+2
+
+Luca Mondada et al.
+
+1 Introduction
+Multi-robot systems have extremely promising applications, such as search and rescue, environmental monitoring, autonomous construction, or geographic mapping.
+The topic has been extensively studied from various perspectives, including swarm
+robotics [7], collective robotics [26], and distributed robotics [33], each of which refer to the form of interaction among the robots. In swarm robotics, researchers and
+engineers have successfully designed scalable [44], robust [53], efficient (compared
+to single robot) [6], and affordable distributed multi-robot systems [45]. On top of
+the challenge of designing autonomous control strategies, researchers have recently
+shown an increasing interest in another aspect of swarm robotics: human–robot interaction. While well-established control interfaces exist for single-robot scenarios,
+human–swarm interaction (HSI) is still an open research field [29].
+A majority of researchers addressing the human interaction with a robot swarm use
+remote control strategies, based on a centralized approach that allows the operator to
+have an overview of the mission [29]. This approach stands in stark contrast to several
+fundamental principles of swarm robotics, which relies on simple mechanisms, local
+interactions, and spatially targeted communication, among others. These principles,
+normally applied to robots only, can also be considered for human-robot interaction.
+This is possible, for instance, when human and robot swarm share the same physical
+environment. In such situations, the operator can interact locally with the part of the
+swarm close to him/her and observe the same environment that the robots observe.
+In the literature, this interaction is called proximal, in opposition to remote interactions [29].
+We therefore consider an application scenario in which an operator is surrounded
+by mobile robots that have semi-autonomous behavior. This might be the case, for
+instance, in an inspection or construction task. The operator simply interacts with
+the robots that are close to her/him and share the same environment. The robots can
+either act independently or be part of a swarm. In our application scenario, when
+the robots meet a predefined condition, find some interesting information, or cannot
+solve an issue, they stop and request a command from the operator. In the case of a
+swarm, the robots stopping and asking for interaction with the operators could be either single robots or leaders of a sub-group of the swarm [18]. As several robots may
+be in this situation, the operator must select one of them, based on criteria that are
+application dependent and managed by the operator himself. Triggering interaction
+with a single robot within a group is a challenging HSI problem: the communication
+channel should be easily accessible to the operator, combined with an infrastructure that is distributed and compatible with the swarm robotics approach. Fong et al.
+have proposed a simple selection protocol that uniquely identifies each robot using
+a numbering system; the selection and manipulation of the robots were performed
+via a remote control [15]. Such systems require several explicit coding rules that add
+on top of the communication channel, which reduces efficiency and is incompatible
+with a distributed system. Other more intuitive methods, such as gesture recognition
+[10, 25, 36, 38], robot-vision-based user-gaze interpretation [10, 36, 40], and speech
+
+EEG as implicit communication channel for proximal interaction between human and swarm
+
+3
+
+recognition [40] have been studied. Several relevant literature reviews exist on the
+topic [17, 29, 55].
+Most of the aforementioned methodologies have been tested on real robots. For example, automated vision-based detection of hands and face combined with machine
+learning–based spatial gesture analysis showed successful selection of a single drone
+from a group of four just by robot vision. The research team claimed that their algorithm can scale up to 20 drones [38]. Similar research has discussed the capacity
+of vision-based systems with regard to the varying distances between the operator
+and the robot; in this case, the studied range was 1 to 4 m [10]. However, speech and
+gesture interaction systems have some practical limitations: (1) they require prior
+training of the operator to use specific coded words or gestures that can be culture
+dependent [50], limiting intuitive interaction [27]; (2) they are sensible to the detection of the intention to interact, as they use communication channels that are common
+with other tasks [46]; and (3) they are based exclusively on explicit communication,
+which generates heavy protocols [27].
+To address these issues, we studied the use of electroencephalography (EEG) signals as a robot selection mechanism. This approach does not require the definition
+and learning of explicit communication codes, as it is based on implicit information
+extracted by EEG from the operator observing the robot. We define implicit information as information provided by the operator in a passive way, in opposition to explicit
+information, which is exchanged actively [27]. We define implicit communication as
+an exchange of implicit information. EEG-based implicit communication is not culture dependent, and EEG techniques are more reliable than gesture- and speech-based
+techniques in detecting the intention to interact [46]. Recent advances in neuroscience
+provide us with reliable and affordable devices that allow acquisition of two reliable
+and well-documented EEG neural responses – the P300 and the steady-state visually evoked potential (SSVEP) [4, 5, 59]. The P300 neural response is elicited as
+a reaction to salient stimuli. The SSVEP, on the other hand, is measured when a
+visual stimulus is repeatedly shown at a certain frequency. Although the P300 response has been given more attention, recent studies show that target selection can be
+achieved efficiently using SSVEP because it is possible to reliably distinguish different SSVEP responses corresponding to different frequencies through computational
+analysis [16]. Therefore, we used the SSVEP response to lights blinking at different
+frequencies in our robot selection scenario to detect the target being watched by the
+operator. This new communication channel is compatible with the swarm robotics
+approach but does not solve the question of the distributed infrastructure, which will
+not be addressed in this paper. For this layer of HSI, we refer the reader to the latest
+results in protocols implementing spatially targeted communication [34].
+The SSVEP response can be extracted from an EEG signal following several approaches [5]. Most studies use machine learning, but this approach requires a training
+phase, which we want to avoid in order to validate the fact that we use pure implicit
+communication. Therefore, we applied two other techniques: a signal processing approach using canonical correlation analysis (CCA), and a simpler short-time Fourier
+
+4
+
+Luca Mondada et al.
+
+transform (STFT). The CCA-based approach has been chosen because it does not require training and showed very interesting results on the same equipment we used in
+our study [31]. We also compare the results obtained with CCA to the simpler shorttime Fourier transform (STFT) processing chain [11]. The STFT is also relevant in
+such a scenario because it can provide shorter response times. The response delay of
+the system is probably the major limitation of most SSVEP-based approaches.
+To obtain the best possible results, we began by exploring the role of three key system parameters: the frequency of the blinking light, the distance between the operator
+and the robot, and the color of the visual stimuli. Once the optimal parameters were
+set, we tested our approach on ten subjects, most of whom had no experience using
+EEG-based interfaces.
+This paper is structured as follows. Section 2 presents the state of the art in SSVEPbased brain-computer interfaces (BCI). Section 3 gives further details about the experimental setup and, in particular, about the EEG device, the robot, and the general
+data-collection protocol. Section 4 presents the study of the three key parameters of
+our setup: the frequency, the distance, and the color of the targets. Section 5 builds on
+the chosen parameters to study the performances of ten subjects using the CCA and
+STFT approaches. A discussion section concludes the paper.
+
+2 State of the art
+After the pioneering example of BCI for the control of a wheelchair by Millan et
+al. [35], the research community has shown a growing interest in this mobile robot
+interaction technique [5]. The main motivation behind these studies is to enable
+severely disabled people to control wheelchairs. With a better understanding of these
+techniques, however, other usages have appeared, including the control of mobile
+robots by healthy subjects in various applications. The work by Kishore et al. [28],
+targeting the control of a humanoid robot, is a representative example of the most
+common approach: the interaction is made through a screen, where all possible commands are associated with visual stimuli [52]. When the subject looks at a given command on the screen, the associated stimulus frequency is detected in the EEG signal
+and the command is triggered. Stawicki et al. [48] follow the same approach, using
+a screen, but illustrate the commands in an interface based on the subjective view of
+the robot, generated by a camera located on the mobile robot itself. A slightly more
+sophisticated approach consists of introducing an avatar to represent the possible actions [13]. An additional abstraction can be introduced by selecting a goal that can
+be achieved by a combination of actions, for instance by selecting the destination in
+the scenario of driving a car [14]. Most BCI studies targeting the control of mobile
+systems follow this same approach, using a computer screen as support for the visual stimulus [5]. Computer screens offer flexibility in the graphical expression of
+the commands and in the placement of the stimuli.
+However, the fixed refresh rate of a screen reduces the usable frequencies to divi-
+
+EEG as implicit communication channel for proximal interaction between human and swarm
+
+5
+
+sors of the refresh rate, which can be seriously limiting. Güneysu et al. [20] control
+a humanoid robot with a panel of LEDs instead of a computer screen. Although the
+principle of displaying a set of possible commands on an LED matrix is identical to
+the principle used with computer screens, the choice of LEDs allows a better flexibility in the choice of frequencies. Ortner et al. [39] also use LEDs on a control panel
+to define the movement direction of a mobile robot, but they introduce a specially
+designed shape for their panel, better fitting its purpose. Still, none of these studies allows a direct proximal interaction with the robot, always introducing a control
+panel between user and robot. To our knowledge, only Jacobs [23] studied a direct
+interaction, with the visual stimuli created by LEDs on the robot itself. In his study,
+the LEDs are placed at the end of three arms fixed on the robot. The three arms correspond to three directions (forward, right, and left) that the user can choose by looking
+at the corresponding LEDs. This work was very preliminary and tested on very few
+subjects.
+Concerning the choice of the neural response used to detect user intention, SSVEP
+is increasingly chosen as it achieves acceptable performances with most people [19].
+SSVEP-based target selection procedures allow choosing among many items. Gao
+et al. [16] claim that their algorithm could successfully detect 45 different target
+frequencies using green blinking LED lights. The performances of SSVEP-based
+systems can be improved by coupling them with other neural responses, like the
+P300 [57]. In the domain of rehabilitation, the combination of SSVEP and P300 signals has been used to control actual wheelchairs [30]. These performances come at
+a cost: they require EEG acquisition systems that are extremely expensive and not
+portable, and experiments must be carried out under conditions that are extremely
+controlled.
+The goal of reaching practical applications pushed the development of affordable and
+portable EEG headsets, but most consumer headsets have fewer than five electrodes
+and do not allow exploration of a sufficiently large number of signals. Only two affordable systems acquire signals on 14 or 16 electrodes: the OpenEEG and the Emotiv EPOC headsets. The OpenEEG is an affordable system targeting research experiments [47], but it requires substantial deployment effort. The Emotiv EPOC is simpler to deploy [24, 51]; compared to traditional systems that require gel on the scalp
+as well as cumbersome wiring, Emotiv uses saline solution and a radio connection.
+However, ease of use and affordability come at the price of reduced signal quality.
+Still, a comparative analysis of SSVEP data acquired from EPOC and medical-grade
+EEG found that the data acquired from EPOC is reliable [32], although the authors
+cautioned that the Emotiv should not be used for medically serious cases [12]. The
+radio connection is also a limitation, but studies have shown its reliable use in realtime applications [22].
+
+6
+
+Luca Mondada et al.
+
+AF3
+
+F7
+
+F3
+
+AF4
+
+F4
+
+FC5
+
+F8
+FC6
+
+T7
+
+T8
+
+P7
+
+P8
+O1
+
+O2
+
+Fig. 1 Top view of the location of the electrodes of the EMOTIV EPOC EEG headset on the skull (forward
+looking direction toward the top of the image), with their international code labeling.
+
+3 Materials and methods
+Our goal is to explore the use of neural responses for proximal interaction with a
+swarm of robots without a computer screen, a panel of LEDs, or any other interfacing tools between the robots and the operator.
+For the acquisition of EEG signals, we used the Emotiv EPOC EEG headset [49]. As
+described in Section 2, this headset is a good tradeoff between affordable price and
+level of performance. While it is affordable with respect to medical-grade devices, it
+is expensive (approximately $700 with drivers to access raw data) compared to other
+“consumer” headsets because of its 14 electrodes (see Figure 1 for their positioning
+on the skull), which allow several types of data acquisition. A final advantage is its
+compatibility with open-source EEG signal acquisition and processing software for
+BCI design. This study uses OpenViBE, a well-established open-source BCI design
+software [41].
+
+We used Thymio II as the robot for our experiments; this programmable robot features a differential drive system, infrared (IR) remote control receiver, and LEDs to
+change body color [43]. Its small size (11 × 11 × 5 cm) and affordable price (approximately $130) make it well suited for multi-robot experiments. The communication
+between the computer and the robot was supported by an infrared emitter dongle
+controlled by USB. In this configuration, the computer only plays the role of the processing and communication unit of the operator, establishing local communication
+with the robots that are in the field of view of the operator.
+
+Figure 2 summarizes the experimental setup. The EEG signal is acquired and trans-
+
+EEG as implicit communication channel for proximal interaction between human and swarm
+Thymio II robot with ASEBA code
+blinking under control of laptop
+
+IR
+
+Digital EEG signal
+
+Radio
+
+IR driver
+
+Laptop Linux
+
+EMOTIV headset driver
+
+Commands
+to robot
+
+7
+
+IRcontrol
+Commands
+robot mode
+
+OpenViBE
+Real-time
+processing
+Experiment
+management
+
+Figures
+and data
+of results
+Matlab
+Analysis
+Visualization
+Files
+Raw data
+Config.
+
+EMOTIV EEG headset
+
+Fig. 2 Configuration of the experiment, showing the signal acquisition setup and the processing infrastructure.
+
+mitted to a laptop running the various software tools: a driver to access to the EEG
+data, the OpenVIBE software to manage the EEG data processing, an interface toward the infrared remote control of the robots and Matlab to analyze the results of
+the experiments.
+Each experiment was composed of a set of trials. In each trial, the subjects were
+instructed to look at an indicated target robot. One second after the instruction, the
+robot began to flicker and continued for 7 s. During the stimulus, the subjects were
+asked to look at the blinking light; they were requested to blink as little as possible to
+limit EEG artifacts. A break of 3 s was then introduced to avoid tiring the subject.
+4 Preliminary study: parameter optimization
+To optimize the extraction of the SSVEP response within the EEG signal, we studied the effect of three important interaction parameters on the strength of the SSVEP
+response: the blinking frequency, the distance to the stimulus, and the blinking color.
+These studies not only make sense within the context of HSI but are also of fundamental scientific interest.
+The LED blinking frequency is the first important parameter. The blinking frequencies used in the literature vary from 4.5 Hz to 50 Hz [59]. However, since the signal to
+noise ratio in EEG is higher in the lower part of the spectrum, some researchers have
+suggested using low frequencies for SSVEP-based applications [1]. In particular, Gao
+et al. [16] found empirically that the usable range of frequencies for SSVEP-based
+BCI is 6 to 24 Hz. This is the range we used in our first experiment.
+The distance between the target and the operator is the second critical parameter.
+Wu et al. [54] have studied the impact of distance on the SSVEP response, but using
+a medical-grade EEG headset.
+The third key parameter is the color. In the literature, white was predominantly preferred over red, green, or blue [1, 2, 3, 8, 56]. Cao et al. justified the preference: white
+
+8
+
+Luca Mondada et al.
+
+is a combination of all the primary colors and therefore excites cone-cells associated
+with red, green, and blue light simultaneously [8]. Some studies, however, have successfully used red [13, 24, 30] and green [9, 12, 16, 22, 30, 37] alone as stimuli as
+well. Some studies found red to be more effective than white [13, 22], while others
+found green to be more effective under similar conditions [9, 12]. There is similar
+contradictory evidence between the red and green colors; Mouli et al. observed green
+to be more effective [37], while others were more successful using red [8].
+Based on these observations, we decided to conduct our own study on the impact
+of these parameters on the SSVEP neural response when the stimulus is generated by
+the body of several robots.
+
+4.1 Evaluation metrics
+To evaluate the quality of the SSVEP response, we computed a metric that indicates
+the prominence of the stimulus frequency in the EEG signal. To compute this metric,
+we applied a fast Fourier transform to the EEG signal from each trial to obtain the averaged frequency spectrum. To quantify the detectability of the SSVEP response, we
+used the first peak to the second peak ratio (FSR) [58]: given a particular frequency
+f , let F and R be two disjoint subsets of the averaged spectrum such that F contains
+the spectrum of the frequencies [ f − 1, f + 1], and R contains the other frequencies,
+that is, the range [6, f − 1[ ∪ ] f + 1, 24]; the FSR ratio is then defined as:
+q =:
+
+max F
+max R
+
+(1)
+
+The FSR provides the ratio of the highest peak within [ f − 1, f + 1] to the highest
+peak in the rest of the spectrum. The SSVEP neural response to a regularly blinking
+stimulation is characterized by a peak in the spectrum of the signal at the same frequency as the blinking frequency. Thus, if the FSR based on the stimuli frequency is
+above 1, then the highest peak is within 1 Hz of f , and the SSVEP can be considered
+detectable and recognized. Otherwise, the SSVEP cannot be detected. We therefore
+call q the recognition ratio. Please note that we decided to consider peaks within 1 Hz
+of the stimulation frequency as valid SSVEP responses because we always have at
+least 2 Hz difference between one stimulation frequency and another. This band could
+be restricted, as existing literature shows that neural responses are, in general, very
+accurate [16].
+4.2 Parameter: Stimulation frequency
+Six frequencies were tested (9, 12, 15, 18, 21, and 24 Hz). For each frequency condition, five trials were performed on three different subjects. The subjects had normal
+or corrected-to-normal vision and no history of major head injury. The blinking robot
+was set 1 m away from the subject. Figure 3 confirms the decrease in the amplitude
+
+EEG as implicit communication channel for proximal interaction between human and swarm
+4
+
+Subject1
+
+Subject2
+
+9
+
+Subject3
+
+Average of the 3 subjects
+Recognition threshold
+
+Recognition ratio
+
+3
+
+2
+
+1
+
+0
+
+9
+
+12
+
+15
+
+18
+
+Frequency [Hz]
+
+21
+
+24
+
+Fig. 3 Recognition of a red visual stimulus in the EEG spectrum based on its blinking frequency. Each
+of the three subjects was subjected to five trials for each frequency; the trial period is 7 s. The plotted
+recognition ratios for each frequency represent the values of the averaged power spectrum of the five
+stimulation trials.
+
+of the neural response as the frequency grows, as already described in the existing
+literature [21]; furthermore, it shows that the detection fails beyond 15 Hz. This is
+lower than what is described in the literature with medical-grade EEG headsets; in
+[16], the range used is 6 to 24 Hz. Therefore, we deduced that SSVEP activity can be
+measured with this headset and in these physical conditions, provided that low frequencies are chosen. Based on these observations, we restricted the frequency band
+in the following two studies to the interval [7 Hz, 17 Hz].
+
+4.3 Parameter: Stimuli distance
+As a second parameter, we analyzed the impact of varying distance between the operator and the blinking target robots, taking into consideration the frequencies 7, 9, 12,
+15, and 17 Hz; the tested distances were 30 cm, 1 m, and 2 m. Considering the small
+size (12 cm in diameter) and the weak light-emitting power of the robot (< 300 mW
+electrical power), these experimental distances correspond to a range of 1.5 m to 10 m
+for a robot with a diameter of 60 cm and a 7.5 W light, corresponding to a standard
+LED lamp. This range seems compatible with the proximal interaction of an operator
+directly in contact with the robot. Existing interactions using explicit communication
+channels have a maximal range varying between 2.5 m [40] and 5 m [38], enabling a
+good supervision of the robot.
+
+10
+
+Luca Mondada et al.
+7
+
+Robot at
+100 cm
+
+Robot at
+30 cm
+
+6
+
+Robot at
+200 cm
+
+Recognition threshold
+
+Recognition ratio
+
+5
+
+4
+
+3
+
+2
+
+1
+
+0
+
+7
+
+9
+
+11
+
+13
+
+Frequency [Hz]
+
+15
+
+17
+
+Fig. 4 Recognition of a red visual stimulus in the EEG spectrum based on the distance from the robot. Four
+trials per subject for each distance and frequency combination were performed. The plotted recognition
+ratio for each frequency and distance combination represent the values of the averaged power spectrum of
+all the stimulation trials on all the subjects.
+
+The experiment was conducted on three subjects, and four trials were performed for
+each subject at each frequency and each distance. Figure 4 summarizes the results;
+there is not much difference in neural response between 30 cm and 1 m; however, the
+response starts to deteriorate at 2 m. Indeed, the recognition ratio at 2 m falls under
+1.0 at 13 Hz. This is because (1) the targets become smaller with increasing distance
+and (2) the LED light intensity decreases, leading to a weaker SSVEP response.
+
+4.4 Parameter: Stimulation color
+The experiment featuring stimulus color was similar to the stimulus-distance experiment. Four trials were conducted for each combination of frequency (7, 9, 12, 15, and
+17 Hz) and LED color (red, green, and white). The target robot was placed 1 m from
+the subjects. Figure 5 shows that the best results were obtained using the red or green
+stimuli, which is in agreement with part of the literature who did a direct comparison
+between white and red or green stimuli [9, 12, 13, 22]. White light did not increase
+the neural response, in opposition to the findings of Cao et al. as documented in [8].
+This can be explained by the specific configuration used by Cao et al., who displayed
+the stimuli on a black background, achieving a high contrast with white.
+
+EEG as implicit communication channel for proximal interaction between human and swarm
+
+11
+
+5
+
+Robot
+Robot
+Robot
+blinking
+blinking
+blinking
+red
+white
+green
+Recognition threshold
+
+Recognition ratio
+
+4
+
+3
+
+2
+
+1
+
+0
+
+7
+
+9
+
+11
+
+13
+
+Frequency [Hz]
+
+15
+
+17
+
+Fig. 5 Recognition of a visual stimulus in the EEG spectrum based on its color. Four trials per subject for
+each color and frequency combination were performed. The plotted recognition ratios for each frequency
+and distance combination represent the values of the averaged power spectrum of all the stimulation trials
+on all the subjects.
+
+5 Robot selection by SSVEP response
+Based on the results of the studies described above, we designed an experiment to implement and test the robot selection methodology using CCA-based and STFT-based
+SSVEP analysis. The layout of this setup is shown in Figure 6. Three Thymio robots
+blinking in red at frequencies of 8, 10, and 12 Hz are placed in a half circle, 90 degrees apart. In addition to the general architecture presented in Figure 2, we equipped
+the subject with an IR remote control. The subject looks at the robot she/he wants
+to control, and the EEG signals acquired from the Emotiv device are used to make
+a prediction with the processing chain. This information is transmitted via IR to the
+robots. The selected robot turns green and executes the command received from the
+IR remote control while the other robots remain red and ignore these commands.
+The subjects underwent 15 trials: 5 trials at each frequency. Before each trial, the
+subjects were told which of the three robots she/he should look at and was given 4 s
+to prepare. During the trial, the subject had to look only at that robot even though all
+three robots were blinking; a 3 s break followed each trial. To assess the reliability of
+this methodology, the experiment was conducted on 10 different subjects, seven of
+them having no previous experience with EEG. The subjects were between 17 and 48
+years of age: three women (age: 17, 32, and 44) and seven men (age: 18, 18, 19, 29,
+35, 37, and 48).
+
+12
+
+Luca Mondada et al.
+
+IR
+
+IR
+
+IR
+
+Command to the robot:
+color and frequency of stimulus,
+chosen robot
+
+IR
+
+steering
+digital
+EEG signal
+
+Radio
+
+Experiment control
+
+Laptop
+
+Radio
+
+IR
+
+Fig. 6 Setup of the experiment, showing the configuration of the subject with respect to the robots and the
+communication channels used for interaction. The detailed schematics of the computational unit (signal
+acquisition and processing chain) are the same as shown in Figure 2.
+
+5.1 Signal processing
+The objective of the signal processing methods used in this study is to classify the
+SSVEP response from the occipital region of the brain (O1 and O2) into one of the
+following three categories: 8 Hz, 10 Hz, and 12 Hz. The occipital region of the brain
+is known to be neurologically important in the SSVEP process, as it contains the visual cortex.
+Figure 7 shows the details of the CCA signal processing chain. The signal processing consists of a loop that is repeated until a successful classification is made. In the
+event of classification failure, a new attempt is made with a signal length increased
+by 0.25 s. Initially this signal length parameter is set to 2 s. It represents the length of
+the signal that is used during the classification attempt. Increasing the length boosts
+the chances of success of the new classification attempt by reducing the impact of the
+noise present in the signal; however, it also introduces longer recognition delays as
+changing states do not affect the predictions as quickly as before. If the signal length
+parameter reaches 8 s, the classification is interrupted and no prediction is made. Each
+loop iteration ends with a classification attempt. A classification is considered successful only if four consecutive classification attempts reach the same prediction.
+This measure significantly reduces the false positives; the choice of four consecutive
+attempts is based on the results of Lin et al. [31].
+During each iteration, the classification attempt is made using CCA: the measured
+EEG signal is correlated with three other signals that are precomputed, and then the
+signal frequency with the highest correlation to the measured signal is chosen. The
+CCA can be thought of as a generalization of the correlation measure to multivariate
+signals and has shown good results in SSVEP recognition [31]. The principle of this
+approach is as follows: given two multivariate signals X, Y , the optimization problem
+of CCA is to find ρ such that
+
+EEG as implicit communication channel for proximal interaction between human and swarm
+
+first trim duration: 2 seconds
+
+increase of 0.25 seconds
+
+duration
+
+O1-O2
+spatial
+filters
+
+buffering (8s)
+
+sinus, cosinus, and first harmonic
+
+real-time
+signal
+
++
+
+13
+
+trim
+
+Canonical
+Correlation
+Analysis
+
+voter
+
+duration
+8Hz
+
+trim
+
+10Hz
+
+trim
+
+12Hz
+
+trim
+
+no
+four
+consecutive yes
+winners or
+duration 8s
+
+action
+
+loop
+
+Fig. 7 The signal processing chain uses the occipital signals O1 and O2. These signals are first buffered;
+only the last part of the buffer is used for processing. The length of this period is variable and increases at
+each processing loop. The signal is compared with ideal signals and the best fit is selected. Four consecutive
+coinciding predictions are required to make a final selection. The loop is terminated when such a selection
+is made or when the whole buffer of 8 s has been used.
+
+ρ = maxn ra> X,b>Y
+a,b∈R
+
+(2)
+
+Here, ra> X,b>Y is the correlation between a> X and b>Y . This is achieved when a is the
+eigenvector associated with the largest eigenvalue of S(X, X)−1 S(X,Y )S(Y,Y )−1 S(Y, X);
+and b is a similar eigenvector of S(Y,Y )−1 S(Y, X)S(X, X)−1 S(X,Y ), where S(X,Y ) is
+the covariance matrix. The proof can be found in [42].
+In our case, the multivariate signals are precomputed models of an idealized reaction to one of the three different blinking stimulations (blinking frequencies of 8 Hz,
+10 Hz, and 12 Hz). For a given stimulation frequency, the model is composed of the
+sine, cosine and first harmonic of that frequency, known to be present in SSVEP
+responses [21]. Linear combinations of these multidimensional signals allow to modulate arbitrarily the model the SSVEP response of the brain and search for a maximal
+correlation with the measured signal.
+For comparison, we applied to the same signals a standard STFT [11]. Starting at
+the beginning of the stimulation period, the STFT was computed using the longest
+time frames possible (up to 4 s) using the available signal, as longer time frames give
+higher spectrum resolution. We therefore used a time frame of 0.5 s during the first
+second, 1 s during the second second, 2 s for the third and fourth seconds, and then a
+time frame of 4 s.
+
+14
+
+Luca Mondada et al.
+
+5.2 Results and discussion
+
+Figure 8 shows the recognition rate as a function of time; the data presented was averaged over all predictions made on all 10 subjects in all stimulations. The recognition
+rate starts randomly and increases gradually, plateauing around 75%. The same increase in recognition reliability after 4 s can also be seen in Figure 9; this graph shows
+the average recognition rate per frequency. We can observe that the lowest reliability
+is at 12 Hz, while the highest is at 10 Hz with very little standard deviation. The variance between the subjects is shown in more detail in Figure 10 and the corresponding
+Table 2. The predominant reliability of 10 Hz can be seen in different subjects but especially in Subjects 5 and 7, where the recognition rate at 10 Hz is double compared
+to that at 12 Hz. This graph also shows the divergences between different people:
+Subject 1 has a 98% recognition rate at 8 Hz, while Subject 5 has a recognition rate
+around 40% for the same frequency. This very high variability is a characteristic that
+makes EEG analysis delicate and must be carefully considered when developing new
+applications. Also for this reason an average of 75% is considered a good result.
+For comparison, we also computed the STFT on the same data sets. However, Figure
+8 shows that the STFT performed significantly worse than CCA.
+Based on these results, the time required to recognize and select the robot in a reliable
+way is four seconds. The CCA approach and the loop processing structure allows the
+first prediction using exclusively EEG signals acquired during the current stimulation
+to be made only three seconds after the beginning of the stimulation. An additional
+second is required to reach the best performances, which matches results achieved in
+the literature [14, 16, 24, 30]. Although this signal processing approach does not require a training session, as opposed to systems that use machine learning algorithms,
+this delay of 4 s is a clear drawback of this prediction system. With further study,
+this issue could perhaps be addressed using a hybrid processing chain combining the
+reliability of CCA with the rapidity of STFT. Nonetheless, the stability of this setup
+is remarkable: it shows that despite the numerous artifacts, it is possible to achieve,
+on average, a recognition rate of 75% at any time after the first 4 s.
+
+Finally, we developed and conducted some further experiments combining the use
+of EEG signals as illustrated above with some processing of the gyroscope mounted
+on the EEG headset. In our tests we used the lateral movement of the head to trigger recognition. This allows the operator not only to start a recognition by moving the
+head toward a new target but also to restart the process after an inaccurate recognition
+by briefly shaking the head laterally. A video illustrating the approach can be accessed
+at www.bit.ly/ssvep-bot. These preliminary tests significantly improved the
+whole interaction and show the merit of combining the EEG-based implicit communication with other human–robot interaction methods.
+
+EEG as implicit communication channel for proximal interaction between human and swarm
+Average CCA
+
+1
+
+Recognition rate
+
+Recognition rate
+
+0.8
+
+0.6
+
+0.4
+
+0.2
+
+0
+
+Average STFT
+
+1
+
+0.8
+
+15
+
+0.6
+
+0.4
+
+0.2
+
+0
+
+5
+
+10
+
+15
+
+Time elapsed since stimulation start [s]
+
+0
+
+0
+
+6
+
+Time elapsed since stimulation start [s]
+
+Fig. 8 Frequency recognition rate versus time for two processing methods: canonical correlation analysis
+(CCA) on the left and short-time Fourier transform (STFT) on the right. Only the first 6 seconds of this
+approach are shown, as the performances are not increasing later on. These numbers are an average over
+10 subjects considering the 5 trials of 15 s each and the stimulation frequencies (8, 10, and 12 Hz).
+1
+0.9
+0.8
+
+Recognition rate
+
+0.7
+0.6
+0.5
+0.4
+0.3
+0.2
+0.1
+0
+
+8
+
+10
+
+Frequency of stimulation [Hz]
+
+Average recognition rate
+for the whole stimulation
+duration [1-15s]
+
+Average recognition
+rate discarding the
+first 2 seconds
+
+12
+
+Average recognition
+rate discarding the
+first 4 seconds
+
+Fig. 9 Frequency recognition rate per stimulation frequency and per delay between start of stimulation
+and start of recognition process. These numbers are an average over 10 subjects considering the 5 trials of
+15 s each and the stimulation frequencies (8, 10, and 12 Hz). The values for each subject are detailed in
+Figure 10.
+
+6 Conclusions
+This study systematically analyzes two SSVEP classification techniques and some of
+their key parameters in an effort to tackle the robot selection problem in proximal
+HSI using implicit communication. In comparison to the literature based on explicit
+
+16
+
+Luca Mondada et al.
+
+Stimuli freq.
+8 Hz
+10 Hz
+12 Hz
+
+Delay 0 s
+Average
+Std deviation
+69.8%
+18.8%
+73.2%
+5.0%
+59.2%
+13.6%
+
+Recognition rate
+Delay 2 s
+Average
+Std deviation
+72.8%
+20.0%
+78.9%
+5.9%
+63.9%
+14.2%
+
+Delay 4 s
+Average
+Std deviation
+75.1%
+19.8%
+81.9%
+8.2%
+66.0%
+15.1%
+
+Table 1 Frequency recognition rate per stimulation frequency and per delay between start of stimulation
+and start of recognition process. These data are plotted in Figure 9.
+
+Subject1
+
+0.8
+0.6
+0.4
+0.2
+0
+
+8
+
+Recognition rate
+
+Recognition rate
+
+0.6
+0.4
+0.2
+8
+
+0.6
+0.4
+0.2
+8
+
+10
+
+Frequency of stimulation [Hz]
+
+Recognition rate
+
+0.6
+0.4
+0.2
+8
+
+10
+
+Frequency of stimulation [Hz]
+Subject9
+
+1
+
+Recognition rate
+
+0.6
+0.4
+0.2
+0
+
+8
+
+10
+
+Frequency of stimulation [Hz]
+Average recognition rate for the
+whole stimulation duration [1-15 s]
+
+0.4
+0.2
+8
+
+12
+
+10
+
+Frequency of stimulation [Hz]
+
+12
+
+Subject6
+
+0.8
+0.6
+0.4
+0.2
+8
+
+10
+
+Frequency of stimulation [Hz]
+
+12
+
+Subject8
+
+0.8
+0.6
+0.4
+0.2
+8
+
+10
+
+Frequency of stimulation [Hz]
+
+12
+
+Subject10
+
+1
+
+0.8
+
+12
+
+0.6
+
+0
+
+12
+
+10
+
+Frequency of stimulation [Hz]
+Subject4
+
+1
+
+0.8
+
+0
+
+8
+
+0.8
+
+0
+
+12
+
+Subject7
+
+1
+
+0.2
+
+1
+
+0.8
+
+0
+
+0.4
+
+0
+
+Recognition rate
+
+Recognition rate
+
+Frequency of stimulation [Hz]
+
+12
+
+Subject5
+
+1
+
+Recognition rate
+
+10
+
+0.6
+
+1
+
+0.8
+
+0
+
+0.8
+
+0
+
+12
+
+Subject3
+
+1
+
+Recognition rate
+
+10
+
+Frequency of stimulation [Hz]
+
+Subject2
+
+1
+
+Recognition rate
+
+Recognition rate
+
+1
+
+0.8
+0.6
+0.4
+0.2
+0
+
+8
+
+Average recognition rate
+discarding the first 2 s
+
+10
+
+Frequency of stimulation [Hz]
+
+12
+
+Average recognition rate
+discarding the first 4 s
+
+Fig. 10 Frequency recognition rate per subject and per stimulation frequency, considering the different
+stimulation durations. The numerical values are given in Table 2.
+
+EEG as implicit communication channel for proximal interaction between human and swarm
+
+Subject1
+
+Subject3
+
+Subject5
+
+Subject7
+
+Subject9
+
+8 Hz
+10 Hz
+12 Hz
+8 Hz
+10 Hz
+12 Hz
+8 Hz
+10 Hz
+12 Hz
+8 Hz
+10 Hz
+12 Hz
+8 Hz
+10 Hz
+12 Hz
+
+0s
+93.3%
+73.3%
+76.3%
+79.7%
+77.5%
+78.3%
+53.9%
+74.6%
+36.6%
+36.3%
+75.7%
+45.2%
+57.8%
+66.7%
+71.3%
+
+2s
+96.2%
+77.2%
+83.1%
+84.2%
+88.5%
+80.0%
+52.5%
+79.8%
+38.5%
+40.0%
+80.8%
+50.8%
+59.0%
+73.4%
+77.1%
+
+4s
+98.2%
+77.5%
+83.9%
+86.8%
+96.2%
+78.6%
+54.8%
+80.8%
+34.0%
+41.8%
+83.2%
+50.9%
+62.9%
+74.0%
+73.7%
+
+Subject2
+
+Subject4
+
+Subject6
+
+Subject8
+
+Subject10
+
+8 Hz
+10 Hz
+12 Hz
+8 Hz
+10 Hz
+12 Hz
+8 Hz
+10 Hz
+12 Hz
+8 Hz
+10 Hz
+12 Hz
+8 Hz
+10 Hz
+12 Hz
+
+0s
+73.3%
+70.0%
+58.7%
+88.6%
+80.0%
+60.3%
+72.4%
+63.7%
+48.9%
+89.0%
+75.6%
+53.3%
+53.7%
+74.6%
+63.0%
+
+2s
+79.2%
+73.5%
+64.6%
+93.1%
+84.9%
+64.2%
+75.8%
+68.4%
+52.3%
+93.8%
+82.4%
+59.2%
+54.6%
+80.0%
+69.2%
+
+17
+4s
+83.6%
+77.7%
+69.5%
+94.5%
+88.6%
+72.3%
+75.0%
+67.7%
+58.2%
+95.9%
+84.8%
+62.3%
+57.3%
+88.8%
+76.8%
+
+Table 2 Frequency recognition rate per subject and per stimulation frequency, considering the different
+stimulation durations corresponding to the plot of Fig. 10.
+
+proximal communication such as gestures or voice, this approach uses implicit information that is not culture dependent and does not require prior learning. However,
+the SSVEP approach depends on the operator’s brain activity, which is variable from
+subject to subject. This results in a modest average success rate of 75%, but with some
+subjects having success rates higher than 85%, and a peak success rate of 98.2% on
+specific frequencies. These performances are comparable with the success rates of
+other approaches such as gesture- or speech-based HSI [38, 40]. This variability indicates that some subjects will perform poorly as operators of these interfaces or will
+need training to obtain better performances.
+Although distance is a parameter that is considered in gesture- and speech-based interactions when evaluating the success rate, this is the first study to examine the effect
+of distance on the recognition among several sources of the SSVEP neural response.
+Despite the limited range utilized in our experiments, less than 2 m, this distance must
+be considered with respect to the size of the robot and the type of visual stimuli. Indeed, the setup used in this experiment is equivalent to a robot with a diameter of
+60 cm placed up to 10 m away and having a blinking LED of 7.5 W. This is a reasonable range for proximal interaction; the maximal distance for existing interactions
+using explicit communication channels varies from 2.5 m [40] to 5 m [38].
+One limitation of the current setup comes from the number of available frequencies.
+Although theoretically the 8 Hz to 12 Hz frequency range could allow the classification of up to 20 different frequencies [16], the number of different robots that could
+be involved in the interaction might limit the scalability of the approach. This limitation can be overcome by reducing the range of interaction or by combining the
+SSVEP-based selection technique with other approaches, such as detection of head
+orientation, allowing operators to preselect part of the swarm followed by the EEGbased technique. The allocation of frequencies among the various robots still requires
+
+18
+
+Luca Mondada et al.
+
+specific distributed protocols [34].
+Another limitation of this approach is the required delay of four seconds before recognition. This delay is similar to the delay in gesture recognition or speech interaction
+when considering the complete time of interaction, and it is compatible with many applications. Even in a search and rescue scenario where there is time pressure, repeating the selection and losing another four seconds in one selection over five, increases
+the selection time by 20%. Considering that selection is not the most time-consuming
+communication action, this should only marginally impact the whole activity. Still,
+studies should verify whether this delay can be reduced using more sophisticated processing methods – for instance, combining CCA with STFT. More importantly, such
+limitations of EEG processing techniques could be solved using one of the greatest
+advantages of this approach: the possibility of combining it with other HRI channels. Indeed, using implicit information means that integrating EEG analysis in other
+scenarios could enhance the global performance of the setup without requiring any
+additional effort from the operator.
+Some factors that are uncontrollable in real-world applications, such as muscular artifacts or personal attitudes of the operator, could negatively impact the performances
+of such a solution. This can be particularly significant if the robots are moving and
+the operator must track them visually. Other factors, such as the relative surrounding
+brightness, the variable distance to the targets, and blinking light interferences from
+other robots, should be carefully considered to reach optimal performance.
+In conclusion, we believe that despite the limiting factors described here, the use of
+an implicit EEG-based communication in the proximal interaction of a human with a
+robot swarm could open new and interesting possibilities in HSI.
+
+Acknowledgements Many thanks to Dr. Ricardo Chavarriaga, Dr. Claire Braboszcz and Dr. Serafeim
+Perdikis for the constructive discussions about experiments involving EEG; to Dr. Jérôme Scherer and
+Prof. Marco Picasso for their help on mathematical issues in the signal processing; to the reviewers who
+contributed with detailed and constructive comments during the submission process; and to all subjects
+who were available for the experiments. This work was partially supported by the Swiss National Center
+of Competence in Research “Robotics.”
+
+References
+1. Akhtar A, Norton JJ, Kasraie M, Bretl T (2014) Playing checkers with your
+mind: An interactive multiplayer hardware game platform for brain-computer
+interfaces. In: 36th Annual International Conference of the IEEE Engineering in
+Medicine and Biology Society (EMBC), IEEE, pp 1650–1653
+2. Aljshamee M, Mohammed MQ, Malekpour A, Luksch P, et al (2014) Beyond
+pure frequency and phases exploiting: Color influence in SSVEP based on BCI.
+Computer Technology and Application 5(2):111–118
+
+EEG as implicit communication channel for proximal interaction between human and swarm
+
+19
+
+3. Aljshamee M, Nadir S, Malekpour A, Luksch P (2016) Discriminate the brain responses of multiple colors based on regular/irregular SSVEP paradigms. Journal
+of Medical and Bioengineering Vol 5(2):89–92, DOI 10.18178/jomb.5.2.89-92
+4. Beverina F, Palmas G, Silvoni S (2003) User adaptive BCIs: SSVEP and P300
+based interfaces. PsychNology 1(4):331–354
+5. Bi L, Fan XA, Liu Y (2013) EEG-based brain-controlled mobile robots: A
+survey. IEEE Transactions on Human-Machine Systems 43(2):161–176, DOI
+10.1109 TSMCC.2012.2219046
+6. Bonani M, Rétornaz P, Magnenat S, Bleuler H, Mondada F (2012) Physical interactions in swarm robotics: the hand-bot case study. In: Martinoli A, Mondada
+F, Correll N, Mermoud G, Egerstedt M, Hsieh MA, Parker LE, Støy K (eds) Distributed Autonomous Robotic Systems, Springer, Berlin Heidelberg, Springer
+Tracts in Advanced Robotics, pp 585–595
+7. Brambilla M, Ferrante E, Birattari M, Dorigo M (2013) Swarm robotics: A review from the swarm engineering perspective. Swarm Intelligence 7(1):1–41,
+DOI 10.1007/s11721-012-0075-2
+8. Cao T, Wan F, Mak PU, Mak PI, Vai MI, Hu Y (2012) Flashing color on the
+performance of ssvep-based brain-computer interfaces. In: Annual International
+Conference of the IEEE Engineering in Medicine and Biology Society (EMBC),
+IEEE, pp 1819–1822
+9. Chua F, Daftari A, Alvarez T, DeMarco R, Bergen M, Beck K, Servatius R (2004)
+Effects of a single green flash versus a white flash of light on saccadic oculomotor metrics. In: Proceedings of the IEEE 30th Annual Northeast Bioengineering
+Conference, IEEE, pp 9–10
+10. Couture-Beil A, Vaughan R, Mori G (2010) Selecting and commanding individual robots in a vision-based multi-robot system. In: 5th ACM/IEEE International Conference on Human-Robot Interaction (HRI), pp 355–356, DOI
+10.1109/HRI.2010.5453167
+11. Durak L, Arikan O (2003) Short-time fourier transform: two fundamental properties and an optimal implementation. IEEE Transactions on Signal Processing
+51(5):1231–1242, DOI 10.1109/TSP.2003.810293
+12. Duvinage M, Castermans T, Petieau M, Hoellinger T, Cheron G, Dutoit T (2013)
+Performance of the emotiv epoc headset for P300-based applications. Biomedical
+engineering online 12(1):56
+13. Faller J, Müller-Putz G, Schmalstieg D, Pfurtscheller G (2010) An application
+framework for controlling an avatar in a desktop-based virtual environment via
+a software SSVEP braincomputer interface. Presence: Teleoperators and Virtual
+Environments 19(1):25–34, DOI 10.1162/pres.19.1.25
+14. Fan Xa, Bi L, Teng T, Ding H, Liu Y (2015) A brain-computer interface-based
+vehicle destination selection system using P300 and SSVEP signals. IEEE Transactions on Intelligent Transportation Systems 16(1):274–283
+15. Fong T, Thorpe C, Baur C (2003) Multi-robot remote driving with collaborative control. IEEE Transactions on Industrial Electronics 50(4):699–704, DOI
+10.1109/TIE.2003.814768
+16. Gao X, Xu D, Cheng M, Gao S (2003) A BCI-based environmental controller for
+the motion-disabled. IEEE Transactions on Neural Systems and Rehabilitation
+
+20
+
+Luca Mondada et al.
+
+Engineering 11(2):137–140, DOI 10.1109/TNSRE.2003.814449
+17. Goodrich MA, Schultz AC (2007) Human-robot interaction: A survey. Foundations and Trends in HumanComputer Interaction 1(3):203–275, DOI
+10.1561/1100000005
+18. Goodrich Ma, Pendleton B, Kerman S, Sujit P (2013) What types of interactions
+do bio-inspired robot swarms and flocks afford a human? In: Proceedings of
+Robotics Science and Systems VIII, pp 105–112
+19. Guger C, Allison B, Grosswindhager B, Prückl R, Hintermüller C, Kapeller
+C, Bruckner M, Krausz G, Edlinger G (2012) How many people could use an
+SSVEP BCI? Frontiers in Neuroscience 6:169, DOI 10.3389/fnins.2012.00169
+20. Güneysu A, Akin HL (2013) An SSVEP based BCI to control a humanoid
+robot by using portable EEG device. In: International Conference of the IEEE
+Engineering in Medicine and Biology Society, vol 2013, pp 6905–6908, DOI
+10.1109/EMBC.2013.6611145
+21. Herrmann CS (2001) Human EEG responses to 1-100 Hz flicker: Resonance phenomena in visual cortex and their potential correlation to cognitive phenomena.
+Experimental Brain Research 137:346–353, DOI 10.1007/s002210100682
+22. Hvaring FT, Ulltveit-Moe AH (2014) A comparison of visual evoked
+potential (VEP)-based methods for the low-cost emotiv EPOC neuroheadset. Tech. rep., Norwegian University of Science and Technology, NTNU - Trondheim, Trondheim, Norway, URL http://www.divaportal.org/smash/get/diva2:751718/FULLTEXT01.pdf
+23. Jacobs G (2013) SSVEP-based BCI control for navigating a robot. Tech. Rep.
+December, Faculteit der Sociale Wetenschappen, Radboud University, Nijmegen,
+The Netherlands, URL http://www.ru.nl/publish/pages/641151/jacobs gj ba-th2013.pdf
+24. Jian HL, Tang KT (2014) Improving classification accuracy of SSVEP based
+BCI using RBF SVM with signal quality evaluation. In: 2014 International Symposium on Intelligent Signal Processing and Communication Systems (ISPACS),
+IEEE, pp 302–306
+25. Jones G, Berthouze N, Bielski R, Julier S (2010) Towards a situated, multimodal interface for multiple UAV control. In: 2010 IEEE International
+Conference on Robotics and Automation (ICRA), pp 1739–1744, DOI
+10.1109/ROBOT.2010.5509960
+26. Kernbach S (2013) Handbook of collective robotics: fundamentals and challenges. CRC Press, DOI 10.4032/9789814364119
+27. Kirchner EA, de Gea Fernandez J, Kampmann P, Schröer M, Metzen JH, Kirchner F (2015) Intuitive interaction with robots - technical approaches and challenges. In: Drechsler R, Khne U (eds) Formal Modeling and Verification of
+Cyber-Physical Systems: 1st International Summer School on Methods and
+Tools for the Design of Digital Systems, Bremen, Germany, September 2015,
+Springer Fachmedien Wiesbaden, Wiesbaden, pp 224–248, DOI 10.1007/978-3658-09994-7 8
+28. Kishore S, González-Franco M, Hintemüller C, Kapeller C, Guger C, Slater M,
+Blom KJ (2014) Comparison of SSVEP BCI and eye tracking for controlling
+a humanoid robot in a social environment. Presence: Teleoperators and Virtual
+
+EEG as implicit communication channel for proximal interaction between human and swarm
+
+21
+
+Environments 23(3):242–252
+29. Kolling A, Walker P, Chakraborty N, Sycara K, Lewis M (2016) Human interaction with robot swarms: A survey. IEEE Transactions on Human-Machine Systems 46(1):9–26, DOI 10.1109/THMS.2015.2480801
+30. Li Y, Pan J, Wang F, Yu Z (2013) A hybrid bci system combining P300 and
+SSVEP and its application to wheelchair control. IEEE Transactions on Biomedical Engineering 60(11):3156–3166
+31. Lin YP, Wang Y, Jung TP (2014) Assessing the feasibility of online SSVEP decoding in human walking using a consumer EEG headset. Journal of NeuroEngineering and Rehabilitation 11(1):119, DOI 10.1186/1743-0003-11-119
+32. Liu Y, Jiang X, Cao T, Wan F, Mak PU, Mak PI, Vai MI (2012) Implementation
+of SSVEP based BCI with emotiv EPOC. In: IEEE International Conference on
+Virtual Environments Human-Computer Interfaces and Measurement Systems
+(VECIMS), IEEE, pp 34–37
+33. Martinoli A, Mondada F, Correll N, Mermoud G, Egerstedt M, Hsieh MA, Parker
+LE, Støy K (2012) 10th International Symposium on Distributed Autonomous
+Robotic Systems (DARS), vol 83. Springer
+34. Mathews N, Valentini G, Christensen AL, O’Grady R, Brutschy A, Dorigo M
+(2015) Spatially targeted communication in decentralized multirobot systems.
+Autonomous Robots 38(4):439–457
+35. Millan JR, Renkens F, Mouriño J, Gerstner W (2004) Noninvasive brain-actuated
+control of a mobile robot by human EEG. IEEE Transactions on biomedical Engineering 51(6):1026–1033
+36. Monajjemi V, Wawerla J, Vaughan R, Mori G (2013) HRI in the sky: Creating
+and commanding teams of UAVs with a vision-mediated gestural interface. In:
+IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS),
+pp 617–623, DOI 10.1109/IROS.2013.6696415
+37. Mouli S, Palaniappan R, Sillitoe IP, Gan JQ (2013) Performance analysis of
+multi-frequency ssvep-bci using clear and frosted colour led stimuli. In: Bioinformatics and Bioengineering (BIBE), 2013 IEEE 13th International Conference
+on, IEEE, pp 1–4
+38. Nagi J, Giusti A, Gambardella LM, Di Caro G (2014) Human-swarm
+interaction using spatial gestures. In: IEEE/RSJ International Conference
+on Intelligent Robots and Systems (IROS 2014), pp 3834–3841, DOI
+10.1109/IROS.2014.6943101
+39. Ortner R, Guger C, Prueckl R, Grünbacher E, Edlinger G (2010) SSVEP based
+brain-computer interface for robot control. In: International Conference on Computers for Handicapped Persons, Springer, vol 6180 LNCS, pp 85–90
+40. Pourmehr S, Monajjemi V, Vaughan R, Mori G (2013) “You two! Take
+off!”: Creating, modifying and commanding groups of robots using face engagement and indirect speech in voice commands. In: IEEE/RSJ International
+Conference on Intelligent Robots and Systems (IROS), pp 137–142, DOI
+10.1109/IROS.2013.6696344
+41. Renard Y, Lotte F, Gibert G, Congedo M, Maby E, Delannoy V, Bertrand O,
+Lécuyer A (2010) OpenViBE: an open-source software platform to design, test,
+and use brain-computer interfaces in real and virtual environments. Presence:
+
+22
+
+Luca Mondada et al.
+
+teleoperators and virtual environments 19(1):35–53, DOI 10.1162/pres.19.1.35
+42. Rencher AC (2003) Methods of multivariate analysis, vol 492. John Wiley &
+Sons, DOI 10.1002/0471271357
+43. Riedo F, Chevalier M, Magnenat S, Mondada F (2013) Thymio II, a robot that
+grows wiser with children. In: IEEE Workshop on Advanced Robotics and its Social Impacts (ARSO), IEEE, pp 187 – 193, DOI 10.1109/ARSO.2013.6705527
+44. Rubenstein M, Ahler C, Nagpal R (2012) Kilobot: A low cost scalable robot
+system for collective behaviors. In: IEEE International Conference on Robotics
+and Automation (ICRA), IEEE, pp 3293–3298
+45. Rubenstein M, Cornejo A, Nagpal R (2014) Programmable self-assembly in a
+thousand-robot swarm. Science 345(6198):795–799
+46. Rzepecki J, Delcourt J, Da Silva MP, Le Callet P (2012) Virtual interactions: Can
+EEG help make the difference with real interaction? In: Proceedings of the 2012
+IEEE International Conference on Multimedia and Expo Workshops, ICMEW
+2012, pp 151–156, DOI 10.1109/ICMEW.2012.33
+47. Salehuddin M, Suprijanto, Muchtadi FI (2011) Prototype design of low cost
+four channels digital electroencephalograph for sleep monitoring. In: 2nd International Conference on Instrumentation Control and Automation (ICA), pp
+188–193, DOI 10.1109/ICA.2011.6130154
+48. Stawicki P, Gembler F, Volosyak I (2016) Driving a semiautonomous mobile
+robotic car controlled by an SSVEP-based BCI. Computational Intelligence and
+Neuroscience 2016, DOI 10.1155/2016/4909685
+49. Stytsenko K, Jablonskis E, Prahm C (2011) Evaluation of consumer EEG device
+emotiv EPOC. In: MEi: CogSci Conference 2011, Ljubljana
+50. Trovato G, Zecca M, Sessa S, Jamone L, Ham J, Hashimoto K, Takanishi A
+(2013) Cross-cultural study on human-robot greeting interaction: acceptance and
+discomfort by egyptians and japanese. Paladyn, Journal of Behavioral Robotics
+4(2):83–93, DOI 10.2478/pjbr-2013-0006
+51. Van Vliet M, Robben A, Chumerin N, Manyakov NV, Combaz A, Van Hulle MM
+(2012) Designing a brain-computer interface controlled video-game using consumer grade EEG hardware. In: Biosignals and Biorobotics Conference (BRC),
+2012, IEEE, pp 1–6
+52. Volosyak I, Cecotti H, Graser A (2009) Optimal visual stimuli on LCD screens
+for SSVEP based brain-computer interfaces. Neural Engineering pp 447–450
+53. Winfield AF, Nembrini J (2006) Safety in numbers: fault-tolerance in robot
+swarms. International Journal of Modelling, Identification and Control 1(1):30–
+37
+54. Wu CH, Lakany H (2013) The effect of the viewing distance of stimulus on
+SSVEP response for use in brain-computer interfaces. In: IEEE International
+Conference on Systems, Man, and Cybernetics (SMC), IEEE, pp 1840–1845
+55. Yanco HA, Drury JL (2004) Classifying human-robot interaction: an updated
+taxonomy. In: IEEE International Conference on Systems, Man and Cybernetics,
+SMC, pp 2841–2846, DOI 10.1109/ICSMC.2004.1400763
+56. Yin E, Zhou Z, Jiang J, Chen F, Liu Y, Hu D (2013) A novel hybrid BCI speller
+based on the incorporation of SSVEP into the P300 paradigm. Journal of neural
+engineering 10(2):026,012
+
+EEG as implicit communication channel for proximal interaction between human and swarm
+
+23
+
+57. Yin E, Zeyl T, Saab R, Chau T, Hu D, Zhou Z (2015) A hybrid brain-computer
+interface based on the fusion of P300 and SSVEP scores. IEEE Transactions on
+Neural Systems and Rehabilitation Engineering 23(4):693–701
+58. Zheng Y, Zhang Y (2010) An improved segmented match filters with FFT approach for GNSS signal acquisition. In: ICCTD 2010 - Proceedings of the 2nd
+International Conference on Computer Technology and Development, Icctd, pp
+425–428, DOI 10.1109/ICCTD.2010.5645833
+59. Zhu D, Bieger J, Garcia Molina G, Aarts RM (2010) A survey of stimulation
+methods used in SSVEP-based BCIs. Computational intelligence and neuroscience 2010:702,357, DOI 10.1155/2010/702357
+
+

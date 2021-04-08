@@ -1,0 +1,672 @@
+Clasificación de estı́mulos visuales
+para control de drones
+Eduardo Zecua, Irving Caballero, José Martı́nez-Carranza, Carlos A. Reyes
+Instituto Nacional de Astrofı́sica Óptica y Electrónica, Puebla,
+México
+corichiedu@ccc.inaoep.mx, pirving01@ccc.inaoep.mx,
+carranza@inaoep.mx, kargaxxi@inaoep.mx
+
+Resumen. Los experimentos con grabaciones Electro-encefalográficas
+(EEG) registran oscilaciones del potencial de membranas neurales. Estas
+señales representan un porcentaje elevado de la actividad cerebral tanto
+del pensamiento como del movimiento corporal. Por lo anterio, en este
+trabajo se explora el uso de EEG para la clasificación del movimiento
+ocular, detonado por la observación de algún estı́mulo visual,de tal forma
+que los movimientos reconocidos puedan ser utilizados para controlar
+un dron. Para esto se generó una base de datos que se divide en dos
+grupos: entrenamiento y prueba, generada de 5 sujetos con una media
+de edad de 28 años. Se procesó la señal tomando los valores estadisticos
+que representaran los cambios más significativos y generando los vectores
+caracterı́sticos de cada una de las muestras. Una vez entrenada la red
+neuronal con estos parámetros, se procede a clasificar nuevas estancias
+y, dependiendo de la clasificación, se manda una instrucción o punto
+de ubicación a un dron controlado mediante un controlador proporcional
+integral derivativo (PID), el cual utiliza estimaciones de posición del dron
+obtenidas a través de un sistema de captura de movimiento VICON.
+Palabras clave: EEG, FFT, redes neuronales, drones, PID.
+
+Visual Stimuli Classification to Control Drones
+Abstract. Experiments with Electro-encephalographic recordings (EEG)
+capture oscillations of the potential of neural membranes. These signals
+represent a high percentage of brain activity in both, thought and body
+movement. Therefore, in this study we explore the use of EEG for classification of eye movement, triggered by the observation of a visual stimuli,
+such that, the recognized movements can be used to control a drone.
+To achieve this, a database is generated and divided into two groups:
+training and testing, generated with five test subjects with an average age
+of 28 years. The signal was processed by taking the statistical values that
+represent the most significant changes and generating the characteristic
+vectors of each of the samples. Once the neural network was trained with
+these parameters, it proceeds to classify new instances and, depending
+on the classification, an instruction or location point is sent to a drone
+pp. 201–212; rec. 2016-03-08; acc. 2016-05-09
+
+201
+
+Research in Computing Science 114 (2016)
+
+Eduardo Zecua, Irving Caballero, José Martínez-Carranza, Carlos A. Reyes
+
+controlled by an Proportional Integral Derivative controller (PID), which
+estimates the position of the drone through a motion capture Vicon
+system.
+Keywords: EEG, FFT, neural networks, drones, PID.
+
+1.
+
+Introducción
+
+Los vehı́culos aéreos no tripulados (VANTs) o drones actualmente están siendo utilizados para distintos propósitos entre los cuales se encuentran la vigilancia,
+esfuerzos militares para proveer seguridad, reconocimiento táctico, entre otras
+[12]. Por otra parte, los experimentos con grabaciones electroencefalográficas
+(EEG) están siendo utilizadas, cada vez más, como ı́ndices del proceso de trabajo
+de la memoria a lo largo de una variedad de tareas que involucran la operación
+de un VANT [14].
+Las señales de EEG recolectadas en el cráneo humano son fluctuaciones
+de potenciales eléctricos que reflejan actividad en las estructuras cerebrales
+subyacentes, particularmente en la corteza cerebral debajo de la superficie del
+cuero cabelludo. Las oscilaciones que produce el EEG se clasifican en función
+de su relación con la estimulación y pueden ser espontáneas. Los datos que se
+observan sugieren una relación positiva entre los estı́mulos inducidos por estados
+estacionarios de potenciales evocados visualmente y de la actividad cerebral [1].
+Cuando un estı́mulo sensorial corto se presenta, como una luz parpadeante o
+un movimiento del antebrazo de una persona,se produce una perturbación en las
+señales del EEG, la cual inicia después de un pequeño retraso del evento inicial
+(estı́mulo) y se esparce por alrededor de medio segundo o menos. Los cambios
+en la amplitud de la señal, debidos a la perturbación, son pequeños (a lo mucho,
+unos pocos micro-voltios), y no se aprecian a simple vista dentro de las lı́neas
+de actividad cerebral.
+La gente puede responder únicamente a una pequeña cantidad de información
+sensorial presente en cualquier momento. Por ello, la selección de la información
+es necesaria para facilitar los problemas computacionales introducidos por el
+enorme número de señales presentes en las superficies sensoriales y para asegurarse que la gente responda a un estı́mulo que sea relevante a los objetivos de la
+investigación[3]. Aunque muchos estudios han investigado la atención visual, la
+atención puede ser centrada en otros atributos (o dimensiones). La gente puede
+atender a, o “mirar hacia”, cierta información visual especı́fica (por ejemplo, un
+sombrero rojo que lleva un amigo entre una multitud). En este sentido, fijar la
+mirada en un atributo, mejora la precisión en la detección visual o discriminación
+de tareas [3].
+Motivados por lo anterior, en este trabajo se describen resultados sobre el uso
+de EEG para llevar a cabo el control de un dron. Para esto, los EEG se utilizan
+para clasificar el movimiento ocular, el cual se genera a partir de la observación
+de estı́mulos visuales. Una vez que el movimiento ocular es reconocido, estos se
+Research in Computing Science 114 (2016)
+
+202
+
+Clasificación de estímulos visuales para control de drones
+
+traducen con comandos de control para ejectura 5 tareas: despegar; viajar hacia
+un punto A en el espacio; hacia un punto B; o hacia un punto C; y aterrizar.
+Los resultados obtenidos en este trabajo indican que los movimientos oculares
+se reconocen con un 71.2 % de precision. Este porcentaje sin duda puede ser
+mejorado, no obstante, este porcentaje habla de la viabilidad de utilizar la
+metodologı́a descrita en este trabajo, la cual involucra el uso de EEG para
+reconocer el movimiento ocular derivado de un estimulo visual y que puede
+integrarse en un sistema de control para drones.
+Clasificar el movimiento ocular a partir de un estimulo visual es de interés en
+éste trabajo ya que serı́a deseable identificar ciertos tipos de moviento ocular, y
+no sólo eso, si no tambien gestos, muecas,o algún otra seña que permita detectar
+un posible estado de alerta del piloto mientras vuela el dron. Ésto último a raı́z
+de posibles escenarios donde el piloto observa una situacion de peligro, pero no
+le da tiempo de usar el control remoto para controlar adecuadamente el vehı́culo.
+Sin embargo, si la situación de riesgo se considera como un estı́mulo visual que
+es observado por el piloto, dicha situación podrı́a ser reconocido con un sistema
+basado en la metodologı́a que se presenta en este trabajo, y por ende utilizar
+dicho reconocimiento para enviar un paro de emergencia al dron o algún comando
+que le permita alejarse del peligro.
+De este modo y con el objetivo de describir con detalle el sistema propuesto,
+éste artı́culo se ha organizado de la siguiente manera: el trabajo relacionado se
+presenta en la sección 2; el sistema y sus componentes principales son descritos
+en la sección 3; los resultados son presentados y discutidos en la seccı́on 4; y
+finalmente las conclusiones se desglozan en la sección 5 y agradecimientos en la
+sección 6.
+
+2.
+
+Trabajos relacionados
+
+Cientı́ficos de la Universidad de Texas en San Antonio (UTSA) están tratando de convertir la ciencia ficción en realidad desarrollando la tecnologı́a
+que permitirá a los soldados controlar remotamente un VANT únicamente con
+sus mentes. Seis profesores de diferentes de departamentos de la universidad
+trabajan en distintos proyectos que tienen que ver con el estudio de la interacción
+cerebro-máquina.
+Pero UTSA no es la primera universidad con drones controlados con actividad
+cerebral. En 2013, el profesor Bin He de la Universidad de Minnesota fue la
+primera persona en mostrar el vuelo de un pequeño dron cuadrucóptero a través
+de un aro de globos, completamente controlado con una gorra con 64 sensores de
+electrodos colocada en la cabeza de una persona. Para volar el dron remótamente,
+el piloto imaginaba un puño. si se imaginaba un puño con la mano izquierda, el
+dron se desviaba a la izquierda. Las señales se enviaban de forma inalámbrica
+desde la computadora hacia el dron, para lo cual, primero decodificaba las señales
+cerebrales enviadas por la gorra y las retransmitı́a en forma de comandos que el
+dron debı́a seguir.
+203
+
+Research in Computing Science 114 (2016)
+
+Eduardo Zecua, Irving Caballero, José Martínez-Carranza, Carlos A. Reyes
+
+La dinámica del EEG h sido utilizada para examinar los procesos cerebrales
+involucrados en tareas como detección visual de un objetivo [10] y rastreo visiomotora [8]. Para el año 2010, se habı́a alcanzado un concenso sobre la mejor
+aproximación para examinar los datos del EEG[9], pero, en particular, dos anchos
+de banda de frecuencia han recibido más atención. Se ha encontrado que la
+actividad en el rango alfa, frecuentemente disminuye con el incremento de la
+dificultad de la tarea, mientras que lo opuesto se ha observado en la actividad
+registrada en el rango teta, particularmente en los sitios de los electrodos de la
+lı́nea media frontal[5].
+Esperimentos electrofisiológicos han mostrado que las neuronas en la corteza
+visual de los humanos sincronizan sus disparos a la frecuencia de luz parpadeante,
+originando respuestas en el EEG las cuales muestran la misma frecuencia que el
+estı́mulo parpadeante [13].
+Varios autores han analizado la relación entre la frecuencia EEG y el desempeño de diferentes tareas. En general, a una frecuencia baja del EEG se le ha
+relacionado a una reacción más larga en el tiempo (Reaction Time) o a un mayor
+número de errores[15]. La hipótesis más común fue que la relación de desempeño
+del EEG fue modulada por el nivel de alerta[11]. Está fuera de toda duda que
+el nivel de alerta produce cambios tanto en el EEG como en el desempeño. Sin
+embargo, reportes previos de trabajos con niños han mostrado una correlación
+positiva entre la potencia delta del EEG en reposo, y el tiempo de respuesta
+(RT) y la relación de error en atención visual y tareas de memorización llevadas
+a cabo en diferentes sesiones.
+
+3.
+
+Descripción del sistema
+
+Para el desarrollo del sistema se emplearon varios equipos descritos en las
+secciones 3.1 y 3.2. Todos los procesos fueron realizados en una computadora
+con procesador Intel i7 de cuatro núcleos con 8 Gb de memoria RAM y sistema
+operativo Ubuntu 14.4 operando con el sistema operativo robótico (ROS). Un
+segundo equipo con un procesador AMD A10 con 12 Gb de RAM con sistema
+operativo Windows 10 y operando con Matlab 2015b. Todo el sistema se divide en
+dos partes: la primera se refiere a la adquisición de los datos del EEG incluyendo
+su clasificación y, la segunda etapa implica el control del dron utilizando un
+controlador PID para moverlo a la posición especificada dada la clasificación de
+las señales.
+3.1.
+
+Sistema de posicionamiento VICON
+
+El sistema de traqueo Vicon es un sistema de ubicación y seguimiento a
+partir de cámaras monoculares que, a través de luz infrarroja, envı́a un haz de
+luz a marcadores especiales con forma esférica y con un recubrimiento reflejante
+en el cual rebota la luz en todas direcciones hacia las cámaras. Dependiendo
+de la cantidad de luz reflejada y la ubicación de cada uno de los marcadores,
+cada cámara hace una triangulación regresando la ubicación de cada marcador
+Research in Computing Science 114 (2016)
+
+204
+
+Clasificación de estímulos visuales para control de drones
+
+en el espacio con respecto a una referencia propuesta durante la calibración del
+equipo y con precisión milimétrica. Estos marcadores se colocaron en el cuerpo
+del dron de manera que no estorbaran en el vuelo y pudieran ser localizados en
+todo momento por el sistema de traqueo.
+3.2.
+
+Dron BEBOP
+
+Para el desarrollo de este proyecto se utilizó el dron BEBOP de la marca
+PARROT, el cual cuenta con una cámara monocular de tipo ojo de pescado
+y 4 hélices. Éste es controlado mediante WiFi a través de computadoras o
+celulares y cuenta con un sensor ultrasónico ubicado en parte inferior que mide la
+distancia entre él y el suelo lo que permite que se mantenga en vuelo de manera
+estable. Este modelo cuenta con protecciones para poder operarlo en interiores
+y exteriores (1) .
+
+Fig. 1. BEBOP operando en vuelo
+
+3.3.
+
+Control PID
+
+Un controlador PID (Proportional Integral Derivativo) es un mecanismo de
+control genérico sobre una retrolimentación de bucle cerrado, ampliamente usado
+en la industria para el control de sistemas. El PID es un sistema que recibe un
+error calculado a partir de la salida deseada menos la salida obtenida; y su salida
+es utilizada como entrada en el sistema que queremos controlar. El controlador
+intenta minimizar el error ajustando la entrada del sistema.
+El controlador PID consiste de tres parámetros distintos: el proporcional,
+el integral, y el derivativo. El valor Proporcional depende del error actual. El
+Integral depende de los errores pasados y el Derivativo es una predicción de los
+errores futuros. La suma de estas tres acciones es usada para ajustar al proceso
+por medio de un elemento de control como la posición de una válvula de control
+o la potencia suministrada a un calentador.
+205
+
+Research in Computing Science 114 (2016)
+
+Eduardo Zecua, Irving Caballero, José Martínez-Carranza, Carlos A. Reyes
+
+Cuando no se tiene conocimiento del proceso, históricamente se ha considerado que el controlador PID es el controlador más adecuado. Ajustando estas tres
+variables en el controlador PID, puede proveer una acción de control diseñado
+para los requerimientos del proceso en especı́fico. La respuesta del controlador
+puede describirse en términos de la respuesta del control ante un error, el grado
+el cual el controlador sobrepasa el punto de ajuste, y el grado de oscilación del
+sistema. Nótese que el uso del PID para control no garantiza control óptimo del
+sistema o la estabilidad del mismo.
+Para el sistema de control del Dron se utiliza un PID que calcula el error
+entre el valor medido y el valor deseado. Esto se aplicó cuando se le asignaba
+un punto al dron al que tuviera que acercarse, midiendo con el sistema Vicon la
+posición y calculando el error (distancia entre la posición actual y la deseada).
+El PID ajusta los valores para acercarse al punto lo más rápido posible con un
+amortiguamiento en la disminución de la velocidad del vehı́culo conforme se va
+acercando al punto deseado. El método fue implementado para el control del
+desplazamiento del dron y para el giro en su propio eje.
+Este modelo se divide en 3 partes:
+La parte proporcional, ajusta la velocidad dependiendo de la distancia entre
+el punto, esto se refiere a que mientras la distancia entre la posición actual
+y la deseada sea grande la velocidad del vehı́culo también será grande y
+viceversa.
+La parte integral va acumulando el error, esto se refiere a que mientras más
+tiempo tarde el vehı́culo en llegar al área deseada, éste acumula los valores
+para ir incrementado la velocidad en cierta medida.
+La parte derivativa mide la diferencia del error actual y error pasado, mide la
+proporción de cambio en cada uno de los instantes, lo cual ayuda al sistema
+a acelerar desde el principio puesto que es cuando el error es mas grande.
+El ajuste de las ganancias de estos sistemas no es trivial y requiere ser modificado dependiendo de las condiciones de cada sistema, ası́ como las condiciones
+de su entorno, ya que el dron es perturbado por el moviendo de sus propias
+hélices en vuelo.
+3.4.
+
+Adquisición de señales EEG
+
+Las frecuencias del EEG tradicionalmente se han clasificado en diferentes
+bandas. La actividad Delta (1.5 - 3.5 Hz) es la principal caracterı́stica del
+sueño, pero puede estar presente durante la atención a procesos internos como
+cálculos mentales y memorización[6]. La actividad Teta (4 - 7 Hz) puede reflejar
+una función portera del flujo de información a través del hipocampo y los
+circuitos de estructuras objetivo. La actividad Alfa (8 - 13 Hz) es más que una
+frecuencia espontánea y es un prototipo de procesos dinámicos que gobiernan un
+gran conjunto de funciones cerebrales integrativas. Los patrones Alfa puden ser
+espontáneos, inducidos o evocados por estı́mulos, movimientos o relaciondos a la
+memoria. La cuarta actividad es la Gama (25 - 100 Hz) la cual se ha teorizado
+que podrı́an estar implicadas en el proceso de percepción consciente [2].
+Research in Computing Science 114 (2016)
+
+206
+
+Clasificación de estímulos visuales para control de drones
+
+Para la adquisición de las señales se utilizó la diadema de la marca Emotiv
+modelo EPOC, la cual consta de 14 canales distribuidos en la corteza craneal
+como se muestra en la figura (2). El sistema tiene una frecuencia de muestro de
+128 SPS y se conecta a una computadora de manera inalámbrica a través de una
+conexión USB. El software utilizado para guardar todas las pruebas realizadas
+es el Emotiv TestBench de la marca Emotiv.
+
+Fig. 2. BEBOP operando en vuelo
+
+La base de datos se creó con cinco sujetos con una media de edad de 28
+años. Las muestras se recopilaron mientras ellos estaban sentados y mirando una
+pantalla con una cruz roja en el centro y fondo blanco para que éstas tuvieran la
+menor cantidad de ruido al mover los ojos por distraccion de manera involuntaria
+como se aprecia en la figura (3). A los sujetos se les pidió que realizaran un
+movimiento ocular determinado (mirar hacia arriba, mirar hacia abajo, mirar a
+la izquierda, mirar a la derecha, parpadear) y cada vez que llevaban a cabo el
+movimiento, éste se marcaba con una etiqueta diferente en las lecturas del EEG.
+3.5.
+
+Procesamiento de la señal
+
+Una vez adquiridas las señales estas se guardaban con la extensión. EDF,
+para poder leer los datos y poder procesarlos se creó un programa en MATLAB
+que leyera cada una de las filas y descompusiera este formato en una matriz con
+los valores de cada uno de los 14 canales por separado.
+De la matriz obtenida se seleccionan los canales más caracterı́sticos para el
+movimiento ocular, estos se encuentran en la parte frontal arriba de los ojos
+con la diadema EMOTIV tenemos 4 canales (AF3, AF4, F7, F8) [4] que se
+encuentran cercanas a esta área. De estos cuatro canales se obtienen los valores
+estadisticos correspondinetes a los valores maximos y minimos que componen
+207
+
+Research in Computing Science 114 (2016)
+
+Eduardo Zecua, Irving Caballero, José Martínez-Carranza, Carlos A. Reyes
+
+Fig. 3. Montaje de display con cruz roja en el centro
+
+a la señal en el instante en que se generó el movimiento ocular, estos tiene
+variaciones dependiendo de como se genera el movimiento [7].
+3.6.
+
+Entrenamiento de la red neuronal
+
+Las pruebas del experimento se dividieron en dos partes, la primera consistı́a
+en recopilar muestras para el entrenamiento de una red neuronal creada con
+ayuda del toolbox de Matlab, siendo una red neuronal de tipo feed-fordward con
+5 neuronas en la capa entrada, 8 neuronas en la capa de oculta y 5 neuronas en
+la capa de salida. Se usó el algoritmo de aprendizaje trainbr el cual se utiliza
+para ajustar los pesos en la fase de entrenamiento, consistiendo en un proceso de
+regularización bayesiana y fijando en 500 el número de épocas de entrenamiento,
+con el fin de ajustar los pesos de la red de manera óptima para la clasificación.
+Es importante hacer mención que los datos de entrada se etiquetaban con
+cada uno de los movimientos oculares, proceso que se llevó a cabo mediante un
+programa generado en Matlab que enviaba los marcadores a través de un clic
+del ratón para especificar el instante en el que se realizó la acción.
+En la segunda parte, se procesaron las muestras para la etapa de evaluación
+pasándolas por la red neuronal entrenada sin etiquetas, con el objetivo de cuantificar el porcentaje en que las nuevas instancias eran clasificadas correctamente.
+3.7.
+
+Sistema ROS
+
+Para el control todo el sistema se utilizó el sistema ROS, este es un software
+especializado en el control de robots el cual funciona con nodos que son lanzados
+desde códigos en C++ o Python, con la ventaja de poder publicar en cada
+suscribirse a cada uno de ellos. Este sistema se utilizó para controlar el dron,
+Research in Computing Science 114 (2016)
+
+208
+
+Clasificación de estímulos visuales para control de drones
+
+el modelo que se utilizó para este experimento fue el BEBOP de la marca
+PARROT, este se conecta mediante wifi a una computadora o teléfono, para
+el control se creó un programa que se suscribiera al nodo de clasificación, una
+vez que este nodo publicara algún mensaje, dependiendo de la clasificación se
+toma la acción de despegar, aterrizar o volar el dron a una determinada área. La
+retroalimentación del dron se realizó el área donde este opera con el equipo
+VICON para saber su posición y la distancia de cada uno de los 3 puntos
+marcados.
+
+4.
+
+Resultados y experimentos
+
+La evaluación del clasificador se llevó a cabo con la base de datos de prueba,
+este conjunto contenı́a nuevas instancias que no habı́a visto el clasificador. Una
+vez pasando por la red neuronal, ésta las clasificaba conforme habı́a aprendido en
+la fase de enteramiento. Se calculó un arreglo de 5 números formados en columnas
+como se muestra en el Cuadro 1, cada uno de estos números corresponde al peso
+de la medida a la instancia que puede pertenecer cada vector. Para hacer la
+elección de la clase a partir de estos valores, se toma el número mayor y la clase
+final está dada por la posición de este número, por ejemplo, se puede observar en
+la columna P1 que el número mayor corresponde a la clase 1. Para construir la
+tabla se tomaron 10 muestras para poder observar cómo opera el sistema. Estos
+valores se tomaron al azar de la datos de prueba que cosiste en la combinación
+de las muestras de los sujetos.
+Una vez que se tienen los resultados de pasar todas las muestras de prueba
+por la red neuronal para ser clasificados, éstas se comparan con los valores de la
+clase a la que realmente pertenecen. Dichos resultados se presentan en la Matriz
+de Confusión mostrada en la tabla (2). Cada fila representa la clasificación hecha
+por la red y las columnas representa la clasificación correcta. En la última fila y
+columna se muestran los porcentajes de las clasificaciones correctas hechas por
+el sistema, teniendo el total de aciertos en la celda de la última fila y columna.
+La posición (1,1) de la tabla nos indica el número de elementos que clasificó
+correctamente el sistema de la clase 1, en la posición (1,2) nos indica cuantos
+elementos de la clase 1 fueron clasificados como la clase 2 y ası́ sucesivamente.
+Tabla 1. Resultados obtenidos de la clasificación de 10 estimulos. El valor más alto
+corresponde a la clasificación realizada por el clasificador
+Clasificador
+Clase 1
+Clase 2
+Clase 3
+Clase 4
+Clase 5
+
+P.1
+0.8111
+-0.5137
+-0.1255
+0.7191
+0.1196
+
+P.2
+0.7856
+0.0866
+0.1834
+0.0412
+-0.0991
+
+P.3
+0.1636
+0.5636
+-0.0006
+-0.0136
+0.2896
+
+P.4
+0.1058
+-0.0775
+0.9726
+-0.1768
+0.1682
+
+209
+
+P.5
+0.0008
+-0.1450
+0.0090
+1.1190
+0.0215
+
+P.6
+0.2229
+0.1178
+-0.1550
+-0.0426
+0.8565
+
+P.7
+0.5004
+0.0919
+0.1632
+0.1715
+0.0750
+
+P.8
+0.0359
+-0.1162
+0.0138
+1.0535
+0.0175
+
+P.9
+0.5828
+-0.5676
+0.2187
+-0.0550
+0.8018
+
+P.10
+0.2852
+0.4474
+0.1632
+-0.0060
+0.1107
+
+Research in Computing Science 114 (2016)
+
+Eduardo Zecua, Irving Caballero, José Martínez-Carranza, Carlos A. Reyes
+
+Tabla 2. Matriz de confusión
+Clases Clase 1 Clase 2 Clase 3 Clase 4 Clase 5
+Clase 1 29
+1
+1
+2
+5
+Clase 2
+5
+17
+0
+0
+8
+Clase 3
+3
+0
+16
+0
+4
+Clase 4
+1
+0
+0
+28
+0
+Clase 5
+3
+4
+3
+0
+19
+66.7
+77.3
+80.0
+93.3
+52.8
+
+67.9
+56.7
+69.6
+96.6
+65.5
+71.2
+
+En los 10 casos de prueba mostrados en el cuadro 1, la prueba 2 (P.2) y la
+prueba 7 (P.7) fueron erróneas ya que las clases calculadas fueron ”1.en ambas,
+sin embargo las clases correctas debı́an ser ”2.en ambos dos casos.
+Para el control del vehı́culo las instrucciones se mandaron mediante un arreglo
+de 3 números, el primer digito contenı́a la instrucción de despegar, este se obtuvo
+de la clasificación 2 (mirar hacia arriba); el segundo digito especificaba a cuál de
+los 3 puntos pre-establecidos tenı́a que llegar, obtenido de las clasificaciones 3,4,5
+(mirar a la izquierda, mirar a la derecha o parpadear); el ultimo digito contenı́a
+la instrucción de aterrizar, obtenido de la clasificación 1 (mirar hacia abajo);
+estas posibles acciones se describen en el Cuadro (3). Estos se escogieron de esta
+manera por lo inusual de su comportamiento en un estado normal. Debido a que
+es más factible parpadear, esta acción se tomó como un valor intermedio para
+ir a un punto en el espacio. Para que el sistema pudiera empezar a operar es
+necesario que el sujeto mire hacia arriba para poder despegar el dron. El sistema
+está diseñado para leer los tres parámetros antes mencionados en este orden. Si
+recibiera cualquier otro estimulo antes de despegar este no lo tomarı́a en cuenta.
+Una vez llevada a cabo la clasificación de los movimientos oculares y poder
+ejecutar el control del dron, estos valores son impresos en un archivo de texto
+(.TXT) para, posteriormente, ser leı́dos por un nodo de ROS y, dependiendo de
+la clase escrita, el dron realice las acciones predeterminadas. Para las pruebas se
+realizaron 10 experimentos los cuales se muestran el Cuadro (3).
+Tabla 3. Clasificación de 10 experimentos realizados. La primer fila indica el número
+del experimento. La segunda fila se refiere a la primera acción (despegar). La tercera
+fila es la acción de movimiento a un punto definido mediante el control PID. La cuarta
+fila es la acción de aterrizar
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+2—2 2—2 2—2 2—2 2—2 2—2 2—2 2—2 1—2 2—2
+4—4 3—3 4—4 1—5 5—5 5—5 4—4 5—5 4—4 4—4
+1—1 1—1 1—1 1—1 1—1 4—1 1— 1 1—1 4—1 1—1
+
+El cuadro (3) se divide en columnas las cuales separan cada uno de los experimentos. Cada una de las filas (de arriba hacia abajo) representan los valores
+ordenados que tomaron en cada uno de los instantes, cada una de estas contiene
+Research in Computing Science 114 (2016)
+
+210
+
+Clasificación de estímulos visuales para control de drones
+
+dos números, el primero indica el valor que fue capturado en el clasificador y el
+segundo es el valor de la clasificación real, este último se anexa a la tabla (4).
+para comprar cada una de las instrucciones.
+
+Tabla 4. Acciones llevadas a cabo de acuerdo a la clasificación de estı́mulos
+Clase
+Estı́mulo
+Acción
+Clase 1 Mirar abajo
+Aterrizar
+Clase 2 Mirar arriba
+Despegar
+Clase 3 Mirar derecha Mover a punto 1
+Clase 4 Mirar izquierda Mover a punto 2
+Clase 5
+Parpadeo
+Mover a punto 3
+
+5.
+
+Conclusiones y trabajo futuro
+
+En este trabajo se han presentado resultados de un sistema basado en el uso
+de EEG para el reconocimiento de movimiento ocular detonado por un estı́mulo
+visual y que, al reconocerse, se utiliza para enviar comandos de control a un
+dron. Las oscilaciones que produce el EEG pueden ser clasificadas en función de
+su relación con la estimulación. En este caso, los estı́mulos correspondieron al
+movimiento ocular de los sujetos de prueba y dichas oscilaciones se clasificaron en
+cinco clases distintas con las cuales se pudo accionar un dron con cinco diferentes
+acciones, dependiendo de la clase enviada. El clasificador obtenido tiene una
+precisión del 71.2 %, lo cual fue suficiente para los propositos de este trabajo
+y en medida de que el dron llevo a cabo las acciones determinadas sin mayor
+dificultad.
+No obstante, para el trabajo a futuro se tiene considerado el mejorar la
+clasificación y complementarla con un detector de falsos positivos pues enviar
+un comando erroneo al dron puede ser catastrófico. Tambien se considera trabajar con el reconocimiento de algun otro tipo de expresión tales como muecas,
+pestañeos e incluso pensamientos. Del mismo modo, se contempla experimentar
+con diferentes estı́mulos visuales que generen una reacción de alerta en el piloto
+tales como el observar que el dron se encuentre en riesgo de chocar. Finalmente, también se realizaran pruebas en escenarios menos controlados, como por
+ejemplo, realizar la detección y el control del dron en ambientes exteriores.
+
+Agradecimientos. Este trabajo fue financiado por la Royal Society-Newton
+Advanced Fellowship con referencia NA140454. El autor Eduardo Zecua Corichi
+agradece el apoyo recibido por parte de CONACYT bajo la beca número 624062.
+El autor Irving Caballero Ledesma agradece el apoyo recibido por parte de
+CONACYT bajo la beca número 702771.
+211
+
+Research in Computing Science 114 (2016)
+
+Eduardo Zecua, Irving Caballero, José Martínez-Carranza, Carlos A. Reyes
+
+Referencias
+1. Başar-Eroglu, C., Strüber, D., Schürmann, M., Stadler, M., Başar, E.: Gammaband responses in the brain: a short review of psychophysiological correlates and
+functional significance. International Journal of Psychophysiology 24(1), 101–112
+(1996)
+2. Buzsaki, G.: Rhythms of the Brain. Oxford University Press (2006)
+3. Corbetta, M., Miezin, F.M., Dobmeyer, S., Shulman, G.L., Petersen, S.E.: Attentional modulation of neural processing of shape, color, and velocity in humans.
+Science 248(4962), 1556 (1990)
+4. Croft, R., Barry, R.: Removal of ocular artifact from the eeg: a review. Neurophysiologie Clinique/Clinical Neurophysiology 30(1), 5–19 (2000)
+5. Gevins, A., Smith, M.E., McEvoy, L., Yu, D.: High-resolution eeg mapping of
+cortical activation related to working memory: effects of task difficulty, type of
+processing, and practice. Cerebral cortex 7(4), 374–385 (1997)
+6. Harmony, T., Fernández, T., Silva, J., Bernal, J., Dı́az-Comas, L., Reyes, A.,
+Marosi, E., Rodrı́guez, M., Rodrı́guez, M.: Eeg delta activity: an indicator of
+attention to internal processing during performance of mental tasks. International
+journal of psychophysiology 24(1), 161–171 (1996)
+7. Herrmann, C.S.: Human eeg responses to 1–100 hz flicker: resonance phenomena in
+visual cortex and their potential correlation to cognitive phenomena. Experimental
+brain research 137(3-4), 346–353 (2001)
+8. Huang, R.S., Jung, T.P., Delorme, A., Makeig, S.: Tonic and phasic electroencephalographic dynamics during continuous compensatory tracking. NeuroImage
+39(4), 1896–1909 (2008)
+9. Klimesch, W., Freunberger, R., Sauseng, P., Gruber, W.: A short review of slow
+phase synchronization and memory: evidence for control processes in different
+memory systems? Brain research 1235, 31–44 (2008)
+10. Makeig, S., Delorme, A., Westerfield, M., Jung, T.P., Townsend, J., Courchesne,
+E., Sejnowski, T.J.: Electroencephalographic brain dynamics following manually
+responded visual targets. PLoS Biol 2(6), e176 (2004)
+11. Makeig, S., Jung, T.P.: Tonic, phasic, and transient eeg correlates of auditory
+awareness in drowsiness. Cognitive Brain Research 4(1), 15–25 (1996)
+12. Parasuraman, R., Cosenzo, K.A., De Visser, E.: Adaptive automation for human
+supervision of multiple uninhabited vehicles: Effects on change detection, situation
+awareness, and mental workload. Military Psychology 21(2), 270 (2009)
+13. Picton, T.: Human brain electrophysiology. evoked potentials and evoked magnetic
+fields in science and medicine. Journal of Clinical Neurophysiology 7(3), 450–451
+(1990)
+14. Roberts, D.M., Taylor, B.A., Barrow, J.H., Robertson, G., Buzzell, G., Sibley,
+C., Cole, A., Coyne, J.T., Baldwin, C.L.: Eeg spectral analysis of workload for a
+part-task uav simulation. In: Proceedings of the Human Factors and Ergonomics
+Society Annual Meeting. vol. 54, pp. 200–204. SAGE Publications (2010)
+15. Valentino, D.A., Arruda, J., Gold, S.: Comparison of qeeg and response accuracy
+in good vs poorer performers during a vigilance task. International Journal of
+Psychophysiology 15(2), 123–133 (1993)
+
+Research in Computing Science 114 (2016)
+
+212
+
+

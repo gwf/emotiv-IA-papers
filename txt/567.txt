@@ -1,0 +1,1155 @@
+A Synergetic Brain-Machine Interfacing Paradigm for
+Multi-DOF Robot Control
+Saugat Bhattacharyya, Shingo Shimoda, Mitsuhiro Hayashibe
+
+To cite this version:
+Saugat Bhattacharyya, Shingo Shimoda, Mitsuhiro Hayashibe. A Synergetic Brain-Machine Interfacing Paradigm for Multi-DOF Robot Control. IEEE Transactions on Systems, Man and Cybernetics,
+Part A: Systems and Humans, Institute of Electrical and Electronics Engineers, 2016, 46 (7), pp.957968. �10.1109/TSMC.2016.2560532�. �lirmm-01347425�
+
+HAL Id: lirmm-01347425
+https://hal-lirmm.ccsd.cnrs.fr/lirmm-01347425
+Submitted on 21 Jul 2016
+
+HAL is a multi-disciplinary open access
+archive for the deposit and dissemination of scientific research documents, whether they are published or not. The documents may come from
+teaching and research institutions in France or
+abroad, or from public or private research centers.
+
+L’archive ouverte pluridisciplinaire HAL, est
+destinée au dépôt et à la diffusion de documents
+scientifiques de niveau recherche, publiés ou non,
+émanant des établissements d’enseignement et de
+recherche français ou étrangers, des laboratoires
+publics ou privés.
+
+IEEE TRANSACTIONS ON SYSTEMS, MAN, AND CYBERNETICS: SYSTEMS, VOL. 46, NO. 7, JULY 2016
+
+957
+
+A Synergetic Brain-Machine Interfacing Paradigm
+for Multi-DOF Robot Control
+Saugat Bhattacharyya, Shingo Shimoda, and Mitsuhiro Hayashibe, Senior Member, IEEE
+
+Abstract—This paper proposes a novel brain-machine
+interfacing (BMI) paradigm for control of a multijoint redundant robot system. Here, the user would determine the direction
+of end-point movement of a 3-degrees of freedom (DOF) robot
+arm using motor imagery electroencephalography signal with coadaptive decoder (adaptivity between the user and the decoder)
+while a synergetic motor learning algorithm manages a peripheral redundancy in multi-DOF joints toward energy optimality
+through tacit learning. As in human motor control, torque control paradigm is employed for a robot to be adaptive to the given
+physical environment. The dynamic condition of the robot arm is
+taken into consideration by the learning algorithm. Thus, the user
+needs to only think about the end-point movement of the robot
+arm, which allows simultaneous multijoints control by BMI. The
+support vector machine-based decoder designed in this paper is
+adaptive to the changing mental state of the user. Online experiments reveals that the users successfully reach their targets with
+an average decoder accuracy of over 75% in different end-point
+load conditions.
+Index Terms—Brain-machine interfacing (BMI), co-adaptive
+decoder, joint redundancy, multijoint robot, synergetic learning
+control, tacit learning.
+
+I. I NTRODUCTION
+S OF today, brain–machine interfacing (BMI) [or braincomputer interfacing (BCI)] is one of the fastest growing
+areas of research that provides a unique course of communication between a human and a machine (or device) without
+any neuro-muscular intervention [1]. BMI was initially conceived to provide rehabilitative and assistive solutions [2], [3]
+to patients suffering from neuromuscular degenerative diseases, such as amyotropic lateral sclerosis, cervical spinal
+injury, paralysis, or amputee [4]. But in recent years, potential applications in fields of communication [5], [6], military
+use [7], virtual reality [8], [9] and gaming [10], [11] has
+
+A
+
+Manuscript received October 22, 2015; revised December 17, 2015;
+accepted March 7, 2016. Date of publication May 26, 2016; date of current
+version June 14, 2016. This work was supported by the Erasmus Mundus
+Action 2 project for Lot 11-Svaagata.eu:India through European Commission
+(ref.nr. Agreement Number: 2012-2648/001-001-EM Action 2-Partnerships).
+This paper was recommended by Associate Editor Z. Li.
+S. Bhattacharyya is with the INRIA-LIRMM, University of Montpellier,
+Montpellier 34095, France (e-mail: saugatbhattacharyya@live.com).
+S. Shimoda is with the Brain Science Institute-Toyota Collaboration Center,
+RIKEN, Nagoya 2271-130, Japan.
+M. Hayashibe is with the INRIA-LIRMM, University of Montpellier,
+Montpellier, France, and also with the Brain Science Institute–Toyota
+Collaboration Center, RIKEN, Nagoya, Japan (e-mail: hayashibe@lirmm.fr).
+Color versions of one or more of the figures in this paper are available
+online at http://ieeexplore.ieee.org.
+Digital Object Identifier 10.1109/TSMC.2016.2560532
+
+widened its materiality across different domain other than
+rehabilitation.
+A BMI system relies on tools from digital signal processing and machine learning to identify and predict the
+cognitive state of the user from their corresponding brain
+signals [4]. The brain signals are recorded either invasively or noninvasively [12]. Although invasive means of
+acquisition provides better performance in terms of accuracy and precision, noninvasive means are widely used
+by most BMI/BCI researchers for their simplicity in user
+interface. The most widely used noninvasive recording technique is electroencephalography (EEG), where the signals are
+recorded by electrodes placed on the scalp, because it is
+inexpensive, portable, easily available and has high temporal
+resolution [4], [13].
+Depending on the nature of the experiment, the acquired
+EEG is found to have specific signal characteristics. Signals
+acquired during movement related planning, imagination or
+execution [motor imagery (MI)] is identified by a decrease
+in spatio-spectral power [termed as event-related desynchronization (ERD)] followed by an increase in power [termed as
+event-related synchronization (ERS)] [14], [15]. Researchers
+have widely used the changing patterns of ERD/ERS patterns for different MI tasks [such as left (or right) hand
+MI] to generate commands necessary to drive a peripheral
+device such as mobile [16], [17] or humanoid robots [18],
+wheelchairs [19] and navigation in virtual reality [8], and
+gaming [20] environment.
+Even after such advances of EEG-BMI in control applications, it still has not been used in real world applications
+(except simple discrete selection task) because of certain issues
+inherent in the signal. EEG signals are nonstationary, nonlinear, non-Gaussian, and highly variable in nature [1], [15],
+because the recordings on different days or different times
+of the same day exhibit high variability of the signal. This
+phenomena usually occurs due to shifts in electrode positions
+between sessions or changes in the electrochemical properties of the electrodes. Another issue that arises from EEG is
+the noisy and low resolution signals recorded from the scalp,
+which in actuality is the nonlinear superposition of electrical activity of a large population of neurons. This masks the
+underlying neural pattern of interest and restricts their detection. Even the current mental state of the user may affect
+the quality of the signal [1], [21]. To address these problems, a practical BMI system should continuously track the
+changing EEG patterns of the user in order to obtain a good
+performance.
+
+c 2016 IEEE. Translations and content mining are permitted for academic research only. Personal use is also permitted, but republication/
+2168-2216 
+redistribution requires IEEE permission. See http://www.ieee.org/publications_standards/publications/rights/index.html for more information.
+
+958
+
+IEEE TRANSACTIONS ON SYSTEMS, MAN, AND CYBERNETICS: SYSTEMS, VOL. 46, NO. 7, JULY 2016
+
+Study on the co-adaptivity of the user with the BMI system is an active area of research and to date, there is not
+much literature available on auto-adaptive and autocalibrated
+approaches. In current co-adaptive approaches [1], [21], [22],
+the system is initially trained to previous data, which is used
+for initial training of the decoder. Then, data collected from
+subsequent sessions are directly included into the system,
+where the decoder is retrained and updated. The performance
+of the user is displayed visually after the task, which allows
+the user to train him/herself. DiGiovanna et al. [23] used reinforcement learning to develop an intelligent BMI control agent
+that works in synergy with the BMI user and both the system co-adapts and continuously learns from the environment.
+The model was tested on rats and each subject co-adapted
+with BMI control system significantly to control a prosthesis. Recently, Bryan et al. [24] have devised a new approach
+to BCI, which employs partially observable Markov decision
+processes to handle the uncertainty of the EEG and achieve coadaptivity. Their approach allowed the system to make online
+improvements to its behavior by adjusting itself to the user’s
+changing circumstances.
+Till now, a discussion on co-adaptation learning based on
+both user and BMI system has been provided. Based on these
+approaches, it is possible to control a robot (or prosthetic) limb
+using MI BMI commands (like, left hand, and right hand).
+But, control of multijoint robot involves redundancy management issues in simultaneous multijoint control which is an
+open problem in this area. To control multijoint robot using
+the current control paradigms of BMI, one may need to control each individual joints separately in step-by-step manner to
+complete a task [15], [19], [25]. Such movement of the robot
+arm is not similar to human motor control, and is tedious
+to the user. As a result, such control techniques do not provide a practical solution and are far from natural human limb
+coordination since it is ideal to employ a control framework
+which allows users to drive BMI-driven robot as a third arm
+by his feeling. By following a human-like synergetic motor
+control framework, one may obtain optimal BMI control solutions in multidegrees of freedom (DOF) arm which is similar
+to the case in actual human motor control [26]. For instance,
+when we try to get a glass of water, we imagine mainly about
+an end-point task itself in reaching motion than imagining
+about individual joint angle trajectory. It is more natural to
+imagine such end-point intentions and it can be obtained even
+through noninvasive BMI using superficial cortical level signals. Redundant peripheral joint control should be managed at
+different level as it is normally managed in cerebellum level
+in human motor control.
+In this paper, we propose a novel BMI paradigm, which is a
+combination of a co-adaptive EEG decoder, which adapts the
+decoder to the current mental state of the user while he/she
+observes a feedback (FB) [22] (in this paper, the motion of
+the robot), and synergetic motor learning scheme [26], to control the movements of a multijoint redundant robot driven by
+torque control. The synergetic learning controller takes on a
+role of functionality of cerebellum to optimize the peripheral motor coordination taking into account the given dynamic
+environment. Torque control scheme is preferred in humanoid
+
+robotics as it provides environmental compliance for humanrobot interaction [27]. Regarding motor intention in cortical
+level, the decoder distinguishes between left and right MI EEG
+to move a 3-DOF robot up and down toward a given target. As
+a result, by blending the cortical signal level learning paradigm
+of the BMI-user system and the peripheral motor learning
+paradigm, we have attempted to simplify the BMI control of a
+multijoint robot in a fashion similar to the situation where we
+control a human limb naturally. As it is first trial and report of
+this new BMI paradigm on redundant robot, a relatively simple
+task focusing on the joint level handling is employed in this
+paper. However, this paper first deals with tridirectional adaptation in BMI. In addition to the so-called bilateral adaptation
+between human physiological signal changes and its adaptive
+decoding, the third adaptation in peripheral motor control is
+integrated to deal with redundant arm coordination.
+The rest of this paper is organized as follows: Section II
+describes the synergetic BMI control paradigm proposed in
+this paper. This section also provides information on the experimental setup. The results of the experiments are presented
+and discussed in Section III. Section IV presents a comparative discussion of this paper followed by concluding remarks
+on Section V.
+II. P RINCIPLES AND M ETHODOLOGY
+A. Synergetic BMI Control Scheme
+It is known that human beings do not perform the joint
+actions of compound movements consciously. Movements are
+generally controlled by a subconscious mental subroutine and
+thus, can be considered as automatic in nature [28]. While
+learning a new movement the mental activity shifts from the
+foreground mental routine to the background subconscious
+one. Thach [28] and Wolpert et al. [29] suggested that training
+of skilled movements in the human brain starts as a conscious
+act in the cerebral cortex. But on gradual and repetitive trials of
+the same movement, the cerebellum begins to take control of
+the task by recognizing the relation to each segment of consciously initiated movement. Finally, the cerebullum attains
+control over the entire process and by a mere trigger from
+the cerebrum, it can execute the entire movement without any
+conscious effort [28]–[30]. The multijoint human motor system requires to handle complex interaction torques which is
+compensated by predictive motor control located within the
+cerebellar cortex. Sensory information on the early phases of
+the movement enters the cerebellum and triggers the memory
+related to the optimal joint torque. As a result, motor learning and control are executed flawlessly and are easily adapted
+to the ever-changing environment and newly generated goals.
+The aim of BMI control of a prosthetic or robotic limb is to
+allow seamless human-like movement but to date, they incur
+joint redundancy issues during movement tasks. To solve this
+problem, one needs to include a learning controller to manage
+peripheral drive for a multijoint system to allow an optimal
+human-like movement of the limb.
+Several models have been formulated to deal with the
+redundancy issues in the past and such models are generally defined as “minimum X,” where X is jerk [31], torque
+
+BHATTACHARYYA et al.: SYNERGETIC BMI PARADIGM FOR MULTI-DOF ROBOT CONTROL
+
+959
+
+Fig. 2. Standard 10–20 representation of the electrodes present in an Emotiv
+headset.
+
+Fig. 1. BMI paradigm employed in this paper for simultaneous control of
+multi-DOFs robot using adaptive left-right MI decoder and synergetic motor
+learning for peripheric joint redundancy management. The black dots indicate
+the targets for the subjects in the vertical plane.
+
+changes [32], motor command [33], and energy consumption [34]. Researchers basically assume the use of a physical
+inverse dynamical model [35] or approximation-based models [36]. Hayashibe and Shimoda [26] have proposed an
+optimal method for multijoint redundancy management using
+tacit learning scheme. This technique optimizes the multijoint
+problem without any prior knowledge of the system dynamics
+by using the task space error. Phenomenological optimal solutions can be generated without using so-called mathematical
+optimization process. In this paper, we have adopted this synergetic learning control technique for the peripheral multijoint
+management of a 3-DOF robotic arm.
+The details of the online BMI control paradigm, shown in
+Fig. 1, are as follows. The participant observes the current
+position of the end-effector of the robot and attempts to generate the required MI signal. The process involves filtering and
+extracting features from the raw EEG signal. Then, the features are fed as inputs to the decoder to identify the MI state
+(left/right MI). The decoded output is then transmitted to the
+robot as commands to move it up or down in the vertical plane.
+Prior to the onset of the online task, the robot is trained to its
+dynamic environment using a tacit learning approach [37] for a
+fixed period of 70 s. In this paper, the load carried by the robot
+is treated as the environmental change along with segmental
+inertial configuration changes. As a result, the movement of
+the joints of the robot adapts to the changing load. To make the
+decoder co-adaptable to the changing brain state of the subject, we measure the posterior probability (P) of each incoming
+event. If P fulfills the required conditions of the system then it
+is included in the training dataset with a higher weight than the
+older data, while the oldest data is removed from the dataset
+and the decoder is retrained online. If P does not fulfill the
+conditions, then we reject the incoming data and the decoder
+does not need to be retrained. This step is included to change
+the learning of the decoder with the current mental state of
+the subject.
+
+Our proposed scheme adapts at different stages. First,
+the decoder/ classifier is designed to continuously adapt to
+the changing brain signal, while the subject simultaneously
+observes the movement of the robot. Second, the peripheral
+motor controller is adaptable to the given physical environment. Because of the two adaptive function, the subject is free
+to control the robot arm without burdening himself to control
+complex joint management. Hence, here we have proposed a
+tridirectional form of adaptation (user-decoder-robot).
+B. Experiment Description
+1) Subjects and Data Acquisition: The EEG in this paper is
+recorded using a 14 channel Emotiv Epoc neuro-headset with
+a sampling rate of 128 Hz and an in-built band-pass filter of
+0.2–45 Hz. The electrodes: AF3, F7, F3, FC5, T7, P7, O1, O2,
+P8, T8, FC6, F4, F8, and AF4, are arranged on the basis of
+the standard 10–20 system (Fig. 2) [38]. Nine healthy subjects
+with no prior experience on BMI (six male and three female,
+one left-handed and eight right-handed), participated in this
+experiment over a period of two days. In the first day, the
+subjects perform the tasks on two separate sessions. The data
+from the first session is used to train the decoder, while the
+same from the second session is used for offline testing the
+training of the decoder. In the second day, the subjects would
+control the movement of a robot arm in real-time based on
+the decoder trained on the previous day. Since, we are dealing
+with human subjects for experimental purpose, we abide by
+the norms of Helsinki Declaration of 1975, revised in 2000.
+Prior to the experiments, the subjects are informed about the
+purpose of the experiment and the tasks they have to perform.
+2) Task and Stimuli: The experiment designed for this
+paper is divided into two phases: 1) offline and 2) online.
+In the offline phase, we determine the parameters of the support vector machines (SVMs) decoder for each subject. We
+perform an offline validation of the adaptivity of the decoder
+prior to employing it for the online phase.
+The training and offline testing sessions comprise instructing
+the subjects through a sequence of visual stimulus to imagine the movement of the corresponding MI task, which is,
+left and right movement. Fig. 3 shows the generic structure of
+the visual cue. First, a blank screen is projected to the subject for 20 s, which provides the baseline of the EEG. Then,
+a fixation “+” is displayed on screen for 1 s which is an
+indicator to the subject to get ready for the task. Next, the
+
+960
+
+IEEE TRANSACTIONS ON SYSTEMS, MAN, AND CYBERNETICS: SYSTEMS, VOL. 46, NO. 7, JULY 2016
+
+Fig. 3. Timing diagram of a single trial to train the subject in left and right
+hand MI (as indicated by left and right arrow, respectively).
+
+instructions are provided to the subject for 3 s in form of
+arrows. According to the direction of the arrow, the subject
+imagines either left or right hand movement. Following the
+instructions, a blank screen is again displayed for 1.5–3.5 s.
+It allows the subject to relax during the task and removes the
+possibility of over-lapping between two mental states. Each
+task is repeated 40 times for the training session and 20 times
+for the offline testing session.
+During the online tasks, the subjects are not shown any
+visual cues but are provided with audio cues from the operator.
+The operator would instruct the subject to move toward the top
+or bottom target (shown as black dots in Fig. 3). The subject
+would then generate the necessary MI commands to move the
+robot toward the target. The sequence of the instructions are
+random in nature and he/she would take several discrete steps
+(MI trials) to reach the target. The control commands required
+to move the robot is as follows: 1) left MI indicates upward
+movement of the robot and 2) right MI indicates downward
+movement of the robot. The subject observes the movement
+of the robot arm, which is considered as FB to the subject. If
+the decoder makes an error by producing the wrong output,
+then the subject on observing the error would attempt to fix it
+by generating the right brain signal.
+The robot used in this experiment has 3-DOF and is
+located in Brain Science Institute-Toyota Collaboration Center,
+RIKEN, Japan. The decoder output commands from the
+decoder are sent remotely through an secure shell (SSH) file
+transfer protocol [39] from INRIA-LIRMM, France. Prior to
+the subject sending commands to the robot, peripheral motor
+controller is trained using synergetic learning to adapt to the
+given dynamical environment including arm inertial configuration and the newly given end-point load which influences interaction torques of multijoints in complex way. Here, the online
+task required the subject to guide the robot end-point toward
+the target based on the instructions from the operator. The
+online experimental task was repeated twice for each weight.
+C. Co-Adaptive EEG-BMI System
+The BMI system employs wavelet transforms [40], [41] for
+feature extraction, Laplacian EigenMaps [42] to determine the
+relevant features and an SVM classifier [43] to decode between
+the two mental states. The BMI system achieves co-adaptivity
+by the method mentioned in Section II-A.
+1) Preprocessing: It is known from [4] and [38] that
+MI signals are characterized by the presence of event
+ERD/ERS [44], which are dominant in μ (8–12 Hz) and
+
+central β (16–24 Hz) band of the EEG [38]. We preprocess
+the raw EEG data by applying a band-pass filter in 8–25 Hz
+range using a 4th order elliptical filter of 1 dB passband ripple
+and 30 dB stopband ripple [15]. Elliptical filters are characterized by a very sharp frequency roll-off and is equiripple in
+nature, which provides good attenuation of the pass- and the
+stop-band ripples [45]. With this step, noise due to muscle or
+eye movement, environmental interference and other parallel
+brain processes (not related to the tasks) is also removed.
+2) Feature Extraction: The filtered signals are then processed using discrete wavelet transform (DWT) [41] to derive
+the signature features related to left- and right-MI. Wavelet
+transform provides localized frequency information over a
+given time period, which is highly suitable for nonstationary signals like EEG. The DWT decomposes the signal at
+different resolutions into coarse approximation and detail
+coefficient [41].
+In this paper, we have selected Daubechies wavelet of the
+fourth order as the mother wavelet. As mentioned earlier, MI
+signals are dominant in the 8–12 Hz and 16–24 Hz range. We
+have extracted 3 s of EEG from onset of every stimuli, decomposed it to its fourth level and then reconstructed it using only
+the third and fourth detail coefficient. The final feature vector is constructed from the average of the reconstructed signal
+at D3 and D4 level. Thus, the final dimension of the feature
+vector for each trial is 384 features × 14 electrodes.
+3) Feature Selection: Sometimes due to high dimensionality of the features, the decoder suffers from high computational
+time, lack of relevant information, and overfitting, which in
+turn has a detrimental effect on the performance of the BMI.
+To negate this problem, researchers employ some form of linear or nonlinear dimensionality reduction technique [46], [47].
+Laplacian EigenMap [42] is an unsupervised manifold learning
+algorithm which performs nonlinear dimensionality reduction
+by the following four basic steps.
+1) Compute the nearest neighbors of the input data.
+2) Using neighborhood relations construct a weight graph
+matrix.
+3) Optimize the graph matrix based on a fitness function.
+4) Project the final data from the top or bottom half of the
+matrix.
+Extensive details on Laplacian EigenMaps are given in [42].
+The advantage of this technique is to provide an optimal
+embedding solution to the manifold, for interpreting the
+dimensionality reduction problem geometrically, by maintaining the locality and proximity relations. Thus, it is insensitive
+to outliers and noise.
+In this paper, we have determined the optimal dimensionality of relevant features for each subject from their validation
+results. The dimension which yields the best accuracy is used
+during online testing. The dimension of the reduced feature
+vector for each subject is mentioned in Table II.
+4) Decoder Design: Selection of a classifier algorithm is
+also an important issue. SVM [43] nowadays has earned
+popularity for its good recognition accuracy and speed.
+Training time of SVM is significantly small in comparison
+to naive Bayesian and multilayered perceptron [43]. This
+motivated us to select SVM in the present application.
+
+BHATTACHARYYA et al.: SYNERGETIC BMI PARADIGM FOR MULTI-DOF ROBOT CONTROL
+
+961
+
+Fig. 5. Block diagram of the tacit learning-based synergetic motor control
+paradigm.
+
+Fig. 4.
+
+BMI adaptive scheme employed in this paper.
+
+An SVM classifier maps the input vectors in high dimensional feature space through some nonlinear mapping which
+can easily separate the data point vectors of two classes by a
+hyperplane. The hyperplane is a linear decision function constructed from a small amount of training data, called support
+vectors. The optimal hyperplane is a plane having the maximum distance from support vectors of the two classes. The
+data points placed beyond the margins of the hyperplane are
+easily classified into their respective classes. The aim of the
+SVM classifiers is to determine the separating hyperplane with
+the maximum margin.
+To make the decoder adaptive to the changing brain state
+of the subject, we have employed the posterior probability (P)
+of the data-points, which is described as follows.
+1) Initially train the decoder (SVM in this paper) using
+L(L > 0.5 × N) datapoints, where N is the total number
+of datapoints.
+2) Input N − L datapoints to the trained decoder and
+determine their respective posterior probabilities (P).
+3) If P > 0.7, include the current datapoint and remove the
+first datapoint to create a new feature vector.
+4) Retrain the decoder and repeat from step 1.
+To decide on the optimal value of P, we determined the
+accuracy of the classifier for different values of P from [0, 1]
+with step-size of 0.1. The value which provided the optimal result is selected as the final value for offline validation
+and online testing. The influence of P with different value is
+discussed on the result section. A simplified block diagram
+of the steps involved in the adaptive process is illustrated
+in Fig. 4.
+
+D. Peripheric Motor Learning of the Dynamic Environment
+Tacit learning employs the command signal accumulated
+during repetitive interaction with the environment to develop
+an appropriate behavior for the system. The motor learning paradigm for multijoint reaching coordination, first proposed in [26] and shown in Fig. 5, can be summarized
+as follows.
+1) The subject intends to move toward the target, which
+is represented by the direction to the target, and it is
+
+regarded as the proportional (P) FB error between the
+target and current endpoint.
+2) The FB force error is mapped into the joint torque space
+by using the Jacobian of the robot arm and the motorcommand error works as a supervising signal.
+3) Here, the local proportional derivative (PD) control
+mainly relates to a local reflex loop which regulates the
+joint angles to change smoothly.
+4) The torque command accumulation part, defined by an
+integral I, serves as a unique learning process which
+corresponds to tacit learning. This portion learns to compensate the interaction torques such as gravitational and
+limb inertia components, and converts into a predictive
+torque pattern following the motor learning.
+Specifically, the controllers for tacit learning can be
+expressed as follows:
+τ 1 = −JT (θ )kr − Aθ − Bθ̇
+τ 2 = −JT (θ )kr − Aθ − Bθ̇ + C
+
+(1)
+
+
+τ 1 dt
+
+τ 1 , τ 2 , θ , θ̇ ∈ Rm , r ∈ Rn , JT (θ ) ∈ Rm×n
+
+(2)
+
+where, m is the number of joints, n is the dimensional number of the task space, τ2 implies the control torque inputs of
+the joints during tacit learning. θ and θ̇ refers to the angles
+and angular velocities of joints, respectively. JT (θ)kr corresponds to the neural substrate of force mapping functionality
+presumably due to corticospinal control [48]. A and B are
+diagonal matrices which contain the proportional and derivative gains of the PD controller and C is made of the gains
+of the torque command integration regarding motor-command
+error and local FB torque. The PD controller corresponds to a
+local reflex loop as a function of muscle spindles. Even though
+this paper is a joint-level representation, the resisting features
+against muscle length change and velocity change can still be
+captured by the resisting feature in the joint angle and angular
+velocity changes as in local PD controller. The robot consists
+of the upper arm, forearm and hand segments with a 3-DOF
+configuration. Each joint is actuated using a DC motor with
+an encoder and a harmonic drive gearing for backdrivability.
+Each motor is current-controlled with servo-amplifier drives.
+Thus, each joint has a local torque control to generate the
+specified joint torque for the robot. The control algorithms
+are executed on a master PC with the interface of analog-todigital and digital-to-analog converters from the encoders and
+to the motors, respectively. This manipulator is redundant as
+the three motor axes are in parallel.
+
+962
+
+IEEE TRANSACTIONS ON SYSTEMS, MAN, AND CYBERNETICS: SYSTEMS, VOL. 46, NO. 7, JULY 2016
+
+The detailed performance of the synergetic learning controller is mentioned in [26]. The configuration allows the joints
+to be controlled independently and thus it can be presumed as a
+modular structure present within cerebellar pathways. Typical
+optimal solutions are based on model-based cost approach, but
+this approach optimizes the process by repetitive interaction
+with the environment rather than using some cost function.
+This learning controller turns into predictive control from initial FB control while synergetically modifying the redundant
+joint space usage toward energy efficient solutions. The joint
+synergy may appear through the environmental interactions.
+E. BMI Evaluation Metrics
+To evaluate the performance of the BMI system during
+training and validation, we have employed four quantitative measures. They are: 1) classification accuracy [49];
+2) sensitivity [49]; 3) specificity [49]; and 4) area under the
+curve (AUC) [50].
+Now, the definition of the above evaluation parameters,
+where TP is the true positive, TN is the true negative, FP is
+the false positive, and FN is the false negative, is as follows.
+1) Classification Accuracy: It is the measure of how correctly a classifier can predict a class. It is given by
+Accuracy =
+
+TP + TN
+.
+TP + TN + FP + FN
+
+(3)
+
+2) Sensitivity: It is the measure of how correctly a classifier
+has classified the positive class. It is given by
+Sensitivity =
+
+TP
+.
+TP + FN
+
+(4)
+
+3) Specificity: It is the measure of how correctly a classifier
+has classified the negative class. It is given by
+Specificity =
+
+TN
+.
+TN + FP
+
+(5)
+
+4) Area Under the Curve: AUC is derived from the receiver
+operating characteristic (ROC) [51] curve of the classifier performance. ROC is a curve between true positive
+rate (sensitivity) in the y-axis and false positive rate
+(1–specificity) in the x-axis obtained by varying the
+decision boundary. Perfect classification is denoted by
+a point in the upper left corner (0, 1) indicating 100%
+specificity and 100% sensitivity. The random guess line
+is the line joining (0, 0) and (1, 1) and contains the point
+(0.5, 0.5). Points in the upper portion of the random
+guess line indicate good prediction and the points below
+the line indicate poor prediction. Thus, we can say ROC
+curve is a plot of the classification result of the most
+positive classification to the most negative classification
+and the resultant AUC is widely used as a classification
+metric.
+We have quantified the performance of the online task of
+moving the robot arm using left and right hand MI by the
+following metrics: 1) accuracy and 2) time taken, i.e., the time
+taken to process and decode the incoming EEG signal and
+transmit it remotely to the robot using SSH protocol.
+
+Fig. 6. Topographical plot of brain activation during −500 to 1000 ms for
+(a) left-hand MI and (b) right-hand MI for subject 6.0 ms marks the onset of
+the task.
+
+III. R ESULTS
+This section begins with the detection of ERD/ERS signals from the EEG acquired from the Emotiv system. Then,
+it presents the results on the performance of the BMI system
+during training and offline testing of the decoder, performance
+of the peripheral motor controller during its learning stage and
+the complete performance of BMI system (which includes the
+trained BMI decoder and the trained peripheral motor controller) during online experimentation. The offline processing
+and online experimentation has been executed in MATLAB
+Windows 8.1 environment.
+A. Detection of ERD/ERS Patterns
+The Emotiv acquisition system, used in this paper, does not
+have any channels directly over the primary motor cortex, but
+it has channels, FC5, FC6, P7, and P8, in the vicinity of the
+region. Thus, for MI studies, one can use these channels to
+detect the ERD/ERS waveform. Emotiv is a low-cost, portable
+EEG acquisition system and thus, in recent years, researchers
+have used it in detection of P300, steady state visually evoked
+potential, and ERD/ERS waveform. Hurtado-Rincon et al. [52]
+and Dharmasena et al. [53] has successfully classified between
+
+BHATTACHARYYA et al.: SYNERGETIC BMI PARADIGM FOR MULTI-DOF ROBOT CONTROL
+
+963
+
+TABLE I
+T RAINING R ESULTS OF THE D ECODER D URING N O A DAPTATION AND A DAPTATION
+
+TABLE II
+VALIDATION OF THE D ECODER ON A N EW DATASET ( OF 40 T RIALS ) D URING N O A DAPTATION AND A DAPTATION
+
+left- and right-MI. Fok et al. [54] have acquired brain signals
+related to movement to successfully drive a powered orthosis
+tasked at opening and closing of the patient’s hand.
+Fig. 6 provides a topographical plot of brain activation during −500 to 1000 ms for left- and right-hand MI tasks for
+subject 6. As noted from the plots, the right side of the brain
+is more active during left hand MI and vice-versa. Also, the
+frontoparietal region of the brain is more active than other
+regions. The inferences derived from the plots confirms the
+presence of ERD/ERS.
+B. BMI Adaptive Decoder Training and Validation
+
+Fig. 7. Average accuracies obtained over nine subjects, while changing the
+limiting posterior probability from 0.1 to 1.0.
+
+To analyze the training performance of the decoder, we have
+used k-fold cross validation technique [49], where we have
+taken the value of k to be 7 to lower the variance of the
+outcome. In Table I, we have shown the average of the classification metric [i.e., accuracy, sensitivity, specificity, and AUC
+(in %)] for all the nine subjects. In the same table, we have
+also compared the results of the decoder while it is adapting (adaptation column in the table) and when we did not
+include the adaptation to the decoder (no adaptation column
+in the table). A significant increase in the performance metric
+is noted for all the subjects when we have included our adaptation scheme to the BMI. The adaptation result suggests an
+increase of average accuracy, sensitivity, specificity, and AUC
+by 9.03%, 7.54%, 8.77%, and 6.37%, respectively, from its
+nonadaptive counterpart. We further statistically validate the
+results of the nonadaptive and adaptive decoder using a 5by-2 paired t-test [55], where the null hypothesis states that
+the nonadaptive decoder is at most as accurate as the adaptive decoder. The p-values as observed from Table I suggests
+that for all subjects rejects the null hypothesis at 5% significance level, and thus, it is statistically shown that the adaptive
+decoder is more accurate than the nonadaptive one.
+
+The average accuracy indicates that the decoder can detect
+87% of the incoming features to be true. Sometimes, the accuracy may provide a skewed result by detecting one class very
+well but the other class very poorly. Thus, the sensitivity,
+specificity and AUC provides a more reliable result in this
+context. Sensitivity suggests how good the decoder is to detect
+a positive class, while sensitivity suggests how good it detects
+the negative result. The AUC on the other hand, indicates the
+tradeoff between the sensitivity and specificity to make the
+decoder produce an optimal result. The average sensitivity,
+specificity and AUC being more than 85% suggests that the
+decoder can detect 85% of the positive and negative classes
+without adversely affecting each other.
+Through Fig. 7, we also show the influence of changing the
+posterior probability (P) on the decoder output. On changing
+P from 0.1 to 1.0, there is a gradual increase of the average accuracies (of the training data) till P > 0.7 and then it
+decreases. From this observation, we have selected P > 0.7.
+Next, we validate the performance of our BMI decoder over
+a new independent dataset, which for this paper is the second
+
+964
+
+IEEE TRANSACTIONS ON SYSTEMS, MAN, AND CYBERNETICS: SYSTEMS, VOL. 46, NO. 7, JULY 2016
+
+(a)
+
+(c)
+
+(b)
+
+(d)
+
+Fig. 8. Endpoint transition of robot with load (a) 300 g and trajectory of the shoulder-elbow-wrist joints for 300 g load and (b) 600 g and trajectory of the shoulder-elbow-wrist joints for 600 g load. (c) Phase potrait of joint angle-angular velocity for the shoulder-elbow joints at different weight
+conditions. (d) Energy consumption of time sequential changes in one cycle of up/down motion with 600 g load along with its FB component and
+FF component.
+
+offline session. This step is included in this paper to check
+the performance of the classifier on a new dataset, prior to
+using it for online experimentation and confirm its ability to
+perform at par with its training result. Here, the features of
+the independent dataset is fed directly to the trained classifier, which provides the output. The results of validating the
+decoder is presented in Table II. We notice a slight decrease in
+accuracy, sensitivity, specificity and AUC by 4.86%, 1.68%,
+5.91%, and 9.23% from its training counterpart. The slight
+decrease can be attributed to the nonstationarity of the EEG
+and due to some fatigue encountered by the subjects after the
+training session. Anyways, the decrease is not large and the
+decoder can detect the required class correctly by 75% for all
+the subjects where for subject 1, 3, and 9, it can detect 90% of
+the signals correctly. The result also suggests that the decoder
+did not overfit during training. Similar to the training results,
+on inclusion of the adaptive paradigm, an increase of average
+accuracy, sensitivity, specificity, and AUC is noted by 7.22%,
+13.34%, 2.11%, and 6.72%, respectively, from its nonadaptive counterpart. Again we statistically validate the adaptive
+decoder with its nonadaptive counterpart using 5-by-2 paired
+
+t-test for the same null hypothesis. As noted from the p-values
+of Table II, seven of the nine subjects rejects the null hypothesis at 5% significance level and thus for these subjects the
+adaptive decoder are more accurate than its nonadaptive counterpart. But for subjects 4 and 7, the null hypothesis is accepted
+and thus the adaptive decoder is as accurate as its nonadaptive
+counterpart.
+From the validation dataset, we also determine the best
+dimension of features for each subject which is shown in the
+FS column of the table. It is noted from the table that the value
+of FS not only changes for each subject but also during no
+adaptation and adaptation circumstances. It shows how each
+subject varies from each other and as a result each subject
+has his/her own individual decoder trained. The positive result
+shown during validation allowed us to use the decoder during
+online testing of the BMI system.
+C. Learning of the Synergetic Motor Controller
+For this experiment, we have used two different loads of 300
+and 600 g as unknown loads for the robot. It means the load
+
+BHATTACHARYYA et al.: SYNERGETIC BMI PARADIGM FOR MULTI-DOF ROBOT CONTROL
+
+965
+
+Fig. 9. Subject performing the online control of multi-DOF robot in a
+simultaneous way by using co-adaptive BMI. The black dots indicate the
+targets for the subjects in the vertical plane.
+
+(a)
+
+is not a-priori known for the motor controller. For both the
+weights, prior to the subject sending commands to the robot,
+peripheral motor controller is trained using our approach for
+70 s to adapt to the given dynamical environment including
+arm inertial configuration and end-point load.
+Fig. 8 describes the learning of the peripheral motor controller using tacit learning. Fig. 8(a) and (b) illustrates the
+trajectory of the robot arm during its learning for both
+the loads. The time sequential transition of the end-point of
+the robot for both the figures are illustrated using a color map
+which changes with the progress of time. The lines (in blue)
+show the trajectory of each individual links. The black bar represents the target limit. Both the figures demonstrate the ability
+of the synergetic controller to adapt the multijoint usage in
+redundant space to the different load conditions by changing
+the motion range of each angle joints.
+Fig. 8(c) shows the shoulder-elbow phase map for the different weights. The figure illustrates that the shoulder is used
+less when the load gets heavy, while the wrist usage is also
+minimized to reduce the total energy consumption for the same
+task.
+Fig. 8(d) presents the temporal transition of energy consumption in synergetic learning control with a 600 g load.
+The energy consumption was calculated by summing up each
+joint energy consumption by integrating τ θ̇ , and dividing it by
+time to compute as work rate (power). From (4), let us consider
+the torque component of PD FB as an FB controller and the
+integral term as a feedforward (FF) controller. During learning, the contribution of FF is increased until the torque from
+FF converges into a certain pattern. Thus, synergetic learning
+matches with the typical human motor learning process. As
+noted from the figure, motion is initially generated by endpoint
+error principally (influence of FB), but this part is being minimized and predictive FF pattern takes over during the learning
+of the lifting up/down motion.
+D. Online Performance of the Simultaneous Multi-DOF
+Robot Control by Co-Adaptive BMI
+Following the training of robot controller using synergetic
+motor learning algorithm, the subject is ready to move the
+robot arm by his/her motor intention. An example of the subject performing the task is shown in Fig. 9. The subject from
+
+(b)
+Fig. 10. Trace of the movement of the robot arm during simultaneous multiDOF robot control which is driven by the subject motor intention through
+co-adaptive BMI. The robot is holding (a) 300 g load, (b) 600 g load. The
+joint angle variance on shoulder and wrist for the heavier weight condition
+has become half compared to lighter weight condition.
+
+one end generates the instructed brain signals (left or right MI).
+The decoder decodes the brain signal to generate the corresponding control command necessary to move the robot in
+either up or down direction. The command is transferred to
+the robot via SSH remote communication. The online task
+requires the subject to move the robot between the two targets
+(shown as black dots in Fig. 9).
+Fig. 10 shows an example of the trace of the movement of
+the robot arm [similar to Fig. 8(a) and (b)] which is driven
+by the subject motor intention through co-adaptive BMI. As
+seen from the figure, the robot requires a number of steps (or
+trials of MI extraction) to reach the target. The time sequential
+transition of the end-point of the robot for both the figures are
+illustrated using a color map which changes with the progress
+of time. As noted from the figures, when the robot carries a
+heavier weight (i.e., 600 g in this paper), there is a smaller
+displacement in the shoulder and wrist joint as compared to a
+lighter weight condition (i.e., 300 g in this paper). This observation is also validated by the joint angle variance metric
+shown in Table III. The results from the table that the joint
+angle variance on shoulder (1.67◦ ) and wrist (2.03◦ ) for the
+
+966
+
+IEEE TRANSACTIONS ON SYSTEMS, MAN, AND CYBERNETICS: SYSTEMS, VOL. 46, NO. 7, JULY 2016
+
+TABLE III
+O NLINE P ERFORMANCE ON M ULTIJOINT ROBOT A RM A DAPTIVE BMI C ONTROL W ITH D IFFERENT L OAD C ONDITIONS
+
+heavier weight condition has become less than half compared
+to lighter weight condition (5.66◦ for shoulder and 5.15◦ for
+wrist). This joint usage variation appears automatically without changing any setting in the controller. By using prioceptive
+information such as torque and joint angles, this adaptation
+systematically appears through the synergetic learning control [26]. This observation regarding minimal shoulder and
+wrist usage for heavy object manipulation is well matched to
+the situation in human motor control. Holding heavy object in
+the air requires redundant torque production if you hold it by
+using multiple joints. Thus, when we need to lift up the heavy
+object, it is efficient if we minimize the multiple joint usage
+to reduce total energy consumption.
+Further, from Table III, the average accuracies of all
+subjects are over 75% with subject 1 producing an accuracy of 80% for both weights. The time taken to transfer
+each command over a remote connection to the robot is
+around 8.5 s which is considered to be a high value for
+real-time applications. Such high value may be attributed
+to the high processing time required by MATLAB and
+the time to transfer the commands from one computer to
+another through the Internet across different continents. The
+link to a video showing a subject controlling the multijoint
+robot is given in http://www.lirmm.fr/∼hayashibe/SMC/
+SynergeticBMIx2.5speed.mp4.
+IV. D ISCUSSION
+In this section, we describe some co-adaptive approaches
+implemented by other researchers. A detailed comparison is
+difficult as the studies are different in terms of the paradigms
+and the performance evaluation. An intuitive comparison of
+the training and validation results of this paper is thus given
+to fit our results with existing literature.
+Faller et al. [56] developed co-adaptive cue-based training
+paradigms for ERD-based BCI to benefit severely disabled
+patients, including ones with spinal cord injury. The BCI analyzes the EEG from three bipolar locations: 1) C3; 2) Cz; and
+3) C4 while the user performs left and right hand MI and relax
+with eye open tasks alternatively. The BCI auto-calibrates and
+provides FB about the MI tasks after 5 min of data collection.
+The BCI first performs outlier rejection and then selects the
+most discriminable logarithmic band-power (from 9 to 14 and
+16 to 26 Hz) as features for the linear disciminant analysis
+
+classifier. The mean average accuracy thus obtained for six
+tetraplegic participants 69.5% ± 6.4. In another similar work
+of Faller et al. [22], they developed a co-adaptive system which
+implements a noncontrol state which allows the system to be
+self-paced in nature. This system worked significantly better
+than chance for 18 of 22 users in 24 min of training and 11
+of 22 users for the self-pace paradigm.
+In another interesting work, Kus et al. [57] developed a BCI
+system which followed an asynchronous mode of operation,
+automatic selection of parameters based on initial calibration
+and incremental update of the classifier parameters from FB.
+In their study, the EEG was spatially filtered based on spectral
+power estimation and relevant features were selected based on
+mutual information criterion. The final feature vector are used
+to recognize the MI by using a multinomial logistic regression classifier. The participants performed right hand, left hand
+and foot MI based on instructions from a visual cue with an
+accuracy of 74.84%.
+As noted from the few studies discussed, most researchers
+adapt the BCI system either through training or by continuous
+update of the classifier. In this paper, the subject adapts to the
+instructions by visually observing the movement of the robot
+arm in real-time and space. We have employed this form of
+adaptation to the subject to make the task more realistic and
+practical. The system has two adaptive functions. First, the
+BCI system continuously adapts to the current mental state
+of the subject by providing higher weights to the most recent
+signals and lesser weights to the older signals. The second
+system side adaptation occurs in the peripheral motor controller which adapts to the dynamic environment the robot
+is exposed to. The advantage of a separate motor learning
+control scheme, even for 3-DOF joint control, allows the subject to focus on the lower dimensional endpoint control of
+the robot while the proprioceptive information from the robot
+is processed inside the peripheral motor control and adapts
+accordingly while performing simultaneous multijoint control.
+The development of a tridirectional (user-decoder-robot)
+BCI control of multi-DOF control is a novel attempt toward
+its aim. The results obtained in this preliminary study demonstrate that the use of automated interfaces to solve redundancy
+of joint movement is indeed possible and the positive results
+encourage us to further dwell into developing a tridirectional adaptive system for rehabilitative and assistive systems [58], [59].
+
+BHATTACHARYYA et al.: SYNERGETIC BMI PARADIGM FOR MULTI-DOF ROBOT CONTROL
+
+V. C ONCLUSION
+In this paper, we have proposed a new BMI paradigm
+which integrates an MI EEG to extract the target intention
+with adaptive decoder for cortical signals and a synergetic
+motor learning control to cope with the peripheral control of
+a multijoint redundant robot arm with environmental dynamics
+adaptation capability. The proposed method allowed for BMIcontrolled robot to employ different joint usage depending on
+the given payload systematically through the learning process.
+This paradigm takes into account the tridirectional adaptations
+between the user, the BMI system and the multi-DOF arm. To
+the best of the authors’ knowledge, it is a first system which
+incorporates dual adaptive nature in each cortical level and
+peripheral motor control level in BMI. We also should note
+the fact that the robot is controlled with torque control manner
+and not with position control, which is highly recommended
+for human-machine interaction, and known as natural human
+control nature. The positive result, thus obtained, has opened
+a door to proceed forward in this research, but it was verified
+with simple task as a starting point.
+Future direction in this line of research would involve the
+incorporation of including a quantitative measure of the visual
+FB and further refinement of the adaptive and peripheral learning algorithm. To improve the speed and robustness of the BCI
+control alogrithm, we would design a self-paced experiment
+with the provision of an error FB through EEG [15]. Also, we
+will increase the types and number of different environment
+conditions toward a unified BMI framework for multijoint
+control interface.
+R EFERENCES
+[1] R. P. N. Rao and R. Scherer, “Brain-computer interfacing [in the
+spotlight],” IEEE Signal Process. Mag., vol. 27, no. 4, pp. 150–152,
+Jul. 2010.
+[2] D. J. McFarland and J. R. Wolpaw, “Brain-computer interface operation
+of robotic and prosthetic devices,” Computer, vol. 41, no. 10, pp. 52–56,
+Oct. 2008.
+[3] J. J. Daly and J. R. Wolpaw, “Brain–computer interfaces in neurological rehabilitation,” Lancet Neurol., vol. 7, no. 11, pp. 1032–1043,
+2008.
+[Online].
+Available:
+http://www.sciencedirect.com/
+science/article/pii/S1474442208702230
+[4] G. Dornhege, Toward Brain-Computer Interfacing (A Bradford book).
+Cambridge, MA, USA: MIT Press, 2007.
+[5] J. R. Wolpaw, N. Birbaumer, D. J. McFarland, G. Pfurtscheller,
+and T. M. Vaughan, “Brain–computer interfaces for communication and control,” Clin. Neurophysiol., vol. 113, no. 6,
+pp. 767–791, 2002. [Online]. Available: http://www.sciencedirect.com/
+science/article/pii/S1388245702000573
+[6] E. A. Martinez-Garcia, E. Gallegos, and K. S. Jaichandar, “Telepresence
+by deploying an avatar robot with brain-robot interfacing,” in Proc.
+7th IEEE Conf. Ind. Electron. Appl. (ICIEA), Singapore, Jul. 2012,
+pp. 144–149.
+[7] I. S. Kotchetkov, B. Y. Hwang, G. Appelboom, C. P. Kellner, and
+E. S. Connolly, Jr., “Brain-computer interfaces: Military, neurosurgical, and ethical perspective,” Neurosurg. Focus, vol. 28, no. 5,
+p. E25, 2010.
+[8] R. Scherer et al., “Toward self-paced brain-computer communication:
+Navigation through virtual worlds,” IEEE Trans. Biomed. Eng., vol. 55,
+no. 2, pp. 675–682, Feb. 2008.
+[9] N. E. Bunderson, “Real-time control of an interactive impulsive virtual prosthesis,” IEEE Trans. Neural Syst. Rehabil. Eng., vol. 22, no. 2,
+pp. 363–370, Mar. 2014.
+[10] M. van Vliet et al., “Designing a brain-computer interface controlled
+video-game using consumer grade EEG hardware,” in Proc. ISSNIP
+Conf. Biosignals Biorobot. (BRC), Manaus, Brazil, Jan. 2012, pp. 1–6.
+
+967
+
+[11] D. Marshall, D. Coyle, S. Wilson, and M. Callaghan, “Games, gameplay,
+and BCI: The state of the art,” IEEE Trans. Comput. Intell. AI in Games,
+vol. 5, no. 2, pp. 82–99, Jun. 2013.
+[12] L. F. Nicolas-Alonso and J. Gomez-Gil, “Brain computer interfaces, a
+review,” Sensors, vol. 12, no. 2, p. 1211–1279, 2012.
+[13] J. D. Millan et al., “Combining brain–computer interfaces and assistive
+technologies: State-of-the-art and challenges,” Front. Neurosci., vol. 4,
+p. 161, Sep. 2010.
+[14] S. Bhattacharyya, A. Konar, and D. N. Tibarewala, “A differential
+evolution based energy trajectory planner for artificial limb control using motor imagery EEG signal,” Biomed. Signal Process.
+Control, vol. 11, pp. 107–113, May 2014. [Online]. Available:
+http://www.sciencedirect.com/science/article/pii/S1746809414000391
+[15] S. Bhattacharyya, A. Konar, and D. N. Tibarewala, “Motor imagery,
+p300 and error-related eeg-based robot arm movement control for
+rehabilitation purpose,” Med. Biol. Eng. Comput., vol. 52, no. 12,
+pp. 1007–1017, Dec. 2014.
+[16] J. R. Millan, F. Renkens, J. Mourino, and W. Gerstner, “Noninvasive
+brain-actuated control of a mobile robot by human EEG,” IEEE Trans.
+Biomed. Eng., vol. 51, no. 6, pp. 1026–1033, Jun. 2004.
+[17] S. Bhattacharyya et al., “EEG controlled remote robotic system
+from motor imagery classification,” in Proc. 3rd Int. Conf. Comput.
+Commun. Netw. Technol. (ICCCNT), Coimbatore, India, Jul. 2012,
+pp. 1–8.
+[18] Y. Chae, J. Jeong, and S. Jo, “Toward brain-actuated humanoid robots:
+Asynchronous direct control using an EEG-based BCI,” IEEE Trans.
+Robot., vol. 28, no. 5, pp. 1131–1144, Oct. 2012.
+[19] J. Long et al., “A hybrid brain computer interface to control the direction
+and speed of a simulated or real wheelchair,” IEEE Trans. Neural Syst.
+Rehabil. Eng., vol. 20, no. 5, pp. 720–729, Sep. 2012.
+[20] D. Coyle, J. Garcia, A. R. Satti, and T. M. McGinnity, “EEG-based
+continuous control of a game using a 3 channel motor imagery BCI:
+BCI game,” in Proc. IEEE Symp. Comput. Intell. Cogn. Algorithm. Mind
+Brain (CCMB), Paris, France, Apr. 2011, pp. 1–7.
+[21] J. Li and L. Zhang, “Bilateral adaptation and neurofeedback for brain
+computer interface system,” J. Neurosci. Methods, vol. 193, no. 2,
+pp. 373–379, 2010. [Online]. Available: http://www.sciencedirect.com/
+science/article/pii/S0165027010005224
+[22] J. Faller et al., “A co-adaptive brain-computer interface for end users
+with severe motor impairment,” PLoS ONE, vol. 9, no. 7, 2013,
+Art. no. e101168.
+[23] J. DiGiovanna, B. Mahmoudi, J. Fortes, J. C. Principe, and J. C. Sanchez,
+“Coadaptive brain-machine interface via reinforcement learning,” IEEE
+Trans. Biomed. Eng., vol. 56, no. 1, pp. 54–64, Jan. 2009.
+[24] M. J. Bryan, S. A. Martin, W. Cheung, and R. P. Rao,
+“Probabilistic co-adaptive brain-computer interfacing,” J. Neural
+Eng., vol. 10, no. 6, 2013, Art. no. 066008. [Online]. Available:
+http://stacks.iop.org/1741-2552/10/i=6/a=066008
+[25] F. Galan et al., “A brain-actuated wheelchair: Asynchronous and
+non-invasive brain-computer interfaces for continuous control of
+robots,” Clin. Neurophysiol., vol. 119, no. 9, pp. 2159–2169,
+2008.
+[Online].
+Available:
+http://www.sciencedirect.com/
+science/article/pii/S1388245708005750
+[26] M. Hayashibe and S. Shimoda, “Synergetic motor control paradigm
+for optimizing energy efficiency of multijoint reaching via tacit
+learning,” Front. Comput. Neurosci., vol. 8, no. 21, 2014, pp. 613–623.
+[Online].
+Available:
+http://journal.frontiersin.org/article/10.3389/
+fncom.2014.00021/full
+[27] J. W. Krakauer, M. F. Ghilardi, and C. Ghez, “Independent learning of
+internal models for kinematic and dynamic control of reaching,” Nat.
+Neurosci., vol. 2, no. 11, pp. 1026–1031, Nov. 1999.
+[28] W. T. Thach, “What is the role of the cerebellum in motor
+learning and cognition?” Trends Cogn. Sci., vol. 2, no. 9,
+pp. 331–337, 1998. [Online]. Available: http://www.sciencedirect.com/
+science/article/pii/S1364661398012236
+[29] D. M. Wolpert, R. C. Miall, and M. Kawato, “Internal models in the cerebellum,” Trends Cogn. Sci., vol. 2, no. 9,
+pp. 338–347, 1998. [Online]. Available: http://www.sciencedirect.com/
+science/article/pii/S1364661398012212
+[30] M. Kawato, “Internal models for motor control and trajectory planning,”
+Current Opinion Neurobiol., vol. 9, no. 6, pp. 718–727, 1999.
+[31] T. Flash and N. Hogan, “The coordination of arm movements: An experimentally confirmed mathematical model,” J. Neurosci., vol. 5, no. 7,
+pp. 1688–1703, 1985.
+[32] Y. Uno, M. Kawato, and R. Suzuki, “Formation and control of optimal
+trajectory in human multijoint arm movement. Minimum torque-change
+model,” Biol. Cybern., vol. 61, no. 2, pp. 89–101, 1989.
+
+968
+
+IEEE TRANSACTIONS ON SYSTEMS, MAN, AND CYBERNETICS: SYSTEMS, VOL. 46, NO. 7, JULY 2016
+
+[33] C. M. Harris and D. M. Wolpert, “Signal-dependent noise determines
+motor planning,” Nature, vol. 394, pp. 780–784, Aug. 1998.
+[34] R. M. Alexander, “A minimum energy cost hypothesis for human arm
+trajectories,” Biol. Cybern., vol. 76, no. 2, pp. 97–105, 1997.
+[35] J. Nakanishi, R. Cory, M. Mistry, J. Peters, and S. Schaal, “Operational
+space control: A theoretical and empirical comparison,” Int. J. Robot.
+Res., vol. 27, no. 6, pp. 737–757, Jun. 2008. [Online]. Available:
+http://dx.doi.org/10.1177/0278364908091463
+[36] J. Peters and S. Schaal, “Learning to control in operational space,” Int.
+J. Robot. Res., vol. 27, no. 2, pp. 197–212, 2008. [Online]. Available:
+http://www-clmc.usc.edu/publications/P/peters-IJRR2008.pdf
+[37] S. Shimoda, Y. Yoshihara, and H. Kimura, “Adaptability of tacit learning
+in bipedal locomotion,” IEEE Trans. Auton. Mental Develop., vol. 5,
+no. 2, pp. 152–161, Jun. 2013.
+[38] S. Sanei and J. Chambers, EEG Signal Processing. Chichester,
+West Sussex, U.K.: Wiley-Intersci., 2007.
+[39] D. J. Barrett and R. E. Silverman, SSH, The Secure Shell: The Definitive
+Guide. Cambridge, MA, USA: O’Reilly, 2001.
+[40] S. Darvishi and A. Al-Ani, “Brain-computer interface analysis using
+continuous wavelet transform and adaptive neuro-fuzzy classifier,” in
+Proc. IEEE 29th Annu. Int. Conf. Eng. Med. Biol. Soc. (EMBS),
+Aug. 2007, pp. 3220–3223.
+[41] P. Herman, G. Prasad, T. M. McGinnity, and D. Coyle, “Comparative
+analysis of spectral approaches to feature extraction for EEG-based
+motor imagery classification,” IEEE Trans. Neural Syst. Rehabil. Eng.,
+vol. 16, no. 4, pp. 317–326, Aug. 2008.
+[42] M. Belkin and P. Niyogi, “Laplacian Eigenmaps for dimensionality reduction and data representation,” Neural Comput.,
+vol. 15, no. 6, pp. 1373–1396, Jun. 2003. [Online]. Available:
+http://dx.doi.org/10.1162/089976603321780317
+[43] D. J. Sebald and J. A. Bucklew, “Support vector machine techniques for
+nonlinear equalization,” IEEE Trans. Signal Process., vol. 48, no. 11,
+pp. 3217–3226, Nov. 2000.
+[44] C. Qiang, P. Hu, and F. Huanqing, “Experiment study of the relation between motion complexity and event-related desynchronization/synchronization,” in Proc. 1st Int. Conf. Neural Interface Control,
+Wuhan, China, May 2005, pp. 14–16.
+[45] S. Bhattacharyya, D. Basu, A. Konar, and D. N. Tibarewala, “Interval
+type-2 fuzzy logic based multiclass anfis algorithm for real-time EEG
+based movement control of a robot arm,” Robot. Auton. Syst., vol. 68,
+pp. 104–115, Jun. 2015.
+[46] I. Fodor, “A survey of dimension reduction techniques,” Center Appl.
+Sci. Comput., Livermore Nat. Lab., Livermore, CA, USA, Tech. Rep.
+UCRL-ID-148494, 2002.
+[47] L. van der Maaten, E. O. Postma, and H. J. van den Herik,
+“Dimensionality reduction: A comparative review,” MICC, Maastricht
+Univ., Maastricht, The Netherlands, Tech. Rep. TiCC TR 2009-005,
+pp. 1–22, 2008.
+[48] E. Bizzi, F. Mussa-Ivald, and S. Giszter, “Computations underlying the
+execution of movement: A biological perspective,” Science, vol. 253,
+pp. 287–291, Jul. 1991.
+[49] E. Alpaydin, Introduction to Machine Learning (Adaptive Computation
+and Machine Learning). Cambridge, MA, USA: MIT Press, 2004.
+[50] J. A. Hanley and B. J. McNeil, “The meaning and use of the area under a
+receiver operating characteristic (roc) curve,” Radiology, vol. 143, no. 1,
+pp. 29–36, 1982.
+[51] M. Fatourechi et al., “Comparison of evaluation metrics in classification
+applications with imbalanced datasets,” in Proc. 7th Int. Conf. Mach.
+Learn. Appl. ICMLA, San Diego, CA, USA, Dec. 2008, pp. 777–782.
+[52] J. Hurtado-Rincon, S. Rojas-Jaramillo, Y. Ricardo-Cespedes,
+A. M. Alvarez-Meza, and G. Castellanos-Dominguez, “Motor imagery
+classification using feature relevance analysis: An Emotiv-based BCI
+system,” in Proc. Symp. Image Signal Process. Artif. Vis. (STSIVA),
+Sep. 2014, pp. 1–5.
+[53] S. Dharmasena, K. Lalitharathne, K. Dissanayake, A. Sampath, and
+A. Pasqual, “Online classification of imagined hand movement using
+a consumer grade EEG device,” in Proc. 8th IEEE Int. Conf. Ind. Inf.
+Syst. (ICIIS), Peradeniya, Sri Lanka, Dec. 2013, pp. 537–541.
+[54] S. Fok et al., “An EEG-based brain computer interface for rehabilitation and restoration of hand control following stroke using ipsilateral
+cortical physiology,” in Proc. IEEE Annu. Int. Conf. Eng. Med. Biol.
+Soc. (EMBC), Boston, MA, USA, Aug./Sep. 2011, pp. 6277–6280.
+[55] R. R. Bouckaert, “Choosing between two learning algorithms based on
+calibrated tests.” in Proc. Mach. Learn. Int. Conf., Menlo Park, CA,
+USA, 2003, pp. 51–58.
+
+[56] J. Faller et al., “Online co-adaptive brain-computer interfacing:
+Preliminary results in individuals with spinal cord injury,” in Proc.
+6th Int. IEEE/EMBS Conf. Neural Eng. (NER), San Diego, CA, USA,
+Nov. 2013, pp. 977–980.
+[57] R. Kus et al., “Asynchronous BCI based on motor imagery with automated calibration and neurofeedback training,” IEEE Trans. Neural Syst.
+Rehabil. Eng., vol. 20, no. 6, pp. 823–835, Nov. 2012.
+[58] Z. Li, M. Hayashibe, C. Fattal, and D. Guiraud, “Muscle fatigue tracking
+with evoked EMG via recurrent neural network: Toward personalized
+neuroprosthetics,” IEEE Comput. Intell. Mag., vol. 9, no. 2, pp. 38–46,
+May 2014.
+[59] M. Hayashibe, D. Guiraud, J. L. Pons, and D. Farina, “Editorial:
+Biosignal processing and computational methods to enhance sensory motor neuroprosthetics,” Front. Neurosci., vol. 9, no. 434,
+pp. 6–9, 2015. [Online]. Available: http://www.frontiersin.org/
+neuroprosthetics/10.3389/fnins.2015.00434/full
+Saugat Bhattacharyya received the B.Tech. degree
+in biomedical engineering from the Siliguri Institute
+of Technology, Chamta, India, in 2009, and the M.E.
+and Ph.D. degrees in biomedical engineering from
+Jadavpur University, Kolkata, India, in 2011 and
+2015, respectively.
+He is currently a Post-Doctoral Researcher with
+the BCI-LIFT Project, CAMIN Project Team,
+Institute National de Recherche en Informatique et
+en Automatique (INRIA), Montpellier, France. He
+did the Ph.D. internship in the DEMAR Project
+Team, INRIA, from 2014 to 2015, as part of the Erasmus Mundus-Svaagata
+Project Fellowship, in 2014. His current research interests include brain–
+machine interface, bio-potential signal processing, machine learning, rehabilitative engineering and robotics, biomedical image processing, biomedical
+instrumentation, and biomedical control systems.
+Dr. Bhattacharyya was a recipient of the Council of Scientific and Industrial
+Research Senior Research Fellowship, India, in 2012.
+Shingo Shimoda received the B.S., M.S., and
+Ph.D. degrees in mechanical and electronic from the
+University of Tokyo, Tokyo, Japan, in 1999, 2001,
+and 2005, respectively.
+He was a Research Scientist with the Biomimetic
+Control Research Center, RIKEN, Saitama, Japan,
+in 2005. In 2008, he became a Unit Leader
+with RIKEN Brain Research Institute-TOYOTA
+Collaboration Center, Intelligent Behavior Control
+Collaboration Unit, Nagoya, Japan.
+Dr. Shimoda was a recipient of the General
+Chairs’ Recognition Award in CDC 2009 and the CoTeSys Cognitive Robotics
+Best Paper Award in IROS 2010.
+Mitsuhiro Hayashibe (M’04–SM’14) received
+the B.S. degree in mechano-aerospace engineering
+from Tokyo Institute of Technology, Tokyo, Japan,
+in 1999, and the M.S. and Ph.D. degrees from
+the Graduate School of Engineering, University
+of Tokyo, Tokyo, Japan, in 2001 and 2005,
+respectively.
+He was an Assistant Professor with the
+Department of Medicine, Jikei University School
+of Medicine, Tokyo, Japan, from 2001 to 2006. He
+was a Post-Doctoral Fellow with Institute National
+de Recherche en Informatique et en Automatique (INRIA), Sophia Antipolis
+and Laboratoire d’Informatique, de Robotique et de Microelectronique de
+Montpellier (LIRMM) of CNRS/University of Montpellier, Montpellier,
+France, in 2007. Since 2008, he has been a Tenured Research Scientist
+with INRIA and University of Montpellier, Computational Medicine and
+Neurosciences, Demar team. He has been a Visiting Researcher with RIKEN
+Brain Science Institute, and TOYOTA Collaboration Center, Nagoya, Japan,
+since 2012. His current research interests include personalized modeling for
+neuroprosthetics and neurorehabilitation.
+Dr. Hayashibe was a recipient of the Best Paper Award from the Journal
+of Japanese Society for Computer-Aided Surgery, CAS Young Investigator
+Award, and the Gold Prize from Hitachi Medical Systems. He serves as an
+Editorial Board Member for medical robotics section of the International
+Journal of Advanced Robotic Systems and the Co-Chair of the IEEE Robotics
+and Automation Society Technical Committee on Human Movement
+Understanding. He is a Senior Member of the IEEE Engineering in Medicine
+and Biology Society.
+
+

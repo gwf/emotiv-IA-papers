@@ -1,0 +1,1167 @@
+DECENTRALIZED OBSERVABILITY WITH
+LIMITED COMMUNICATION BETWEEN SENSORS
+
+arXiv:1609.02651v2 [math.OC] 17 Mar 2017
+
+ANDREEA B. ALEXANDRU †
+SÉRGIO PEQUITO
+GEORGE J. PAPPAS †
+
+†
+
+ALI JADBABAIE
+
+‡
+
+Abstract. In this paper, we study the problem of jointly retrieving the state of a dynamical
+system, as well as the state of the sensors deployed to estimate it. We assume that the sensors
+possess a simple computational unit that is capable of performing simple operations, such as
+retaining the current state and model of the system in its memory.
+We assume the system to be observable (given all the measurements of the sensors), and
+we ask whether each sub-collection of sensors can retrieve the state of the underlying physical
+system, as well as the state of the remaining sensors. To this end, we consider communication
+between neighboring sensors, whose adjacency is captured by a communication graph. We
+then propose a linear update strategy that encodes the sensor measurements as states in an
+augmented state space, with which we provide the solution to the problem of retrieving the
+system and sensor states.
+The present paper contains three main contributions. First, we provide necessary and sufficient conditions to ensure observability of the system and sensor states from any sensor. Second,
+we address the problem of adding communication between sensors when the necessary and sufficient conditions are not satisfied, and devise a strategy to this end. Third, we extend the
+former case to include different costs of communication between sensors. Finally, the concepts
+defined and the method proposed are used to assess the state of an example of approximate
+structural brain dynamics through linearized measurements.
+
+1. INTRODUCTION
+In the last decade, a significant effort was placed in developing strategies that enable the
+recovery of the system state, i.e., the problem of estimating the system’s state. The applications
+of such mechanisms are essential and include, among others, the monitoring of the electric power
+grid, process control, swarms of robots, and social networks [1, 2, 3]. Furthermore, being able
+to retrieve the state of the system enables the assessment of the overall behavior of the plant,
+and allows us to design control strategies that enable the proper control of the system. Such
+control strategies can either steer the system to a specific target, as in a swarm of robots trying
+to keep a formation [4], or stabilize the system, as in the case of the electric power grid whose
+frequency should be kept within a given range [5].
+The estimation strategies can be broadly classified into centralized, decentralized and distributed. In centralized schemes, it is assumed that all the data collected by the sensors deployed
+in the plant is available to a central entity that, together with the system’s model, performs
+the estimation of the system’s state. Observability of the system is commonly sought to ensure
+that it is possible to design stable estimators [6]. Whereas the system might be observable
+when all sensors deployed in the system are considered, the same does not necessarily hold true
+when only a sub-collection of the sensors is considered. As a consequence, we need to enhance
+the classical schemes with strategies that only consider a subset of sensors, as in the case of
+decentralized estimation [7]. Moreover, we need to add communication between different sensor
+locations to obtain additional information about the system state, as in distributed estimation [8]. For instance, the sensors can average either the estimates of the state obtained by the
+This work was supported in part by the TerraSwarm Research Center, one of six centers supported by the
+STARnet phase of the Focus Center Research Program (FCRP) a Semiconductor Research Corporation program
+sponsored by MARCO and DARPA.
+†
+Department of Electrical and Systems Engineering, School of Engineering and Applied Science,
+University of Pennsylvania
+‡
+Institute for Data, Systems, and Society, Massachusetts Institute of Technology.
+1
+
+2
+
+A. B. ALEXANDRU, S. PEQUITO, A. JADBABAIE, G. J. PAPPAS
+
+different sensors [9] or the innovations [10], i.e, the residual between predicted and measured
+output, which usually leads to a smaller amount of information exchanged between sensors.
+In this paper, we propose a distributed-decentralized scheme, i.e., a decentralized estimation in
+the sense previously defined, which resorts to communication in a similar fashion as distributed
+scenarios. Although it combines elements from both decentralized and distributed approaches,
+the distributed-decentralized approach is distinct from them in the following sense: it encodes
+the sensor measurements as states in an augmented state space that considers the physical
+system’s dynamics and the dynamics induced by the communication between the sensors. Consequently, the sensors only need to share their state instead of estimates of the system’s state
+or innovations. Moreover, the measured output of each sensor includes the measurements performed over the system’s states, as well as the states of the remaining sensors it communicates
+with.
+This paper was developed in the context of large distributed systems with wireless sensors,
+where it is more convenient to add communication links rather than terminals to the system.
+Our method is also a one-time offline step, so that reaching consensus online in the context
+of distributed estimation is avoided, and the problem of not finishing computations before the
+following time step is bypassed.
+Related Work. Distributed and decentralized estimation approaches have been an active research topic in the last decade. Some of the most recent developments are overviewed, for
+instance, in [11, 12, 9, 13]. More specifically, the problem of designing communication networks
+to solve dynamic estimation problems has been previously addressed in [14], where sufficient
+conditions are provided in terms of the communication structure and classification of the different agents (sensors/state variables) in the system.
+In [15, 16], the topology of a static network of sensors is designed in order to minimize the
+transmission cost among sensors and from the sensors to a central authority, allowing centralized
+field reconstruction. More recently, [17] addresses the problem of determining the minimum
+communication topologies to ensure observability of a multi-agent’s network, given a potential
+communication graph. In [18], some strategies based in consensus-like methods for distributed
+estimation are provided by resorting to structural systems theory. In addition, [19] addresses
+the stabilization of a wireless control network with strategies from structural systems theory
+applied to augmented state systems.
+The main contributions of this paper are threefold. First, we provide necessary and sufficient
+conditions to ensure distributed-decentralized observability. Second, we devise a method that
+guarantees observability when the necessary and sufficient conditions are not satisfied, by adding
+communication links between sensors. This implies providing a constructive algorithm that
+solves a maximum matching minimum cost problem. Third, we extend the former case to
+include different costs of communication between sensors.
+The rest of the paper is organized as follows. In Section 2, we provide the formal problem
+statement. Section 3 reviews graph theoretical concepts used in structural systems theory.
+Section 4 presents the main technical results, and discusses the computational complexity of
+the strategies proposed. Furthermore, the case study in Section 5 illustrates the main results
+in the context of the brain dynamics. Conclusions and discussions on further research are
+presented in Section 6.
+2. PROBLEM STATEMENT
+Consider a linear time-invariant system described by
+x[k + 1] = Ax[k],
+
+k = 0, 1, . . .
+
+(1)
+
+where x ∈ Rn×1 is the system’s state, and A ∈ Rn×n the matrix that determines the autonomous
+dynamics of the system. In addition, consider m sensors deployed, whose measurements are
+described by
+yi [k] = ci x[k], i = 1, . . . , m,
+(2)
+
+DECENTRALIZED OBSERVABILITY WITH LIMITED COMMUNICATION BETWEEN SENSORS
+
+3
+
+where yi ∈ R is the measured output, and ci ∈ R1×n the output vector that encodes the linear
+combination of the states measured by the sensor i.
+In addition, we consider that (1)-(2) is observable, but perhaps not when only some subset
+of sensors is considered, so that decentralized estimation is not guaranteed. Each sensor is
+equipped with a computational unit that is capable of performing elementary operations: it
+contains enough memory to retain the state estimates of the system and of the sensors, and
+it is capable of communicating with other sensors. These assumptions are common (although
+sometimes implicit) in distributed estimation.
+Let G = (V, E) be the directed communication graph that encodes the interactions between
+sensors, where V = {1, . . . , m} identify the m sensors described in (2), and an edge (i, j) ∈ E,
+which we refer to as communication links, if sensor j transmits to sensor i. Notice that we do
+not require the communication to be reciprocal between sensors. We consider that each sensor
+possesses a scalar state zi , with i = 1, . . . , m, and its evolution over time is assumed to be
+described as a linear combination of its previous state, the measured output of the system and
+the incoming states from neighboring sensors, i.e.,
+X
+zi [k + 1] = wii zi [k] + yi [k] +
+wij zj [k], i ∈ V,
+(3)
+j∈N−
+i
+
+where N−
+i = {j ∈ V : (i, j) ∈ E} are the indices of the in-neighbors of sensor i given by the
+communication graph G.
+Therefore, the overall dynamics described by (1)-(3) can be re-written as a linear augmented
+system:
+
+
+A 0n×m
+x̃[k],
+(4)
+x̃[k + 1] =
+C W(G)
+{z
+}
+|
+Ã(G)
+
+where x̃ = [x1 . . . xn z1 . . . zm ]⊺ is the augmented system’s state, C = [c⊺1 c⊺2 . . . c⊺m ]⊺ the
+measured output and W(G) the dynamics between sensors induced by the communication graph,
+i.e., [W(G)]ij = wij when (i, j) ∈ E and zero otherwise. We consider that each sensor has access
+to its own state, thus, W(G) has a non-zero diagonal. Subsequently, the output measured by
+the sensors is given by (2) and the incoming states from the neighboring sensors, since the
+average rule in (3) is performed at the sensor level, i.e., in its computational unit. Thus, the
+measured output for the augmented system is given by
+"
+#
+− ci − 01×m
+x̃[k], i ∈ V,
+(5)
+ỹi [k] =
+N−
+0|N− |×n Imi
+i
+{z
+}
+|
+C̃i
+
+where IJ
+m is the sub-matrix containing the rows of the m × m identity matrix with indices in
+J ⊂ {1, . . . , m}.
+In this setup, we aim to ensure that each sensor’s computational unit is capable of retrieving the state of the augmented system. In other words, (4)-(5) (or, equivalently (Ã(G), C̃i )),
+is observable for i = 1, . . . , m. Subsequently, we aim to address the following three related
+problems.
+Problem 1 Determine the necessary and sufficient conditions that W(G) must satisfy to
+ensure observability of (Ã(G), C̃i ) for i = 1, . . . , m.
+◦
+Problem 2 If the necessary and sufficient conditions to attain observability of (Ã(G), C̃i ) for
+i = 1, . . . , m do not hold, then determine the minimum number of additional communication
+links which yield such conditions.
+◦
+In practice, the sensors might be deployed at varying distances from one another, making it
+more convenient to add some communication links instead of others. In other words, we can
+associate costs to the potential communication links from sensor j to sensor i, which we denote
+by γij , which is zero if the communication link already exists. Thus, we consider we are given
+
+4
+
+A. B. ALEXANDRU, S. PEQUITO, A. JADBABAIE, G. J. PAPPAS
+
+the cost of setting a communication link between any two sensors and we pose the following
+problem:
+Problem 3 If the necessary and sufficient conditions to attain observability of (Ã(G), C̃i ) for
+i = 1, . . . , m do not hold, then determine the minimum number of additional communication
+such that the cost is minimized and observability holds.
+◦
+3. PRELIMINARIES AND TERMINOLOGY
+The following standard terminology and notions from structural systems theory and graph
+theory can be found, for instance, in [20]. Structural systems deal with the sparsity (i.e.,
+location of zeroes and non-zeroes) patterns of matrices, rather than with the numerical values
+of the elements. Let Ā ∈ {0, ∗}n×n be the matrix that represents the structural pattern of A
+with the following encoding: if Āij = 0, then Aij = 0 and if Āij = ∗, where ∗ is an arbitrary
+non-specified value ∗, then Aij can take any value. Following the sparsity pattern, we associate
+structural matrices to every matrix in (1)-(2), (4)-(5), that will be employed further.
+A pair (Ā, C̄) is structurally observable if and only if there exists an observable pair (A, C)
+with the same sparseness as (Ā, C̄). Moreover, given a structurally observable pair (Ā, C̄), then
+almost all pairs of real matrices (A, C) with the same structure as (Ā, C̄) are observable [21].
+Let D(Ā) = (X , EX ,X ) be the digraph representation of Ā, to be referred to as the state
+digraph, where the vertex set X represents the set of state variables (also referred to as state
+vertices) and EX ,X = {(xi , xj ) : Āji 6= 0} denotes the set of edges. Similarly, we define the
+state-output digraph D(Ā, C̄) = (X ∪ Y, EX ,X ∪ EX ,Y ), where Y represents the set of output
+vertices and EX ,Y = {(xj , yi ) : C̄ji 6= 0}.
+A digraph D = (V, E) is strongly connected if there exists a directed path between any
+pair of vertices, i.e., a sequence of edges that starts and ends in those vertices. A sub-graph
+Ds = (Vs , Es ), with Vs ⊂ V and Es ⊂ E, is a strongly connected component (SCC) if between
+any two vertices in Vs there exists a directed path, and Ds is maximal among such subgraphs.
+Visualizing each SCC as a virtual node (or supernode), one may generate a directed acyclic graph
+(DAG), in which each node corresponds to a single SCC and a directed edge exists between two
+SCCs if and only if there exists a directed edge connecting vertices in the SCCs in the original
+digraph. In the DAG representation, if the SCC does not have an edge from any of its states to
+the states of another SCC, then it is referred to as sink SCC. Similarly, an SCC that does not
+have any incoming edge from other SCC is called a source SCC.
+For any two vertex sets S1 , S2 ⊂ V, we define the bipartite graph B(S1 , S2 , ES1 ,S2 ) associated
+with D = (V, E), to be a directed graph, whose vertex set is given by S1 ∪ S2 and the edge set
+ES1 ,S2 by ES1 ,S2 = {(s1 , s2 ) ∈ E : s1 ∈ S1 , s2 ∈ S2 }. Further, we refer to the bipartite graph
+B(Ā) ≡ B(X , X , EX ,X ) as the state bipartite graph, and to the B(Ā, C̄) ≡ B(X , X ∪Y, EX ,X ∪Y ) as
+the state-output bipartite graph. Given B(S1 , S2 , ES1 ,S2 ), a matching M corresponds to a subset
+of edges in ES1 ,S2 that do not share vertices. In addition, we refer to the edges in a maximum
+matching as matching edges. A maximum matching M ∗ may then be defined as a matching M
+that has the largest number of edges among all possible matchings. Such a matching decomposes
+the digraph into a disjoint set of cycles and elementary paths. The term left-unmatched vertices
+(with respect to a maximum matching M ∗ associated to B(S1 , S2 , ES1 ,S2 )) refers to those vertices
+in S1 that do not have an outcoming matching edge in M ∗ . For simplicity, we often just say a
+set of left-unmatched vertices, omitting the explicit reference to the maximum matching when
+the context is clear. On the contrary, if we need to emphasize that the set of left-unmatched
+vertices is associated with a specific maximum matching M of the state bipartite graph, then we
+make the dependency explicit by UL (M ). Given a vector of weights w associated to the edges in
+E, we define a weighted matching as the matching with weights corresponding to its constituting
+edges. Moreover, a minimum cost maximum matching (MCMM) is a maximum matching M ∗
+whose edges achieve the minimum cost among all maximum matchings. Finally, we notice that
+there may exist several sets of left-unmatched vertices, since the maximum matching M ∗ may
+not be unique.
+
+DECENTRALIZED OBSERVABILITY WITH LIMITED COMMUNICATION BETWEEN SENSORS
+
+y1
+
+y2
+
+y3
+
+x3
+
+5
+
+y4
+
+x4
+
+x2
+
+x1
+
+x5
+
+Figure 1. Plant with 5 state nodes (black) and 4 sensors nodes deployed (blue).
+The interconnections between the state nodes are depicted in black, the communication links between the sensor nodes are depicted in blue, and the measurement terminals, between the state nodes and the sensor nodes, are depicted in
+red.
+x1
+
+x1
+
+x2
+
+x2
+
+x3
+
+x3
+
+x4
+
+x4
+
+x5
+
+x5
+
+z1
+
+z1
+
+z2
+
+z2
+
+z3
+
+z3
+
+z4
+
+z4
+
+Figure 2. Example of maximum matching in B(Ã(G)) ≡ B(V ≡ (X ∪
+Z), V, EV,V ), depicted by the collection of red edges.
+Figure 1 provides an example of system that is observable from the whole set of sensors, but
+is not observable from any subset of sensors. More specifically, the system is not observable
+from sensors 1 and 2.
+The structural matrices of the system are the following:
+
+
+
+
+
+
+0 1 0 0 0
+1
+0
+1
+0
+1
+0
+0
+0
+0
+1 0 1 1 1
+
+1 1 0 0
+
+1 0 0 0 0
+
+
+
+
+
+A=
+0 1 0 0 0 , C = 0 0 1 1 0 , W(G) = 0 1 1 1 .
+0 1 0 0 0
+1 0 1 1
+0 0 0 1 0
+0 1 0 0 0
+
+The concept of maximum matching stated above is exemplified in Figure 2, where an instance
+of M ∗ in B(V ≡ (X ∪ Z), V, EV,V ) is shown, with the set of left-unmatched vertices being
+UL (M ∗ ) = {z1 , z3 , z4 }.
+Next, we state some known results regarding structural observability. The following theorem
+is an extension of the dual of Theorem 5 and Theorem 7 in [20] regarding the necessary and
+sufficient conditions for structural observability, applied to the system with the deployed sensors.
+Theorem 1. Let D(Ā, C̄) = (X ∪Y, EX ,X ∪EX ,Y ) denote the state-output digraph and B(Ā, C̄) ≡
+B(X , X ∪ Y, EX ,X ∪Y ) the state-output bipartite representation. The pair (Ā, C̄) is structurally
+observable if and only if the following two conditions hold:
+(i) there is a path from every state vertex to an output vertex in D(Ā, C̄); and
+(ii) there exists a maximum matching M ∗ associated to B(Ā, C̄) such that UL (M ∗ ) = ∅. ⋄
+
+6
+
+A. B. ALEXANDRU, S. PEQUITO, A. JADBABAIE, G. J. PAPPAS
+
+Justification: Theorem 7 in [20] states that a system is structurally observable if the leftunmatched vertices corresponding to a maximum matching associated to the state-output bipartite representation are measured by distinct sensors, and, at least one state from each sink
+SCC is measured by a sensor. In Theorem 1, we define the state-output bipartite graph by
+adding the edges from the state vertices to the output vertices, which are the sensor nodes, to
+the state bipartite graph. Thus, we can pair the left-unmatched vertices in the system without
+sensors with their associated distinct sensors, which gives UL (M ) = ∅. Moreover, since the sink
+SCCs are connected to a sensor, then every state vertex is the root of a path to an output
+vertex.
+The next result allows us to interpret a maximum matching of the state-output bipartite
+graph in terms of a representation in the state-output digraph.
+Lemma 1 ([20]). Consider the digraph D(Ā, C̄) = (X ∪ Y, EX ,X ∪Y ) and let M ∗ be a maximum
+matching associated with the state-output bipartite graph B(Ā, C̄) ≡ B(X , X ∪Y, EX ,X ∪Y ). Then,
+the digraph D = (X , M ∗ ) comprises a disjoint union of cycles and elementary paths, from the
+right-unmatched vertices to the left-unmatched vertices of M ∗ , that span D(Ā, C̄). Moreover,
+such a decomposition is minimal, in the sense that no other spanning subgraph decomposition
+of D(Ā, C̄) into elementary paths and cycles contains strictly fewer elementary paths.
+⋄
+4. MAIN RESULTS
+In this section, we present the main results of the present paper. To give a solution to Problem 1, we propose to decouple the structure of the problem from its numeric parametrization.
+First, we rely on structural system theory to ensure the necessary conditions, and then we show
+that the necessary conditions on the structure are sufficient to ensure observability through
+parametrization of the solution. These results are described in Theorem 2 and Theorem 3,
+respectively.
+Furthermore, we investigate the cases when the conditions for Problem 1 do not hold, as
+stated in Problem 2 and Problem 3. The computational complexity of Problem 2 is given
+in Theorem 4. Because this is NP-hard, we provide an approximate polynomial constructive
+solution to Problem 2, by describing an algorithm that decides which edges have to be added to
+ensure distributed-decentralized structural observability. The proposed procedure is provided
+in Algorithm 1 and its correctness and computational complexity are asserted in Theorem 5.
+Subsequently, in Problem 3, we address the situation of different costs for the communication
+links between sensors, which is also NP-hard, and whose approximate solution is similar to that
+of Problem 2.
+4.1. Solution to Problem 1. First, we ensure that Problem 1 can be solved when structural
+observability is sought.
+Theorem 2. Let D(Ã(G)) = (V ≡ (X ∪ Z), EV,V ) be the state digraph, where X corresponds
+to the labels of the state vertices and Z to the labels of the sensors’ states. In addition, let
+Ni− = {v ∈ V : (v, zi ) ∈ E} be the set of in-neighbors of a vertex zi representing a sensor in
+D(Ã(G)), i = 1, . . . , m. The following two conditions are necessary and sufficient to ensure
+that (Ã(G), C̃i ), for i = 1, . . . , m, is generically observable:
+(i) for every z ∈ Z there must exist a directed path from any v ∈ V;
+(ii) for every z ∈ Z there must exist a set of left-unmatched vertices UL , associated with a
+maximum matching of the bipartite representation of D(Ã(G)), such that UL ⊂ Ni− and
+UL ∩ X = ∅.
+⋄
+Proof. We will prove that the above conditions are both necessary and sufficient for any subset
+of sensors deployed to the system, and, in particular, for every sensor i, with i = 1, . . . , m. The
+proof will alternate between the state digraph D(Ã(G)) introduced above, and the state-output
+digraph D(Ã(G), C̃i ), introduced in Theorem 1. To avoid burdensome notation, we will use Ã
+instead of Ã(G) in the following.
+
+DECENTRALIZED OBSERVABILITY WITH LIMITED COMMUNICATION BETWEEN SENSORS
+
+7
+
+Necessity: We will start by assuming that (Ã, C̃i ), for i = 1, . . . , m, is structurally observable
+for any subset of sensors in Z and prove that conditions (i) and (ii) hold. To this end, we have
+leveraged Theorem 1 for a convenient application. Let N−
+i = {j ∈ {1, . . . , m} : (i, j) ∈ E} be
+the set of indices of the in-neighbors of sensor i given by the communication graph G (notice
+−
+the difference between N−
+i and Ni ). Let us define Y = {y1 , . . . ym } as the set of outputs of
+the augmented system. These are virtual outputs that are attached to the sensors’ states and
+N−
+
+are defined by Imi , for each i = 1, . . . , m. Let D(Ã, C̃) = (V ∪ Y, EV,V∪Y ) be the state-output
+digraph of the augmented system. Condition (i) of Theorem 1 applied to D(Ã, C̃) gives that
+every output of the system is reachable from any vertex in V and condition (i) of Theorem 2
+ensues.
+Let B(Ã, C̃i ) ≡ B(V, V ∪ Y, EV,V∪Y ) be the augmented system’s digraph. Condition (ii) of
+Theorem 1 for D(Ã, C̃i ) gives that there is no left-unmatched vertex in V with respect to a
+maximum matching in B(Ã, C̃i ). Therefore, the only possible left-unmatched vertices in the
+bipartite state graph B(Ã) ≡ B(V, V, EV,V ) are z ∈ Z. This gives UL ∩ X = ∅. Subsequently,
+the remaining left-unmatched vertices z ∈ Z are measured by the outputs y ∈ Y given by
+N−
+
+In i . Hence, the left-unmatched vertices UL have to be in Ni− by the construction of C̃i , and
+condition (ii) also holds.
+Sufficiency: To prove that the conditions in Theorem 2 are sufficient, we consider (i) and (ii)
+satisfied, and show that the augmented system is structurally observable.
+We consider the digraph D(Ã, C̃i ) and the associated state-output bipartite graph B(Ã, C̃i ).
+As the name “sink” suggests, we can regard the augmented system as a layered system, with
+the system’s states in the top layer, followed by the layer of sensors’ states, and the system
+outputs layer as the bottom layer. The structural observability of (1)-(2) implies that the sink
+SCCs in the augmented system are in the layer of sensors. Hence, there is a path from every
+vertex in V to an output vertex in D(Ã, C̃i ) and condition (i) of Theorem 1 is granted.
+Condition (ii) in Theorem 2 states that there is a maximum matching in the state bipartite
+graph B(Ã) such that no state vertex is a left-unmatched vertex and all left-unmatched vertices
+are in-neighbors of the sensor i. Since there are edges from the sensors to the output vertices in
+the augmented system represented by D(Ã, C̃i ), there is a maximum matching M ∗ in B(Ã, C̃i )
+such that no system state and no sensor state are left-unmatched. In other words, UL (M ∗ ) = ∅,
+so condition (ii) of Theorem 1 is fulfilled. This completes the proof of the structural observability
+of (Ã, C̃i ) for i = 1, . . . , m.
+
+Structural observability holds for almost all numerical realizations of both Ã(G) and of C̃i .
+Nonetheless, we notice that, unlike [22], we want the parametrization of (A, C) to be fixed.
+Therefore, we show that with the observability of (A, C) and with a parametrization of W(G)
+alone, it is possible to attain the observability of (Ã(G), C̃i ).
+Theorem 3. If (A, C) is observable and (Ã(G), C̃i ), for i = 1, . . . , m, is structurally observable,
+then almost all realizations of W(G) ensure that (Ã(G), C̃i ) is observable for i = 1, . . . , m. ⋄
+Proof. We make the same notational assumptions as in the proof of Theorem 2. We resort to the
+well known Popov-Belevitch-Hautus observability criterion [23]. The pair (Ã, C̃i ) is observable
+if and only if
+
+
+Ã − λIn+m
+= n + m, λ ∈ C, i = 1, . . . , m.
+rank
+C̃i
+{z
+}
+|
+M
+
+Using (4) and (5), M can be further written as follows:
+
+
+A − λIn
+0n×m
+ C
+W(G) − λIm 
+
+
+M =  − ci −
+.
+01×m
+
+
+0|N− |×n
+i
+
+N−
+
+Imi
+
+8
+
+A. B. ALEXANDRU, S. PEQUITO, A. JADBABAIE, G. J. PAPPAS
+
+Now, notice that as a consequence of condition (i) in Theorem 2, G is a strongly connected
+graph. Furthermore, a sensor is assumed to be able to communicate with itself, therefore,
+W(G) is irreducible and its diagonals can be arbitrarily chosen. In particular, for almost all
+possible parameterizations of W(G), we can choose the weights such that W(G) has only simple
+eigenvalues that are distinct from those of A, and rank(W(G)) = n. Thus, λ can be in the
+spectrum of A or in the spectrum of W(G). We will treat both these cases in the following.
+(i) λ ∈
+/ spec(A). Then,
+"
+#
+W(G) − λIm
+.
+rank(M) = rank(A − λIn ) + rank
+N−
+{z
+}
+|
+Imi
+=n
+|
+{z
+}
+=m
+
+The first term equals to n because λ ∈
+/ spec(A) does not produce a collapse of rank in A − λIn .
+N−
+
+(W(G), Imi ) is structurally observable, since W(G) is irreducible and has zero-free diagonal. For
+N−
+
+almost all parameterizations of W(G), (W(G), Imi ) is observable. Therefore, by choosing such
+a parametrization and applying Popov’s criterion, we obtain that the second term equals m.
+(ii) λ ∈ spec(A). Thus, λ ∈
+/ spec(W(G)) for almost all chosen parameterizations. Using
+1
+Schur’s complement , the expression for the rank of M can be re-written as follows:
+
+
+A − λIn
+0n×m
+
+
+− ci −
+01×m
+
+
+rank(M) = rank 
+.
+0
+W(G)
+−
+λI
+m×n
+m
+
+
+N−
+
+Imi (W(G) − λIm )−1 C
+
+Let Hi (G) =
+
+N−
+Imi (W(G)−λIm )−1 C.
+
+0|N− |×m
+i
+
+Hi (G) corresponds to the transfer function from the sensors
+N−
+
+identified by C to the measurements identified by Imi . Thus,
+
+
+A − λIn
+rank(M ) = rank(W(G) − λIm ) +rank
+.
+Hi (G)
+{z
+}
+|
+|
+{z
+}
+=m
+MA
+
+The weights in W(G) can be designed such that the diagonal entries are distinct, and λ ∈
+/
+spec(W(G)) gives full rank to the first term. From [24], Hi (G) generates almost all subspaces
+of dimension d, where d corresponds to the number of vertex disjoint paths from the sensors
+N−
+
+identified by C to the measurements identified by Imi . Next, notice that the number of vertex
+disjoint paths d is at least equal to the number of left-unmatched vertices of the original system,
+since these have to be in a neighborhood of each sensor of the augmented system, as prescribed
+in condition (ii) in Theorem 2. Therefore, we have that rank(MA ) = n for almost all realizations
+of W(G), and the result follows.
+
+4.2. Solution to Problem 2. Next, we leverage some of the conditions prescribed to have
+solutions to Problem 1 to obtain a solution to Problem 2. First, notice that determining a
+solution to Problem 2 can be challenging since it requires to ensure two disjoint conditions, see
+Theorem 2. In addition, it requires those conditions to hold across different sensors.
+Therefore, we first provide solutions to Problem 2 when one of the conditions of Theorem 2
+holds, hence, only the remaining condition needs to be ensured. More specifically, we have two
+scenarios: (i) there are left-unmatched vertices in Ni− for every i such that UL ⊂ Ni− , and
+(ii) G is strongly connected. The second scenario is equivalent to condition (i) in Theorem 2,
+since we already know the sensors are reachable from every state x ∈ X due to the observability
+1 For the matrices A ∈ Rn×m , B ∈ Rn×n , D ∈ Rp×n , the following is true:
+
+
+
+
+Im
+0m×n
+0n×p
+0n×m
+B
+.
+−1
+−1
+−DB A 0p×m B A
+In
+0p×m
+Ip
+
+
+
+
+0n×m
+B
+A
+B
+.
+= rank
+Since the transformations are full-rank, then rank
+−1
+−DB A 0p×m
+0p×m D
+
+
+A
+
+ 
+In
+B
+=
+D
+DB−1
+
+DECENTRALIZED OBSERVABILITY WITH LIMITED COMMUNICATION BETWEEN SENSORS
+
+9
+
+of (1)-(2). Thus, we only need to ensure that each subset of sensors is reachable from the other
+subsets of sensors.
+In the first scenario, we want to prove that G is strongly connected. Towards this goal we
+need to introduce the following definition [25]:
+Definition 1 (Sequential-pairing). Consider two sets of indices I = {i1 , . . . , in } and J =
+{j1 , . . . , jn }, and a maximum matching M of the bipartite graph B(J , I, EJ ,I ), where EJ ,I ⊆
+J × I. We denote by |I, J iM a sequential-pairing induced by M , defined as follows:
+!
+[
+
+{(il , jl−1 )} ∪ (i1 , jk ) ,
+|I, J iM =
+l=2,...,k
+
+where (il , jl ) ∈ M , for l = 1, . . . , k and k = min{|I|, |J |}.
+
+⋄
+
+Remark 1. The sequential-pairing consists of the collection of edges such that M ∪ |I, J iM
+forms a cycle. A graph spanned by a cycle formed by M ∪ |I, J iM is a strongly connected
+graph.
+⋄
+The communication graph G can be decomposed into strongly connected components, with
+each sink strongly connected component being reachable from at least one source strongly
+connected component. Subsequently, we have the following result:
+Lemma 2. Let the DAG decomposition of G be given by a collection of SCCs denoted by
+{Σi }i=1,...,N , where Σso ≡ {Σj }j=1,...,α are source SCCs and Σsi ≡ {Σk }k=1,...,β are sink SCCs,
+where α + β <= N . In addition, consider B ≡ B(Σso , Σsi , EΣso ,Σsi ), where EΣso ,Σsi = {(Σj , Σk ) :
+if Σk is reachable from Σj }. Given a maximum matching M ∗ of B and the sequential pairing
+induced by it, the minimum number of edges to be added to ensure G to be strongly connected is
+max{α, β}.
+⋄
+Proof. The outline of the proof is the following: construct a sequential-pairing, so that joined
+with the associated maximum matching, it gives a cycle that spans G.
+Consider a maximum matching in B(Σso , Σsi , EΣso ,Σsi ). Then, add the edges such that the
+source SCCs are reachable from the sink SCCs, equivalent to the sequential pairing |J , KiM ,
+where J = {j1 , . . . , jn } corresponding to Σsi and K = {k1 , . . . , kn } corresponding to Σso .
+si
+(i) If α = β and there is a disjoint path from every Σso
+i to Σi , then the step above is enough
+to build the cycle, and the number of edges added is equal to α = β. If there are indices
+si
+i ∈ I = {i1 , . . . , iα } for which there is no disjoint path from Σso
+i to Σi , then after adding the
+α − |I| edges of the sequential pairing, collapse the strongly connected components into new
+SCCs. Although some edges from the matching considered in Definition 1 are missing, there
+si
+so
+si
+are other edges from Σso
+il to Σk and from Σj to Σil , where il ∈ I, j ∈ J \ I and k ∈ K \ I.
+Subsequently, add the |I| edges that complete the matching, therefore, completing the cycle.
+(ii) If α > β, then after adding the β edges corresponding to the sequential pairing, collapse
+the graph into a new, extended SCC and α − β source SCCs. For each source SCC, add an
+edge from the extended SCC to make the graph strongly connected. Thus, the number of edges
+added is equal to α.
+(iii) If α < β, then, similarly to (ii), collapse the graph into a new, extended SCC and β − α
+sink SCCs. From each sink SCC, add an edge to the extended SCC to make the graph strongly
+connected. The number of edges added in this case is equal to β.
+
+Remark 2. An isolated strongly connected component is both source and sink, therefore, the
+existence of such components increase both α and β. Hence, Lemma 2 also holds for graphs
+with isolated SCCs.
+⋄
+The condition that G is strongly connected is a mild condition since many results in literature
+like [26, 18] assume that the communication graph is strongly connected from its construction.
+In the second scenario, we assume that the communication digraph is strongly connected, so
+one is required to “bring” the left-unmatched vertices to a neighborhood of the sensors’ states,
+as required by condition (ii) in Theorem 2. Recall that there might exist several possible sets
+
+10
+
+A. B. ALEXANDRU, S. PEQUITO, A. JADBABAIE, G. J. PAPPAS
+
+of left-unmatched vertices associated with maximum matchings. In particular, some of these
+left-unmatched vertices might be either the dynamical system’s state vertices or sensors’ state
+vertices. Since we have assumed that the original system is observable, we are guaranteed that
+there exists a maximum matching such that only UL ⊂ Z. However, in order to assess if the
+condition UL ⊂ Ni− holds for a sensor i, we have to explore the matchings that produce no
+left-unmatched system’s state vertices.
+Theorem 4. The problem of determining the minimum number of communication links that
+ensure the observability of the pair (Ã(G), C̃i ), for every i = 1, . . . m is NP-hard.
+⋄
+Proof. Problem 2 is NP-hard since it consists in determining the minimum number of edges
+that need to be added to a digraph such that there exist k disjoint paths between given subsets
+of vertices. A reference to the variant of this problem where the subsets always have the same
+cardinality and the number of disjoint paths is constant can be found in [27], and this variant
+is NP-hard.
+
+Remark 3. In practice, the total number of left-unmatched vertices is often 0, 1 or 2 [28]. In
+the latter case, it is required to find two disjoint paths from the left-unmatched vertices of the
+state-output digraph to the in-neighboring vertices of the sensor’s state, where one can often be
+obtained through the state-output digraph and the other through the communication digraph, if
+this is assumed strongly connected.
+⋄
+As a result of Remark 3, we are able to propose computationally tractable solutions to
+Problem 2. We need to produce a strategy that penalizes the left-unmatched vertices that are
+the system’s state vertices, and favors those states in the neighborhood of a given sensor’s state.
+To this effect, we employ the MCMM routine, which can be found in [29], for example. We define
+G ∗ as the union between the communication graph G and the set of the communication links
+that have to be added to guarantee observability of the state-output digraph. The procedure is
+detailed in Algorithm 1.
+Algorithm 1: Finding the communication graph that ensures observability of (Ã(G), C̃i ),
+given strong connectivity of W(G).
+Input: D(Ã(G)) = (V ≡ (X ∪ Z), EV,V ), C̃i , i = 1, . . . , m;
+Output: The modified communication graph G ∗ and W(G ∗ );
+for i = 1, . . . , m do
+1. Let S = {sj : j ∈ {1, . . . , m} \ N−
+i } be the set of slack variables corresponding to virtual
+outputs of the sensors’ state, with EZ,S = {(zj , sj ) : j ∈ {1, . . . , m} \ N−
+i }, zj ∈ Z, sj ∈ S};
+2. Let B(Ã, C̃i , S) = (V, V ∪ S, EV,V ∪ EV,S ) be the state-output bipartite graph of the system
+with slack variables;
+3. Let the weight function of the edges be w : E → R+ , where E is the set of all edges. Assign
+the following costs wi for sensor i: (i) wi (e) = 0, e ∈ EV,V , and (ii) wi (e) = 1, e ∈ EZ,S ;
+4. Define (B(Ã, C̃i , S), w) as the weighted state-output bipartite graph;
+5. Run the MCMM on (B(Ã, C̃i , S), w) and obtain M ∗ ;
+6. For all j = 1, . . . , m such that {(zj , sj ) ∈ M ∗ \ EZ,S }, add (zi , zj ) to G.
+Let G ∗ = G;
+Find W(G ∗ ) that yields the result in Theorem 3.
+
+Intuitively, the introduction of the slack variables S in Algorithm 1 is connected to adding the
+communication links that ensure UL ⊂ Ni− . Any slack variable sj ∈ UL (M ∗ ) suggests adding a
+communication link from sensor zj to sensor zi .
+Theorem 5. The procedure outlined in Algorithm 1 is correct, i.e., its execution ensures the
+observability of the augmented pair (Ã(G), C̃i ), for any sub-collection of sensors considered. In
+addition, the complexity of the algorithm is O(m(n + 2m)3 ).
+⋄
+Proof. A maximum matching of a bipartite graph decomposes the digraph into a disjoint union
+of a minimum collection of paths and cycles (see Lemma 1), where the left-unmatched vertices
+
+DECENTRALIZED OBSERVABILITY WITH LIMITED COMMUNICATION BETWEEN SENSORS
+
+11
+
+correspond to the ending vertices of the paths. The provided cost structure ensures that when
+a minimum weight maximum matching is computed, we use as many of the system’s state
+vertices as possible for forming paths and cycles, since the total cost incurred by its edges is
+zero. Furthermore, the paths formed in the decomposition of the state digraph (that are not
+cycles) are extended by the edges in EV,Z to the state-output digraph, with edges also of zero
+cost. Subsequently, there are two options. Option (i): it is possible to continue adding edges of
+zero cost to those paths until we have the chance to include an edge that ends in a vertex in the
+neighborhood of sensor i’s state, which minimizes the overall sum. Option (ii): it is not possible
+to extend the path to contain the edges mentioned in (i) and the end of the path is a slack
+variable, i.e., the sensor state corresponding to the slack variable is a left-unmatched vertex. If
+the mentioned sensor states are not in the in-neighborhood of sensor i, then we add edges in
+the communication graph (with associated weights in W(G) and wi ) such that UL ⊂ Ni− .
+The computational complexity of Algorithm 1 is that of the MCMM procedure, namely
+O(N 3 ), where N is the maximum number of vertices between the partitions in the bipartite
+graph that gives the maximum matching [29]. In the present case, N = n + m + p for each of the
+m sensors, where p = |S| ≤ m. Since we are considering the worst case scenario, Algorithm 1
+has complexity O(m(n + 2m)3 ).
+
+In summary, the above strategy enables us to find the minimum number of left-unmatched
+vertices in the neighborhood of a sensor, hence, one can simply add communication links from
+the left-unmatched vertices that do not belong to the in-neighborhood to the state of sensor i.
+Let us refer to the number of such left-unmatched vertices with respect to sensor i as qi . Subsequently, we can simply perform the same procedure for each sensor, taking into consideration
+the edges added for the previous sensors, and we end up having a total of q1 +. . .+qm additional
+links. This number is less than or equal to the number of communication links that would have
+to be added for each sensor, independently.
+One can argue that this strategy is not necessarily optimal since the number of edges added
+is not minimal, and some of the edges added in application of the procedure for sensor i might
+be used in constructing a path in the MCMM in the procedure for sensor i + 1. Therefore, one
+can ask if it is possible to solve this problem optimally. This problem is NP-hard, as shown in
+Theorem 4, but since, by Remark 3, the maximum number of left-unmatched vertices that can
+appear in practice is two, the difference between the number of edges added by Algorithm 1
+and the minimum number of edges that need to be added is likely to be negligible.
+The communication graph G for the system in Figure 1 is strongly connected, so the second condition of Theorem 2 holds. A maximum matching of minimum cost is illustrated in
+Figure 3. Following the algorithm for i = 1, the communication link that has to be added is
+from sensor 4 to sensor 1. One parametrization for the communication matrix that ensures
+distributed-decentralized observability after running the algorithm for i ∈ {1, 2, 3, 4} is:
+
+
+0.9597
+0
+0.3404 0.5853
+0.2238 0.7513
+0
+0.2551
+.
+W(G ∗ ) = 
+ 0
+0.5060 0.6991 0.8909
+0.9593
+0
+0.5472 0.1386
+4.3. Solution to Problem 3. The binary cost strategy designed for the solution of Problem 2
+is expandable to variable costs corresponding to adding the communication links between the
+sensors. Suppose we are provided with a matrix of costs Γ, with elements γij denoting the costs
+of adding a communication link from sensor j to sensor i. Using these costs, we can adapt
+the previous strategy to the cost constrained problem of choosing the edges to be added such
+that the system is distributed-decentralized observable. The procedure implements the idea of
+including the costs γij in the weights for the bipartite representation (B(Ã, C̃i , S), w).
+Theorem 6. Let {γij }i,j∈{1,...,m} be the communication cost, and consider the following weight
+structure: (i) wi (e) = 0, e ∈ E ∪ EX ,Y , and (ii) wi (e) = γij , e = (zj , sj ), zj ∈ Z \ Ni− , sj ∈
+S, for every i, j = 1, . . . , m. Algorithm 1 correctly computes and selects the communication
+
+12
+
+A. B. ALEXANDRU, S. PEQUITO, A. JADBABAIE, G. J. PAPPAS
+x1
+
+x1
+
+x2
+
+x2
+
+x3
+
+x3
+
+x4
+
+x4
+
+x5
+
+x5
+
+z1
+
+z1
+
+z2
+
+z2
+
+z3
+
+z3
+
+z4
+
+z4
+s2
+s4
+
+Figure 3. Minimum cost maximum matching in (B(Ã(G), C̃i , S), w)), for sensor
+1, depicted by the collection of red edges. The bold edges have weight 1, whereas
+all the rest have weight 0.
+links that have to be added to ensure the observability of the pair (Ã(G), C̃i ), when the cost of
+communication is imposed and the weight pattern wi for i = 1, . . . , m is considered.
+⋄
+The proof is similar to the proof of Theorem 5. As before, the algorithm for finding the
+MCMM will select the maximum number of edges of cost zero. Following the design of the new
+weighting pattern, when the communication links already available are not enough to satisfy
+UL ⊂ Ni− , the algorithm will try to minimize the cost of the links and not their number.
+In addition, observations regarding the minimum number of communication links can be
+made, in a similar manner as in the end of Section 4.2.
+5. ILLUSTRATIVE EXAMPLE
+In this section, we use the concepts and methodology proposed in Section 4 in the context of
+brain dynamics. We consider a linearized brain dynamics associated with data obtained from
+electroencephalography (EEG) [30], and whose structure is induced by the brain structural
+connectivity obtained via magnetic resonance imaging [31]. More specifically, consider the
+brain partitioned in 34 different regions [32], and its connectivity captured by the digraph
+S = (V = {1, . . . , 34}, E), where each v ∈ V labels a different region and the edges in E
+capture the existence of white-matter tracks between two different regions, as illustrated in
+Figure 4. In addition, the activity in the different regions and between these is fluctuating,
+being more pronounced during the execution of certain tasks. Therefore, following [30], under
+the assumption that the activity is induced by the brain structure [33], the state evolution can
+be captured by considering the first-order autoregressive model:
+x[k + 1] = A(S)x[k] + ǫ[k],
+
+k = 0, 1, . . . ,
+
+where x ∈ R34 is the state of the different regions, and [Ak (S)]i,j = 0 if (j, i) ∈
+/ E, else, a
+scalar to be determined, and ǫk is the dynamics error. These scalars can be determined using
+least-square approach with sparsity inducing methods relying on basis-pursuit optimization [34],
+when some measurements collected by EEG are considered. Nonetheless, we assume these to be
+zero-one as described in [32], where additionally, the diagonal entries were set to zero and only
+30% of the off-diagonal entries were considered. The digraph D(A) is composed of four SCCs
+as shown in Figure 5, with two source SCCs containing the states numbered 21 and 23 and one
+sink SCC containing the state numbered 22. In addition, there exists a maximum matching of
+the state bipartite graph with unmatched-vertices UL = {21, 22}; hence, measuring these two
+variables suffices to ensure structural observability.
+For the simplicity of the model (and reproducibility of the results), we assume that an EEG
+sensor captures the behavior of a single region in a linearized manner, i.e., yk = IJ
+34 xk , where
+J = {21, 22, 23, 24, 29} correspond to sensors deployed in the following scalp locations {AF3,
+AF4, T7, T8, Pz} (see details of these locations in [36]), and consistent with the locations
+
+DECENTRALIZED OBSERVABILITY WITH LIMITED COMMUNICATION BETWEEN SENSORS
+
+13
+
+Figure 4. Full view of the brain with the 34 regions represented as nodes, and
+the white matter tracks represented as edges, obtained using [35].
+
+y1
+
+y2
+
+y3
+
+y4
+
+y5
+
+SCC2
+
+SCC3
+x21
+
+x22
+
+SCC1
+...
+
+x23
+x29
+
+...
+
+x24
+
+SCC4
+
+...
+
+Figure 5. DAG representation of the 34 regions of the brain, along with the
+sensors deployed for measurement of the system. The strongly connected component labeled as SCC4 contains all the other state vertices not depicted.
+of the EMOTIV Insight [37]. In addition, the system is observable – in particular, we notice
+that considering that other regions were simultaneously measured by the EEG sensors would
+not compromise the observability under the present dynamics. Subsequently, considering the
+design topology of this device, we assume the following communication graph (through wiring)
+holds, whereadj(G) is the adjacency
+matrix of graph G:
+
+1 0 0 0 1
+0 1 0 0 1
+
+
+
+adj(G) = 
+0 0 1 0 1.
+0 0 0 1 1
+1 1 1 1 1
+Because the system is observable, it follows that it is also structurally observable, and, in
+particular, there are distinct sensors measuring the locations {21, 22}. Furthermore, notice that
+there are direct paths from every vertex in the digraph to every sensor, which implies that
+condition (i) of Theorem 2 is satisfied. However, condition (ii) is not fulfilled, and therefore,
+we need to address Problem 3, where we consider a unit of cost c and a communication cost
+structure in accordance to the distance between the sensors, given by:
+
+14
+
+A. B. ALEXANDRU, S. PEQUITO, A. JADBABAIE, G. J. PAPPAS
+
+
+
+
+0 2c 3c 4c 4c
+2c 0 4c 3c 4c
+
+
+
+Γ=
+3c 4c 0 5c 3c.
+4c 3c 5c 0 3c
+4c 4c 3c 3c 0
+Running Algorithm 1 with the given costs, as in Theorem 6, we obtain that there is only
+one communication link from sensor 2 to sensor 4 that has to be added, while incurring the
+minimum cost. The resulting communication scheme that guarantees observability of the system
+with respect to each sensor is G ∗ , with a total cost of 3c, and a possible communication protocol
+W(G ∗ ), givenas following: 
+
+
+0.77
+0
+0
+0
+0.48
+1 0 0 0 1
+ 0
+0 1 0 0 1
+0.43
+0
+0
+0.44
+
+
+
+
+∗
+∗
+
+
+
+0
+0.30
+0
+0.50
+adj(G ) = 0 0 1 0 1 and W(G ) =  0
+.
+ 0
+0 1 0 1 1
+0.51
+0
+1.00 0.81
+1 1 1 1 1
+1.00 0.79 0.64 1.00 0.37
+In conclusion, the system (Ã(G), C̃i ) as in (4)-(5) is observable for all i = 1, . . . , m.
+6. CONCLUSIONS AND FURTHER RESEARCH
+In this paper, we addressed the problem of exact distributed-decentralized retrieval of the
+states of an LTI system, from any subset of sensors of the given system. We considered that the
+sensors have storing and communicating capabilities, and that they are inter-linked according
+to a communication graph. Our approach involved associating states to the sensors and constructing an augmented system, for which we provided the necessary and sufficient conditions
+to ensure observability from any sensor. Furthermore, we addressed the problem of re-designing
+the communication graph to ensure distributed-decentralized observability when the previous
+conditions are not readily fulfilled and proved that it is NP-hard. We devised a suboptimal
+solution that can be attained in polynomial time such that the observability requirements are
+satisfied. Moreover, we proposed an extension to the previous strategy that takes into consideration the variable costs of adding communication links between the sensors. We explored the
+trade-offs between the different aspects of the control-communication-computation paradigm
+for the present setup that employed more communication and a lighter computational load.
+Future research includes identifying subclasses of the problem in which the solution described
+in the present paper is optimal and examining suboptimality guarantees. Moreover, we notice
+that, in some scenarios, adding communication capabilities may be more prohibitive than adding
+more memory to the sensors. We will further investigate the implications of having multidimensional sensors’ states, and address the possibility of relying on the same communication
+graph and providing different communication schemes such that a distributed-decentralized
+scheme is feasible.
+References
+[1] Y. F. Huang, S. Werner, J. Huang, N. Kashyap, and V. Gupta, “State estimation in electric power grids:
+Meeting new challenges presented by the requirements of the future grid,” IEEE Signal Process. Mag.,
+vol. 29, no. 5, pp. 33–43, September 2012.
+[2] G. Antonelli, “Interconnected dynamic systems: An overview on distributed control,” Control Systems,
+IEEE, vol. 33, no. 1, pp. 76–88, February 2013.
+[3] F. Garin and L. Schenato, Networked Control Systems. London: Springer London, 2010, ch. A Survey on
+Distributed Estimation and Control Applications Using Linear Consensus Algorithms, pp. 75–107.
+[4] M. Mesbahi and M. Egerstedt, Graph theoretic methods in multiagent networks, ser. Princeton series in
+applied mathematics. Princeton (N.J.): Princeton University Press, 2010.
+[5] M. Ilic, F. Galiana, and L. Fink, Power Systems Restructuring: Engineering and Economics, ser. Power
+Electronics and Power Systems. Springer US, 1998.
+[6] D. Luenberger, “Observers for multivariable systems,” IEEE Trans. Autom. Control, vol. 11, no. 2, pp.
+190–197, Apr 1966.
+[7] M. Ikeda, D. D. Šiljak, and K. Yasuda, “Optimality of decentralized control for large-scale systems,” Automatica, vol. 19, no. 3, pp. 309 – 316, 1983.
+
+DECENTRALIZED OBSERVABILITY WITH LIMITED COMMUNICATION BETWEEN SENSORS
+
+15
+
+[8] G. Polychronopoulos and J. N. Tsitsiklis, “Explicit solutions for some simple decentralized detection problems,” IEEE Trans. Aerosp. Electron. Syst, vol. 26, no. 2, pp. 282–292, March 1990.
+[9] U. A. Khan, “High-dimensional consensus in large-scale networks: Theory and applications,” Ph.D. dissertation, Carnegie Mellon University, 2009.
+[10] S. Das and J. M. F. Moura, “Distributed kalman filtering with dynamic observations consensus,” IEEE
+Trans. Signal Process., vol. 63, no. 17, pp. 4458–4473, September 2015.
+[11] V. Gupta, “Distributed estimation and control in networked systems,” Ph.D. dissertation, Ph.D. dissertation,
+California Institute of Technology, 2006.
+[12] S. Kar, “Large scale networked dynamical systems: Distributed inference,” Ph.D. dissertation, Carnegie
+Mellon University, 2010.
+[13] M. V. Subbotin, “Distributed decentralized estimation,” Ph.D. dissertation, University of California at Santa
+Barbara, 2008.
+[14] M. Doostmohammadian and U. A. Khan, “On the genericity properties in distributed estimation: Topology
+design and sensor placement,” Journal of Selected Topics Signal Processing, vol. 7, no. 2, pp. 195–204, 2013.
+[15] S. Pequito, S. Kruzick, S. Kar, J. Moura, and A. P. Aguiar, “Optimal design of distributed sensor networks
+for field reconstruction,” in Proceedings of the 21st European Signal Processing Conference, Sept 2013, pp.
+1–5.
+[16] S. Kruzick, S. Pequito, S. Kar, J. M. Moura, and A. P. Aguiar, “Dynamics, Observability, and Optimal
+Design of Distributed Data Aggregation Networks,” Under Review, 2015.
+[17] S. Pequito, F. Rego, S. Kar, A. P. Aguiar, A. Pascoal, and C. Jones, “Optimal design of observable multiagent networks: A structural system approach,” in Proceeding of the European Control Conference, June
+2014, pp. 1536–1541.
+[18] U. Khan and A. Jadbabaie, “Coordinated networked estimation strategies using structured systems theory,”
+in 50th IEEE Conference on Decision and Control and European Control Conference, Dec 2011, pp. 2112–
+2117.
+[19] M. Pajic, R. Mangharam, G. Pappas, and S. Sundaram, “Topological conditions for in-network stabilization
+of dynamical systems,” IEEE J. Sel. Areas Commun, vol. 31, no. 4, pp. 794–807, April 2013.
+[20] S. Pequito, S. Kar, and A. P. Aguiar, “A framework for structural input/output and control configuration
+selection of large-scale systems,” IEEE Trans. Autom. Control, vol. 61, no. 2, pp. 303–318, Feb 2016.
+[21] R. W. Shields and J. B. Pearson, “Structural controllability of multi-input linear systems,” IEEE Trans.
+Autom. Control, vol. 21, 1976.
+[22] J. M. Dion, C. Commault, and J. Van der Woude, “Generic properties and control of linear structured
+systems: a survey,” Automatica, pp. 1125–1144, 2003.
+[23] J. P. Hespanha, Linear Systems Theory. Princeton, New Jersey: Princeton Press, September 2009.
+[24] J. Woude, “A graph-theoretic characterization for the rank of the transfer matrix of a structured system,”
+Mathematics of Control, Signals and Systems, vol. 4, no. 1, pp. 33–40, 1991.
+[25] J. Carvalho, S. Pequito, A. P. Aguiar, S. Kar, and G. J. Pappas, “Static output feedback: On essential
+feasible information patterns,” in Proceedings of the IEEE 54th Annual Conference on Decision and Control,
+December 2015, pp. 3989–3994.
+[26] B. S. Rao and H. F. Durrant-Whyte, “Fully decentralised algorithm for multisensor kalman filtering,” IEE
+Proceedings D - Control Theory and Applications, vol. 138, no. 5, pp. 413–420, Sept 1991.
+[27] Y. Kobayashi and C. Sommer, “On shortest disjoint paths in planar graphs,” Discrete Optimization, vol. 7,
+no. 4, pp. 234–245, 2010.
+[28] D. D. Šiljak, Large-Scale Dynamic Systems: Stability and Structure, ser. Dover Civil and Mechanical Engineering Series. Dover Publications, 2007.
+[29] T. H. Cormen, C. E. Leiserson, R. L. Rivest, and C. Stein, Introduction to algorithms, 3rd ed. Cambridge,
+MA: The MIT Press, 2001.
+[30] G. Solovey, K. J. Miller, J. Ojemann, M. O. Magnasco, and G. A. Cecchi, “Self-regulated dynamical criticality
+in human ECoG,” Frontiers in Integrative Neuroscience, vol. 6, no. 44, 2012.
+[31] M. A. de Reus and M. P. van den Heuvel, “The parcellation-based connectome: Limitations and extensions,”
+NeuroImage, vol. 80, pp. 397 – 404, 2013, mapping the Connectome.
+[32] D. A. Fair, A. L. Cohen, J. D. Power et al., “Functional brain networks develop from a “local to distributed”
+organization,” PLoS Computational Biology, no. 5, 2009.
+[33] S. Gu, F. Pasqualetti, C. Matthew et al., “Controllability of structural brain networks,” Nature communications, no. 6, 2015.
+[34] M. A. T. Figueiredo, R. D. Nowak, and S. J. Wright, “Gradient projection for sparse reconstruction: Application to compressed sensing and other inverse problems,” IEEE J. Sel. Topics Signal Process., vol. 1, no. 4,
+pp. 586–597, Dec 2007.
+[35] M. Xia, J. Wang, and Y. He, “Brainnet viewer: A network visualization tool for human brain connectomics,”
+http://www.nitrc.org/projects/bnv/, 2013.
+[36] L. Koessler, L. Maillard, A. Benhadid et al., “Automated cortical projection of eeg sensors: anatomical
+correlation via the international 10-10 system,” Neuroimage, vol. 46, no. 1, pp. 64–72, 2009.
+[37] “Emotiv insight.” [Online]. Available: https://emotiv.com/insight.php
+
+

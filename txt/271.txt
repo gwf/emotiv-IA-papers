@@ -1,0 +1,1630 @@
+arXiv:2008.07092v1 [cs.LG] 17 Aug 2020
+
+Understanding Brain Dynamics for Color Perception using
+Wearable EEG headband
+Mahima Chaudhary
+
+Sumona Mukhopadhyay
+
+Marin Litoiu
+
+Lassonde School of Engineering
+York University, Toronto, Canada
+cmahima@yorku.ca
+
+Lassonde School of Engineering
+York University, Toronto, Canada
+mukhopas@yorku.ca
+
+Lassonde School of Engineering
+York University, Toronto, Canada
+mlitoiu@yorku.ca
+
+Lauren E Sergio
+
+Meaghan S Adams
+
+Faculty of Health
+York University, Toronto, Canada
+lsergio@yorku.ca
+
+Faculty of Health
+York University, Toronto, Canada
+msadams@yorku.ca
+
+ABSTRACT
+The perception of color is an important cognitive feature of the human brain. The variety of colors that impinge upon the human eye
+can trigger changes in brain activity which can be captured using
+electroencephalography (EEG). In this work, we have designed a
+multiclass classification model to detect the primary colors from
+the features of raw EEG signals. In contrast to previous research,
+our method employs spectral power features, statistical features as
+well as correlation features from the signal band power obtained
+from continuous Morlet wavelet transform instead of raw EEG, for
+the classification task. We have applied dimensionality reduction
+techniques such as Forward Feature Selection and Stacked Autoencoders to reduce the dimension of data eventually increasing the
+model’s efficiency. Our proposed methodology using Forward Selection and Random Forest Classifier gave the best overall accuracy of
+80.6% for intra-subject classification. Our approach shows promise
+in developing techniques for cognitive tasks using color cues such
+as controlling Internet of Thing (IoT) devices by looking at primary
+colors for individuals with restricted motor abilities.
+
+KEYWORDS
+Wearable computing, Machine learning, Brain Computer Interface
+
+1
+
+INTRODUCTION
+
+The advancements in sensor technologies have facilitated the growth
+of wearable headband devices for development in Brain-Computer
+Interface (BCI) applications. One such device is the Muse 2 headband 1 which is a portable non-invasive device that allows capturing
+of EEG signals. In this work, we analyzed the relationship between
+EEG signals and color stimuli using the Muse 2 headband. The objective was to extract the information (features) from EEG signals
+to classify or distinguish them based on the red(R), green(G), and
+blue(B) colors that were used to stimulate the cortical activity. The
+1 https://choosemuse.com/
+
+Permission to make digital or hard copies of part or all of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for third-party components of this work must be honoured.
+For all other uses, contact the owner/author(s).
+CASCON’20, November 10-13 2020, Toronto, Canada
+© 2020 Copyright held by the owner/author(s).
+
+classification result could be potentially used in an integrated IoT
+environment where it could be used to control appliances [1, 2].
+One such application could be, where people with restricted motor
+ability could switch on/off appliances by looking at a particular
+color. The study that we do is a proof of concept, it can be extended
+to other colors also. However, these applications would require
+input and effort from specialists in other fields too. The work can
+also be expanded in the healthcare field where it could be used to
+detect color blindness [3].
+Previously, classification tasks like these have been performed [4–
+6] using sophisticated medical-grade EEG devices with multiple
+sensors but in our work, we used a simple four-electrode/ channel
+consumer-friendly device to record the raw EEG signals. The use
+of Muse headband allowed portability to our work and its integration with IoT. Also contrary to previous approaches, in our study,
+we used features like power, variance in power, various pairwise
+cross-correlation features and several other statistical features from
+the signal band power obtained from continuous Morlet wavelet
+transform for classification task instead of raw EEG signals or eventrelated potential (ERP) values. The raw EEG data was preprocessed
+and features that were important to study the effect of color stimuli
+on EEG were extracted from the data using digital signal processing
+techniques.
+We mainly focused on Alpha and Beta frequency bands as these
+are most likely to be stimulated when a person is alert, attentive,
+or concentrating and not performing a high cognitive activity. We
+employed various linear and non-linear Machine Learning (ML)
+algorithms namely, K Nearest Neighbors, Support Vector Machine
+(SVM), Logistic Regression, Random Forest, models like Artificial
+Neural Networks, and boosting approaches like Gradient Boosting,
+to perform the three-class classification task. We investigated the
+classification performance of ML algorithms both on a single person’s data (intra-subject) as well as on combining the data from
+different people (inter-subject). We also applied dimensionality
+reduction techniques like forward feature selection and stacked
+autoencoders to increase the performance of the architecture. The
+main research questions addressed in this paper are:
+• Is it possible to distinguish EEG signals from a four-channel
+wearable headband, produced by RGB color exposure, by
+training ML models on features that account for statistical,
+spectral and correlation properties of EEG?
+
+CASCON’20, November 10-13 2020, Toronto, Canada
+
+• Can feature reduction techniques like Forward-Feature Selection(supervised) and Autoencoders (unsupervised) make
+the ML algorithms for EEG classification more efficient?
+• Does the performance of ML algorithms differ for intersubject and intra-subject classification?
+The rest of the paper is organized as follows. Section 2 contains the
+related work. In Section 3 we describe our proposed methodology.
+Section 4 presents our evaluation metrics followed by experimental
+results in Section 5. Concluding remarks are presented in Section 6.
+
+2
+
+RELATED WORK
+
+In recent years, researchers have used wearable headbands to analyze the response of EEG under different stimuli. K. Johannesen et.
+al.[7] used SVM to derive useful EEG features in order to predict
+working memory performance in schizophrenia and healthy adults.
+The authors in [8] used a regression model trained on data gathered
+from cognitive tasks (collected from a 6-channel EEG headset ) in
+order to model mental workload using EEG features for intelligent
+systems. In [9, 10] the EEG data has been used to examine driver’s
+alertness during driving sessions.
+Diane Aclo et. al.[11] used a 14 channel EEG device to monitor the
+effect of color stimuli on people. They used features like power
+spectral density and waveform length for classification using an
+Artificial Neural network. In [12] feature selection algorithm has
+been investigated for EEG signal due to RGB colors using screwable
+gold EEG electrodes. Arnab Rakshit et. al. [13] proposed the use of
+a fuzzy space classifier to discriminate colors from EEG by using
+a 10 electrode device. In [14], an Emotiv headset has been used to
+study separation and classification of EEG response to color stimuli
+by using SVM. Zhang et. el. in [15] showed how alpha and beta
+band powers are affected by stimuli from RGB colors. All the above
+classification tasks have been conducted using complicated EEG
+devices in contrast to our work. Furthermore, our proposed method
+achieves a high accuracy using the Muse headband. Recently, the
+use of portable headband devices have gained popularity due to
+their ease of use and accessibility. The authors in [2, 16] have used
+four channel G.tec’s MOBIlab four channel portable device in a
+problem similar to ours. However, their method yielded a lower
+accuracy of 58% in comparison to our proposed approach. A headband from Mindwave Neurosky has also been applied [17] in a task
+similar to our. However, the authors achieved a lower accuracy of
+53% with their method. Our results have shown significant improvement. In many studies, Muse has also been used to acquire EEG
+signals for various classification tasks. EEG-based excitement detection in immersive environments has been studied by Jason et. al
+in [18]. Krigolson et. al. [19]used Muse headband to Assess Human
+visual attention by assigning subjects an "oddball"task wherein they
+saw a series of infrequently and frequently appearing circles and
+were instructed to count the number of target circles that they saw.
+However they did not apply any ML model in their work. In [20]
+classification task has been performed to classify recreational and
+instructional video sessions using Muse. They used spectral power
+and connectivity features from raw EEG in their work and got the
+best performance with SVM and Logistic Regression model.
+
+C, Mahima, et al.
+
+3
+
+PROPOSED METHODOLOGY
+
+The main frequencies captured by EEG data are in form of specific human EEG signals namely Delta with frequency 3Hz or below (Deep dreamless sleep), Theta with frequency from 3.5-8 Hz
+(Deep meditation), Alpha with frequency 8-12 Hz (Calm relaxed yet
+alert state), Beta with frequency 13-30 Hz (Active, busy thinking)
+and Gamma with a frequency greater than 41 Hz (Higher mental
+activity)[21]. Each type of frequency band signal represents a different state of consciousness of mind ranging from sleep to active
+thinking. We mainly focused on Alpha and Beta frequency bands.
+The work in this paper has been accomplished in the following five
+phases: data acquisition, data cleaning and preprocessing, feature
+extraction, dimensionality reduction, and classification of data into
+red, green, and blue. We shall explain each component in detail.
+
+3.1
+
+Data Acquisition
+
+Muse headband consists of four channels/electrodes namely AF7
+and TP9 on the left and AF8 and TP10 on the right. These are named
+and positioned according to the International 10-20 System 2 , as
+shown in Figure 1. The sampling rate of Muse is 256Hz. The data
+from all channels was collected. There were eight subjects (aged 1830yrs) who participated in the visual experiment. The experiment
+was conducted using the University of Nottingham’s Psychopy 3
+[22] toolbox. Five trials each four minutes long were conducted
+for each participant at different times. In each trial, a color from
+RGB was shown in a random order, twenty times each, for a period
+of two seconds each, such that a black color was shown for two
+seconds between each of the RGB colors to provide a baseline to the
+experiment. The experiment was conducted in a dark room and the
+subjects were told to do minimum facial movements and eye blinks.
+A similar protocol has been followed in previous experiments too [1,
+11, 23]. The time period of the stimulus or the main color was kept
+small to only capture the effect of color on the cortical excitability.
+The data from Muse headband was collected using Muse SDK3
+and a third party application for Muse called Mind Monitor4 . The
+Mind Monitor application indicates potential jaw clenches and eye
+blinks in the EEG data. We used this capability as a marker to get
+the starting timestamp of the data. The experiment started with a
+jaw clench which was captured by Mind Monitor and from that
+time stamp, the data was separated according to the color stimuli.
+The architecture we used is shown in Figure 2 and the detailed
+experimental setup is shown in Figure 3.
+FPZ
+
+AF7
+
+AF8
+
+AF8
+TP10
+TP9
+
+TP10
+
+AF7
+
+TP9
+Channel
+Reference
+
+Figure 1: The 10-20 system of electrode placement for Muse
+
+2 https://en.wikipedia.org/wiki/10%E2%80%9320_system_(EEG)
+3 https://choosemuse.com/development/
+4 https://mind-monitor.com/
+
+Understanding Brain Dynamics for Color Perception using Wearable EEG headband
+
+CASCON’20, November 10-13 2020, Toronto, Canada
+
+EEG data recorded
+from muse
+Spectral
+Features
+
+Data Cleaning
+
+Wavelet
+Transform
+
+Correlation
+Features
+
+Features fed directly to
+the classiﬁer without
+dimensionality
+reduction
+
+Dimensionality
+reduction
+
+K Nearest
+Neighbors
+
+Red/Green/Blue
+
+Support Vector
+Machine
+
+Red/Green/Blue
+
+Logistic
+Regression
+
+Red/Green/Blue
+
+Random Forest
+
+Red/Green/Blue
+
+Neural Network
+
+Red/Green/Blue
+
+Gradient Boost
+Classiﬁer
+
+Red/Green/Blue
+
+Statistical
+Features
+Autoencoder
+
+Raw EEG data
+for all 4 channels
+
+Forward
+selection
+
+Alpha and Beta band power
+of all 4 channels from CWT
+Feature Extraction
+
+Figure 2: The architecture used in the methodology.
+by the following equation:
+Jaw Clench
+
+Black Color
+(2s)
+
+Color Stimuli
+(2s)
+
+Black Color
+(2s)
+
+Color Stimuli
+(2s)
+
+Black Color
+(2s)
+
+Color Stimuli
+(2s)
+
+Repeat 20 times
+
+Figure 3: The experiment protocol for data acquisition
+
+3.2
+
+Data cleaning and preprocessing
+
+The raw EEG data is generally very noisy and it needs to be cleaned
+and pre-processed in order to remove artifacts from it. In our
+methodology, we cleaned the data in two steps. Firstly we analyzed the data using Matlab’s EEG lab software [24] and labeled
+any visible unwanted spikes and noise manually from the data.
+Secondly, we divided the data into small time windows of 50 ms
+and computed the variance of data in each window, if it was more
+than a selected threshold then the time window was flagged. We
+also examined the individual subject’s data and used the trial that
+has a minimum number of jaw clenches and eye blinks for further
+experimentation.
+
+3.3
+
+Feature Extraction
+
+Feature extraction is a very vital part of our problem. The use of raw
+EEG data did not give good results in our experiment and so we used
+Time-Frequency analysis to find frequency band coefficients that
+were most relevant for our problem i.e. Alpha coefficients(8-12Hz)
+and Beta coefficients(13-30Hz). In past works, [20, 25] Discrete
+wavelet transform(DWT) has been used to extract the frequency
+bands of interest. However in our case, we were not interested
+in all the frequency bands, instead, we only considered alpha and
+beta bands. The use of DWT would have given us an improper
+breakdown of bands with the Alpha band in the range of 8-16Hz
+and beta in range of 16-32Hz and therefore to avoid this we used
+Continuous wavelet transform method as done in [26, 27] to extract
+the bands of interest. The mother wavelet that we used is the Morlet
+wavelet. The morlet wavelet has a peak in the center after which it
+tapers to the edges. The complex Morlet wavelet can be obtained by
+the convolution of a Gaussian with a sine wave and it is represented
+
+w(t, f ) = A ∗ exp(−t 2 /2σt2 )exp(2π f t)
+(1)
+√ −1/2
+where t is time, A=(σt π )
+, where σt is duration of the
+wavelet and f is the frequency of wavelet. We extracted the power
+of alpha and beta bands from our EEG signal by convolution of
+Morlet wavelets of frequencies ranging from 8Hz to 30Hz along
+the whole signal at each time point. This was done with the help
+of Fast Fourier Transform (FFT). For each frequency, we first performed FFT of the signal and then the FFT of the Morlet wavelet.
+We then performed the convolution of the two transformed signals and applied Inverse Fourier transform to get the time-domain
+representation of data. The magnitude of the complex transformed
+signal was then extracted and it was squared to obtain the power
+across all time points. The important thing here is that we rejected
+the imaginary part as it gave us the phase information and the real
+part just gave us the band-passed signal but what we were more
+interested in was the power therefore we extracted the magnitude
+of the complex signal. We got a spectrogram like representation of
+the power of the signal, with columns denoting the time points and
+rows denoting the frequencies from 8Hz to 30Hz. Figure 4 shows
+the spectrograms for RGB colors. The Morlet wavelet helped to
+reduce edge artifacts and noise from the data. It also helped to
+obtain a balance in temporal precision and frequency precision.
+The sampling rate of the signal and the Morlet wavelet must be
+the same in order to perform convolution. Figure 5 shows the EEG
+data with and without the application of the Morlet wavelet. We
+removed the flagged artifacts that we got in Data cleaning step after
+applying the wavelet transform. This step was done after the transform was applied so that we did not reduce the points below the
+sampling frequency of 256Hz. The features were extracted from the
+remaining data. The features accounted for the spectral, correlation
+as well as statistical properties of the data which were normalized
+using z-score. We experimented with different time windows of
+length 100ms, 200ms, 500ms, 1000ms. Each window was taken with
+a 50% overlap with the next window. Each window was used to
+extract a single row of features vector. The next feature vector was
+obtained by moving the window half of its length.
+
+CASCON’20, November 10-13 2020, Toronto, Canada
+
+C, Mahima, et al.
+
+15
+
+8
+
+22
+
+Frequency
+
+22
+
+Frequency
+
+Frequency
+
+22
+
+15
+
+8
+1.8
+
+3.4
+
+2.6
+
+15
+
+8
+1.8
+
+Time(s)
+
+3.4
+
+2.6
+
+2.6
+
+1.8
+
+Time(s)
+
+3.4
+
+Time(s)
+
+Figure 4: Spectrograms of Red, Green, and Blue respectively. Each spectrogram is made by the EEG obtained from an average
+of 20 trials (also called Event-related potential) of Subject 1 from channel AF7. The spectrograms show that on the onset of
+activity at 2.4 sec there is an increase in the power of alpha and low beta frequency band in case of green and red however the
+power of alpha-band decreases and that of low beta increases in case of blue on the onset of stimuli.
+
+Signal (microvolts)
+
+these parameters both for alpha and beta bands, therefore we got
+24 features from these properties.
+
+Time (s)
+
+Figure 5: The original EEG signal and its Morlet-convolution
+version using a wavelet of 30 Hz
+3.3.1 Spectral features. These features were calculated by taking
+into account the average power of each band, the variance in the
+power of each band, and the hemispherical difference in each band
+over a time window for each of the four channels. Thus we got 18
+features(8 average power coefficients for each channel, 8 variance
+power coefficient for each channel, and 2 hemispheric difference
+coefficients) for each sample that was formed by a single time
+window. This method was similar to the one followed in [20]. This
+set of spectral features are the most commonly used features in
+many EEG related studies as they allow the model to evaluate any
+potential changes in the absolute band power due to stimuli.
+
+Hjorth Parameters. They are indicators of statistical properties
+used in signal processing in the time domain introduced by Bo
+Hjorth in 1970 [28]. We obtained 16 Hjorth parameters for alpha and
+beta band for all 4 channels. We calculated two Hjorth parameters
+namely, the mobility parameter as in equation 2 and complexity
+parameter as in equation 3 on alpha and beta power bands that we
+obtain from CWT.
+v
+t
+dy(t )
+var dt
+Mobility =
+(2)
+vary(t)
+v
+t
+Complexity =
+
+dy(t )
+
+Mobility dt
+Mobility(y(t))
+
+(3)
+
+Here y(t) is the alpha or beta band power for a time window. We
+got a total of 40 statistical features. Table 1 shows all the features
+obtained from raw EEG data. Figure 6 shows the visualization of
+features in 2-D space by applying Linear Discriminant Analysis
+[29]. It shows that the three classes are almost separable.
+
+3.3.2 Pairwise Correlation features. In addition to the spectral features, it is also important to study the correlation among different
+frequency bands from different channels. We calculated this using
+a pairwise correlation in each time window for each band and each
+electrode. [20] follows this method too. We got a total of 28 correlation features using this method from a single time window. These
+features were helpful to find cross-region similarity as some of our
+data was discontinuous because of artifact removal.
+3.3.3 Statistical Features. Features that represent the statistical
+properties of the signal like Kurtosis, Skewness, Shannon Entropy
+and Hjorth Parameters were also extracted.
+Kurtosis, Skewness and Shannon Entropy . Kurtosis is a measure
+of outliers in data. Data with less value of Kurtosis has less number
+of outliers. The Skewness measures the asymmetry in data. The
+entropy is a measure of information in data. We calculated each of
+
+Figure 6: Visualization of data of Subject 1 for a single trial
+in 2-D space using Linear Discriminant Ananlysis
+Table 1: The features obtained from raw data.
+
+Understanding Brain Dynamics for Color Perception using Wearable EEG headband
+
+Features
+
+Alpha
+
+Beta
+
+Total
+Features
+
+Avg. Power
+features
+
+TP9, TP10,
+AF7, AF8
+(4)
+
+TP9, TP10,
+AF7, AF8
+(4)
+
+8
+
+Var. Power
+features
+
+TP9, TP10,
+AF7, AF8
+(4)
+
+TP9, TP10,
+AF7, AF8
+(4)
+
+8
+
+Hem. diff
+features
+
+|Left hem sensors- |Left hem channelsright hem sensors| right hem channels|
+(1)
+(1)
+
+2
+
+Correlation
+features
+
+Cross corr of alpha Cross corr of alpha
+& beta for all
+& beta for all
+channels
+channels
+
+28
+
+CASCON’20, November 10-13 2020, Toronto, Canada
+
+to the list of relevant features. This process was repeated until
+we had the desired number of features. The number of features
+was reduced to 10 features. The reduced feature set of size ten
+was chosen after experimenting with feature sets of different sizes,
+the top ten features gave the best balance between accuracy and
+number of features.
+3.4.2 Stacked Autoencoders for Feature Extraction. Autoencoders
+are neural networks that can be used to reduce the data into a low
+dimensional latent space by stacking multiple non-linear transformations(layers). They have an encoder-decoder architecture. The
+encoder maps the input to latent space and the decoder reconstructs
+the input. The data in latent space is supposed to have encoded
+the most important features and has a dimension lesser than the
+original dimension of data. This data in the latent space can be used
+as a reduced feature set and the models can be trained on this data.
+The number of features was reduced to 10(similar to that using
+forward feature selection) using a stacked autoencoder structure
+shown in Figure 7. This architecture was chosen after an exhaustive
+experiment with various architectures.
+
+Kurtosis
+
+TP9, TP10,
+AF7, AF8
+(4)
+
+TP9, TP10,
+AF7, AF8
+(4)
+
+Sknewness
+
+TP9, TP10,
+AF7, AF8
+(4)
+
+TP9, TP10,
+AF7, AF8
+(4)
+
+8
+
+Encoder_layer1
+(None,46)
+Output (None,32)
+
+Shannon Entropy
+
+TP9, TP10,
+AF7, AF8
+(4)
+
+TP9, TP10,
+AF7, AF8
+(4)
+
+8
+
+Encoder_layer2
+(None,32)
+Output (None,18)
+
+Hjorth Parameters
+
+TP9, TP10,
+AF7, AF8
+(8)
+
+TP9, TP10,
+AF7, AF8
+(8)
+
+16
+
+Total Features
+
+8
+
+Input_layer
+Input (None,46)
+Output
+
+(None,46)
+
+Input
+
+Input
+
+Encoder_layer3
+(None,18)
+Output (None,10)
+Input
+
+86
+
+Decoder_layer1
+(None,10)
+Output (None,18)
+Input
+
+3.4
+
+Dimensionality reduction
+Decoder_layer2
+(None,18)
+Output (None,32)
+
+The process of feature selection is important because it has many
+advantages like reduced training times, simplified and interpretable
+models, reduced chances of overfitting i.e. lesser variance and less
+impact of the curse of dimensionality. We performed feature selection/dimensionality reduction by two different methods. Firstly we
+used the Forward Feature selection technique which is a supervised
+approach and secondly, we used Autoencoders [30] which is an
+unsupervised approach for feature reduction. We elaborate on them
+in the following subsection.
+
+3.5
+
+3.4.1 Forward Feature Selection. In this method, we started by
+selecting one feature and calculating the metric value for each
+feature on the cross-validation dataset. The feature offering the
+best metric value was selected and appended to a list of features.
+The process was repeated next time with two features, one selected
+from the previous iteration and the other one selected from the
+set of all features not present in the set of already chosen features.
+The metric value(f-measure) was computed for each set of two
+features and features offering the best metric value were appended
+
+We applied ML models on the 86 features that we extracted by
+the procedure explained in Section 3.3. The classification task was
+done in two folds. We first considered the data from individual
+subjects and applied models to that data to perform intra-subject
+classification for which we achieved an accuracy of 80.6%. Intrasubject classification helped us to study subject-specific differences
+of the EEG reactivity patterns. Then we considered the combined
+data from all the subjects and performed inter-subject classification
+and got an accuracy of 58.1%. The inter-subject case helped us to
+make a more generalized model. The classification was done in two
+
+Input
+
+Decoder_layer3/Output_layer
+
+Input
+Output
+
+(None,32)
+(None,46)
+
+Figure 7: Final Autoencoder Architecture Used
+
+Classification Task
+
+CASCON’20, November 10-13 2020, Toronto, Canada
+
+ways and their performances have been compared. We performed
+classification using the original feature set as well as the reduced
+feature set from forward selection and autoencoders for both intrasubject and inter-subject. Below we elaborate on the models that we
+have used along with the chosen hyperparameters. We tuned the
+hyperparameters using Grid Search. The range of hyperparameters
+chosen was based on previous works [2, 20].
+3.5.1 K Nearest Neighbor (KNN). KNN is a non-parametric and lazy
+learning algorithm. Non-parametric means there is no assumption
+for underlying data distribution and that’s why we tested it in
+our problem. K is a critical hyperparameter that we varied in the
+range 4 to 8 in our experiment. The Euclidean distance was used
+as the distance metric. As KNN is a lazy learner, therefore it is not
+advisable to use it in our application, we use it for comparison
+purposes only.
+3.5.2 Logistic Regression (LR). We used logistic regression model
+both with ridge and lasso regularization. We varied the parameter
+C or penalty term in the range 0.01 to 100. We found out that lasso
+regularization gave better results on our data.
+3.5.3 Random Forest (RF). The random forest algorithm is an ensemble approach that uses multiple decision trees and makes a
+classification decision by voting from all the trees. The number of
+estimators in our problem were varied from 10 to 100.
+3.5.4 Artificial Neural Network (NN). We have used ANN with the
+following architecture: First hidden layer with 300 neurons and
+second hidden layer with 100 neurons. The activation function used
+was sigmoid. L2 regularization had been used to avoid overfitting,
+with a regularization rate of 0.0001. The hyperparameter tuning
+was done using grid search.
+3.5.5 Support Vector Machine (SVM). SVM with RBF kernel has
+been used in our experiment. The hyperparameters C and Gamma
+were varied between 0.001 and 100 and 0.01 and 10 respectively.
+3.5.6 Gradient Boosting (GB). Gradient boosting is an ensemble
+learning approach that produces a prediction model in the form of
+an ensemble of weak prediction models. Gradient boosting combines weak learners into a single strong learner. In our Gradient
+boosting model we varied the hyperparameter estimators from 10
+to 100.
+
+4
+
+EVALUATION METRICS
+
+Many metrics are used to evaluate ML Models like average accuracy,
+precision, recall, F-measure, ROC-AUC score, MCC score etc. In
+our case, we used three metrics for performance evaluation of our
+models- Average Accuracy, Average ROC-AUC score, and Average
+Matthews Correlation Coefficient (MCC). Since our data is balanced
+i.e. each class has almost equal representation the average accuracy
+score would have sufficed but we used the other two additional
+metrics to verify the performance of our models. We used scikit
+learn [31] library of python to evaluate the models.
+
+C, Mahima, et al.
+
+4.1
+
+Accuracy Score
+
+The accuracy score in our problem was calculated as :
+1
+n
+−1
+Σ s ampl e s 1(yi = yˆi )
+nsampl e i=0
+(4)
+In equation 8, yˆi is the predicted value of the i-th sample and yi
+is the corresponding true value and 1(x) is the indicator function.
+nsampl es is the total number of samples. The accuracy indicates
+the samples that were correctly classified from all the samples.
+Average Accuracy Score(y, ŷ) =
+
+4.2
+
+ROC-AUC score
+
+ROC-AUC stands for Receiver operator characteristics- Area under
+the curve, it basically calculates the area under the receiver operator
+curve.The ROC curve is created by plotting the true positive rate
+P ) against the false positive rate (FPR =
+FP
+(TPR = T PT+F
+N
+T N +F P )
+at various threshold settings. We find the area under the curve to
+evaluate our model. Since our problem is multiclass therefore we
+computed the average AUC of all possible pairwise combinations
+of classes using equation 5 as suggested in [32].
+2
+Σc Σc (AUC(j |k)+AUC(k |j))
+c(c − 1) j=1 k >j
+(5)
+where c is the number of classes and AUC(j |k) is the AUC with j as
+the positive class and k as the negative class and AUC(k |j) is vice
+versa. In general, AUC(j |k) , AUC(k |j)) in the multiclass case.
+Average ROC-AUC Score =
+
+4.3
+
+Matthews Correlation Coefficient
+
+The Matthews correlation coefficient [33] is used to evaluate the
+quality of binary and multiclass classifications. The MCC is a kind
+of correlation coefficient value between -1 and +1. A coefficient of
++1 represents a perfect prediction, 0 an average random prediction
+and -1 an inverse prediction. In the multiclass case, Matthews correlation coefficient can be defined in terms of a confusion matrix
+C for K classes. The MCC for multiclass as suggested in [34] is
+calculated as follows:
+c × s − ΣkK pk × tk
+MCC = q
+(s 2 − ΣkK pk2 ) × (s 2 − ΣkK tk2 )
+
+(6)
+
+where tk = ΣiK Cik is the number of times class k truly occurred,
+pk = ΣiK Cki is the number of times class k predicted, c = ΣkK Ckk is
+the total number of samples correctly predicted and s = ΣiK ΣK
+j Ci j
+the total number of samples.
+
+5
+
+EXPERIMENT RESULTS
+
+We performed two categories of classification namely, intra-subject
+and inter-subject classification. For intra-subject classification, we
+applied 5-folds cross-validation for data from five trials of each
+subject and in the second classification, we applied leave out one
+subject cross-validation where we trained the model on seven subjects data and validated it using a single subject data and we repeat
+it for all subjects. The performance metrics that we used to evaluate
+our model are average cross validation accuracy, average ROC-AUC
+score, and average MCC. Although average accuracy score should
+
+CASCON’20, November 10-13 2020, Toronto, Canada
+
+Average MCC Score
+
+Average AUC-ROC Score
+
+Average Accuracy Score
+
+Understanding Brain Dynamics for Color Perception using Wearable EEG headband
+
+Time window(ms)
+
+Time window(ms)
+
+Time window(ms)
+
+Time window(ms)
+
+Average MCC Score
+
+Average Accuracy Score
+
+Average AUC-ROC Score
+
+Figure 8: Average Accuracy, Average ROC-AUC score and Average MCC score for different time windows for intra-subject
+classification
+
+Time window(ms)
+
+Time window(ms)
+
+Figure 9: Average Accuracy, Average ROC-AUC score and Average MCC score for different time windows for inter-subject
+classification
+have sufficed our evaluation as our problem is a balanced classification problem i.e. we have almost the same instances for all classes
+yet we used ROC-AUC and MCC score to verify the results from
+average accuracy. We report the results on the complete dataset as
+well on the reduced dataset from dimensionality reduction techniques that we mentioned in Section 3.4. The average accuracy,
+average AUC score, and average MCC score with different time
+windows for both intra-subject and inter-subject classification are
+shown in Figure 8 and Figure 9 respectively.
+We got the best results for a time window of 200ms. We considered the time window of 200ms for further experimentation.
+We discuss the results in three segments, the results without dimensionality reduction, results after dimensionality reduction from
+the forward selection algorithm and results after dimensionality
+reduction from Autoencoder. In the following subsections, we show
+the results in Table 2-11, considering the average metric score of
+all the subjects, the best metric score among all subjects and the
+inter-subject metric score for the three metrics explained in Section
+4 . In all the tables the number in brackets is the standard deviation.
+We have highlighted the highest metrics for each case in all tables.
+The code for all the experiments is available online 5 .
+
+5.1
+
+the fact that we applied leave one subject out cross-validation in
+this case. The results were better for intra-class classification which
+means that a customized model could be trained on an individual’s
+data and then it can be used for predictions for a particular subject
+rather than using data from different people which might also cause
+privacy issues.
+Table 2: Accuracy by using all the features at 200ms time
+window.
+Metrics
+
+KNN SVM
+
+Logistic Random Neural Gradient
+Regression Forest Network Boost
+
+Avg Subject 0.414 0.474
+Accuracy (0.056)(0.018)
+
+0.506
+(0.028)
+
+Best Subject 0.513 0.578
+Accuracy (0.021)(0.031)
+
+0.600
+(0.022)
+
+Inter-subject 0.338 0.377
+Accuracy (0.033)(0.030)
+
+0.408
+(0.030)
+
+0.625
+(0.018)
+
+0.523
+(0.013)
+
+0.608
+(0.057)
+
+0.702
+0.700
+(0.000) (0.026)
+
+0.669
+(0.039)
+
+0.568
+(0.025)
+
+0.490
+(0.033)
+
+0.472
+(0.040)
+
+Results without dimensionality reduction
+
+Table 2 shows the accuracy score by using all features. We saw
+that the Random Forest algorithm performed the best and Neural
+Network and Gradient Boosting classifier also showed comparable
+results. The highest accuracy for an individual was 70.2% which was
+reasonably better than the accuracy of random guess i.e. 33%. The
+inter-subject accuracy of 56.8% was also very promising considering
+5 https://github.com/cmahima/MuseProject
+
+In Table 3 we see the ROC-AUC scores. The highest average
+score of 0.851 was achieved by the Random Forest classifier, the
+average score of 0.803 was also better than an AUC score of 0.5 in
+the case of a random classifier.
+Table 3: ROC-AUC Score by using all the features at 200ms
+time window
+
+CASCON’20, November 10-13 2020, Toronto, Canada
+
+Metrics
+
+KNN SVM
+
+C, Mahima, et al.
+
+Logistic Random Neural Gradient
+Regression Forest Network Boost
+
+Avg Subject 0.552 0.514
+Auc score (0.019)(0.032)
+
+0.676
+(0.027)
+
+Best Subject 0.600 0.620
+Auc score (0.043)(0.057)
+
+0.710
+(0.037)
+
+Inter-subject 0.530 0.570
+Auc score (0.039)(0.021)
+
+0.601
+(0.046)
+
+0.803
+(0.012)
+0.851
+(0.020)
+0.654
+(0.051)
+
+0.696
+(0.035)
+
+0.763
+(0.015)
+
+0.822
+(0.024)
+
+0.810
+(0.012)
+
+0.611
+(0.035)
+
+0.643
+(0.034)
+
+The MCC scores by using all features are in Table 4. A MCC score
+of 0 means that the classifier is predicting randomly, in our case
+the highest MCC score was 0.523 which was much higher than a
+random prediction.
+Table 4: MCC score by using all the features at 200ms time
+window
+Metrics
+
+KNN SVM
+
+Logistic Random Neural Gradient
+Regression Forest Network Boost
+
+Avg Subject 0.120 0.291
+MCC
+(0.050)(0.040)
+
+0.310
+(0.041)
+
+Best Subject 0.203 0.333
+MCC
+(0.102)(0.070)
+
+0.318
+(0.041)
+
+Inter-subject 0.207 0.1645
+MCC
+(0.072)(0.057)
+
+0.167
+(0.059)
+
+5.2
+
+0.433
+(0.033)
+0.523
+(0.097)
+0.366
+(0.075)
+
+0.303
+(0.056)
+
+0.433
+(0.033)
+
+0.431
+(0.070)
+
+0.479
+(0.091)
+
+0.155
+(0.060)
+
+0.189
+(0.058)
+
+Results with Forward Feature Selection
+
+We saw significant improvement in the results with the use of
+forward feature selection which is a supervised feature selection
+technique. The irrelevant and noisy features were removed and
+the feature set was reduced to 10. This methodology helped us
+to curb the overfitting issue too and thus the performance on the
+validation set improved. In Table 5 we see the average accuracy
+scores by using the top 10 features. There was an increase in average accuracy by nearly 10% and we got the highest accuracy
+of almost 80.6% which was much better than any other previous
+approaches that have been used for EEG classification using RGB
+colors using wearable devices. The average subject accuracy of 72%
+showed that the classifier performed well for all the subjects. The
+average accuracy increased by 9.5%. In this case, also the results
+of intra-subject classification were better than that of inter-subject
+classification. The inter-subject classification accuracy improved by
+1.3%. Random Forest algorithm had given us the best results in this
+case too with Neural network and Gradient Boost with comparable
+performance.
+
+Table 5: Accuracy by using 10 features by forward selection
+at 200ms time window
+Metrics
+
+KNN SVM
+
+Logistic Random Neural Gradient
+Regression Forest Network Boost
+
+Avg Subject 0.492 0.487
+Accuracy (0.038)(0.045)
+
+0.492
+(0.028)
+
+Best Subject 0.615 0.604
+Accuracy (0.051)(0.028)
+
+0.590
+(0.050)
+
+Inter-subject 0.377 0.366
+Accuracy (0.013)(0.024)
+
+0.388
+(0.012)
+
+0.720
+(0.035)
+0.806
+(0.041)
+0.581
+(0.032)
+
+0.513
+(0.036)
+
+0.597
+(0.048)
+
+0.766
+(0.039)
+
+0.720
+(0.035)
+
+0.475
+(0.040)
+
+0.411
+(0.019)
+
+We see in Table 6 the AUC scores after forward feature selection.
+The best AUC score increased by 0.037 and the average AUC score
+has increased by 0.054. The MCC scores with forward feature selection are in Table 7 which also increased. Thus forward feature
+selection not only made our architecture efficient computationally
+but also increased the overall performance of the architecture. In
+fact, we got the best accuracy of 80.6% with the use of the Random
+Forest classifier with forward selection.
+Table 6: ROC-AUC Score by using 10 features by forward selection at 200ms time window
+Metrics
+
+KNN SVM
+
+Logistic Random Neural Gradient
+Regression Forest Network Boost
+
+Avg Subject 0.546 0.588
+Auc score (0.017)(0.034)
+
+0.688
+(0.014)
+
+Best Subject 0.775 0.670
+Auc score (0.018)(0.018)
+
+0.712
+(0.045)
+
+Inter-subject 0.540 0.580
+Auc score (0.023)(0.062)
+
+0.611
+(0.026)
+
+0.857
+(0.031)
+0.901
+(0.013)
+0.676
+(0.023)
+
+0.699
+(0.033)
+
+0.740
+(0.037)
+
+0.879
+(0.011)
+
+0.860
+(0.015)
+
+0.610
+(0.025)
+
+0.632
+(0.014)
+
+Table 7: MCC score by using 10 features by forward selection
+at 200ms time window
+Metrics
+
+KNN SVM
+
+Logistic Random Neural Gradient
+Regression Forest Network Boost
+
+Avg Subject 0.150 0.289
+MCC
+(0.030)(0.072)
+
+0.302
+(0.037)
+
+Best Subject 0.531 0.346
+MCC
+(0.054)(0.054)
+
+0.364
+(0.067)
+
+Inter-subject 0.017 0.189
+MCC
+(0.112)(0.051)
+
+0.197
+(0.017)
+
+0.578
+(0.061)
+0.638
+(0.013)
+0.476
+(0.015)
+
+0.437
+(0.031)
+
+0.310
+(0.061)
+
+0.553
+(0.068)
+
+0.515
+(0.056)
+
+0.255
+(0.012)
+
+0.289
+(0.043)
+
+Understanding Brain Dynamics for Color Perception using Wearable EEG headband
+
+5.3
+
+Results with Autoencoder
+
+We applied autoencoder to observe how an unsupervised feature
+reduction technique would work on our data. With the autoencoder, a reduced feature set of 10 was obtained. Using this reduced
+feature set as input to the ML models, we achieved a lower average
+CV accuracy in comparison to classification using forward feature
+selection. Therefore autoencoders are not recommended for our
+application. Table 8-10 show the metrics achieved with the use of
+autoencoders.
+Table 8: Accuracy by using 10 features by Autoencoder at
+200ms time window
+Metrics
+
+KNN SVM
+
+0.393
+(0.022)
+
+0.430
+(0.011)
+
+0.409
+(0.009)
+
+Best Subject 0.417 0.406
+Accuracy (0.000))(0.000)
+
+0.434
+(0.000)
+
+0.489
+(0.008)
+
+0.473
+(0.024)
+
+Inter-subject 0.358 0.348
+Accuracy (0.012) (0.027)
+
+0.347
+(0.023)
+
+0.397
+(0.017)
+
+0.355
+(0.028)
+
+0.518
+(0.044)
+
+Best Subject 0.655 0.560
+Auc score (0.000)(0.018)
+
+0.602
+(0.000)
+
+Inter-subject 0.505 0.499
+Auc score (0.019)(0.062)
+
+0.520
+(0.026)
+
+0.637
+(0.024)
+0.686
+(0.007)
+0.548
+(0.018)
+
+0.598
+(0.026)
+0.688
+(0.020)
+0.510
+(0.037)
+
+0.600
+(0.017)
+0.730
+(0.001)
+0.511
+(0.036)
+
+Logistic Random Neural Gradient
+Regression Forest Network Boost
+
+Avg Subject 0.099 0.189
+MCC
+(0.019)(0.072)
+
+0.191
+(0.026)
+
+Best Subject 0.261 0.267
+MCC
+(0.000)(0.000)
+
+0.213
+(0.000)
+
+Inter-subject 0.015 0.024
+MCC
+(0.022)(0.053)
+
+0.022
+(0.051)
+
+0.225
+(0.019)
+0.229
+(0.027)
+0.212
+(0.031)
+
+0.218
+(0.039)
+0.301
+(0.038)
+0.120
+(0.054)
+
+0.199
+(0.067)
+0.261
+(0.000)
+0.115
+(0.022)
+
+Best Average
+Accuracy
+
+Martin Angelovski et.al.[17]
+using 2 channel portable EEG
+
+53%
+
+Sara Åsly et. al.[2, 16]
+using 4 channel portable EEG
+
+58%
+
+Kyle Phillips et. al.[14]
+using 14 channel emotiv EEG
+
+79.6%
+
+Rakshit et. al.[13]
+using 10 channel medical EEG
+
+81.2%
+
+Our approach using 4 channel portable EEG
+
+80.6%
+
+0.398
+(0.012)
+
+Table 10: MCC score by using 10 features by Autoencoder at
+200ms time window
+KNN SVM
+
+Algorithms
+
+0.510
+(0.000)
+
+Logistic Random Neural Gradient
+Regression Forest Network Boost
+
+Avg Subject 0.501 0.499
+Auc score (0.037)(0.012)
+
+Metrics
+
+Table 11: Performance of other methods on EEG classification into color stimuli. Our aprroach shows 5-folds average
+accuracy value for intra-class classification
+
+0.417
+(0.000)
+
+Table 9: ROC-AUC Score by using 10 features by Autoencoder at 200ms time window
+KNN SVM
+
+The final proposed model for our application is that of Random
+Forest classifier with forward feature selection. In Table 11 we
+compare our results with previous efforts that have been done
+to classify EEG signals on basis of color stimuli using wearable
+EEG devices. In Figure 10 we show the ROC curve for the proposed
+model with AUC-ROC score of individual classes for all the subjects
+where 0 represents red, 1 represents green and 2 represents blue.
+
+Logistic Random Neural Gradient
+Regression Forest Network Boost
+
+Avg Subject 0.398 0.362
+Accuracy (0.010) (0.026)
+
+Metrics
+
+CASCON’20, November 10-13 2020, Toronto, Canada
+
+6
+
+CONCLUSIONS AND FUTURE WORK
+
+We have used EEG signals from a wearable consumer-grade EEG
+headband to classify the raw EEG data into three classes of colors,
+red, green, and blue. In our approach, we focussed mainly on Alpha
+and Beta frequencies and discarded all other lower and higher frequencies which otherwise would have added noise to the data. We
+extracted various spectral, correlation and statistical features from
+the data and apply ML models to it. Our proposed model of Random
+Forest with forward feature selection showed significant improvement when compared to previous approaches. Our methodology
+achieved an improvement of almost 20% in the average accuracy of
+classification.
+Despite having a fewer number of electrodes Muse performed well
+in the classification task and gave promising results. The intra-class
+classification accuracy of 80.6% shows that wearable devices can be
+used in integrated IoT frameworks where they can be used in various control applications. The IoT pipeline for this application must
+take into account the data preprocessing and feature extraction
+in real-time. The time window for our particular application was
+small to capture the effect of color stimuli only and avoid unnecessary artifacts in data. This time-window might vary for different
+applications. One drawback of Muse that we encountered during
+experiments was that it cannot be worn for a long time due to
+comfort issues and also the connection can become weak sometimes however one can overcome this problem by applying water
+to the channels. With the advancement in wearable computing,
+more comfortable devices are now available that would not bother
+one if used for a longer time like the new Muse S headband. The
+Muse 2 device is also sensitive to muscle movements but that is
+
+CASCON’20, November 10-13 2020, Toronto, Canada
+
+C, Mahima, et al.
+
+Figure 10: The ROC-AUC curve using our proposed architecture for all the subjects
+not an issue in our application as we are only interested in a small
+time window of data when a person focuses on a color. Our work
+has thus highlighted the capability of these wearable devices to
+detect and classify the EEG signal on the basis of color stimuli and
+the results are encouraging. This study opens up a new door to
+integrate these devices in our day to day lives to use brain signals
+to control various devices.
+
+REFERENCES
+[1] Saim Rasheed and Daniele Marini. Classification of eeg signals produced by rgb
+colour stimuli. Journal of Biomedical Engineering and Medical Imaging, 10 2015.
+[2] Sara Åsly, Luis Moctezuma, Monika Gilde, and Marta Molinas. Towards eeg
+based classification of rgb color-based stimuli. 09 2019.
+[3] Wm Dobelle. Artificial vision for the blind by connecting a television camera to
+the visual cortex. ASAIO journal (American Society for Artificial Internal Organs :
+1992), pages 3–9, 01 2000.
+[4] Concetto Spampinato et al. Deep learning human mind for automated visual
+classification. CVPR 2017, 09 2017.
+[5] Alberto Bozal. Personalized image classication from eeg signals using deep
+learning. Master’s thesis, 2017.
+[6] Chris Berka et al. Real-time analysis of eeg indexes of alertness, cognition,
+and memory acquired with a wireless eeg headset. International Journal of
+Human–Computer Interaction, 17(2):151–170, 2004.
+[7] Jason Johannesen, Jinbo Bi, Ruhua Jiang, Joshua Kenney, and Chi-Ming Chen.
+Machine learning identification of eeg features predicting working memory performance in schizophrenia and healthy adults. Neuropsychiatric Electrophysiology,
+2, 12 2016.
+[8] Maher Chaouachi, Imène Jraidi, and Claude Frasson. Modeling mental workload using eeg features for intelligent systems. In User Modeling, Adaption and
+Personalization, pages 50–61, 07 2011.
+[9] Mohammad Almogbel, Anh Dang, and Wataru Kameyama. Eeg-signals based
+cognitive workload detection of vehicle driver using deep learning. In 2018 20th
+International Conference on Advanced Communication Technology (ICACT), pages
+256–259, 02 2018.
+[10] Chin-Teng Lin et al. Eeg-based assessment of driver cognitive responses in a
+dynamic virtual-reality driving environment. IEEE transactions on bio-medical
+engineering, 54:1349–52, 08 2007.
+[11] Diane Aclo et al. Eeg-based color classification system using artificial neural
+networks. 10 2015.
+[12] Eman Alharbi, Saim Rasheed, and Seyed Buhari. Feature selection algorithm for
+evoked eeg signal due to rgb colors. In 2016 9th International Congress on Image
+and Signal Processing, BioMedical Engineering and Informatics (CISP-BMEI), pages
+1503–1520, 10 2016.
+[13] Arnab Rakshit and Rimita Lahiri. Discriminating different color from eeg signals
+using interval-type 2 fuzzy space classifier. In 2016 IEEE 1st International Conference on Power Electronics, Intelligent Control and Energy Systems (ICPEICES),
+pages 1–6, 07 2016.
+[14] Kyle Phillips, Olli Fosu, and Ismail Jouny. Separation and classification of eeg
+responses to color stimuli. In 2015 41st Annual Northeast Biomedical Engineering
+Conference (NEBEC), pages 1–2, 04 2015.
+
+[15] Huiran Zhang and Zheng Tang. To judge what color the subject watched by
+color effect on brain activity. In IJCSNS International Journal of Computer Science
+and Network Security, page 80, 02 2011.
+[16] Sara Åsly. Supervised learning for classification of EEG signals evoked by visual
+exposure to RGB colors. PhD thesis, 2019.
+[17] Martin Angelovski et al. Application of bci technology for color prediction using
+brainwaves. 09 2012.
+[18] Jason Teo and Jia Chia. Eeg-based excitement detection in immersive environments: An improved deep learning approach. page 020145, 09 2018.
+[19] Olav Krigolson, Chad Williams, and Francisco Colino. Using portable eeg to
+assess human visual attention. pages 56–65, 05 2017.
+[20] Pouya Bashivan, Irina Rish, and Steve Heisig. Mental state recognition via
+wearable EEG. CoRR, 2016.
+[21] Zuzana Koudelková and Martin Strmiska. Introduction to the identification of
+brain waves based on their frequency. MATEC Web of Conferences, page 05012,
+01 2018.
+[22] J. et al. Peirce. Psychopy2: Experiments in behavior made easy. 51 2019.
+[23] David Vivancos. Mindbigdata, the imagenet of the brain. 51 2018.
+[24] Scott Makeig Arnaud Delorme. Eeglab: an open source toolbox for analysis of
+single-trial eeg dynamics including independent component analysis. J Neurosci
+Methods, 2004.
+[25] Thiago da Silveira, Alice Kozakevicius, and Cesar Rodrigues. Automated drowsiness detection through wavelet packet analysis of a single eeg channel. Expert
+Systems with Applications, 55, 03 2016.
+[26] Hao Wang et al. The continuous analysis of eeg’s alpha wave by morlet wavelet
+transform. National Center for Biotechnology Information, pages 746–8, 752, 08
+2010.
+[27] Hyeon Kyu Lee and Young-Seok Choi. Application of continuous wavelet
+transform and convolutional neural network in decoding motor imagery braincomputer interface. Entropy, 21:1199, 12 2019.
+[28] Hjorth B. Eeg analysis based on time domain properties. Electroencephalogr Clin
+Neurophysiol., 227:306-310, 1970.
+[29] Jieping Ye. Least squares linear discriminant analysis. pages 1087–1093, 01 2007.
+[30] K. Han et al. Autoencoder inspired unsupervised feature selection. In 2018
+IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
+pages 2941–2945, 2018.
+[31] F Pedregosa et al. Scikit-learn: Machine learning in Python. Journal of Machine
+Learning Research, 12:2825–2830, 2011.
+[32] David Hand and Robert Till. A simple generalisation of the area under the roc
+curve for multiple class classification problems. Hand, The, pages 171–186, 11
+2001.
+[33] Pierre Baldi et al. Assessing the accuracy of prediction algorithms for classification: An overview. Bioinformatics (Oxford, England), pages 412–24, 06 2000.
+[34] Gorodkin J. Comparing two k-category assignments by a k-category correlation
+coefficient. Comput Biol Chem, page 367-374, 2004.
+
+

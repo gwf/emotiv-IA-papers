@@ -1,0 +1,415 @@
+HHS Public Access
+Author manuscript
+Author Manuscript
+
+Conf Proc IEEE Eng Med Biol Soc. Author manuscript; available in PMC 2018 May 29.
+Published in final edited form as:
+
+Conf Proc IEEE Eng Med Biol Soc. 2015 ; 2015: 4114–4117. doi:10.1109/EMBC.2015.7319299.
+
+Real-time EEG Source-mapping Toolbox (REST): Online ICA and
+Source Localization
+Luca Pion-Tonachini [Student Member, IEEE],
+Dept. of Electrical and Computer Engineering and Swartz Center for Computational
+Neuroscience (SCCN) of University of California, San Diego (UCSD)
+
+Author Manuscript
+
+Sheng-Hsiou Hsu [Student Member, IEEE],
+Dept. of Bioengineering (BIOE), SCCN, and Institute for Neural Computation (INC) of UCSD
+Scott Makeig,
+SCCN and INC of UCSD
+Tzyy-Ping Jung [Fellow, IEEE], and
+BIOE, SCCN and INC of UCSD
+Gert Cauwenberghs [Fellow, IEEE]
+BIOE and INC of UCSD
+
+Abstract
+Author Manuscript
+
+The Electroencephalogram (EEG) is a noninvasive functional brain activity recording method that
+shows promise for becoming a 3-D cortical imaging modality with high temporal resolution.
+Currently, most of the tools developed for EEG analysis focus mainly on offline processing. This
+study introduces and demonstrates the Real-time EEG Source-mapping Toolbox (REST), an
+extension to the widely distributed EEGLAB environment. REST allows blind source separation
+of EEG data in real-time using Online Recursive Independent Component Analysis (ORICA), plus
+near real-time localization of separated sources. Two source localization methods are available to
+fit equivalent current dipoles or estimate spatial source distributions of selected sources. Selected
+measures of raw EEG data or component activations (e.g. time series of the data, spectral changes
+over time, equivalent current dipoles, etc.) can be visualized in near real-time. Finally, this study
+demonstrates the accuracy and functionality of REST with data from two experiments and
+discusses some relevant applications.
+
+Author Manuscript
+
+I. Introduction
+Electroencephalogram (EEG) source analysis combining Independent Component Analysis
+(ICA) and source localization has generally been solved offline because of its computational
+cost. With faster processors and algorithmic advances, near real-time online applications are
+becoming even more viable. Bringing these analysis methods to the domain of real-time
+processing would allow for the use of more specific neurophysiological information in
+
+L. Pion-Tonachini and S.-H. Hsu made equal contributions to this work.
+
+Pion-Tonachini et al.
+
+Page 2
+
+Author Manuscript
+
+closed-loop brain-computer interfaces (BCI) and neurofeedback paradigms, and could also
+provide experimenters online feedback useful for data quality control.
+
+Author Manuscript
+
+Analyzing EEG data at the level of cortical source dynamics is a complicated problem, but
+allows for much more biologically plausible, physiologically meaningful, and functionally
+significant results than treating scalp data channels as if they indexed single brain sources. A
+source-resolved imaging approach models the collected EEG as the sum of electric fields
+produced by many small patches of cortex whose local field activities are fully or partially
+synchronous, each such patch thus functioning as an effective EEG source with a scalp
+projection identical to that of a single equivalent current dipole (ECD). Source localization
+requires solutions to both the forward and inverse imaging problems: the forward problem
+(FP) determining the scalp projection patterns of the possible brain sources based on
+accurate modeling of head tissue geometries and conductivities, and the inverse problem (IP)
+estimating the locations and orientations or cortical surface distributions of one or more
+source projection patterns.
+
+Author Manuscript
+
+Many existing EEG processing toolboxes attempt to solve these problems, including core
+EEGLAB [1], BCILAB [2], LORETA-KEY [3], and Fieldtrip [4]. They all operate offline or
+attempt to solve the IP by directly operating on, e.g., response-averaged EEG channel data.
+Approaching the IP directly from the EEG channel data complicates the problem by
+requiring determination of the number of sources to localize [4], a problem whose
+computational cost and number of false local minima increase dramatically with the number
+of sources being estimated. Other approaches simply attempt a low-resolution joint spatial
+estimate of all the active sources [3]. Blind source separation can be used as an initial
+unmixing step to simplify an inverse problem by separating it into much simpler problems of
+finding the locations of the individual effective sources [5][6][7].
+ICA has been shown to work exceedingly well when applied to EEG [8] as EEG data and
+ICA share many important assumptions. ICA assumes that input data are the result of a
+linear mixing of spatially stationary independent time series or independent components
+(ICs). Here, we present the Real-time EEG Source-mapping Toolbox (REST), a collection of
+automated EEG analysis methods accessible through a graphic user interface (GUI). By
+applying Online Recursive ICA (ORICA) [9], we can estimate a solution to the source
+separation problem in near real-time, allowing low-latency access to source information,
+making possible innovations in experimental designs including a wide variety of clinical and
+non-clinical BCI paradigms. REST also allows the user to estimate the brain locations of the
+estimated sources using either LORETA [3][10] or minimum-variance ECD fitting [4].
+
+Author Manuscript
+
+REST provides estimates of source activations and their current power spectra, plus source
+scalp maps (source scalp projection patterns) and cortical source locations. Below, we show
+the layout of the REST GUI and detail the measures used in its analysis pipeline. We then
+test its accuracy and efficacy by applying it to simulated EEG data with known source
+locations and activations. Finally, we demonstrate the real-world utility of REST and its ease
+of use by applying it in a common BCI paradigm recording session.
+
+Conf Proc IEEE Eng Med Biol Soc. Author manuscript; available in PMC 2018 May 29.
+
+Pion-Tonachini et al.
+
+Page 3
+
+Author Manuscript
+
+II. Methods
+REST is coded in MATLAB [11] using the EEGLAB environment. It uses a processing
+pipeline, shown in Fig. 1A, designed to run from beginning to end with minimal user input.
+Preprocessing and source separation are implemented as a BCILAB pipeline followed by
+source localization implemented in part using routines in MoBILAB [10].
+A. Preprocessing
+The toolbox pulls EEG data from a data stream received through the Lab Streaming Layer
+framework [12]. The data are first preprocessed by IIR high-pass filtering. Artifact Subspace
+Reconstruction (ASR) [13] may be introduced as an additional preprocessing step to remove
+large movement-based artifacts.
+
+Author Manuscript
+
+B. Source Separation
+Next, the EEG data are whitened using an online RLS whitening algorithm (to improve
+convergence) and then linearly unmixed using ORICA. ORICA is a centerpiece of this
+toolbox. It is, so far as we know, the only ICA implementation that is real-time capable with
+acceptable convergence rates for relatively large numbers of channels [14]. The output of
+ORICA is a set of linear IC filters that are used to separate the IC activation time courses
+and scalp maps from the EEG channel data. When the data sources are spatially and
+statistically stationary, the ICs that ORICA provide asymptotically approach those that
+(offline) Infomax ICA [15] returns. Unlike Infomax ICA (though compare AMICA [16]),
+ORICA can also adapt to source non-stationarities.
+C. Source Localization
+
+Author Manuscript
+Author Manuscript
+
+Estimated IC source locations are calculated using one of two cortically-constrained source
+models (either distributed or ECD). Distributed source location model estimates are
+calculated using cortically-constrained LORETA with Bayesian hyper-parameter estimation
+[17] from MoBILAB, while the ECD model estimates are computed using minimum
+residual variance fitting. Both the ECD and distributed source methods require a MoBILAB
+head model object to be created in advance, which can be computed easily using the
+included helper function. The head model uses spatial meshes representing the geometry of
+the cortex, scalp and one or more intervening head tissue types (e.g., skull, CSF, white
+matter). A lead field matrix (LFM) is calculated (automatically) using OpenMEEG [18], as
+well as a surface Laplacian operator for the cortical mesh. By default, the included helper
+function creates a 3-layer (scalp, skull, cortex) boundary element method (BEM) head model
+based on the MNI Colin 27 brain. The primary input to the source localization methods is an
+estimated ICA scalp map for the source being localized.
+
+III. Materials
+A. Toolbox
+The REST main window, on the left of Fig. 1B, displays either raw EEG or estimated IC
+activations. It also shows scalp maps and power spectra for the estimated ICs, as well as
+convergence statistics. All the visualized information updates in near real-time. The
+
+Conf Proc IEEE Eng Med Biol Soc. Author manuscript; available in PMC 2018 May 29.
+
+Pion-Tonachini et al.
+
+Page 4
+
+Author Manuscript
+
+(partially occluded) window in the top rights of Fig. 1B provides an easy way to select
+which ICs are displayed on the main window. On the bottom right of Fig. 1B is the source
+localization window which shows the current estimated source location for an IC as either an
+ECD or a distributed source.
+B. Experiments
+To show the utility of REST, we designed two experiments. One, using simulated sourceresolved EEG data, for which we know the ground truth, tested the integrity of the REST
+pipeline. The other used actual EEG collected during a steady-state visually evoked potential
+(SSVEP) BCI paradigm to test the utility of the toolbox in interactive paradigms.
+
+Author Manuscript
+
+1) Simulated EEG Data—For the simulation, we used the default head model with ECD
+sources constrained to be normal to the cortical surface. We simulated 10 minutes of 64
+channel EEG using SIFT [19] by placing ECDs at various vertices of the cortical mesh and
+generated source activation time-series for each. Two sources were handcrafted to imitate
+eye-blinks and occipital alpha activities while the rest were vector autoregressive processes
+driven by super-Gaussian noise. These are then mixed together using the LFM associated
+with the head model. As this was a test for accuracy rather than speed of convergence, we
+evaluated the accuracy of the ORICA decompositions and resulting source location
+estimates at the end of the simulated data collection. For information on the convergence
+properties of ORICA, see [14].
+
+Author Manuscript
+
+2) Actual EEG Data—To collect the actual human EEG we used a low-cost 14 channel
+Emotiv headset. This setup wirelessly streams data to a computer via Bluetooth. The
+streaming data were transferred to an LSL stream for REST. During the experiment, 2
+minutes of eyes-closed resting allowed ORICA to identify relevant ICs. This was followed
+by 2 trials in which the subject looked at flashing phone-pad style digits on a tablet. The
+subject first focused on the symbol “1” and then afterwards at the symbol “#” which were
+flashing at 9 Hz and 11.75 Hz respectively. This tested the adaptivity of the pipeline, as
+going from eyes-closed rest to viewing flashing stimuli could be expected to produce a
+noticeable change in brain sources and source activities.
+
+IV. Results
+A. Simulated 64-Channel Stationary EEG
+
+Author Manuscript
+
+As shown in Fig. 2 and 3, ORICA and both source localization techniques perform as
+intended. Fig. 2 visualizes the full REST pipeline applied to 3 of the 64 simulated sources.
+In the first estimation step, ORICA successfully decomposes the sources, providing accurate
+scalp map estimates and source activations. In the second estimation step, the ECD estimates
+were very close to the ground truth (shown in the green simulation box) in both location and
+orientation. The distributed source estimates, despite not theoretically matching the model
+used during simulation, provided patches of active cortex that were well situated about the
+simulated dipole location.
+
+Conf Proc IEEE Eng Med Biol Soc. Author manuscript; available in PMC 2018 May 29.
+
+Pion-Tonachini et al.
+
+Page 5
+
+Author Manuscript
+
+Fig. 3 illustrates the accuracy of all 64 estimated dipole positions and orientations, which
+were generally correct within 3 cm and 20 degrees respectively. The majority of the errors in
+dipole position were related to the depth of the dipole as the true source positions tended to
+be closer to the scalp than their estimates. Disk sizes in Fig. 3, which represent scalp map
+error, showed a clear correlation between localization error and scalp map error and provides
+a means of judging whether localization error is due to poor results from ORICA or error
+from the underdetermined nature of the IP. Here we used the same simulated FP head model
+to solve the IP, something not possible in actual use where the true FP head model can only
+be estimated. Nevertheless, these results indicate that REST can generate accurate source
+locations and activations provided a minimum level of data quantity and quality and
+sufficient head model accuracy.
+B. Actual 14-Channel EEG during SSVEP
+
+Author Manuscript
+
+The application of REST to data collected in an SSVEP paradigm showed that ORICA can
+converge to useful source solutions in real-life applications. Fig. 4 compares REST outputs
+during eyes-closed rest and attention to 9 Hz and 11.75 Hz flashing stimulii. Clearly,
+ORICA extracted an occipital IC, first during rest with a weak 10 Hz peak (top panel), and
+then during attention to 9-Hz (middle panel) and 11.75-Hz (lower panel) flashing stimuli.
+The ECD during the latter condition (not shown) changed in orientation as indicated by the
+change in its scalp map.
+
+V. Conclusions
+
+Author Manuscript
+
+We have shown that REST can be accurate when applied to simulated data, and potentially
+usable in practice. There are many possible applications for real-time monitoring of sources
+of interest during an EEG experiment. The REST toolbox design allows possible extensions
+to implement near real-time computation, visualization, and application of other sourceresolved EEG measures. REST could aid online data quality analysis, as when collecting
+EEG from particular sources if of specific importance. Additionally, the ORICA
+implementation in REST might be used to make a wide range of BCI paradigms more robust
+[20]. We plan to add more flexible and detailed data preprocessing, since ICA can be highly
+influenced by large amplitude artifacts, and also automated IC classification. In theory, the
+ORICA decomposition and, with some modifications, the source localization methods in the
+REST pipeline should be as applicable to MEG as to EEG data. Finally, this work follows in
+spirit, and some details, previous work [13] demonstrating a real-time application of the
+BCILAB [2] and SIFT [19] toolboxes, into which the source identification and localization
+methods in REST might easily be introduced.
+
+Author Manuscript
+
+Acknowledgments
+This work was supported in part by the Army Research Laboratory under Cooperative Agreement Number
+W911NF-10-2-0022, NSF EFRI-M3C 1137279, and by the National Science Foundation Graduate Research
+Fellowship under Grant No. DGE-1144086.
+
+Conf Proc IEEE Eng Med Biol Soc. Author manuscript; available in PMC 2018 May 29.
+
+Pion-Tonachini et al.
+
+Page 6
+
+Author Manuscript
+
+References
+
+Author Manuscript
+Author Manuscript
+Author Manuscript
+
+1. Delorme A, Makeig S. Eeglab: an open source toolbox for analysis of single-trial eeg dynamics
+including independent component analysis. J Neurosci Methods. 2004; 134(1):9–21. [PubMed:
+15102499]
+2. Kothe CA, Makeig S. Bcilab: a platform for brain–computer interface development. J Neural Eng.
+2013; 10(5):056014. [PubMed: 23985960]
+3. Pascual-Marqui RD, Lehmann D, Koenig T, Kochi K, Merlo MC, Hell D, Koukkou M. Low
+resolution brain electromagnetic tomography (loreta) functional imaging in acute, neuroleptic-naive,
+first-episode, productive schizophrenia. Psychiatry Research: Neuroimaging. 1999; 90(3):169–179.
+4. Oostenveld R, Fries P, Maris E, Schoffelen J-M. Fieldtrip: open source software for advanced
+analysis of meg, eeg, and invasive electrophysiological data. Comput Intell Neurosci. 2010; 2011
+5. Makeig S, Bell AJ, Jung T-P, Sejnowski TJ, et al. Independent component analysis of
+electroencephalographic data. Advances in neural information processing systems. 1996:145–151.
+6. Makeig S, Debener S, Onton J, Delorme A. Mining event-related brain dynamics. Trends Cogn Sci.
+2004; 8(5):204–210. [PubMed: 15120678]
+7. Marco-Pallares J, Grau C, Ruffini G. Combined icaloreta analysis of mismatch negativity.
+Neuroimage. 2005; 25(2):471–477. [PubMed: 15784426]
+8. Delorme A, Palmer J, Onton J, Oostenveld R, Makeig S. Independent eeg sources are dipolar. PloS
+one. 2012; 7(2):e30135. [PubMed: 22355308]
+9. Akhtar MT, Jung T-P, Makeig S, Cauwenberghs G. Recursive independent component analysis for
+online blind source separation. IEEE ISCAS. 2012:2813–2816.
+10. Ojeda A, Bigdely-Shamlo N, Makeig S. Mobilab: an open source toolbox for analysis and
+visualization of mobile brain/body imaging data. Frontiers in human neuroscience. 2014; 8
+11. Guide MU. The mathworks. Inc, Natick, MA. 1998; 5:333.
+12. Kothe, C. Lab streaming layer (lsl). 2013.
+13. Mullen T, Kothe C, Chi YM, Ojeda A, Kerth T, Makeig S, Cauwenberghs G, Jung T-P. Real-time
+modeling and 3d visualization of source dynamics and connectivity using wearable eeg. IEEE
+EMBS. 2013; 2013:2184–2187.
+14. Hsu S-H, Mullen T, Jung T-P, Cauwenberghs G. Online recursive independent component analysis
+for real-time source separation of high-density eeg. IEEE EMBS. 2014:3845–3848.
+15. Lee TW, Girolami M, Sejnowski TJ. Independent component analysis using an extended infomax
+algorithm for mixed subgaussian and supergaussian sources. Neural computation. 1999; 11(2):
+417–441. [PubMed: 9950738]
+16. Palmer JA, Makeig S, Kreutz-Delgado K, Rao BD. Newton method for the ica mixture model.
+ICASSP. 2008:1805–1808.
+17. Trujillo-Barreto NJ, Aubert-Vázquez E, Valdés-Sosa PA. Bayesian model averaging in eeg/meg
+imaging. NeuroImage. 2004; 21(4):1300–1319. [PubMed: 15050557]
+18. Gramfort A, Papadopoulo T, Olivi E, Clerc M, et al. Openmeeg: opensource software for
+quasistatic bioelectromagnetics. Biomedical engineering online. 2010; 9(1):45. [PubMed:
+20819204]
+19. Delorme A, Mullen T, Kothe C, Acar ZA, Bigdely-Shamlo N, Vankov A, Makeig S. Eeglab, sift,
+nft, bcilab, and erica: new tools for advanced eeg processing. Comput Intell Neurosci. 2011;
+2011:10.
+20. Makeig S, Enghoff S, Jung TP, Sejnowski TJ. A natural basis for efficient brain-actuated control.
+IEEE Trans Rehabil Eng. 2000; 8(2):208–211. [PubMed: 10896189]
+
+Conf Proc IEEE Eng Med Biol Soc. Author manuscript; available in PMC 2018 May 29.
+
+Pion-Tonachini et al.
+
+Page 7
+
+Author Manuscript
+Fig. 1.
+
+Author Manuscript
+
+A. The pipeline used in the Real-time EEG Source-mapping Toolbox (REST). B. The
+toolbox GUI. The main window (left) shows the scrolling EEG channel or independent
+component (IC) activation data plus 8 (constantly updated) IC scalp maps. A source location
+estimate for IC4 is shown (lower right). Behind this (upper right), another REST window
+shows all the estimated IC scalp maps.
+
+Author Manuscript
+Author Manuscript
+Conf Proc IEEE Eng Med Biol Soc. Author manuscript; available in PMC 2018 May 29.
+
+Pion-Tonachini et al.
+
+Page 8
+
+Author Manuscript
+Author Manuscript
+Fig. 2.
+
+Author Manuscript
+
+The simulated data experiment: data simulation to source estimation. (Green box) The
+simulated data source activations are mixed. (Blue box) The simulated EEG data are first
+decomposed within REST into estimated independent components (ICs) using ORICA.
+Then the source location of each IC is estimated as either an equivalent current dipole (ECD,
+left) or as a low-resolution cortical distribution (right).
+
+Author Manuscript
+Conf Proc IEEE Eng Med Biol Soc. Author manuscript; available in PMC 2018 May 29.
+
+Pion-Tonachini et al.
+
+Page 9
+
+Author Manuscript
+Author Manuscript
+Fig. 3.
+
+Author Manuscript
+
+Source localization accuracy in the simulated data experiment using an equivalent current
+dipole (ECD) model for each estimated independent component (IC). Each disk represents
+an IC. Disk size shows how well the recovered IC scalp map correlated with the simulated
+source scalp map. For 48 of the 64 recovered sources, map correlations were above 0.95
+with ECD model errors less than 3 cm and 20 degrees (lower left).
+
+Author Manuscript
+Conf Proc IEEE Eng Med Biol Soc. Author manuscript; available in PMC 2018 May 29.
+
+Pion-Tonachini et al.
+
+Page 10
+
+Author Manuscript
+Author Manuscript
+Fig. 4.
+
+Author Manuscript
+
+Screen captures of the REST GUI during an actual EEG experiment. At 1.3 min (top panel)
+during eyes-closed rest, the baseline PSD for IC had a peak at 10 Hz (alpha). At 2.1 min
+(middle panel), the subject attended the symbol ”1” flashing at 9 Hz (note change in the IC4
+spectrum). At 2.8 min (bottom panel), the subject attended the symbol ”#” flashing at 11.75
+Hz (note IC4 spectral shift and possible scalp map change).
+
+Author Manuscript
+Conf Proc IEEE Eng Med Biol Soc. Author manuscript; available in PMC 2018 May 29.
+
+

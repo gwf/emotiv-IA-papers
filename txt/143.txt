@@ -1,0 +1,1223 @@
+Engineering Review, Vol. 40, Issue 2, 101-111, 2020.
+
+101
+
+________________________________________________________________________________________________________________________
+
+REMOVAL OF EYE BLINK ARTIFACTS FROM
+THE EEG SIGNAL
+Ivan Markovinović1 * - Saša Vlahinić1* - Miroslav Vrankić1*
+1
+
+Department of Automatics and Electronics, Faculty of Engineering, University of Rijeka, Vukovarska 58, 51000
+Rijeka
+
+ARTICLE INFO
+
+Abstract:
+
+Article history:
+Received: 11. 2. 2019.
+Received in revised form: 15. 5. 2019.
+Accepted: 16. 5. 2019.
+Keywords:
+EEG
+Eye blink artifacts
+Signal processing
+ICA
+ADJUST
+DOI: http://doi.org/10.30765/er.40.2.11
+
+Electroencephalography (EEG) is well known
+method of recording electrical brain activity with
+electrodes placed along the scalp. One of the
+challenging tasks in this field is the removal of
+electrical signals that are not related to brain
+activity.
+In this paper, an algorithm for the removal of the
+EEG signals corresponding to the eye blink
+artifacts is presented. The presented algorithm is
+based on ADJUST artifact removing tool, which
+uses independent component analysis (ICA) for
+signal decomposition. For every signal component
+returned by the ICA algorithm, temporal-spatial
+features are calculated, upon which every
+independent component is classified as artifact or
+non-artifact, and removed accordingly.
+
+1
+
+Introduction
+
+Electroencephalography (EEG) is well known
+technique for acquiring electrical brain activity data
+[1]. Thanks to its temporal resolution and everyday
+declining cost of the EEG acquisition systems (in
+comparison to other brain activity acquisition
+systems like Magnetoencephalography (MEG)), the
+EEG is most widely distributed method of
+measuring human brain functionality.
+Despite all of the virtues that EEG system poses,
+one of the main challenges in EEG acquisition
+processing is artifact removal. Physiological artifact
+activity like eye or neck movement, could
+potentially lead to extreme amplitude jumps that are
+5-10 times greater than the normal brain activity
+measured by the EEG acquisition system. Such
+amplitude disturbances in the signal can obscure
+electrical brain activity of interest, leaving us with
+the challenging task of neurological and
+*
+
+Corresponding author. Tel.: +385 51 505 720
+E-mail address: imarkovinovic@riteh.hr
+
+physiological activity separation. Other type of
+artifacts are of a non-biological nature and are
+mainly caused by the electrode high-impedance or
+the electric device interferences.
+Over the last decades numerus methods of nonneurological removal in the acquired EEG signal
+have been developed. One of the simplest methods
+is the threshold method, in which the samples with
+amplitudes greater than the threshold value are
+simply removed from the signal. Although this
+method is very simple and fast, the significant
+amount of information is lost in the remaining EEG
+signal. For the EEG signals that are decomposed
+into epochs, a simple averaging method over epochs
+can be used. However, this procedure is limited with
+the number of available averaging epochs and the
+artifact frequency.
+Some advanced methods of the EEG artifact
+removal consist of modelling the eye blink or the
+ocular movement, and removing them from the
+
+I. Markovinović, S. Vlahinić, M. Vrankić: Removal of eye…
+
+102
+
+________________________________________________________________________________________________________________________
+
+original EEG signal. For this purpose, additional
+electrooculogram (EOG) channel is placed around
+eyes measuring the electrical activity of the eye
+muscles [2]–[4]. This signal combined with the
+propagation model of the artifact signal, can elicit a
+propagated artifact signal that can be easily
+subtracted from the artifact-corrupted EEG signal.
+Most recent efforts in the field of artifact removal
+algorithms, involve independent component analysis
+(ICA) tool; a statistical tool which decomposes a
+multidimensional signal into the maximally
+independent components (IC) originating from
+independent signal sources [5], [6]. Because of its
+statistical approach and assumptions (eg. linear
+mixing of ICs) a prefect signal decomposition is not
+always possible. Nevertheless, the EEG signals can
+be successfully decomposed with the ICA into
+independent components (IC) related to the various
+artifacts, which can then be subtracted from the
+original EEG signal.
+In this paper we propose an algorithm for the eye
+blink artifact removal based on the Automatic EEG
+artifact Detection based on Joint Use of Spatial and
+Temporal features (ADJUST) tool. Compared to the
+ADJUST, the proposed algorithm involves extra
+steps, including eye blink artifact detection and
+decomposition of the EEG signal into the signal
+epochs containing artifact and nearby clean brain
+activity samples. The extracted epochs are then
+decomposed with the ICA into ICs which have been
+classified into artifact and non-artifact classes, based
+on their spatial-temporal features. Guided with the
+ICA limitations stated before, the iterative ICA, the
+spatial-temporal features calculation and the IC
+classification process is implemented in the
+proposed algorithm, ensuring better artifact
+rejection.
+
+words, but were also asked to make an eye blink
+whenever they hear the target event.
+The EEG measurements have been collected with 2
+different EEG data acquisition systems the Emotiv
+Epoc+ and the Brain Products V-Amp. The Emotiv
+Epoc+ [8] is an accessible and cheap EEG
+acquisition system, with 14 EEG signal electrodes,
+one reference, one ground electrode (Fig. 1), and
+maximal sampling frequency of 128 Hz. V-Amp [9]
+on the other hand is high-quality device for the EEG
+acquisition, with 16 EEG electrodes, one reference,
+one ground electrode, 24-bit AD converter, and 512
+Hz sampling frequency. The main advantage of the
+V-Amp system over the Emotiv Epoc+ system,
+beside the technical specifications, is the ability of
+setting custom electrode configuration (Fig. 2).
+
+2
+
+Figure 1. The position of the electrodes in the
+Emotiv Epoc+ EEG [8] acquisition
+systems. Used signal electrodes have
+been marked with green color
+
+The acquisition system of the EEG
+signals and experiment design
+
+Datasets used for the development and analysis of
+the proposed artifacts removing algorithm, have
+been collected from the candidates participating in a
+typical auditory event-related potential paradigm.
+The experiment is designed in OpenVibe [7] and
+consists of six different words that are randomly
+played on the speaker. One of the events represents
+the target event, while the other events are labelled
+as non-targets. For the purpose of this paper, the
+candidates have not just focused on the played
+
+Engineering Review, Vol. 40, Issue 2, 101-111, 2020.
+
+103
+
+________________________________________________________________________________________________________________________
+
+random vector into components which are
+statistically as independent from each other as
+possible. For our particular problem, the ICA
+algorithm will decompose N-dimensional EEG
+signal into N ICs, which are product of the N
+independent brain activity sources [5], [6]. Beside
+the ICs, a mixing matrix A is returned satisfying the
+following equation:
+
+EEG = A ∗ IC
+
+Figure 2. The position of the electrodes in the VAmp 16 EEG acquisition systems. Used
+electrodes have been marked with green
+color
+
+3
+
+The ADJUST algorithm
+
+The ADJUST [10] is a plugin tool for EEGLAB
+software [11] and is used for the removal of EEG
+artifacts from the EEG datasets. The main advantage
+of the ADJUST algorithm is the ability to
+automatically decompose a set of multidimensional
+EEG signals into ICs, classifying them as artifacts
+and non-artifacts and removing artifact related ICs
+without any user intervention or supervision. The
+ADJUST algorithm can distinguish 4 different EEG
+artifacts corresponding to the: eye blink (EB),
+vertical eye movement (VEM), horizontal eye
+movement (HEM) and generic discontinuities (GD),
+related to the problems with a EEG data acquisition
+system.
+As stated in the introduction, only removal of the
+eye blink artifacts will be a subject of this research.
+Fig 3. shows a block diagram of the new enhanced
+algorithm for the removal of eye blink artifacts
+based on the ADJUST algorithm. Blocks marked
+with the green color are original ADJUST functions
+for the decomposition, temporal and spatial feature
+calculation and classification, which have been
+explained in continuation of this section.
+3.1 The independent component analysis
+The ICA algorithm is a statistical method for
+decomposition of the observed multidimensional
+
+(1)
+
+where EEG is measured N-dimensional EEG signal,
+and IC is N-dimensional vector of brain source
+independent components.
+Applying the principal component analysis (PCA)
+on data before execution of the ICA algorithm, the
+number of desired ICs is reduced, simplifying the
+component extraction process.
+3.2 Spatial and temporal classification features
+For discrimination between the eye blink artifacts
+and the non-artifact, ICs spatial and temporal
+features of independent components are calculated
+based on the ICA outputs.
+
+3.2.1
+
+Spatial average difference
+
+By their nature, the eye blink arifacts induce a high
+voltage jumps in frontal area of the brain. Thus in
+order to distinguish artifacts from non-artifact a
+measure is introduced, which emphasizes amplitude
+jumps of EEG signal in the frontal areas, and
+supressing the jumps on electrodes covering the
+posteriori region of the brain. Accordingly, the
+spatial average difference (SAD) calculated for each
+IC is defined as following [10]:
+
+SAD = avg ( AFA ) − avg ( APA )
+
+(2)
+
+where AFA and APA represents the vectors of
+normalized ICA mixing matrix weights of frontal
+and posteriori electrodes, respectively and avg
+denotes the averaging function. This feature is
+calculated for every IC.
+Similar to the SAD, one more control variable
+called Spatial Variance Difference (SVD) is
+introduced and defined as following [10]:
+
+SVD = var( AFA ) − var( APA )
+
+(3)
+
+I. Markovinović, S. Vlahinić, M. Vrankić: Removal of eye…
+
+104
+
+________________________________________________________________________________________________________________________
+
+where var denotes a variance function. Because of
+the high amplitude oscillations and spatial
+distribution of the eye blinking artifacts, the
+variance of signals measured in frontal area should
+be larger than the variance of posteriori EEG
+signals, resulting in a positive SVD for the ICs
+originating from eye blink artifacts. This control
+variable is useful in situations where the mixing
+matrix weights across the posteriori electrodes have
+positive and negative values, leading to a very low
+average value of the posteriori mixing matrix
+weights. This could potentially lead to a false
+positive classification of ICs as the eye blinking
+artifact parts.
+
+3.2.2
+
+Temporal kurtosis
+
+Kurtosis is widely used statistical method, based on
+the high-order statistics, which is very sensitive to
+outliers of the amplitude distribution, and is
+calculated as [10]:
+
+ X − µ  
+Kurt [X ] = E 
+ 
+ σ  
+4
+
+(4)
+
+where E stands for the expected value, X is a signal
+vector, and µ and σ are mean value and standard
+deviation of vector X, respectively.
+Combining the kurtosis with the property of high
+amplitude nature of the EEG artifact signal, it is
+reasonable assumption that the eye blinking artifacts
+are very well captured by this measure.
+Thus, combining the kurtosis with the SAD feature
+will achieve better IC classification as artifacts and
+non-artifacts.
+
+of whole feature space and classifying the feature
+values smaller than M into Cna class while the values
+larger than M into Ca class.
+The created classes Ca and Cna have been used for
+calculation of two Gauss distributions, which
+intersection gives a threshold value for artifact and
+non-artifact feature separation. This procedure is
+then iterated until the difference between the
+calculated threshold values from the two
+consecutive steps is lower than the user pre-defined
+value. At every iteration of the ExpectedMaximisation algorithm, the Gauss distribution
+statistics is updated by maximizing the loglikelihood measure.
+By applying this method on the SAD measure and
+kurtosis we obtain two threshold values. The final
+classification of the ICs as artifacts is preformed if
+the component satisfies both threshold conditions.
+
+4
+
+Enhanced artifact removing algorithm
+
+In order to get better removal of eye blink artifacts,
+some extra steps have been introduced around the
+ADJUST algorithm core and some existing ones
+have been modified (Fig. 3). The main reason
+behind the insufficient elimination of the artifacts
+can be interpreted by the ICA algorithm limitations
+and assumptions. For this reasons the extra steps in
+the proposed algorithm have been primarily focused
+on two goals:
+•
+•
+
+lowering the number of EEG samples that
+are subjected to the ICs analysis and signal
+processing methods;
+quality measure calculation of eye blink
+artifact removal algorithm for every
+detected eye-blink artifact.
+
+3.3 Features classification
+4.1 The EEG data preprocessing
+The Expected-Maximisation algorithm [12] has
+been used in order to classify the ICs as artifacts and
+non-artifacts, based on the previously discussed
+temporal-spatial measures.
+This algorithm takes the calculated features and
+separates them into two classes Ca and Cna, where Ca
+and Cna are the IC classes associated with artifacts
+and the brain activity sources, respectively. The
+separation is performed, by simply calculating the
+median value:
+
+M=
+
+max(C ) + min(C )
+2
+
+(5)
+
+Before application of the artifact removing
+algorithm on the recorded datasets, datasets have
+been pre-processed. Firstly, datasets have been
+visually inspected and the corrupted parts of the
+signals have been removed. Secondly, DC
+component (mean value) of every channel has been
+computed and removed from the clean EEG signals.
+Thirdly, the EEG measurements have been filtered
+with the 16th order FIR bandpass filter with cut-off
+frequencies of 0.5 Hz and 40 Hz. In doing so, better
+linear signal decomposition results have been
+reported [13]. For this purpose, MATLAB filtfilt
+
+Engineering Review, Vol. 40, Issue 2, 101-111, 2020.
+
+105
+
+________________________________________________________________________________________________________________________
+
+function has been used, resulting in the filtered
+signal without the phase shift.
+4.2 Eye blink artifact detection method
+
+characterized by the abrupt amplitude jumps on the
+frontal electrodes of the EEG acquisition system,
+but can also lead to the amplitude jumps on all
+electrodes depending on the reference electrode
+position.
+
+Eye blinking artifacts are one of the worst
+disturbances in the EEG signals, which are
+
+Figure 3. The block diagram of the proposed eye blink artifact removing algorithm
+
+106
+
+I. Markovinović, S. Vlahinić, M. Vrankić: Removal of eye…
+
+________________________________________________________________________________________________________________________
+
+For rough detection of the blinking artifact
+locations, the simple peak detection method with
+threshold has been used. Depending on the
+acquisition system and the reference/ground
+electrode positions the peak detection has been
+applied on different electrodes. For the Emotiv
+Epoc+, four EEG signals from frontal electrodes
+(AF3, F3, AF4 and F4) have been summed up,
+enhancing the artifact to clean EEG signal ratio.
+Because of the differences between the reference
+electrode positions in the V-Amp 16 and Emotiv
+Epoc+ acquisition systems as shown in Fig. 1 and
+Fig. 2, strong eye blink artifacts have been observed
+on all signal electrodes of the V-Amp system. With
+the same idea of enhancing artifact to clean EEG
+ratio in mind, signal from all electrodes of the VAmp acquisition system have been summed up. By
+applying the peak detection algorithm on the
+summed signals, the positions of eye blink artifact
+peaks have been located. This sample values have
+been used, as a starting points for the signal
+epoching and the artifact removing process.
+
+However, it is not always possible to surround the
+artifacts with the selected epoch length without
+overlapping between neighbouring epochs, therefore
+in those situations the epoch length is reduced by
+the adjustable number of samples and the process is
+repeated until the algorithm has managed to set the
+epochs without the overlapping. Example of the
+EEG signal with the correctly calculated epochs is
+shown in Fig. 4.
+
+4.3 The EEG dataset epoching
+
+Figure 4. The EEG data for the Fp1 electrode (blue
+signal) and final artifact epoch positions
+(red signal) after the completion of
+artifact epoching algorithm. All artifacts
+are surrounded by their corresponding
+epoch without any overlapping
+
+The previously calculated sample markers have
+been used for extraction/epoching of the EEG signal
+parts affected by the eye blink artifacts. The idea
+behind epoching procedure is that the ICA
+algorithm is only executed over the epochs,
+containing the eye blink artifacts.
+One of the most important conditions for the
+successful ICA is having enough data for IC
+extraction. Some empirical guidelines define the
+minimum number of samples for the successful and
+argumentative ICA as 20-30 times number of
+desired IC [14].
+Following the mentioned guideline, we have
+developed a simple epoching algorithm, that is
+creating epochs of the same length around detected
+artifacts. The algorithm is trying to enclose one or
+more artifacts, depending on their sample distance.
+After the initial windows have been set, the
+algorithm will consecutively shift all epochs left and
+right until there is no more overlapping between the
+neighbouring epochs. Epochs shifting is a restrained
+action, which can potentially lead to ejection of the
+artifacts from the defined epoch. Following this
+restrain, epochs shifting is possible only under
+condition that all of the artifacts enclosed by the
+epoch initialization stay in the same epoch after a
+successful shift.
+
+4.4 Independent component
+feature calculation
+
+extraction
+
+and
+
+After the EEG pre-processing and epoching, the
+algorithm steps for the IC extraction, the spatialtemporal feature calculation, and classification of
+the extracted ICs are analog to the ADJUST
+algorithm.
+Two steps of the ADJUST algorithm have been
+modified, and are discussed down below.
+4.4.1
+
+Electrode selection
+temporal features
+
+for
+
+spatial
+
+and
+
+Applying the channel selection guidelines
+introduced in the ADJUST algorithm [10], [15] on
+our EEG acquisition systems, the following
+electrodes/channels have been chosen to fill the
+frontal and posteriori channel vectors, respectively.
+For the Emotiv Epoc+ acquisition system we have
+selected the following frontal area (FA) and
+posteriori area (PA) electrodes:
+
+Engineering Review, Vol. 40, Issue 2, 101-111, 2020.
+
+107
+
+________________________________________________________________________________________________________________________
+
+FA = [AF3(Ch1), F3(Ch3), F4(Ch12), AF4(Ch14)],
+PA = [P7(Ch6), O1(Ch7), O2(Ch8), P8(Ch9)],
+
+4.5 Artifact removal
+calculation
+
+while for the V-Amp 16 acquisition system, the
+following electrodes have been selected:
+
+With the calculated feature threshold values, all of
+the ICs can be classified as artifacts if both features
+are larger than the respective threshold value, and as
+non-artifact otherwise.
+The ICs which are classified as artifact are then
+removed from the EEG signal. In order to avoid
+sharp edges in processed signal, caused by the
+removal of the artifact related ICs, low-pass filter
+has been applied to the EEG signal.
+After removal of the artifact related ICs from the
+EEG signal, for every epoch and every artifact, the
+artifact removal success indicator has been
+calculated. This indicator is used for the detection of
+the artifact areas that have not been properly
+processed, and further iterations are necessary to
+ensure a valid result. As mentioned before, the
+artifact epochs contain one or more artifacts, which
+are surrounded by their respective markers. All
+other samples in that epoch can be interpreted as the
+“clean” EEG signal, as shown in Fig 5. First step of
+the indicator calculation is to take clean parts of the
+EEG signal in the associated epoch and calculate the
+mean value and variance.
+The calculated variance of the signal represents the
+energy distribution of the “clean” EEG signal parts.
+The calculated mean value is then used for the
+variance calculation on the samples which are
+bounded within artifact markers. The calculated
+variance can be interpreted as the energy
+distribution of the corrected signal. It is a reasonable
+assumption that energy of the EEG signal
+containing artifacts (or artifact remains), is
+significantly higher than the “clean” EEG. This
+assumption combined with simple threshold logic,
+has been used as a measure for the inadequate
+artifact removal.
+
+FA = [Fp1(Ch1), Fp2(Ch2), F3(Ch3), Fz(Ch4),
+F4(Ch5)],
+PA = [P3(Ch11), Pz(Ch12), P4(Ch13), PO7(Ch14),
+Oz(Ch15), PO8(Ch16)].
+For the selected electrode vectors, the spatial and
+temporal features and related threshold values have
+been calculated as explained in Section 3.
+4.4.2
+
+The independent components analysis
+
+For our purposes the Fast ICA (FICA) algorithm
+[6], [16] has been used. The FICA algorithm is
+applied on all epochs with the PCA dimension
+reduction (typ. 12 ICs have been extracted per
+epoch). Default outputs of the FICA function are the
+mixing matrix A, the weight matrix W (inverse of
+the mixing matrix A) and the independent
+components IC. Mentioned values have been used
+for spatial and temporal feature calculation
+associated with the eye blink artifacts.
+In addition to those 3 default outputs, the 4th output
+has been added and defined as a convergence
+success indicator. This indicator indicates that the
+FICA convergence has not been successful and that
+the given FICA results are not correct. The FICA
+algorithm will be repeated until the successful
+convergence or the maximum allowed number of
+iterations. In every new iteration, a new initial value
+of the mixing matrix A for FICA algorithm will be
+generated. If the maximal number of FICA attempts
+has been reached, without successful IC extraction,
+the affected epochs are marked and skipped by the
+artifact removing algorithm.
+
+and success
+
+indicator
+
+108
+
+I. Markovinović, S. Vlahinić, M. Vrankić: Removal of eye…
+
+________________________________________________________________________________________________________________________
+
+Figure 5. Illustration of the artifact epoch containing two artifacts. The green and red triangles represent the
+left and right artifact markers, respectively. The blue colored signal is associated with the “clean”
+EEG signal, where red colored signal is associated with the eye-blink artifacts. If the artifact
+removal algorithm has been successful, energy distributions of green signals should be similar to
+the signal distribution of the blue signal
+
+Figure 6. Fraction of the EEG signal after the artifact removal with the ADJUST (green line) and the
+proposed artifact removal algorithm (red line) on the Fp1, Fz, Cz and Pz electrodes. The blue line
+represents the original EEG signal corrupted with the eye blink artifacts
+
+4.6 Improving removal results
+If the “artifact” energy is significantly larger than
+the energy of the “clean” EEG signal, the associated
+epochs will be marked as “unsuccessfully cleaned”
+and the artifact removal algorithm will be repeated
+on that epoch. This includes a new execution of the
+FICA algorithm, calculation of new classification
+features, and the calculation of success indicator.
+The main reason behind the unsuccessful artifacts
+removal is most likely the ICA, caused by its
+statistical approach, simplifications and assumptions
+(eg. equal or less number of electrodes and active
+
+sources, linearity, etc.). In fact 50-70% of the
+returned ICs do not have a neurological
+interpretation [17].
+For this reason, the unsuccessfully processed epochs
+are iteratively subjected to the removing algorithm
+until the necessary success indicator values are
+satisfied, or the maximum number of iterations has
+been reached.
+
+5
+
+The results
+
+Validation of the proposed artifact removal
+algorithm has been conducted on 24 recordings,
+
+Engineering Review, Vol. 40, Issue 2, 101-111, 2020.
+
+109
+
+________________________________________________________________________________________________________________________
+
+recorded as explained in the Section 2. A ratio
+between the signal energies of clean EEG signal
+parts and the corrupted signal parts has been
+calculated in order to validate results for all trials on
+all electrodes. Furthermore, to get better view on
+performance of the proposed algorithm, the energy
+ratios have been compared with the energy ratios of
+the EEG recordings processed by the open-source
+EEGLAB plug-in artifact removal algorithms:
+Automatic Artifact Removal tool (AAR) [18],
+ADJUST, Multiple Artifact Rejection Algorithm
+(MARA) [19][20], Fully Automated Statistical
+Thresholding for EEG artifact Rejection (FASTER)
+[21]. Due to fact that the FASTER tool is a high
+density EEG artifact removal algorithm for the
+acquisition systems with more than 32 electrodes,
+no comparison between the algorithms has been
+conducted.
+Applying the MARA artifact removal algorithm on
+the EEG recordings, by removing all artifacts from
+the EEG signal, but at cost of removing almost all
+essential neurological parts. This is very pronounced
+
+on the frontal electrodes, as it can be seen from Fig.
+7. The reason for such performance is that the
+MARA classifier marked 15 out of possible 16 ICs,
+returned by the ICA algorithm, as artifacts. As
+reported in [19] the MARA algorithm has been
+validated on different EEG recordings with
+electrode sets that covered the entire scalp with the
+approximately equidistant electrode positioning.
+However, the performance of the MARA algorithm
+has not been analysed on the EEG acquisition
+systems with the reduced number of electrodes.
+From the presented results we can only conclude
+that the MARA algorithm performed extremely
+aggressive on the low-density EEG recordings, and
+thus, the MARA algorithm is not suitable for the
+EEG electrode configurations used in this paper.
+Improvement of the results can be achieved by the
+manual inspection and classification of the artifact
+related ICs. However, the proposed algorithm is
+fully automated, and thus, no further comparison
+between the MARA algorithm and proposed artifact
+removing algorithm has been conducted.
+
+Table 1. The artifact removal results with the proposed artifact removing algorithm (ARA), the ADJUST
+(ADJ) algorithm, and the AAR algorithm for 6 different recordings. For each recording and
+channel, energies of the clean EEG signal parts and the corrupted EEG signal parts have been
+calculated after the artifact removal, and shown in energy ratio form. Last column represents the
+grand-mean over all recordings
+Trial
+nCh
+Fp1
+Fp2
+F3
+Fz
+F4
+T7
+C3
+Cz
+C4
+T8
+P3
+Pz
+P4
+PO7
+Oz
+PO8
+
+ARA
+1,61
+1,55
+0,83
+0,92
+0,83
+1,29
+0,77
+0,72
+0,61
+0,47
+2,45
+0,68
+0,50
+0,72
+0,69
+0,43
+
+1
+ADJ
+1,28
+1,12
+0,71
+0,65
+0,83
+1,26
+0,51
+0,48
+0,48
+0,32
+4,14
+0,38
+0,49
+0,63
+0,29
+0,22
+
+AAR ARA
+1,38 1,40
+1,14 1,06
+1,71 0,97
+1,77 0,73
+1,64 0,75
+2,44 2,02
+2,46 0,21
+1,72 0,85
+1,50 0,48
+1,20 0,10
+4,92 0,45
+1,67 0,96
+1,48 0,42
+1,69 0,47
+2,59 1,34
+1,36 0,20
+
+2
+ADJ
+0,16
+0,14
+0,14
+0,11
+0,12
+0,32
+0,15
+0,10
+0,08
+0,04
+0,14
+0,09
+0,15
+0,11
+0,27
+0,04
+
+AAR ARA
+0,20 1,47
+0,11 1,56
+0,14 0,83
+0,11 0,86
+0,12 0,71
+0,22 1,30
+0,12 0,68
+0,13 0,71
+0,09 0,54
+0,04 0,38
+0,11 0,62
+0,23 0,64
+0,09 0,46
+0,12 0,82
+0,15 1,69
+0,05 0,24
+
+3
+ADJ
+5,65
+4,18
+1,85
+3,96
+3,43
+9,92
+0,66
+3,56
+4,08
+0,61
+1,37
+1,62
+4,17
+1,23
+2,69
+0,63
+
+AAR ARA
+8,55 0,79
+4,06 0,57
+1,80 0,58
+1,81 0,33
+1,59 0,21
+20,37 1,14
+5,58 0,36
+0,77 0,24
+0,99 0,16
+4,38 0,33
+7,55 0,25
+0,79 0,22
+0,40 0,15
+4,00 0,88
+50,03 0,44
+1,05 0,15
+
+4
+5
+ADJ AAR ARA ADJ
+0,79 0,08 2,09 1,02
+0,70 0,06 1,72 1,04
+0,32 0,08 0,79 0,64
+0,25 0,06 0,62 0,49
+0,31 0,10 0,57 0,50
+0,09 0,11 0,36 0,37
+0,16 0,15 0,39 0,43
+0,10 0,08 0,44 0,51
+0,09 0,08 0,32 0,56
+0,06 0,03 0,15 0,24
+0,08 0,12 0,36 0,37
+0,07 0,08 0,37 0,78
+0,04 0,05 0,25 0,43
+0,07 0,08 0,34 0,49
+0,06 0,07 0,36 0,29
+0,03 0,04 0,11 0,16
+
+AAR
+0,70
+0,48
+0,48
+0,46
+0,32
+0,55
+1,15
+0,54
+0,37
+0,15
+0,50
+0,37
+0,41
+0,79
+0,56
+0,24
+
+ARA
+1,34
+1,10
+0,47
+0,47
+0,42
+0,24
+0,26
+0,31
+0,20
+0,12
+0,30
+0,25
+0,22
+0,22
+0,22
+0,11
+
+6
+ADJ
+1,19
+1,20
+0,49
+0,20
+0,76
+0,15
+0,26
+0,22
+0,16
+0,15
+0,23
+0,27
+0,24
+0,13
+0,17
+0,06
+
+AAR
+0,54
+0,50
+0,15
+0,11
+0,49
+0,42
+0,30
+0,36
+0,23
+0,19
+0,31
+0,33
+0,40
+0,14
+0,25
+0,13
+
+ARA
+1,45
+1,26
+0,75
+0,65
+0,58
+1,06
+0,45
+0,54
+0,38
+0,26
+0,74
+0,52
+0,33
+0,58
+0,79
+0,21
+
+mean
+ADJ
+1,68
+1,40
+0,69
+0,95
+0,99
+2,02
+0,36
+0,83
+0,91
+0,24
+1,05
+0,53
+0,92
+0,44
+0,63
+0,19
+
+AAR
+1,91
+1,06
+0,73
+0,72
+0,71
+4,02
+1,63
+0,60
+0,54
+1,00
+2,25
+0,58
+0,47
+1,14
+8,94
+0,48
+
+110
+
+I. Markovinović, S. Vlahinić, M. Vrankić: Removal of eye…
+
+________________________________________________________________________________________________________________________
+
+Figure 7. Fraction of the EEG signal after the
+artifact removal with the MARA tool
+(red line) on Fp1, Cz and Pz
+electrodes, respectively. Blue lines
+represent the original corrupted EEG
+signals
+
+Compared to the ADJUST artifact removing
+algorithm, the ability of proposed algorithm to repeat
+the artifact removal process on “unsuccessfully
+cleaned” epochs, provided better artifact removal
+results, as shown in Fig. 6. Table 1. shows the energy
+ratios between the clean and the corrupted EEG signal
+areas over all EEG channels for the proposed removal
+algorithm (ARA), and the EEGLAB plug-in artifact
+removal tools: ADJUST and AAR. For the ratio value
+equal to one, a reasonable assumption is that the
+artifact removal process has been ideal due to the fact
+that energies of the compared signal parts are equal.
+On the other hand, if ratio values are higher than one,
+the corrupted signal areas are over-filtered, or underfiltered if the ratio values are lower than one.
+Figure 8. shows the energy ratio comparison between
+the proposed artifact removal algorithm and the
+EEGLAB plug-in artifact removal tools: ADJUST and
+AAR, respectively. As shown, the proposed algorithm
+has achieved better results on almost all electrodes of
+used acquisition system. For the T7, P3, PO7, Oz
+electrodes, the energy ratios differ considerably from
+the ideal energy ratio value. This can be interpreted as
+the inability of the ICA algorithm to decompose
+signals on the highlighted electrodes into the ICs
+which can be classified as artifacts. In order to fully
+understand how the epoch length, different ICA
+algorithms and different classification methods can be
+optimised for achieving better artifact removing
+results, signals from those electrodes will be a focus
+point of our future research.
+
+6
+
+Figure 8. The energy ratio for all electrodes on
+all 24 recodings after the EEG data
+has been processed with the following
+artifact removing algorithms: ARA
+(blue bars), ADJUST (red bars), AAR
+(green bars). The dotted line represents
+ideal energy ratio after the artifact
+removal process
+
+Conclusion
+
+In this paper we have proposed the artifact removal
+algorithm based on the ADJUST algorithm. In order to
+get better artifact removal results we have modified
+the original algorithm by adding extra processing
+steps. The proposed algorithm can achieve better
+results through energy difference inspection between
+the “clean” and the processed signal parts and
+additional iterations of the artifact removal process on
+the artifact corrupted epochs, which have not satisfied
+the energy difference condition. In the experimental
+section we have shown that the proposed algorithm
+has achieved better results compared to the ADJUST
+algorithm on almost all electrodes.
+Moreover, the ability of the proposed artifact removal
+algorithm to place epochs around the artifact peaks
+and process only samples inside the corrupted epochs
+is one more advantage of this approach. By doing so,
+
+Engineering Review, Vol. 40, Issue 2, 101-111, 2020.
+
+111
+
+________________________________________________________________________________________________________________________
+
+all samples outside the corrupted epochs have not
+been processed, leaving the original artifact-free
+EEG signal intact. Although many advanced
+artifact removing algorithms like MARA and
+FASTER have been introduced over the last
+years, they were unable to properly clean the EEG
+signal from the eye blink artifacts, for the
+electrode configurations used in this paper.
+Therefore, additional investigation of the artifact
+removal algorithms in the low-density EEG
+acquisition systems is necessary.
+
+References
+[1] Sanei, S., Chambers, J. A.: EEG Signal
+Processing, John Wiley & Sons, Ltd.,
+Chichester, UK, 2007.
+[2] Croft, R. J., Barry, R. J.: Removal of ocular
+artifact from the EEG: a review,
+Neuropshysologie Clin., 30 (2000), 5–19.
+[3] Wallstrom, G. L., Kass, R. E., Miller, A.,
+Cohn, J. F., Fox, N. A.: Automatic correction
+of ocular artifacts in the EEG: a comparison
+of regression-based and component-based
+methods, Int. J. Psychophysiol., 53 (2004),
+105–119.
+[4] He, P., Wilson, G., Russell, C.: Removal of
+ocular
+artifacts
+from
+electroencephalography by adaptive filtering, Med.
+Biol. Eng. Comput., 42 (2004), 407–412.
+[5] Comon, P., Jutten, C.: Handbook of Blind
+Source Separation, Independet Component
+Analysis and Applications, Academic Press,
+Oxford, UK, 2009.
+[6] Hyvaerinen, A., Erkki, O.: Independent
+Component Analysis: Algorithms and
+Applications, Neural Networks, 13 (2000),
+411–430.
+[7] OpenVibe, Software for Brain Computer
+Interfaces and Real Time Neuroscience
+2015. http://openvibe.inria.fr. [10-May2018].
+[8] Emotiv, EMOTIV EPOC+ 14 Channel
+Mobile
+EEG
+Emotiv,
+https://www.emotiv.com/product/emotivepoc-14-channel-mobile-eeg/#tabdescription. [25-Apr-2019].
+[9] BrainProducts,
+“V-Amp.”
+[Online].
+https://www.brainproducts.com/productdetai
+ls.php?id=15. [20-Apr-2019].
+[10] Mognon, A., Jovicich, J., Bruzzone, L.:
+ADJUST : An automatic EEG artifact
+
+[11]
+
+[12]
+
+[13]
+
+[14]
+
+[15]
+
+[16]
+
+[17]
+
+[18]
+
+[19]
+
+[20]
+[21]
+
+detector based on the joint use of spatial and
+temporal features, Psychophysiology, 48 (2011),
+229–240.
+Delorme, A., Makeig, S.: EEGLAB: An open
+source toolbox for analysis of single-trial EEG
+dynamics including independent component
+analysis, J. Neurosci. Methods, 134 (2004), 9–
+12.
+Bruzzone, L., Prieto, D. F.: Automatic analysis of
+the difference image for unsupervised changed
+detection, IEEE Trans. Geosci. Remote Sens., 38
+(2000), 1171–1182.
+Frølich, L., Dowding, I.: Removal of muscular
+artifacts in EEG signals: a comparison of linear
+decomposition methods, Brain Informatics, 5
+(2018), 13–22.
+EEGlab, Enough data points for ICA, 2015.
+https://sccn.ucsd.edu/pipermail/eeglablist/2015/0
+09724.html. [20-Sep-2017].
+Mognon, A., Buiatti, M.: ADJUST Tutorial An
+Automatic EEG artifact Detector based on the
+Joint Use of Spatial and Temporal features: A
+Tutorial,
+https://www.nitrc.org/docman/view.php/739/210
+1/TutorialADJUST1_1.pdf
+Hyvaerinen, A., Erkki, O.: A Fast Fixed-Point
+Algorithm for Independet Compoent Analysis,
+Neural Comput., 9 (1997), 1483–1492.
+Delorme, A., Palmer, J., Onton, J., Oostenveld,
+R., Makeing, S.: Independent EEG Sources Are
+Dipolar, PLoS One, 7, 2012.
+Gomez-Herrero, G., Anwar, H., Egiazarian, K.:
+Automatic Removal of Ocular Artifacts in the
+EEG without an EOG Reference Automatic
+Removal of Ocular Artifacts in the EEG without
+an EOG Reference Channel, Signal Processing
+Symposium, 2006. NORSIG 2006. Proceedings
+of the 7th Nordic, 2006.
+Winkler, I., Haufe, S., Tangermann, M.:
+Automatic Classification of Artifactual ICAComponents for Artifact Removal in EEG
+Signals, Behav. Brain Funct., 7 (2011), 30, 1–15.
+Winkler,
+I.:
+MARA
+Tutorial,
+https://irenne.github.io/artifacts/
+Nolan, H., Whelan, R., Reilly, R. B.: FASTER :
+Fully Automated Statistical Thresholding for
+EEG artifact Rejection, J. Neurosci. Methods,
+vol. 192 (2010), 1, 152–162.
+
+

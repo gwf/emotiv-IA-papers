@@ -1,0 +1,2775 @@
+Investigating the Emotiv EPOC for cognitive control in
+limited training time
+
+Honours Report
+by
+Matt Lang
+
+Supervised by Tanja Mitrovic
+
+Department of Computer Science
+University of Canterbury
+2012
+
+Abstract
+Brain-computer interfaces (BCI) that utilise electroencephalography (EEG)
+have been studied for many years as a means of communication and control
+for physically disabled individuals. Through training, people can learn to use
+imagined motor movements as computer input or to control assistive technology. The Emotiv EPOC is an inexpensive, lightweight, wireless BCI headset,
+and provides systems for control and affective measurement. Some studies have
+successfully used this device for control, however most fail to indicate the time
+and effort required to achieve the reported results. As an initial step to provide
+a quantification of the training time required, we ran two studies investigating
+cognitive control. Using just their mind, participants in the first experiment
+moved a virtual cube left and right, and in the latter made three-choice selections. The first study employed a fixed training scheme approximating 11
+minutes, and resulted in a 36% average success rate. The latter task allowed
+15 minutes of self-directed training, increasing the average success to 46.8%.
+We detail our investigations with the EPOC, including analysis of detection
+filters for maximising cognitive control, and we review the Affectiv suite and
+how to analyse the user’s emotional measurements it provides. Future applications should be aware that a more practical level of control requires a greater
+training time than one short session.
+
+Table of Contents
+Abstract
+Acknowledgments
+
+iii
+
+Chapter 1:
+Introduction
+1.1 Motivation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+1.2 Goals . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+1.3 Report Layout . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+1
+1
+2
+2
+
+Chapter 2:
+Background and Related Work
+2.1 Electroencephalography (EEG) . . . . . . .
+2.2 Brain-Computer Interface (BCI) . . . . . . .
+2.2.1 Types . . . . . . . . . . . . . . . . .
+2.2.2 Applications . . . . . . . . . . . . . .
+2.2.3 Devices . . . . . . . . . . . . . . . .
+2.3 Emotiv EPOC . . . . . . . . . . . . . . . . .
+2.3.1 Software . . . . . . . . . . . . . . . .
+2.3.2 Applications . . . . . . . . . . . . . .
+
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+
+4
+4
+4
+5
+6
+6
+7
+8
+11
+
+Chapter 3:
+Movement Control
+3.1 Research Design . . . . . . . .
+3.2 Method . . . . . . . . . . . .
+3.2.1 Participants . . . . . .
+3.2.2 Apparatus . . . . . . .
+3.2.3 Software . . . . . . . .
+3.2.4 Procedure . . . . . . .
+3.3 Results and Analysis . . . . .
+3.3.1 Detection Filtering . .
+3.3.2 Questionnaire . . . . .
+3.4 Discussion . . . . . . . . . . .
+Chapter 4:
+Three-way
+4.1 Research Design . .
+4.2 Method . . . . . .
+4.2.1 Participants
+4.2.2 Apparatus .
+4.2.3 Software . .
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+13
+13
+14
+14
+14
+14
+14
+15
+15
+18
+19
+
+Selection
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . .
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+.
+.
+.
+.
+.
+
+21
+21
+21
+21
+21
+21
+
+4.3
+4.4
+
+4.2.4 Procedure . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+Results . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24
+Discussion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+
+Chapter 5:
+
+Analysis of Affect
+
+28
+
+Chapter 6:
+Conclusions
+31
+6.1 Discussion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 31
+6.2 Conclusions & Future Work . . . . . . . . . . . . . . . . . . . . 33
+References
+
+35
+
+Appendix A: Movement Control Questionnaire
+
+40
+
+Appendix B: Selection Task Questions and Answers
+
+43
+
+Appendix C: Three-way Selection Questionnaire
+
+44
+
+Appendix D: Ethics Application
+
+47
+
+Appendix E: Ethics Approval
+
+53
+
+ii
+
+Acknowledgments
+Big thanks to Tanja Mitrovic, Moffat Mathews, Ben du Boulay, Andy Cockburn, the ICTG fellows, and the CSSE staff and postgrads. I also extend a
+grateful thank you to the COSC department, Allied Telesis Labs, and Trimble
+for their much appreciated financial support.
+
+iii
+
+Chapter I
+Introduction
+Normal computer input relies on physical interaction with control devices such
+as a keyboard or mouse. More recently, brain-computer interfaces (BCIs) have
+been under investigation as a new channel for communication and control [1].
+Electroencephalography (EEG) provides a means of accessing and recording
+neural activity, allowing a computer to retrieve and analyse information from
+the brainwave patterns produced by thought. By removing the need for physical input, BCIs offer a range of assistive and rehabilitative applications for
+those with impaired or little physical control [2, 3].
+While there are many beneficial BCI applications, such as for controlling
+wheelchairs, much of this technology has yet to leave the research lab. One
+large factor of this is due to the EEG devices. Most research and medical
+EEG devices are expensive, bulky, and require a number of skilled people
+to set up. Technology is continuously getting smaller and cheaper however,
+and recently some inexpensive consumer-grade devices have become available.
+An example of this is the Emotiv EPOC,1 a compact, wireless headset that
+requires comparatively little effort to set up and allows much greater flexibility
+and mobility than traditional EEG.
+The EPOC was aimed at the gaming market, and is not classified as a
+medical device, though a few researchers have since adopted it for a variety
+of applications. The EPOC comes with some processing tools that can detect
+facial movements, emotional states, and imagined motor movement. The last
+of these requires each individual to train both the system and themselves to
+be able to control. There have been some applications that successfully utilise
+this technology, such as for robot control [4–6]. However, many of them do
+not give a good indication of how much training is required or address other
+practicalities of using the EPOC. This report is an investigation of the EPOC
+and its EEG processing system for its practical use in further research.
+1.1
+
+Motivation
+
+The ICTG research group is investigating systems to aid in the rehabilitation
+of cognitive functioning for people who have suffered from a stroke or traumatic
+1
+
+http://emotiv.com
+
+1
+
+brain injury. Such patients have limited physical control and struggle to use
+traditional inputs, such as the keyboard and mouse. To interact with the ICTG
+systems it was proposed this group of patients could utilise a BCI, as they are
+the audience of much BCI research.
+The Emotiv EPOC is an inexpensive BCI which allows much greater flexibility for the users than do traditional devices. However, Emotiv has not
+published any research validating the EPOC. While many of the studies utilising the EPOC claim success, very few of them give an indication of how long
+the users took to reach the reported level of control. In addition, many of them
+only test their application on a very small sample, such as one or a few people.
+One part of the rehabilitation study requires patients to interact in a 3D
+virtual environment. We are therefore interested in whether participants could
+use the EPOC to navigate and interact with the environment simply by imagining movement-related actions. Another requirement of the rehabilitation study
+is that it will not take too long for the participants, as these patients tire very
+quickly. This means that participants must be able to control interactions with
+their thoughts within one short session. Although this research’s audience comprises people who have suffered brain injuries, as this is an initial investigation
+we only involved healthy participants.
+1.2
+
+Goals
+
+Our aim was to investigate the EPOC and its practical uses, evaluating whether
+it would be suitable for controlling a virtual environment after one session of
+training. The focus questions were as follows:
+• What has been done and proven possible or not possible with the EPOC?
+• How difficult is it to use the EPOC?
+• Can users achieve a practical level of control in a short time period?
+• What other useful measures does the system provide?
+• Overall, would it be suitable for the ICTG rehabilitation research project?
+1.3
+
+Report Layout
+
+In the next sections we explain our motivation behind this research and specify our goals. In chapter 2 we review the relevant literature and previous
+applications of the EPOC. Our first study, on controlling movement along one
+dimension, is then explained and the results discussed. This leads us to a
+
+2
+
+second study using a three-way selection task, which is detailed and has its
+results discussed in chapter 4. Following this is a review and investigation of
+the emotional measurements provided by the Affectiv suite. We then discuss
+the implications of our investigations, and conclude with suggestions of further
+work.
+
+3
+
+Chapter II
+Background and Related Work
+2.1
+
+Electroencephalography (EEG)
+
+EEG has been most predominantly researched for medical applications, with
+a large history of use relating to epilepsy. It has been around since the early
+1900s and has had much interest ever since [7]. Although more recent medical
+imaging methods, such as functional magnetic resonance imaging (fMRI), can
+provide a much finer spatial resolution, EEG has a much greater temporal
+resolution that allows millisecond-accuracy.
+In the brain, neurons are constantly firing by a tiny change in their electric
+potential. Because this is happening everywhere across the head at very fast
+rates, it creates a constantly changing electric field on the scalp in the order
+of microvolts. Electroencephalographs use electrodes placed on the scalp to
+conduct these small electrical fluctuations. The electrodes are traditionally
+wired up to an amplifier to boost the strength of the detected signals, which
+are then recorded and processed.
+After many years of EEG research, these brain wave rhythms are commonly
+categorised into bands of different frequencies, namely delta (0.1-3.5 Hz), theta
+(4-7.5 Hz), alpha (8-13 Hz), beta (14-30 Hz), and gamma (>30 Hz). Certain
+rhythms or bands have been found to reflect our brain’s state as our environment and activities change. An example of this is the mu rhythm, (8-12 Hz),
+which can be measured over the sensorimotor region, known to relate to our
+physical movement, while in an idling state. Performing or imagining motor
+actions has been shown to create a detectable suppression of this rhythm [8],
+as described further in Section 2.2.1.
+2.2
+
+Brain-Computer Interface (BCI)
+
+With advances in technology and research, it has become possible to process
+EEG data in real-time. By detecting features of the brain activity and creating
+a feedback loop, users can communicate to a computer without the need for
+any physical input [9]. A brain-computer interface is a hardware and software
+system that provides interaction to a computer directly from the user’s brain.
+There are a number of ways of achieving this interaction, the more common of
+
+4
+
+which are briefly explained here.
+2.2.1
+
+Types
+
+P300
+The P300 is a detectable peak in activity that appears approximately 300ms
+after some infrequent stimuli [10]. Most commonly users are presented a large
+number of choices, which are highlighted in a systematic manner, and the user
+counts every time the item of interest is highlighted, creating a P300 signal.
+The user typically has to be looking at the desired item, but other methods
+exist such as using auditory stimulus [11].
+Steady-State Visual Evoked Potential
+With steady-state visual evoked potentials (SSVEP) a number of choices are
+presented on screen in the form of stimuli flashing at unique rates [12]. When
+a user looks directly at one of these, brainwave modulations of that frequency
+are detectable in their visual cortex. This allows a large number of choices to
+be available, and can achieve relatively high information transfer rates (up to
+60-100 bits/min) [9]. Systems using this method do not require training, but
+the user does need to be able to move their gaze to the item of interest.
+Slow Cortical Potential
+Slow cortical potentials are detectable changes in voltage that can take up to
+several seconds. Through much training with feedback users can learn to control increases and decreases in their levels of cortical activity, typically having
+only these two options (increase or decrease) at any time. The performance of
+this method can be sensitive to many factors however [13].
+Sensorimotor Rhythms
+When relaxing and not engaging in any motor movement, sensorimotor rhythms
+(SMR) can be detected in the brain. In particular are the rhythms in the mu
+(7-13Hz) and beta (13-30Hz) bands. These oscillations in the brain activity
+are naturally rhythmic, but are disrupted by engagement in motor movement,
+whether real or imagined [8]. Decreases and increases in these rhythms are
+known as event related desynchronisation (ERD) and event related synchronisation (ERS) respectively, which are detectable in the EEG, often across
+multiple channels. To detect the ERD or ERS the brain activity is compared
+to some reference or a base state of activity, which must be sampled from the
+user when they are relaxed and not imagining movement.
+
+5
+
+Manipulation of sensorimotor rhythms does not require actual physical
+movement, as motor imagery has similar effects [14]. The imagery must,
+however, be kinaesthetic and not simply visual representations [15]. Through
+constant visual or auditory feedback, users have to learn to control different
+actions [16]. This imagined motor movement can be very challenging though,
+and most SMR applications have no more than a few controllable actions,
+compared to the 36 options of the P300 Speller for example [17].
+2.2.2
+
+Applications
+
+The audience for most BCI research is physically disabled people, especially
+those with very limited physical control who cannot make use of more common assistive technologies. Their disabilities can include anything from stroke
+to amyotrophic lateral sclerosis (ALS), though it has been shown that performance with a BCI declines with increased levels of impairment [18]. Important
+applications for these patients include communication, rehabilitation, and assistance in control. As communication is a critical human skill, BCIs have been
+developed to provide patients with a virtual keyboard [19] or a navigable hierarchy of grouped letters [13]. Among these is the well-known P300 Speller [17],
+which has had many further improvements over the years. There is potential
+for rehabilitation for stroke patients [20], but otherwise patients may be limited
+to using BCIs to restore or replace motor control through prosthetic devices [2].
+BCIs have a number of possible uses as part of assistive technology [9]. As an
+example, BCI controlled wheelchairs would be greatly desired [21].
+More recently there has been increased interest in BCI research for healthy
+users. While some are interested in using BCIs for control applications such as
+robots [22], a lot of work focusses on the subjective, time-aligned information
+that BCIs provide, such as user emotions [23] or cognitive load [24]. These
+measures can allow a system to infer how the user is feeling, and adapt so as
+to enhance the gaming experience [25], or to help a user of a tutoring system
+[26]. Similarly, these measures have been used for research into areas such as
+interface design [24], task classification [27], and even marketing [28].
+2.2.3
+
+Devices
+
+EEG devices can have a range of electrodes, with standard medical EEG having
+19, and some having many more. Most electrodes in use require an uncomfortable, conductive gel applied to the scalp. Each electrode of the cap would then
+be connected to an amplifier via an array of wires. These kits are typically
+designed for medical and research use, costing upwards of thousands of dollars,
+and are often large and cumbersome to move. Furthermore, the equipment can
+take considerable time and effort to set up.
+
+6
+
+Figure 2.1: The EPOC electrode positions on the head approximate the international 10-20 system.
+
+Much of the previous EEG research has targeted those with physical disabilities, but the technology ought to be much simpler before we would expect
+user adoption. More recently a range of inexpensive devices have become available, mostly aimed at the gaming market as a novelty peripheral input. One
+example is the NeuroSky1 with just one sensor. The Emotiv EPOC is another
+such device with a 14 sensors, which is comparable to the traditional devices.
+This paper is an investigation of the EPOC neuroheadset and its accompanying
+software, both of which are described in more detail in the next section.
+2.3
+
+Emotiv EPOC
+
+The EPOC was marketed as a gaming device for the Windows platform. It
+comes shipped with a 3D game, Spirit Mountain, in which the user must train
+cognitive skills, and use these skills to rebuild a virtual Stonehenge. The neuroheadset is inexpensive compared to most medical EEG, with a price tag of
+$299. It has 14 sensors arranged according to the international 10-20 System,
+as depicted in Figure 2.1. The device has an internal sampling rate of 2048Hz
+and, after filtering out artefacts, sends the data to the computer at approximately 128Hz. These signals are transferred from the headset to the computer
+through wireless technology. This offers much greater mobility, and it is relatively simple to slip the headset onto the head. Instead of requiring a special
+gel, the electrodes of the EPOC simply need to be dampened using a saline
+solution, which is both disinfectant and common.
+1
+
+http://neurosky.com/
+
+7
+
+2.3.1
+
+Software
+
+The data collected by the headset is sent to the computer through an encrypted
+channel, and Emotiv supply an application called EmoEngine to decode and
+process the data. This provides a few built-in brainwave processing suites
+including Expressiv, which detects movement of facial features; Affectiv, giving
+a measure of five subjective emotions; and Cognitiv, where users can train
+the system to detect specific thoughts. These suites are discussed in more
+detail below. EmoEngine provides headset battery level, gyro readings, contact
+quality information, and researcher versions provide access to the raw EEG
+data too. There is a C++ API to allow custom applications using the supplied
+engine, and Emotiv supply examples of interfacing the engine using Java, .NET,
+and MatLab.
+All of the above mentioned functionality can be used without a custom
+application through the supplied Control Panel. The panel has a tab for each
+suite with a simple interface for visualising and controlling each, along with
+a display of the contact quality of each sensor. Along with these tools comes
+EmoKey, for mapping thoughts and expressions to keyboard input; EmoCube,
+a standalone version of the demonstration virtual cube seen in the control panel,
+which allows custom applications to utilise the moving cube visualisation; and
+Testbench for researcher versions, which displays the electrode measurements
+and their fast Fourier transform, and allows recording of the data to disk.
+Expressiv Suite
+The Expressiv suite provides detection of a range of facial expression features.
+While all three software suites use the readings from the electrodes, the Expressiv suite is specifically concerned with the electromyography (EMG) present
+amongst the EEG. As EMG, such as from blinks, affects EEG, many applications treat this as noise and attempt to detect its presence to remove it from
+the data. The Emotiv system does this; however they classify the detected
+EMG into movement of facial muscle groups, allowing it to be another form of
+direct input. Similar to the EMG from muscle movements, electrooculography
+(EOG) is also present and classified into actions of looking left or right.
+As most people have similar facial muscle structure the EMG from specific
+features are much the same between people, meaning the suite does not need
+to be trained by every individual. It can, however, be trained if the user desires
+greater accuracy, and the sensitivity can be tweaked.
+Affectiv Suite
+The Affectiv suite processes the EEG and gives a measure, between 0 and 1,
+of the current level for each of five subjective emotions. These include instan-
+
+8
+
+taneous excitement and long term excitement, described as an experience of
+awareness or positive physiological arousal; engagement, said to reflect alertness and conscious direction of attention towards task-relevant stimuli, with
+low values suggesting boredom; frustration; and meditation, which indicates a
+type of relaxed state.2
+These detections cannot be explicitly trained, as they depend on seemingly
+universal characteristics of the EEG realisation of human emotions. Emotiv
+used relevant literature and experimentation with many users to find these
+characteristics and design their classification algorithms.3 Unfortunately for
+the research community they did not publish any of their findings for proprietary reasons. While these constructs are said to be relatively similar amongst
+people, it is noted that the level of these measures can vary greatly between
+individuals. For example, one excitable person’s lack of excitement may still
+produce a higher measure than another’s maximum excitement. To handle
+this variation the Affectiv suite automatically scales new emotional readings
+for each user relative to that individual’s previous readings.2
+Cognitiv Suite
+Unlike the previously mentioned suites, the Cognitiv suite will not automatically make detections without training. The Cognitiv system can be trained
+on specific thoughts, after which the engine will continually process the brainwaves and match them to the patterns of thought trained. This relies on event
+related desynchronisation (ERD) in the EEG, and is designed to be most effective for thoughts directly relating to imagined motor movement. There have
+been doubts about what it is actually measuring [29], and it is known that it
+will include EMG data too, however it is said that the system works best on
+pure thoughts detected in EEG anyway.4
+To be able to detect thoughts the system must first sample the EEG while
+the user is in a relatively relaxed state and, most importantly, not thinking about any of the thoughts to be trained.5 This is called neutral, or the
+base state of the user’s brain, which the system can then compare to trained
+thoughts. After this the user can train the system to detect different actions
+depending on what the user is thinking. The Cognitiv suite supplies thirteen
+possible actions to train, but the engine limits how many it will detect to four
+at a time. These actions are named relative to physical actions to suggest
+2
+
+http://emotiv.com/developer/SDK/UserManual.pdf
+
+3
+
+http://emotiv.com/forum/messages/forum12/topic1926/message11109
+
+4
+
+http://emotiv.com/forum/messages/forum15/topic1697/message9864
+5
+
+http://emotiv.com/forum/messages/forum4/topic114/message392/?phrase_id=
+464885
+
+9
+
+Figure 2.2: This virtual cube is used for training to control actions in the
+Emotiv Cognitiv suite. It floats about corresponding to detected actions and
+otherwise automatically returns to the middle of the screen.
+
+using kinaesthetic-related thoughts. The supplied demonstration application
+for training and using Cognitiv consists of a virtual cube that animates the
+actions applied to it, as shown in Figure 2.2. The trainable actions include
+push, pull, left, right, up, down, rotations of both directions about all 3 axes,
+and disappear.
+Training any action (including neutral) is done in 8 second trials, during
+which the user must attempt to think a consistent thought. Generally the more
+training the system is given the more accurately it should be able to detect
+those thoughts. There are two main challenges for the user. One is to find
+thoughts that the system is able to detect, and that are considerably different
+from each other. Generally thoughts not relating to movement, such as those
+of visualisation or language, will not seem to be distinguishable by the system.6
+The other is to be able to think the thought consistently during all training
+trials for an action, and after training when wanting it to detect that action.
+It is important to note that both the system and the user are being trained in
+this process.
+
+6
+
+http://emotiv.com/forum/messages/forum4/topic114/message392/?phrase_id=
+464885
+
+10
+
+2.3.2
+
+Applications
+
+A number of researchers have continued researching previous applications while
+adopting this new device, using its EEG recordings with their own processing.
+Different types of BCI can use this device, such as those utilising the P300
+signal [30]. Others have investigated different EEG processing algorithms
+to achieve direct brain input such as classification of shapes being thought
+about [31], evaluation of cognitive workload [32], detection of unintentional
+interactions with an interface [33], or control of robot movement along one
+dimension [34]. Another application uses the EEG to detect hand movement
+intentions on the same side of the brain as the hand [35]. These detections
+then control an orthoses, allowing people who have lost control of a hand due
+to stroke or similar brain injury to control that hand with the same side of
+the brain. Further, this can take advantage of the brain’s neural plasticity,
+meaning patients could rehabilitate their control.
+Raw EEG from the EPOC has also been used in games, such as serious
+games for concentration training [36]. Through neurofeedback users can learn
+to control their concentration as detected in their EEG. Some games are simply
+for fun, like a tower-defence variant that is controlled by SSVEP [37], showing
+that detection of SSVEP with the EPOC is comparable to other devices.
+Emotiv did not publish any research regarding the validity of the detections
+made by the EPOC and accompanying software. Regardless, some researchers
+have investigated uses of the in-built detection suites, such as using Cognitiv
+actions to control forward acceleration in a game of Mario Kart [38]. Others
+have used the Cognitiv suite to control various technologies, such moving robots
+[4,5]. Szafir and Signorile send every tenth detection as a movement command
+to a robot [4]. They initially considered using the power of detections as an
+amount of movement, but decided it was difficult enough performing the action
+without considering the power. Thobbi, Kadam and Sheng also control a robot
+using Cognitiv [5]. They first did a small validation study and decided to filter
+out false detections by taking the integral of the power over time and comparing
+this to a threshold.
+Another investigation of the EPOC’s usability had 17 participants rotate
+cubes to aid in a cube comparison task [39]. Users in this study could rotate
+the cube through three trained Cognitiv actions, six facial movements detected
+in Expressiv, or using the 4 directions of the gyro in the headset. They found
+that participants chose to use all three input types about equally, and after
+one session of training achieved 59% success at making an action happen when
+intended. This approximate accuracy is crudely measured however.
+Lievesley, Wozencroft and Ewins investigated the use of the EPOC to control a wheelchair [40]. Firstly they compared control using facial expressions
+to head switches which are currently available as a control alternative. They
+
+11
+
+discovered that control using facial muscles, while achievable, is considerably
+less reliable and more tiring than head switches. They then investigate the
+Cognitiv suite, having 3 participants train two or three actions over five halfhour sessions. To test their control participants were instructed actions and
+given 8 seconds to perform each. Detections were filtered out if they did not
+persist long enough. They report final accuracies of around 94% for two actions
+(push and neutral), and 69% for 3 actions.
+There are other applications utilising only the Expressiv suite. It is possible
+to control a robot arm by raising and lowering the eyebrows, and smirking to
+the left and right [41]. Facial expressions detected by the EPOC can even be
+used to steer a tractor [42], but Gomez-Gil and colleagues say that they could
+not achieve successful control when only using the Cognitiv suite.
+Cernea and colleagues recognised the need to validate the facial and emotional detections of the EPOC first [43]. In one of their studies they instruct
+users to make facial movements to evaluate the accuracy of the Expressiv
+suite [44]. They find that detection varies around 70-100%, and after 20 minutes of training the Expressiv system this was increased by a further 12% on
+average. Another of their studies focusses on the Affectiv suite, comparing
+its detections to user’s self-reported feelings during a range of tasks designed
+to evoke specific emotions. To compare these they transformed the recorded
+affect into the same Likert scale from 1 to 5, and found that the differences
+between the two are less than or close to 1 point on the scale, depending on
+the emotion.
+The Affectiv suite has been used for a few different research applications
+[23]. For intelligent tutoring systems, the excitement and frustration recorded
+from the EPOC has been shown to reflect how users appraise feedback, potentially allowing the system to provide only the most effective feedback [45].
+These two emotions have been proved by others to have a strong correlation
+with insight, which occurs in tasks that produce a sudden realisation, commonly known as the “Aha!” moment [46]. Another study found that with
+a computer-based training system users both experience and report more engagement when unclear or unexpected instructions are supplied [47]. It has
+even been proposed that this affective interface can create an emotion-driven
+economy [48]. Interestingly, other researchers have used the EPOC for emotion
+recognition without mentioning the Affectiv suite at all [49].
+There have recently been a number of tools created to aid in using and
+recording the Affectiv information for research [50, 51], and to combine it with
+other measures [52, 53]. Gonzalez-Sanchez and colleagues used their tool to
+detect frustration during gameplay [52], and there has since been a couple of
+studies utilising their tool [54,55]. Other than that, not many researchers have
+yet published work using these tools.
+
+12
+
+Chapter III
+Movement Control
+
+3.1
+
+Research Design
+
+Participants trained with the Cognitiv system to control the virtual cube supplied by Emotiv. We chose to use this as it is the demonstration application
+supplied specifically for training the Cognitiv suite, and is designed to suggest
+users think physical, movement-related thoughts. Much of the instructions
+given to the participants to aid in training and control were sourced from the
+Emotiv community forums.1 The task for the user included moving the cube
+left or right, as these are relatively intuitive actions, and could be applied
+in a number of situations when controlling a virtual environment. Left and
+right hand imagined movement has also been previously shown to be discriminable [8].
+Lievesley et al. suggested that a fixed training scheme could be investigated
+[40], so for more control in this experiment we had all participants complete
+the same training scheme of 8 trials for each action, in a set order. They were
+then tested on a set of 8 commands for each action, which was randomised for
+each person to reduce possible biases.
+To test participant’s control of the cube we instructed them to move the
+cube left or right or to keep it still. We could have classified a trial as being
+successful if the participant followed the instruction and the cube did not move
+in any uninstructed direction. However many of the previous research applications using the Cognitiv suite have found that the system often produces small,
+spurious detections that are unintended by the user. To avoid the possibility
+of these interfering with our experiment we did not classify trials successful or
+not during the experiment. Instead every trial lasted 8 seconds, during which
+participants could see any movement, but all of the detected states were simply
+recorded for off-line analysis.
+
+1
+
+http://emotiv.com/forum
+
+13
+
+3.2
+3.2.1
+
+Method
+Participants
+
+10 people (3 female) participated in total. Eight were between the age of 1930, and two were over 40. All were healthy and none had had any previous
+experience with EEG devices.
+3.2.2
+
+Apparatus
+
+Participants were sat comfortably in front of a computer screen, and the experimenter sat to the side. The EPOC headset was fitted with dampened sensors,
+and connected up to the PC. The PC had a 2.33 GHz CPU, with 8gb RAM,
+running 64 bit Windows 7. Running all software required for the experiment
+appeared to consume well less than half of these system resources.
+3.2.3
+
+Software
+
+The Emotiv control panel was used to initially ensure good contact quality
+of the sensors. During the experiment this was left open so that the contact
+quality could be monitored. The Expressiv tab was also closely monitored,
+and if it showed that users were making many facial movements they were
+reminded to keep their entire face relaxed. To control the experiment and log
+the data, a program was written in C++ that uses the EmoEngine through
+the proprietary API. After an action has been trained, the program can read
+states from the EmoEngine. These states consist of the current action being
+thought about and its power, which is the system’s confidence that the user
+is thinking what they had trained (always 0 for neutral). Each state is both
+recorded and sent to a standalone application called EmoCube (as seen earlier
+in Figure 2.2) which renders a virtual 3D cube and its movement left and right.
+3.2.4
+
+Procedure
+
+The headset sensors were dampened and device mounted on the participants
+head. Obtaining good contact quality could take some effort, especially if
+the participants had long hair. After setting up the experiment there were two
+phases. In the first the participants completed training trials and in the second
+they performed experimental trials. Once ready the system collected neutral
+data. During neutral training participants were informed to relax, read and
+listen to some instructions, and to look at the cube without intent to move it.
+Before training any movements this advice was given to participants: imagine
+rolling or pushing a ball sideways in front of you, movement-related thoughts
+are most important, the thoughts need to be consistent over the whole trial
+
+14
+
+NNNN Lp Lp LLp NNp NNp Rp Rp RRp LLp LLp RRp RRp
+Figure 3.1: Order of Left, Right, and Neutral training, and practice time (p ).
+
+and between trials, try not to move or tense any facial or neck muscles, and
+slight physical gestures with your hands is acceptable to help with visualization.
+Before training a new movement participants were given some time to ensure
+they had a concrete thought for that movement. Each training trial was 8
+seconds, as depicted by the software. There were 8 trials for each direction
+and neutral, and between some trails the participants were given around 30
+seconds to practice. The training and practice order is shown in Figure 3.1.
+The experiment consisted of 3 blocks of 8 trials, with a break between each
+block. There were 8 trials of each movement including neutral (making the
+cube stay still) in a randomised order for each participant. A trial would start
+with the participant being told which direction to move the cube and, after 8
+seconds, ended with them being told to relax for 2 seconds before the next.
+After the experiment participants then filled out a short questionnaire (see
+Appendix A).
+3.3
+3.3.1
+
+Results and Analysis
+Detection Filtering
+
+From this experiment we obtained an 8 second set of states for every experiment
+trial, and we can use these states to classify the trials as being successful or
+not. It is not very practical, however, to always look at the whole 8 seconds
+as most applications will not specify some arbitrary time window. Rather it is
+more useful to process input continually and act upon detections as they are
+recorded, perhaps first filtering out detections that do not meet a criteria or
+threshold. However to be able to achieve this some filtering method must first
+be chosen and applied. We discuss the results without any filters, and then
+compare some filtering methods documented in the literature.
+No Filter
+Without filtering we say a trial is successful if at least one state was in the
+required direction, and none were in the other directions. For example, a left
+trial would be successful if there were at least some left and no right; a neutral
+trial would fail if any left or right state was detected within the 8 seconds. Using
+this direct approach we obtain an average success rate of 36.25%. That is to
+say, given one of three commands to move in one of three ways, participants
+were successful only a little over one third of the time. By chance this happened
+
+15
+
+Average
+
+Left
+
+Neutral
+
+Right
+
+Average
+
+75
+25
+37.5
+50
+0
+0
+37.5
+25
+37.5
+75
+
+37.5
+25
+37.5
+25
+25
+50
+12.5
+100
+25
+25
+
+0
+87.5
+50
+37.5
+25
+25
+25
+62.5
+37.5
+12.5
+
+37.5
+45.83
+41.67
+37.5
+16.67
+25
+25
+62.5
+33.33
+37.5
+
+36.25
+
+36.25
+
+36.25
+
+36.25
+
+Table 3.1: Movement control results showing each participant’s percentage success rate for left, neutral, and right trials.
+
+to be true for all three commands, meaning the average success rate for left
+trials was the same for right and neutral, all 36.25%. As can be seen in Table
+3.1 the success rates for participant varied greatly, but there was no significant
+difference between the results for the three actions (F27 =0, p=1).
+Time Filter
+Lievesley et al. looked at the amount of time the action was being detected [40].
+It is unclear, though, whether this was summed over the whole 8 seconds or as
+a new sum for each block of consecutive detections. Summing over 8 seconds
+could make a trial that consisted of frequent but very brief action states add
+up all the time to a reasonable sum, without ever being confident about the
+detection. Again this is relying on the arbitrary 8 seconds too, which is less
+practical for online control. The other case, a block of consecutive detections,
+may consist of a couple of seconds of states for one action. We often see a couple
+of these blocks in one trial, with neutral states in between. An experimental
+trial would then be successful if there was at least one large enough amount of
+time the cube was moving in the correct direction, and none for the incorrect
+(and neither for neutral). A threshold amount of time would then have to be
+defined before being able to classify trial success. Lievesley et al. found these
+thresholds retrospectively, after each day, using the values from the last session
+in each later session. It is not stated how the threshold is found, presumably by
+taking the value that maximizes the successful trials for that session. Not only
+are they found retrospectively but the thresholds are found individually for
+
+16
+
+Threshold
+
+Avg Left
+
+Avg Neutral
+
+Avg Right
+
+Total Avg
+
+Time (s)
+1.6
+1
+Individual
+
+12.5
+17.5
+30
+
+88.75
+72.5
+70
+
+16.25
+21.25
+32.5
+
+39.17
+37.08
+44.17
+
+Time × Power
+44
+Individual
+
+18.75
+31.25
+
+85
+71.25
+
+16.25
+32.5
+
+40
+45
+
+Power (%)
+31
+20
+Individual
+
+33.75
+36.25
+36.25
+
+47.5
+38.75
+61.25
+
+37.5
+37.5
+36.25
+
+39.58
+37.5
+44.58
+
+Table 3.2: Average percentage successful trials using different filters and thresholds
+
+each user. This confounds comparing the accuracies achieved, as each person’s
+results were found with different thresholds for classifying success.
+We re-analysed the states with the above filter on time and found the
+optimal threshold given our data set, meaning the threshold that gave the
+greatest total number of successful trials. The results are summed in the first
+row of Table 3.2. As can be seen the threshold of 1.6 seconds has just resulted
+in a large amount of successful neutral trials and few other actions. This is
+because the states during trials were so varied that a larger total success can
+be found by making a large threshold so that most neutral trials will pass,
+even though not many other actions do. Another way of looking at this is that
+it is easier to relax for longer than it is to sustain an action. We therefore
+tried a smaller threshold of 1.0 seconds, shown in the second row of Table 3.2
+which had a similar effect. The third line shows the results if the filter is used
+with different thresholds, each threshold being optimal for each individual.
+This gives another increase in the overall result, but is still largely maximising
+neutral trials.
+Time-Power Filter
+A similar method was adopted by Thobbi et al., where they take into account
+the power supplied by each state update [5]. Again by looking at blocks of one
+consecutive action, they instead integrate over power for each point in time
+(each state in that block). This method results in an action being taken if
+the action is detected long enough and strongly enough, but still requires one
+
+17
+
+threshold. Thobbi et al. report that the threshold is set heuristically, but do
+not state any thresholds, when or if it is changed, or whether or not the same
+value is used for each person.
+The second section of Table 3.2 shows the results of filtering by power and
+time. Using a universal optimal threshold of 44 (power-seconds) or the optimal
+threshold for each individual both resulted in a better accuracy than with no
+filter. However again these were simply large enough to classify many neutral
+trials as successful.
+Power Filter
+EmoKey is an application that comes with the Emotiv system that allows
+mapping Cognitiv and Expressiv action detections to mouse and keyboard
+input. The filter used by EmoKey is simply a threshold of the power. When
+setting up a key mapping, a condition must be chosen (e.g. greater than)
+and the power (between 0 and 1) that will be compared to the power of each
+updated state. The default threshold power is 0.2 (or 20%).
+We tried filtering using a threshold for the power, as seen in the third
+section of Table 3.2. The optimal threshold power for our data was 31%,
+resulting in a similar total as previous filters. This filter gave a better spread
+across all actions, and not just neutral. Using the default power threshold
+of the proprietary EmoKey application (20%) we get a slight increase from
+that of no filter, and again a better balance of successes between the actions.
+The individual power threshold filter gives the highest result of 45% average
+successes, but like previous filters this is mostly due to neutral trials.
+Other Filters
+Other different approaches to filtering have been taken for specific contexts.
+One is by Szafir et al. [4], who only use every tenth state update to move a
+robot. And another by Gomez-Gil et al. [42], who check for new states every
+100ms. Each action state then turns a tractor’s steering wheel left or right by
+a slight increment. Using the first of these approaches decreases the average
+accuracy across all participants to 35%.
+3.3.2
+
+Questionnaire
+
+We were curious whether those that play computer or console games more often
+would be better at controlling the virtual cube. Comparing participant’s rating
+of how often they game to their total accuracy showed instead that those who
+play more games did worse. However, this was not significant (Spearman’s rho
+correlation rs =-0.49, p=0.07).
+
+18
+
+Participant’s gender was recoded to compare male and female results. Unfortunately we only had 3 female participants. While the average was better
+for females, the effect of gender on the ability to control the virtual cube was
+not significant (F1,8 =4.37, p=0.07).
+3.4
+
+Discussion
+
+Participants used the Emotiv EPOC to control left and right movements of
+a virtual cube. After training for less than 15 minutes, participants achieved
+an average success rate of approximately 36%. In other words, as a form of
+computer input, the system as a whole was only successful 36% of the time.
+This can seem quite a while just to train to use a device, especially for people
+with certain disabilities. It seems that this is not long enough, however, to
+attain good control with the EPOC. Many other factors may influence this
+poorness in performance.
+These results can be compared to those of Lievesley et al. [40]. Their
+participants had about 150 minutes of training over a week, to train neutral
+and one or two other actions. The two participants who trained 3 actions
+(including neutral) had a final success rate of 50 and 56 per cent, or both 69
+per cent when using their time filter. This is considerably better than that
+reported here, but took around five times longer in training to achieve.
+The participants of Lievesley et al. trained by doing trials of whatever
+they felt needed training, but they report that it may be better to have a
+fixed time and format. In this study we used a fixed format and time for
+every participant. Unfortunately it is difficult to compare the two approaches
+in these studies though, as the total amount of time is considerably different.
+From this study we feel that a more dynamic approach would be appropriate,
+as each person differs considerably in how well they can keep their thoughts
+consistent. Alternatively, a more effective training order could be beneficial.
+When using the device for control, it is usually desired that the system’s
+detections are filtered to remove small unintentional actions. Applying filters
+to our data did not make much of a difference however. This could be due to
+the amount of neutral training compared to other training, as training more
+neutral gives the system more clarity of what brainwave patterns are not other
+actions. The choice of filter to use will depend on the context of control the
+device is being used for. For example, consider that the correct action is
+strongly detected, maybe even a number of times, but a different action is also
+weakly detected. This could be classified as a failure, but in many realistic
+contexts, like left-right control in a game, it would probably be fine to have a
+small amount right amongst mostly left.
+Unfortunately we did not have enough participants to see any significant
+interactions between participant’s results and their gender, or how often they
+
+19
+
+play games. The participants scored the task as quite mentally demanding.
+Their overall opinions on using the device were rather mixed, most claiming
+that it was intriguing but frustrating. Further, a couple of people noted that
+the device became quite uncomfortable after a while, which would limit both
+gamer’s and disabled user’s willingness to adopt it.
+
+20
+
+Chapter IV
+Three-way Selection
+4.1
+
+Research Design
+
+While the movement control study was a good initial investigation, some improvable aspects were noted. It was decided that a second study would be
+conducted, keeping the same actions and similar training time, but this time
+using a general selection task. This allows more control over the instructions
+given to participants, and can be used more naturally to interact with options
+in any environment. The participant’s comments during the first study indicated that they had a feel for how well they could control the system while
+training with it, so we decided to let them train the actions as they felt was
+required. To allow for more analysis, if time permitted, we also recorded the
+other measures supplied by the Emotiv system, including the Affectiv, Expressiv, and raw EEG data.
+4.2
+4.2.1
+
+Method
+Participants
+
+This study had 21 healthy participants (4 female), 16 were between the ages
+19-30 and 5 were over 30. Nine of them had used the device in our previous
+study, while the remaining twelve had not had any previous experience with
+EEG devices. Participation was rewarded with a $20 caf voucher.
+4.2.2
+
+Apparatus
+
+The physical experimental set up was identical to that of the first experiment,
+described in Section 3.2.2.
+4.2.3
+
+Software
+
+The Emotiv control panel was used to initially ensure good contact quality of
+the sensors and was monitored during the experiment. The Expressiv tab was
+also closely monitored, and if it showed that users were making many facial
+movements they were reminded to keep their entire face relaxed. We wrote a
+
+21
+
+Figure 4.1: Three-way selection graphical interface. The buttons go red when
+their corresponding action is detected.
+
+program in Java that interfaces with the EmoEngine to control the experiment
+and log all of the data. After an action has been trained, the program can
+read states from the EmoEngine. These states consist of the current action
+being thought about and its percentage power (between 0 and 1), which is the
+system’s confidence that the user is thinking what they had trained. When
+no trained action is being detected, the system presents neutral states (which
+have power 0). The graphical interface consisted of instruction labels and
+three horizontal buttons, as shown in Figure 4.1. When the system detects
+an action it provides feedback by changing the colour of the buttons that the
+user sees. The colour is relative to the power of the action, scaling from grey
+at no action to bright red for full power. As neutral never has any power, the
+middle button only goes red after 8 seconds of no other detection. Detected
+actions were considered as a selection if their power exceeded a threshold,
+and a solid border would appear on the selected button. This study used
+a threshold of 0.31, as this was the optimal power threshold found from the
+analysis in the previous study. All interaction with the interface was initiated
+by the experimenter to avoid requiring the user to physically move their hands,
+potentially interfering with the task.
+
+4.2.4
+
+Procedure
+
+Set up
+The headset sensors were dampened and device mounted on the participants
+head. Good contact quality was ensured. Once ready, participants were asked
+to read some instructions. Two initial trials of neutral training data were
+collected during this, as neutral must be trained before other actions.
+
+22
+
+Training
+Before training any movements participants were advised on how to make the
+selections. They were told the following: imagine pressing down on a large
+button with your hand, the selection (left or right) is determined by which hand
+is used, the thoughts must be directly related to imagining the movement, the
+thoughts need to be consistent over the whole trial and between trials, try not
+to move or tense any facial or neck muscles, and try to minimise any actual
+physical movement, only imagine it.
+Before training a new action, participants were advised to ensure they had
+a concrete thought for that movement. Each training trial lasts 8 seconds, as
+enforced by the software. All participants initially trained neutral twice, however the number and order of training after this was up to them. Participants
+trained by saying which they wanted to train. There was a 3 second preparation time before the trial starts, and two distinct beep noises marking the start
+and end. They were given 15 minutes in which they could train actions. This
+is a similar timeframe to that of the first phase, where the training scheme
+had a fixed number and order of trials, totalling approximately 11 minutes. In
+comparison, this study is investigating a more flexible training scheme with a
+slightly longer training time.
+Participants were advised to test their ability to make selections after each
+training trial, as it is important for them to recognise which thoughts the system is detecting. This way they could get a feel for which actions need training,
+and if spurious detections are being made they could supply the system with
+more neutral data. The number of training trials for each action was recorded.
+We ensured that participants did not under-train any action, and suggested
+that they train whichever was lacking if needed. Directly after a training trial
+the participant could accept or reject that trial. They were told to reject it if
+they got distracted during the 8 seconds, but that they should avoid rejecting
+trials as this wastes valuable time.
+Experiment
+The experiment consisted of 24 trials split into 4 blocks, with 30 second breaks
+between blocks to minimise fatigue. Each participant performed approximately
+8 trials of each selection (left, right and middle) in a randomized order. To
+make this task more realistic, participants were asked a question to which they
+select the button that contains the answer. Each trial began by showing the
+question along with three horizontally aligned buttons, each with one of the
+possible answers, in a randomized order. Participants had 6 seconds to read
+and decide on an answer, and a further 2 seconds in which they were required
+to relax. The trial would not start until no actions were detected for 1 second,
+to reduce the possibility of an answer being selected immediately. A selection
+
+23
+
+of the left or right option is then possible, or the middle button is chosen
+if no selection is detected after 8 seconds. Participants were told to make a
+decision quickly, and to guess if they were not sure of the answer. As soon as a
+button was selected a beep denoted the end of the selection phase. Immediately
+following this, participants were required to say which answer they were trying
+to select. This allows us to be sure which answer they were meaning to select,
+while still making the selection task a choice. It also means that participants
+would not necessarily do exactly 8 of each selection, as they may have been
+trying to select the wrong answer. They are reminded to be absolutely honest
+which they were trying to select. After mentioning which they were attempting
+for, participants were given a further 2 seconds to relax before the next trial
+begun.
+There were 24 questions, so each participant answered the same set of
+questions in a random order. The questions were designed to be fairly simple
+common knowledge items that the target audience would be likely to know, as
+we were not interested in their performance at answering them. These can be
+seen in Appendix B. Preceding the experimental trials was one practice trial
+to help the participants understand the task, the results of which were not
+included in analysis. Following the experiment participants were asked to fill
+out a short questionnaire (see Appendix C).
+4.3
+
+Results
+
+Participants were given 15 minutes for training, during which they completed
+an average of 24.1 training trials. Across the actions people trained an average
+of 9 left trials, 6.6 neutral, and 8.4 right. The minimum training for any action
+was 4, and there was no greater than 5 training trials difference between an
+individual’s trained actions.
+All participants completed 24 experimental trials approximating, though
+not necessarily, 8 of each action. The minimum number of experimental trials
+for an action was 5, and maximum 11. On average they were tested with 7.8
+left and right trials, and 8.4 neutral. As seen in Table 4.1 the average success
+rate was 11.24, or 46.83% (SD 3.11, or 12.97%).
+Nine of the participants had also done the first study. Their average success
+rate in the first study was 36.6%, which was significantly improved in the second
+to 48.6% (paired T-Test, T8=-2.27, p=0.027). Comparing their scores to the
+12 people who did not do the first study (who got an average of 45.4%) we
+see that they were not significantly advantaged by their previous experience
+(unequal T-Test, T18=0.58, p=0.29).
+The questionnaire provided some information about participants and how
+they found the experiment. We did not have enough range in the age of participants to be able to comment on any interaction. It has generally been found
+
+24
+
+Average
+
+Left
+
+Neutral
+
+Right
+
+Total Success
+
+Success Rate
+
+5/8
+3/7
+2/9
+2/7
+2/7
+3/7
+3/8
+7/9
+5/9
+3/7
+5/5
+3/9
+7/8
+4/8
+1/6
+2/8
+3/9
+7/8
+6/6
+5/8
+5/10
+
+6/9
+6/9
+2/9
+6/8
+5/9
+4/8
+8/8
+7/9
+1/7
+0/9
+2/10
+2/7
+4/9
+5/7
+1/11
+7/8
+2/7
+1/8
+2/8
+0/8
+3/9
+
+0/7
+2/8
+5/6
+4/9
+1/8
+6/9
+5/8
+2/6
+2/8
+7/8
+3/9
+4/8
+7/7
+2/9
+4/7
+4/8
+3/8
+5/8
+7/10
+5/8
+1/5
+
+11/24
+11/24
+9/24
+12/24
+8/24
+13/24
+16/24
+16/24
+8/24
+10/24
+10/24
+9/24
+18/24
+11/24
+6/24
+13/24
+8/24
+13/24
+15/24
+10/24
+9/24
+
+45.8%
+45.8%
+37.5%
+50.0%
+33.3%
+54.2%
+66.7%
+66.7%
+33.3%
+41.7%
+41.7%
+37.5%
+75.0%
+45.8%
+25.0%
+54.2%
+33.3%
+54.2%
+62.5%
+41.7%
+37.5%
+
+3.6/7.8
+
+3.5/8.4
+
+3.8/7.8
+
+11.24/24
+
+46.83%
+
+Table 4.1: Three-way selection results showing each participant’s success and
+number of attempts for left, neutral, and right trials. Every participant attempted 24 trials across the three actions.
+
+that BCI control does not vary considerably with age, but can be greater for
+younger people [56, 57]. Further, with only 2 left handed participants, and
+4 females, these demographics cannot be reliably compared to success rates
+(F1,19 =0.70, p=0.41) and (F1,19 =0.12, p=0.74) respectively. Participants rated
+an average of 3.4 out of 5 for how mentally demanding this task was, with 1
+being very easy and 5 very hard. Plotting these ratings of perceived difficulty
+against each participant’s success rate did not show any obvious trend. When
+asked to rate how participants found using the device, from unpleasant (1) to
+pleasant (5), they rated an average of 3.6, with all ratings equal to 2 or greater.
+During this study every participant’s affect, as reported from the Affectiv
+suite, was recorded over the whole study. However, for two participants some
+the values read from the EmoEngine were not numbers, presumably due to
+
+25
+
+an issue reading the affect at that time, such as noise or processing problems.
+These values cannot be used for analysis, reducing the number of participant’s
+affect recordings to 19. Analysis of this data is discussed in chapter 5.
+4.4
+
+Discussion
+
+This study used a threshold on power at 0.31 for all participants, which was
+found to be relatively effective in the first study. Using individually optimal
+threshold in the first study increased the success rate to 44.6%, which is similar
+to the success rate of this study with the universal threshold. It therefore seems
+likely that without the use of this filter there would be even less difference in
+the results of the two studies. Unfortunately we cannot investigate the use
+of different filters on the data of the second study, as the experiment trials
+ended as soon as a selection was made. That is to say there has already been
+a detection filter applied to make the decision of when to end the trial.
+Despite the greater success rate, the two experiments had about the same
+number of training trials on average. There are three main differences that
+the increase in performance could be attributed to. Firstly, participants had a
+slightly longer practice time. Secondly, they were able to train whichever action
+they felt needed training during this time. Thirdly, the task was different and
+the task instructions were more explicit about what to think.
+The order of training varied between participants. Some trained one of
+each action then tested their control; some quickly tested their control after
+every trial. While it is hard to compare the types of training methods of
+our two studies, some participants complained about the fixed scheme of the
+first experiment, saying that they could not control one action when told to
+start training the next. No one complained about the flexible training scheme
+however.
+The training of the system is probably less vital than the training of the
+user. The critical requirement is that the user can think detectable thoughts
+consistently. In the simple evaluation of Cognitiv by Thobbi et al., all 4 participants completed 10 training trials. When tested, however, the two people that
+had used the system for 2 weeks prior did significantly better than the others
+who had not. Supporting this, in our second study there was no correlation
+between the number of training trials and success rate, meaning those who
+did more training trials did not necessarily do better or worse than those who
+trained less.
+Participants who completed both studies did not achieve significantly better
+than those who did not do the first. While the tasks were different, simply using
+the Cognitiv system twice is likely to produce a learning effect. However, as
+the studies were over 2 months apart we are not surprised that no significant
+effect is evident.
+
+26
+
+Comparing techniques that the participants said they used showed that
+those who focused on movement, such as of the hand or arm, tended to have
+greater success than those who visualised pressing buttons or squeezing their
+hands. For example, the highest scoring participant, who achieved 75%, wrote
+“[I] imagined I was stretching my L/R arm.” This is as expected with sensorimotor rhythms [15], and perhaps with more training the latter group could
+learn to produce more kinaesthetic thoughts than visual ones.
+
+27
+
+Chapter V
+Analysis of Affect
+As part of our investigation of the EPOC participant’s affect was recorded
+during the second experiment. Here we review the Affectiv suite of the Emotiv system and the continuous measures of the user’s subjective emotions it
+provides. As described in Section 2.3.1, these emotions are labelled shortterm excitement, long-term excitement, engagement/boredom, frustration, and
+meditation. We were curious if there were any characteristic changes in affect
+after participants failed or succeeded experimental trials. We hypothesised
+that participants might experience an increase in the level of frustration after failing a trial, as a number of participants mentioned that it annoys them
+when it does not work. Similarly, we hypothesised that their excitement might
+increase following successful trials. The affective information produced by the
+system consists of values between 0 and 1 for each of the 5 emotions, which are
+read from the system several times per second. It is not clear, however, how
+this information can be effectively analysed.
+We found that taking the average of an Affectiv measure over any reasonable
+time period was typically not useful, as they all tend to similar values (about
+0.5). This could be related to the fact that the Affectiv suite automatically
+updates how much it scales the measures based on previous readings.1 As
+a different approach we tried simply seeing which emotion levels were most
+often highest. By counting the number of times an emotion is the maximum
+of the 5 emotions after each trial we found some interesting differences. For
+example, frustration is more often the maximum of the emotions after failed
+trials than it is after successful trials. This is not significant however (Paired
+T-test T18 =-1.03, p=0.16).
+The Emotiv control panel provides a graph of the affect updating in real
+time. The graph shows relative levels of emotions at any time, and the increase
+or decrease in emotion during any period. Cernea and colleagues based their
+approach off of this graph, to transform these measures into an integer scale
+from 1 to 5, which they then compared with Likert scale ratings [43]. Their
+scale consists of a combination of criteria for an emotion over a certain period.
+As they were interested in the increase in emotion, decreases are completely
+ignored. The score for a period of no increase is 1, and 1 point is added for each
+1
+
+http://emotiv.com/developer/SDK/UserManual.pdf
+
+28
+
+Figure 5.1: Graph of frustration from the Affectiv suite for a 30 second period.
+The maximum and minimum are shown by B (0.91) and C (0.2). A is one
+possible 5 second window, the slope of which is given by 0.7-0.35. If A were
+the maximum slope, this period would have a score of 4 out of 5.
+
+of the following: if the difference between the minimum and maximum value
+during the entire period is greater than 0.3, if this difference is greater than
+0.6, if the slope at any time is greater than 0.3, and if the slope at any time
+is greater than 0.6. As a simple approach to quantify the slope, they define it
+as the difference between the final and initial value of a small sliding window.
+This window was smaller than the entire period, typically 5 or 10 seconds, and
+produced a slope value for each increment in time within the period. The slope
+for the whole period is then the maximum of these slopes. This is illustrated
+in Figure 5.1.
+We analysed the affect for the 8 second period following successful and
+failed trials using the method described above. To find a good window size we
+tried all integer windows from 1 to 8 seconds and compared the results. It was
+found that for all window sizes there is a significant increase in user’s frustration
+after failed trials than successful trials. The 5 second window gave the largest
+average difference, and was most significant (Paired T-test T18 =-3.09, p¡0.05).
+None of the other 4 emotions showed significant differences. The thresholds
+used by Cernea et al., 0.3 and 0.6, were found through inspection of the graphed
+data. We used these values as it was proven that they provided reliable results.
+However, we note that they may not be optimal for all applications.
+Another approach was taken by Salvador, Legaspi, and Suarez, in order to
+gain insight into how students appraise feedback supplied by an intelligent tutoring system. They recorded the levels of frustration and excitement provided
+by the EPOC. For each emotion these two values were used: the average of
+the readings for the three seconds prior to feedback, and the reading when the
+emotions stop varying greatly after feedback is given. They say emotions stop
+varying greatly when there is a change of only 0.08, though they do not specify
+if this is between readings, per second, or some other meaning. Their threshold value of 0.08 was found experimentally through inspection of the affective
+
+29
+
+output. Again, this value may not be appropriate for different applications.
+This method could be applied to our recorded data, for example, to see
+if the value for frustration is higher after failed trials than successful ones.
+Furthermore, this method would not require an arbitrarily chosen period such
+as the 8 seconds in the earlier method, and could take decreases in emotion into
+account too. It would require, however, finding the exact definition of when
+an emotion stops changing greatly, and experimentation with the threshold
+values. Unfortunately due to time constraints this has not been pursued.
+
+30
+
+Chapter VI
+Conclusions
+6.1
+
+Discussion
+
+While some studies have shown that control with the EPOC and Cognitiv suite
+is possible, such as for games [38] or robot movement [4], they do not quantify
+the time required or any measure of success. We can say that control is possible
+after only 15 minutes of training; however a success rate of 46.8% is probably
+not practical for most applications.
+A few other studies have supplied some comparable results. In a cube
+comparison task participants could use the combination of Cognitiv, Expressiv,
+and the gyro to rotate cubes [39]. They used one more action than in our study,
+but managed to achieve an approximate (crudely-measured) success rate of 59%
+after one training session of an unspecified length. Although this is clearly a
+greater level of success, it includes control with Expressiv and the gyro, which
+are probably easier than Cognitiv. In another successful robot control study
+an initial validation had 10 training trials of the same number of actions as our
+study [5]. The two participants with no prior experience achieved about 66%
+success. These greater success rates could be due to differences in instructions,
+which may have come from more experienced users in their cases.
+Lievesley and colleagues had people train neutral and only one other action
+for 30 minutes a day, achieving an average of 64.6% success after the first
+day. With more time training and one less action this higher rate than that
+of our results is expected. After 5 days Lievesley’s participants achieved much
+greater success rates; however the 2 people that trained neutral and 2 actions
+in this time did not do as well, achieving only 50% and 56% success (or both
+69% with their filter). Both the Emotiv community1 and previous research on
+SMRs mention that controlling more actions becomes increasingly difficult [9].
+Another suggestion by the Emotiv community is that it is best to master
+one action before attempting to train other actions.1 We only trained four
+trials of left before starting right in the first experiment, and the participants
+decided when to train each in the second. Further, it appeared that early
+in training many participants were able to control the cube reasonably well,
+1
+
+http://emotiv.com/forum/messages/forum4/topic114/message392/?phrase_id=
+464885
+
+31
+
+and that this would decline in later training. Over the trials as the person
+is training to think a consistent thought it is likely that they include a range
+of inconsistent thoughts. Therefore once they have had some practice it may
+possibly be of more use to wipe the trained data and start the training again.
+The system does give an option to reject a training trial immediately after
+training. However there is no way of knowing how consistent the thought was
+until it is accepted and updates the system, after which there is then no way
+of removing it again (without clearing all data for that action).
+Many things can possibly affect the use of this technology, including even
+the time of day or other person specific attributes, such as sleep or diet [56].
+EEG can also be disrupted by environmental noise, such as mains power, which
+is filtered out by the EPOC. Noise induced by the user through muscle movement or talking can greatly disrupt the EEG, meaning users must remain still
+during recording [9, 45]. Our participants were instructed to sit still but this
+was not enforced. Some people changed their posture or how they were holding their hands occasionally, potentially affecting their performance. Another
+issue found by many studies is that some fraction of people simply perform
+considerably worse with certain types of BCI, referred to as BCI illiteracy [58].
+As far as other EPOC specific issues we note that the sensors need careful
+cleaning occasionally. Further, being a wireless device, it needs regular charging, though the battery lasts up to approximately 10 hours. All of these issues
+ought to be considered when adopting BCI technology.
+Most participants were interested by the novelty of the EPOC and applications, some finding it fun. However, many participants, including some that
+found it interesting to use, found it frustrating as well. Both tasks were considerably harder than the participants expected, and as they were only given
+a short time in which to train before being tested, a number of people felt as
+though they had performed particularly worse than they were expected to.
+A number of participants in both studies reported experiencing some discomfort after about half an hour of wearing the EPOC. This is most likely
+due to the sideways pressure that holds the headset in place. Previous studies
+have also mentioned this issue [40,43,50]. Any application of the EPOC would
+need to consider this restriction and not require the user to wear the headset
+for long periods of time. As the focus of our research was to investigate the
+EPOC’s use in a limited time frame this discomfort is not such an issue. We
+have, however, discovered that users do not acquire reliable accuracies in one
+small training session, meaning they would require a number of these sessions
+to achieve a more practical success rate. Because of this discomfort, and other
+issues such as mental fatigue, these sessions would necessarily need to have
+breaks between them.
+Setting up the EPOC can be delicate. It can often take a while to get good
+connection for all of the sensors, sometimes requiring removal of the headset to
+
+32
+
+re-wet the sensors. We found this issue particularly prominent for users with
+long or thick hair. It is possible to equip the EPOC by one’s self after some
+practice. However, those who have lost physical control of almost any of their
+upper body, or that struggle with delicate hand coordination, would require
+another person to set up the headset.
+Although the analysis of the Affectiv data in this study does not validate
+the measurements, we did find some expected characteristics within the data,
+supporting both the device measurements and the methods used to analyse
+it. The Affectiv suite will be affected by many of the previously mentioned
+issues, such as person induced noise. The period we focussed our analysis on
+was directly after a selection was made, but during this time participants were
+not necessarily remaining still. In fact, during this time they were asked to say
+which answer they were trying to select, and indeed many people would react
+to the trial through movement such as laughing or moving their head. Had
+we initially intended to analyse the Affectiv information the study would have
+been designed to minimise movement.
+6.2
+
+Conclusions & Future Work
+
+The Emotiv EPOC has advantages over traditional EEG devices, and comes
+with a number of useful tools, including the Cognitiv suite for detecting sensorimotor rhythms. While investigating the EPOC our main focus has been
+whether this Cognitiv system can be used within one session, after only a small
+amount of training. In the two studies detailed here, participants trained with
+the Cognitiv suite for up to 15 minutes before being tested for their level of
+control. While the success rates ranged from 16% to 75%, the averages for the
+first and second study were only 36.25% and 46.83% respectively. This, taken
+with previous studies on controlling sensorimotor rhythms, shows that more
+training time would be required to achieve more practical levels of control.
+Given the constraints of the ICTG research project, it would not be suitable
+to expect participants to control the EPOC with imagined motor movement
+within the required time frame. For their project other types of BCI could be
+investigated with the EPOC, such as the P300 or SSVEP. As another future
+possibility, if the users have control of facial movements then the Expressiv
+suite might be able to offer them control without much training. However,
+it would have to be investigated whether the required facial movements are
+not too tiring. Furthermore, wearing the EPOC for a sustained time has been
+found to produce discomfort, meaning its use should be split into small sessions
+with breaks.
+We also reviewed the Affectiv suite and some practical means of processing
+the information it provides. From the affect in second study we found that participants have greater increases in frustration after failed trials than successful
+
+33
+
+ones, but not greater increases excitement after successful trials. Applications
+that could take advantage of this affect information include user evaluations
+of interfaces and games during research and design to replace questionnaire
+interruptions, adaptive games that scale difficulty or other immersive features
+through subjective feedback, and affect aware intelligent tutoring systems that
+personally scaffold content and can identify what feedback is most effective for
+the student. The processing methods covered here are appropriate for some
+applications, though in the future more effective techniques could be investigated.
+As the sensors only need dampening, we found that the EPOC headset
+is relatively simple to use and offers mobility due to its wireless technology.
+In the future many BCI applications could benefit from adopting the EPOC
+to aid their progression out of the lab and into the real world. The time and
+effort required to use the technology needs to be considered for each application
+however. If the Cognitiv suite is to be used as a control modality, users can
+be expected to require many training sessions before they achieve a reliable
+accuracy. For most people this could take considerable time, and training can
+be quite demanding which is especially tiring for disabled users.
+
+34
+
+References
+[1] J. R. Wolpaw, N. Birbaumer, D. J. McFarland, G. Pfurtscheller, and T. M.
+Vaughan, “Brain-computer interfaces for communication and control,” Clinical
+neurophysiology, vol. 113, no. 6, pp. 767–791, 2002.
+[2] G. Pfurtscheller, G. Muller-Putz, R. Scherer, and C. Neuper, “Rehabilitation
+with Brain-Computer Interface Systems,” Computer, vol. 41, pp. 58–65, Oct.
+2008.
+[3] N. Birbaumer, “Breaking the silence: braincomputer interfaces (BCI) for communication and motor control,” Psychophysiology, vol. 43, no. 6, pp. 517–532,
+2006.
+[4] D. Szafir and R. Signorile, “An exploration of the utilization of electroencephalography and neural nets to control robots,” Human-Computer Interaction
+- INTERACT 2011, pp. 186–194, 2011.
+[5] A. Thobbi, R. Kadam, and W. Sheng, “Achieving Remote Presence using a Humanoid Robot Controlled by a Non-Invasive BCI Device,” International Journal
+on Artificial Intelligence and Machine Learning, vol. 10, pp. 41–45, 2010.
+[6] M. Jacques, Development of a Multimodal Human-computer Interface for the
+Control of a Mobile Robot. Masters thesis, University of Ottawa, 2012.
+[7] E. Niedermeyer and F. da Silva, Electroencephalography: basic principles, clinical applications, and related fields. Lippincot Williams & Wilkins, 2004.
+[8] G. Pfurtscheller and C. Neuper, “Motor imagery and direct brain-computer
+communication,” Proceedings of the IEEE, vol. 89, no. 7, pp. 1123–1134, 2001.
+[9] L. F. Nicolas-Alonso and J. Gomez-Gil, “Brain Computer Interfaces, a Review,”
+Sensors, vol. 12, pp. 1211–1279, Jan. 2012.
+[10] E. Donchin and D. B. D. Smith, “The contingent negative variation and the
+late positive wave of the average evoked potential,” Electroencephalography and
+clinical Neurophysiology, vol. 29, no. 2, pp. 201–203, 1970.
+[11] A. Furdea, S. Halder, D. J. Krusienski, D. Bross, F. Nijboer, N. Birbaumer,
+and A. Kübler, “An auditory oddball (P300) spelling system for brain-computer
+interfaces,” Psychophysiology, vol. 46, no. 3, pp. 617–625, 2009.
+[12] D. Regan, “Human brain electrophysiology: evoked potentials and evoked magnetic fields in science and medicine,” Science and Medicine, 1989.
+
+35
+
+[13] T. Hinterberger, S. Schmidt, N. Neumann, J. Mellinger, B. Blankertz, G. Curio,
+and N. Birbaumer, “Brain-computer communication and slow cortical potentials,” IEEE Transactions on Biomedical Engineering, vol. 51, no. 6, pp. 1011–
+1018, 2004.
+[14] M. Jeannerod, “Mental imagery in the motor context,” Neuropsychologia,
+pp. 1419–1432, 1995.
+[15] C. Neuper, R. Scherer, M. Reiner, and G. Pfurtscheller, “Imagery of motor
+actions: Differential effects of kinesthetic and visual? motor mode of imagery
+in single-trial EEG,” Cognitive brain research, vol. 25, pp. 668–77, Dec. 2005.
+[16] F. Nijboer, A. Furdea, I. Gunst, J. Mellinger, D. J. McFarland, N. Birbaumer,
+and A. Kübler, “An auditory braincomputer interface (BCI),” Journal of Neuroscience Methods, vol. 167, no. 1, pp. 43–50, 2008.
+[17] L. A. Farwell and E. Donchin, “Talking off the top of your head: toward a mental
+prosthesis utilizing event-related brain potentials,” Electroencephalography and
+clinical Neurophysiology, vol. 70, no. 6, pp. 510–523, 1988.
+[18] a. Kübler and N. Birbaumer, “Brain-computer interfaces and communication
+in paralysis: extinction of goal directed thinking in completely paralysed patients?,” Clinical neurophysiology: official journal of the International Federation of Clinical Neurophysiology, vol. 119, pp. 2658–2666, Nov. 2008.
+[19] K. R. Müller and B. Blankertz, “Toward non-invasive brain-computer interfaces,” IEEE Signal Processing Magazine, vol. 23, no. 5, pp. 125–128, 2006.
+[20] S. de Vries and T. Mulder, “Motor imagery and stroke rehabilitation: a critical
+discussion,” Journal of rehabilitation medicine, vol. 39, pp. 5–13, Jan. 2007.
+[21] B. Rebsamen, E. Burdet, Q. Zeng, and H. Zhang, “Hybrid P300 and MuBeta brain computer interface to operate a brain controlled wheelchair,” in 2nd
+International Convention on Rehabilitation Engineering & Assistive Technology, (Singapore Therapeutic, Assistive \& Rehabilitative Technologies (START)
+Centre), pp. 51–55, 2008.
+[22] J. Del R Millán, F. Renkens, J. Mouriño, and W. Gerstner, “Noninvasive brainactuated control of a mobile robot by human EEG,” IEEE Transactions on
+Biomedical Engineering, vol. 51, no. 6, pp. 1026–1033, 2004.
+[23] C. Hondrou and G. Caridakis, “Affective, Natural Interaction Using EEG: Sensors, Application and Future Directions,” Artificial Intelligence: Theories and
+Applications, vol. 7297, pp. 331–338, 2012.
+[24] E. Cutrell and D. Tan, “BCI for passive input in HCI,” Proceedings of CHI,
+vol. 8, 2008.
+
+36
+
+[25] A. Nijholt, D. P.-O. Bos, and B. Reuderink, “Turning shortcomings into challenges: Braincomputer interfaces for games,” Entertainment Computing, vol. 1,
+pp. 85–94, Apr. 2009.
+[26] a. Nijholt, “Brain-computer interfacing for intelligent systems,” IEEE Intelligent Systems, vol. 23, pp. 72–79, May 2008.
+[27] J. C. J. Lee and D. S. Tan, “Using a low-cost electroencephalograph for task
+classification in HCI research,” in 19th annual ACM symposium on User interface software and technology, (New York, New York, USA), pp. 81–90, ACM
+Press, 2006.
+[28] N. Lee, A. J. Broderick, and L. Chamberlain, “What is “neuromarketing”?
+A discussion and agenda for future research,” International Journal of Psychophysiology, vol. 63, no. 2, pp. 199–204, 2007.
+[29] B. D. Heingartner, “Mental Block,” IEEE Spectrum, vol. 46, no. 1, pp. 42–43,
+2009.
+[30] G. Rosas-Cholula, J. M. Ramirez-Cortes, V. Alarcon-Aquino, J. MartinezCarballido, and P. Gomez-Gil, “On Signal P-300 Detection for BCI Applications
+Based on Wavelet Analysis and ICA Preprocessing,” 2010 IEEE Electronics,
+Robotics and Automotive Mechanics Conference, pp. 360–365, Sept. 2010.
+[31] E. T. Esfahani and V. Sundararajan, “Classification of primitive shapes using
+braincomputer interfaces,” Computer-Aided Design, vol. 44, pp. 1011–1019, Oct.
+2012.
+[32] A. Knoll, Y. Wang, F. Chen, and J. Xu, “Measuring Cognitive Workload with
+Low-Cost Electroencephalograph,” in Human-computer interaction - INTERACT 2011, pp. 568–571, 2011.
+[33] C. Vi and S. Subramanian, “Detecting error-related negativity for interaction
+design,” in Human Factors in Computing Systems - CHI ’12, (New York, New
+York, USA), pp. 493–502, ACM Press, 2012.
+[34] E. Cinar and F. Sahin, “New classification techniques for electroencephalogram
+(EEG) signals and a real-time EEG control of a robot,” Neural Computing &
+Applications, pp. 1–11, 2011.
+[35] S. B. Fok, R. Schwartz, C. D. Holmes, M. Wronkiewicz, J. Zhang, T. Somers,
+D. Bundy, and E. Leuthardt, “An EEG-based brain computer interface for
+rehabilitation and restoration of hand control following stroke using ipsilateral
+cortical physiology,” in Engineering in Medicine and Biology Society, EMBC,
+2011 Annual International Conference of the IEEE, pp. 6277–6280, 2011.
+[36] Q. Wang, O. Sourina, and M. K. Nguyen, “EEG-Based Serious Games Design
+for Medical Applications,” in 2010 International Conference on Cyberworlds,
+pp. 270–276, IEEE, 2010.
+
+37
+
+[37] M. van Vliet, A. Robben, N. Chumerin, N. V. Manyakov, A. Combaz, and
+M. M. Van Hulle, “Designing a brain-computer interface controlled video-game
+using consumer grade EEG hardware,” in Biosignals and Biorobotics Conference
+(BRC), 2012 ISSNIP, pp. 1–6, IEEE, Jan. 2012.
+[38] S. Decker, P. Goyal, A. Katko, P. Koppol, and A. Rodriguez, “Brain Control,”
+tech. rep., Governor’s School Of Engineering And Technology, 2011.
+[39] G. M. Poor, L. Marie, L. Scott, K. Jordan, and R. Samuel, “Thought cubes:
+exploring the use of an inexpensive brain-computer interface on a mental rotation task,” 13th international ACM SIGACCESS conference on Computers and
+accessibility, pp. 291–292, 2011.
+[40] R. Lievesley, M. Wozencroft, and D. Ewins, “The Emotiv EPOC neuroheadset:
+an inexpensive method of controlling assistive technologies using facial expressions and thoughts?,” Journal of Assistive Technologies, vol. 5, no. 2, pp. 67–82,
+2011.
+[41] G. N. Ranky and S. Adamovich, “Analysis of a commercial EEG device for the
+control of a robot arm,” in 2010 IEEE 36th Annual Northeast Bioengineering
+Conference, pp. 1–2, Ieee, 2010.
+[42] J. Gomez-Gil, I. San-Jose-Gonzalez, L. F. Nicolas-Alonso, and S. Alonso-Garcia,
+“Steering a Tractor by Means of an EMG-Based Human-Machine Interface,”
+Sensors, vol. 11, no. 7, pp. 7110–7126, 2011.
+[43] D. Cernea, P.-S. Olech, A. Ebert, and A. Kerren, “Measuring Subjectivity,” KI
+- Künstliche Intelligenz, vol. 26, pp. 177–182, Jan. 2012.
+[44] D. Cernea, P. Olech, A. Ebert, and A. Kerrern, “EEG-based measurement
+of subjective parameters in evaluations,” in 14th international conference
+on human-computer interaction (HCII), vol. 174, (Orlando, Florida, USA),
+pp. 279–283, 2011.
+[45] P. Salvador, R. Legaspi, and M. Suarez, “Predicting Student ’s Appraisal of
+Feedback in an ITS Using Previous Affective States and Continuous Affect
+Labels from EEG Data,” in 18th International Conference on Computers in
+Education, pp. 71–75, 2010.
+[46] D. Cernea, A. Kerren, and A. Ebert, “Detecting Insight and Emotion in Visualization Applications with a Commercial EEG Headset,” in SIGRAD 2011 Conference on Evaluations of Graphics and Visualization-Efficiency, Usefulness,
+Accessibility, Usability, (Stockholm, Sweden), pp. 53–60, Linköping University
+Electronic Press, 2011.
+[47] B. S. Goldberg, R. A. Sottilare, K. W. Brawner, and H. K. Holden, “Predicting Learner Engagement during Well-Defined and Ill-Defined ComputerBased Intercultural Interactions,” Affective Computing and Intelligent Interaction, vol. 6974, pp. 538–547, 2011.
+
+38
+
+[48] J. M. Seigneur, “The emotional economy for the augmented human,” in 2nd
+Augmented Human International Conference, (New York, New York, USA),
+p. 24, ACM, 2011.
+[49] Y. Liu, O. Sourina, and M. K. Nguyen, “Real-Time EEG-Based Human Emotion Recognition and Visualization,” International Conference on Cyberworlds,
+pp. 262–269, Oct. 2010.
+[50] M. Pike, M. Wilson, A. Divoli, and A. Medelyan, “CUES: Cognitive Usability
+Evaluation System,” in 2nd European Workshop on Human-Computer Interaction and Information Retrieval (M. L. Wilson, T. Russell-Rose, B. Larsen, and
+J. Kalbach, eds.), (Nijmegen, The Netherlands), pp. 51–54, 2012.
+[51] P. S. Inventado, R. Legaspi, M. Numao, and M. Suarez, “Observatory: A Tool
+for Recording, Annotating and Reviewing Emotion-Related Data,” 2011 Third
+International Conference on Knowledge and Systems Engineering, pp. 261–265,
+Oct. 2011.
+[52] J. Gonzalez-Sanchez, M. E. Chavez-Echeagaray, R. Atkinson, and W. Burleson,
+“ABE: An Agent-Based Software Architecture for a Multimodal Emotion
+Recognition Framework,” in Ninth Working IEEE/IFIP Conference on Software Architecture, pp. 187–193, 2011.
+[53] T. Koutepova, Y. Liu, X. Lan, and J. Jeong, “Enhancing video games in real
+time with biofeedback data,” in ACM SIGGRAPH ASIA, p. 56, ACM, 2010.
+[54] R. Bernays, J. Mone, P. Yau, M. Murcia, J. Gonzalez-Sanchez, M. E. ChavezEcheagaray, R. Christopherson, and R. Atkinson, “Lost in the dark: emotion
+adaption,” in 25th annual ACM symposium on User interface software and
+technology, pp. 79–80, ACM, 2012.
+[55] J. Gonzalez-Sanchez, R. M. Christopherson, M. E. Chavez-Echeagaray, D. C.
+Gibson, R. Atkinson, and W. Burleson, “How to Do Multimodal Detection of
+Affective States?,” in 11th IEEE International Conference on Advanced Learning Technologies (ICALT), pp. 654–655, IEEE, 2011.
+[56] B. Allison, T. Luth, D. Valbuena, A. Teymourian, I. Volosyak, and A. Graser,
+“BCI Demographics: How many (and what kinds of) people can use an SSVEP
+BCI?,” Neural Systems and Rehabilitation Engineering, IEEE Transactions on,
+vol. 18, no. 2, pp. 107–116, 2010.
+[57] N. S. Dias, R. M. Mendes, and J. H. Correia, “Subject age in P300 BCI,” in
+2nd International IEEE EMBS Conference on Neural Engineering, pp. 579–582,
+IEEE, 2005.
+[58] T. Dickhaus, C. Sannelli, K.-R. Müller, G. Curio, and B. Blankertz, “Predicting
+BCI Performance to Study BCI Illiteracy,” BMC NEUROSCIENCE, vol. 10,
+no. 1, p. 84, 2009.
+
+39
+
+Appendix A
+Movement Control Questionnaire
+
+40
+
+Questionnaire:
+1.
+
+What age range are you in? (Please circle)
+
+< 21
+
+21-30
+
+31-40
+
+41-50
+
+51-60
+
+61-70
+
+2.
+
+You are… (Please circle)
+
+Left handed
+
+Right handed
+
+3.
+
+You are… (Please circle)
+
+Male
+
+Female
+
+4.
+
+Have you had any previous experience with an EEG device? (Please circle)
+
+Yes
+
+No
+
+If yes, please explain
+
+5.
+
+How often do you play computer or console games? (Please circle)
+
+(Never)
+
+6.
+
+1
+
+2
+
+3
+
+4
+
+5
+
+(Very Often)
+
+5
+
+(Very hard)
+
+How mentally demanding was the task? (Please circle)
+
+(Very easy)
+
+1
+
+2
+
+3
+
+PTO
+
+4
+
+8.
+
+How did you find using the device? (Please circle)
+
+(Unpleasant) 1
+
+2
+
+3
+
+4
+
+Comments:
+
+9.
+
+Any other comments or questions about the experiment?
+
+Thank you!
+
+5
+
+(Pleasant)
+
+Appendix B
+Selection Task Questions and Answers
+Which metal is heavier? - Gold, Silver, Aluminium
+How many legs do spiders have? - 8, 6, 10
+How many vowels in the English alphabet? - 5, 6, 21
+1000 milligrams = ? - 1g, 10 Ounces, 1Kg
+What is the biggest planet in our solar system? - Jupiter, Earth, Venus
+Another name for a tidal wave is a? - Tsunami, Earthquake, Tornado
+The highest mountain on earth is? - Mt Everest, Mt Cook, Mt Fuji
+How many zeros in 1 million? - 6, 9, 4
+New Zealand’s prime minister is? - John Key, John Travolta, Tim Shadbolt
+Which element has the chemical symbol He? - Helium, Iron, Carbon
+Capital of New Zealand? - Wellington, Christchurch, Sydney
+62 =? - 36, 32, 64
+Which series is not animated? - MASH, The Simpsons, Pokmon
+Which is a string instrument? - Cello, Trumpet, Flute
+Mori name for New Zealand? - Aotearoa, tautahi, Aoraki
+Electrical current is measured in? - Amps, Imps, Joules
+Lead is a type of? - Metal, Wood, Zepplin
+The city Rome is in what country? - Italy, Greece, Germany
+Your mother’s sister is your? - Aunt, Uncle, Cousin
+What is the Roman Numeral for 5? - V, X, I
+Who wrote “The Cat in the Hat”? - Dr. Suess, Dr. Dre, J. K. Rowling
+Christmas day is December..? - 25th, 24th, 1st
+The sun rises in the? - East, West, South
+How many years in a millenium? - a thousand, a hundred, a million
+Which is a primary colour? - Red, Pink, Orange
+
+43
+
+Appendix C
+Three-way Selection Questionnaire
+
+44
+
+Questionnaire:
+1.
+
+What age range are you in? (Please circle)
+
+< 21
+
+21-30
+
+31-40
+
+41-50
+
+51-60
+
+61-70
+
+2.
+
+You are… (Please circle)
+
+Left handed
+
+Right handed
+
+3.
+
+You are… (Please circle)
+
+Male
+
+Female
+
+4.
+
+Have you had any previous experience with an EEG device? (Please circle)
+
+Yes
+
+No
+
+If yes, please explain
+
+6.
+
+How mentally demanding was the task? (Please circle)
+
+(Very easy)
+
+7.
+
+1
+
+2
+
+3
+
+4
+
+Please explain the thoughts/techniques you used to make selections
+
+PTO
+
+5
+
+(Very hard)
+
+8.
+
+How did you find using the device? (Please circle)
+
+(Unpleasant) 1
+9.
+
+2
+
+3
+
+Any comments about the device or the experiment?
+
+4
+
+5
+
+(Pleasant)
+
+Appendix D
+Ethics Application
+
+47
+
+UNIVERSITY OF CANTERBURY
+LOW RISK APPLICATION FORM
+(For research proposals which are not considered in full by the University Human Ethics Committee)
+
+FOR STUDENT RESEARCH UP TO AND INCLUDING MASTERS LEVEL
+
+ETHICAL APPROVAL OF LOW RISK RESEARCH INVOLVING HUMAN PARTICIPANTS REVIEWED
+BY DEPARTMENTS
+PLEASE read the important notes appended to this form before completing the sections below
+
+1
+
+RESEARCHER’S NAME: Matthew Lang
+
+2
+
+NAME OF DEPARTMENT OR SCHOOL: Department of Computer Science and Software Engineering
+
+3
+
+EMAIL ADDRESS: mjl149@uclive.ac.nz
+
+4
+
+TITLE OF PROJECT: Study of a selection task with the Emotiv EPOC in limited training time
+
+5
+
+PROJECTED START DATE OF PROJECT: 04/07/2012
+
+6
+
+STAFF MEMBER/SUPERVISOR RESPONSIBLE FOR PROJECT: Prof. Tanja Mitrovic
+
+7
+
+NAMES OF OTHER PARTICIPATING STAFF AND STUDENTS: Moffat Mathews
+
+8
+
+STATUS OF RESEARCH: (e.g. class project, thesis) Honours Research Project
+
+9
+
+BRIEF DESCRIPTION OF THE PROJECT:
+Please give a brief summary (approx. 300 words) of the nature of the proposal in lay language, including the
+aims/objectives/hypotheses of the project, rationale, participant description, and procedures/methods of the project:-
+
+The objective of this project is to investigate the use of the Emotiv EPOC and the software that comes with it as general
+purpose input for a three-way selection task. The EPOC is a small, wireless, consumer-grade “brain-computer interface”
+device that rests on the head. It is designed for use in gaming and allows users to control a computer with their mind after
+training the system which thoughts to detect. Our aim is to investigate how well people can achieve using this device for a
+realistic selection task, when only given a limited amount of training. Volunteers will receive a $20 café voucher reward for
+participation. The study will be done in the Department of Computer Science and Software Engineering. The study is open
+to anyone who is willing to take part in this research, having no age limiting factors. Participants will typically be computer
+science post-graduates and their friends. We aim to have approximately 20 participants. A short introduction to the research
+will be given at the start of the experiment, and participants will receive a project description and a consent form which they
+will read and sign, should they wish to participate in the study. Participants will be told that they can elect to opt out at any
+point during the experiment. The participants will then be equipped with the device; this is simply a non-invasive headset
+with 14 sensors that sits on the head. There are two phases to this study, the first being training and the second being the
+experimental trials. The task is to select between three buttons on the screen by only using their thoughts to imagine the
+selection. For each training trial, participants are asked to complete one of three tasks consistently for 8 seconds. This
+includes imagining making a selection with the left or right hand (for the left and right buttons), or just relaxing (to select
+the middle button). There will be 24 of these trials, with breaks in between allowing the user to attempt selections and
+receive visual feedback of the buttons being selected. After this, the experimental trials will consist of the same three tasks,
+except they will not be told which task to perform (which button to select). Instead the system will show them an easy
+question and they will select whichever button has the correct answer, directly after which they will also be asked to say
+which answer they were attempting to select. In this case, the correctness of the answer does not matter; we are looking to
+see if they could select what they intended to select, given the short amount of training on the system. Left and right trials
+end as soon as the selection has been made, otherwise the default selection will be made after 8 seconds. There will be also
+24 of these experiment trials. The total experiment should take no longer than 50 minutes. After the experiment, a short
+questionnaire will be administered to find out their perceptions of the system.
+10
+
+WHY IS THIS A LOW RISK APPLICATION?
+Description should include issues raised in the Low Risk Checklist
+
+2
+Please give details of any ethical issues which were identified during the consideration of the proposal and the way in
+which these issues were dealt with or resolved. :This is a low risk application because it does not raise any issue of deception, threat, invasion of privacy, mental, physical
+or cultural risk or stress, and does not involve keeping personal information of sensitive nature about individuals. All
+participants will be given an information sheet describing the research project and will give consent for their results to be
+used for analysis. The participants will be fully aware that they can withdraw themselves or their results from the research at
+any stage. All the data will be kept in a secure environment and only those listed above allowed access to it.
+
+Please ensure that Section A, B and C below are all completed
+
+APPLICANT’S SIGNATURE: ...................................................
+
+A
+
+SUPERVISOR DECLARATION:
+1
+2
+3
+
+I have made the applicant fully aware of the need for and the requirement of seeking HEC approval for research
+involving human participants.
+I have ensured the applicant is conversant with the procedures involved in making such an application.
+In addition to this form the applicant has individually filled in the full application form which has been reviewed
+by me.
+
+SIGNED (Supervisor): .............................................
+
+B
+
+Date .................................
+
+SUPPORTED BY THE DEPARTMENTAL/SCHOOL RESEARCH COMMITTEE:
+
+Name .......................................................
+
+C
+
+Date ...............................
+
+Signature: ............................................................. Date .....................
+
+APPROVED BY HEAD OF DEPARTMENT/SCHOOL:
+
+Name .......................................................
+
+Low Risk Application Form - 2007
+
+Signature: ............................................................. Date .....................
+
+3
+__________________________________________________________________________________________________
+ACTION TAKEN BY HUMAN ETHICS COMMITTEE:
+
+
+
+Added to Low Risk Reporting Database
+
+
+
+
+
+Referred to another Ethics Committee - Please specify:
+
+Referred to University of Canterbury HEC
+
+............................................................................................................................................................................
+
+REVIEWED BY:......................................................................
+
+Date ..................................................
+
+Please attach copies of any Information Sheet and/or Consent Form
+Forward two copies to:
+The Secretary
+Human Ethics Committee
+Level 6, Registry Building
+All queries will be forwarded to the applicant within 7 days
+Please include a copy of this form as an appendix in your thesis or course work
+
+Low Risk Application Form - 2007
+
+4
+NOTES CONCERNING LOW RISK REPORTING SHEETS
+1.
+
+This form should only be used for proposals which are Low Risk as defined in the University of Canterbury Human
+Ethics Committee Principles and Guidelines policy document, and which may therefore be properly considered and
+approved at departmental level under Section 5 of that document;
+
+2.
+
+Low Risk applications are:
+
+3.
+
+a
+
+Masters theses where the projects do not raise any issue of deception, threat, invasion of privacy, mental, physical
+or cultural risk or stress, and do not involve gathering personal information of a sensitive nature about or from
+individuals.
+
+b
+
+Masters level supervised projects undertaken as part of specific course requirements where the projects do not raise
+any issue of deception, threat, invasion of privacy, mental, physical or cultural risk or stress, and do not involve
+gathering personal information of sensitive nature about or from individuals.
+
+c
+
+Undergraduate and Honours class research projects which do not raise any issue of deception, threat, invasion of
+privacy, mental, physical or cultural risk or stress, and do not involve gathering personal information of sensitive
+nature about or from individuals, but do not have blanket approval as specified in Section 4 of the Principles and
+Guidelines.
+
+No research can be counted as low risk if it involves:
+(i)
+(ii)
+(iii)
+(iv)
+(v)
+(vi)
+(vii)
+(viii)
+(ix)
+(x)
+
+invasive physical procedures or potential for physical harm
+procedures which might cause mental/emotional stress or distress, moral or cultural offence
+personal or sensitive issues
+vulnerable groups
+Tangata Whenua
+cross cultural research
+investigation of illegal behaviour(s)
+invasion of privacy
+collection of information that might be disadvantageous to the participant
+use of information already collected that is not in the public arena which might be disadvantageous to the
+participant
+(xi)
+use of information already collected which was collected under agreement of confidentiality
+(xii) participants who are unable to give informed consent
+(xiii) conflict of interest e.g. the researcher is also the lecturer, teacher, treatment-provider, colleague or employer of
+the research participants, or there is any other power relationship between the researcher and the research
+participants.
+(xiv) deception
+(xv) audio or visual recording without consent
+(xvi) withholding benefits from “control” groups
+(xvii) inducements
+(xviii) risks to the researcher
+This list is not definitive but is intended to sensitise the researcher to the types of issues to be considered. Low
+risk research would involve the same risk as might be encountered in normal daily life.
+4.
+
+Responsibility
+Supervisors are responsible for:
+(i)
+(ii)
+(iii)
+
+Theses where the projects do not raise any issues listed below.
+Masters level supervised projects undertaken as part of specific course requirements where the projects do not
+raise any issue.
+Undergraduate and Honours class research projects which do not raise any issue listed but do not have blanket
+approval as specified in the Principles and Guidelines.
+
+HODs are responsible for:
+(i)
+(ii)
+
+Giving final approval for the low risk application.
+Ensuring a copy of all applications are kept on file in the Department/School.
+
+Low Risk Application Form - 2007
+
+5
+
+4.
+
+A separate low risk form should be completed for each teaching or research proposal which involves human participants
+and for which ethical approval has been considered or given at Departmental level.
+
+5.
+
+The completed form, together with two copies of any Information Sheet or Consent Form, should be returned to the
+Secretary, Human Ethics Committee, Level 6 Registry, as soon as the proposal has been considered at departmental
+level.
+
+6.
+
+The Information Sheet and Consent Form should NOT include the statement “This proposal has been reviewed and
+approved by the University of Canterbury Human Ethics Committee” as this is inappropriate for low risk proposals. A
+statement such as “This proposal has been reviewed and approved by the Department of ....., University of Canterbury”
+must however be used.
+
+7.
+
+Please ensure the Consent Form and the Information Sheet has been carefully proofread; the institution as a whole is
+likely to be judged by them.
+
+8.
+
+A Low Risk proposal may commence within 7 days of lodging the low risk application. No correspondence will be
+received back from the University of Canterbury Human Ethics Committee (UC HEC) concerning this Reporting Sheet
+unless the Committee has concerns or would like clarification of any aspect of the proposal.
+
+9.
+
+The research must be consistent with the UC HEC Principles and Guidelines. Refer to the appendices of the UC HEC
+Principles and Guidelines for guidance on information sheets and consent forms.
+
+10. Please note that if the nature, procedures, location or personnel of the research project changes after departmental
+approval has been given in such a way that the research no longer meets the conditions laid out in Section 5 of the
+Principles and Guidelines, a full application to the HEC must be submitted.
+11.
+
+This form is available electronically at the following web address: http://www.canterbury.ac.nz/humanethics
+
+CHECKLIST
+Please check that your application / summary has discussed:
+
+
+
+
+
+
+
+
+
+procedures for voluntary, informed consent
+privacy & confidentiality
+risk to participants
+obligations under the Treaty of Waitangi
+needs of dependent persons
+conflict of interest
+permission for access to participants from other individuals or bodies
+inducements
+
+In some circumstances research which appears to meet low risk criteria may need to be reviewed by the UC HEC. This
+might be because of requirements of:
+ The publisher of the research
+ An organisation which is providing funding resources, existing data, access to participants etc.
+Research which meets the criteria for review by a Health and Disability Ethics Committee
+See HRC web site
+
+The Human Ethics Committee is happy to give advice on the appropriateness of research for low risk review.
+
+Low Risk Application Form - 2007
+
+Appendix E
+Ethics Approval
+
+53
+
+HUMAN ETHICS COMMITTEE
+Secretary, Lynda Griffioen
+Email: human-ethics@canterbury.ac.nz
+
+Ref: HEC 2012/49/LR
+1 August 2012
+
+Matthew Lang
+Department of Computer Science & Software Engineering
+UNIVERSITY OF CANTERBURY
+
+Dear Matthew
+Thank you for forwarding your Human Ethics Committee Low Risk application for your research
+proposal “Study of a selection task with the Motiv EPOC in limited training time”.
+I am pleased to advise that this application has been reviewed and I confirm support of the
+Department’s approval for this project.
+Please note that this approval is subject to the incorporation of the amendments you have provided
+in your email of 27 July 2012.
+With best wishes for your project.
+Yours sincerely
+
+Michael Grimshaw
+Chair
+University of Canterbury Human Ethics Committee
+
+University of Canterbury Private Bag 4800, Christchurch 8140, New Zealand. www.canterbury.ac.nz
+
+E
+
+S
+
+

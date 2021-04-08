@@ -1,0 +1,642 @@
+Sonificación de EEG
+para la clasificación de palabras no pronunciadas
+Erick Fernando González-Castañeda, Alejandro Antonio Torres-García, Carlos
+Alberto Reyes-García, Luis Villaseñor-Pineda
+Instituto Nacional de Astrofísica, Óptica y Electrónica (INAOE),
+Tonantzintla, Puebla, México
+{erick.gonzalezc,alejandro.torres,kargaxxi,villasen}@inaoep.mx
+
+Resumen. Las interfaces cerebro-computadora (BCI) basadas en electroencefalograma (EEG) son una alternativa que pretende integrar a las personas con
+discapacidad motriz severa a su entorno. Sin embargo, éstas aún no son utilizadas
+en la vida cotidiana por lo poco intuitivas que son las fuentes electrofisiológicas
+para controlarlas. Para tratar este problema, se han realizado trabajos con el
+objetivo de clasificar las señales de EEG registradas durante el habla imaginada.
+En este trabajo se utilizó la técnica de sonificación de señales de EEG, la cual
+nos permite caracterizar la señal de EEG como una señal de audio. El objetivo
+es analizar si al aplicar el proceso de sonificación de la señal de EEG se puede
+discriminar o resaltar patrones que mejoren los resultados de clasificación de
+palabras no pronunciadas. Para ello se procesó la señal con y sin sonificación. Se
+obtuvieron los resultados de los 4 canales más cercanos a las áreas de lenguaje
+de Broca y Wernicke. Los porcentajes de exactitud promedio para las señales
+sin aplicar sonificación y aplicando sonificación son 48.1 % y 55.88 %, respectivamente, por lo que se pudo observar que el método empleado de sonificación de
+EEG mejora ligeramente los porcentajes de clasificación.
+Palabras claves: Electroencefalogramas (EEG), interfaces cerebro-computadora
+(BCI), sonificación (sonification), habla imaginada (imagined speech/unspoken
+speech), random forest.
+
+1.
+
+Introducción
+
+En 2001 se presentó la “Clasificación Internacional del Funcionamiento, de la
+Discapacidad y de la Salud”1 . En ésta se establece que las personas con discapacidad son aquellas que tienen una o más deficiencias físicas, mentales, intelectuales
+o sensoriales y que al interactuar con distintos ambientes del entorno social
+pueden impedir su participación plena y efectiva en igualdad de condiciones a
+1
+
+Clasificación Internacional del Funcionamiento, de la Discapacidad y de la Salud.
+Consultado el 10 de febrero de 2014. Disponible en http://www.conadis.salud.
+gob.mx/descargas/pdf/CIF_OMS_abreviada.pdf
+
+pp. 61–72; rec. 2014-04-06; acc. 2014-05-08
+
+61
+
+Research in Computing Science 74 (2014)
+
+Erick Fernando González-Castañeda, Alejandro Antonio Torres-García, et al.
+izquierda
+Adquisición de la
+actividad cerebral
+EEG
+
+Clasificación
+RF
+
+Pre-procesamiento
+CAR
+
+arriba
+abajo
+izquierda
+derecha
+seleccionar
+
+Sonificación
+EEG2Tones
+
+Extracción de
+características
+-DWT
+-RWE
+
+Palabra Identificada
+
+Fig. 1: Diagrama de la metodología seguida para clasificar señales de EEG registradas durante el
+habla imaginada. En los bloques internos se detalla el método propuesto. Además se ilustra a un
+individuo realizando la pronunciación imaginada de la palabra “izquierda” ante lo cual la tarea
+del método es inferir, con base a las señales de EEG registradas, cuál de las cinco palabras del
+vocabulario propuesto fue imaginada.
+
+las demás. De acuerdo con el Informe mundial sobre la discapacidad 2011 2 de
+la Organización de las Naciones Unidas (ONU), en esta situación se estima que
+viven más de mil millones de personas en todo el mundo, esta cifra representa
+aproximadamente el 15 % de la población mundial (según las estimaciones de
+la población mundial en 2010). Dentro de este porcentaje, se estima que casi
+200 millones de personas experimentan dificultades considerables en su funcionamiento. Por ejemplo, discapacidades motrices severas como: la tetraplejía
+(cuadraplejía), la esclerosis lateral amiotrófica (ELA), la embolia (ictus cerebral),
+las lesiones de médula espinal o cerebral, la parálisis cerebral, las distrofias
+musculares, la esclerosis múltiple entre otros padecimientos. Estas discapacidades
+frecuentemente provocan que la persona no pueda controlar voluntariamente sus
+movimientos, incluyendo aquellos relacionados directa o indirectamente con la
+articulación del habla [6,28]. En consecuencia, una persona en estas condiciones
+está prácticamente aislada de su entorno.
+En la búsqueda de un medio para integrar a la sociedad a las personas
+con discapacidad motriz severa, se ha explorado el uso de la actividad cerebral
+registrada mediante el electroencefalograma (EEG) para controlar dispositivos
+e interfaces. De forma general, una BCI puede ser vista como un sistema de
+reconocimiento de patrones donde el EEG es usado como la fuente primaria de
+información, un algoritmo de aprendizaje es usado para aprender una función
+de inferencia a partir del EEG, y por último, de acuerdo con la salida predicha
+por el algoritmo se ejecuta la acción deseada en el dispositivo a utilizar.
+1.1.
+
+Sonificación
+
+El concepto de sonificación (en inglés ’Sonification’ o ’Auditory display’), se
+refiere al uso de sonido no hablado (non-speech audio) para transmitir informa2
+
+Informe mundial sobre la Discapacidad 2011. Consultado el 10 de febrero de 2014.
+Disponible en http://www.who.int/disabilities/world_report/2011/summary_
+es.pdf
+
+Research in Computing Science 74 (2014)
+
+62
+
+Sonificación de EEG para la clasificación de palabras no pronunciadas
+
+ción [13]. La sonificación es la contraparte de la visualización, es un método que
+en lugar de asignar posiciones específicas a los valores abstractos de acuerdo a
+las reglas uniformes en un diagrama, asigna sonidos a ellos, también siguiendo
+normas uniformes. En la sonificación se realiza la transformación de relaciones
+de datos en relaciones acústicas con el propósito de facilitar la comunicación y
+la interpretación. Podemos plasmar en sonido imágenes 2D, datos sismológicos
+e incluso información de datos estadísticos.
+La sonificación de EEG ha sido utilizada para hacer análisis exploratorio
+de las señales de EEG, [12], para hacer composiciones musicales [5] o para
+hacer diagnóstico temprano de enfermedades neurológicas como la enfermedad
+de Alzheimer mediante la retroalimentación audible [24,10]. Existen diversas
+técnicas para hacer sonificación de señales de EEG como: audificación, asignación
+por mapeo de parámetros, Sonificación basada en modelos [14], sonificación
+basada en modelado de bumps [21], entre otras.
+
+2.
+
+Problemática
+
+Una parte medular de la definición de BCI de Wolpaw [28] es cómo enviar
+los mensajes y comandos usando el EEG. La respuesta radica en los mecanismos
+neurológicos o procesos empleados por el usuario para generar las señales de
+control, denominadas fuentes electrofisiológicas. Las más utilizadas son los potenciales corticales lentos (SCP, por sus siglas en inglés), los potenciales P300,
+las imágenes motoras (ritmos sensoriales motrices mu y beta) y los potenciales
+evocados visuales (VEP, por sus siglas en inglés) [2,6,28].
+Las fuentes electrofisiológicas descritas anteriormente (SCP, P300, imágenes
+motoras, y VEP) tiene dos grandes inconvenientes que repercuten en el posible
+uso de una BCI. El primero es el largo periodo de entrenamiento (algunas
+semanas o hasta meses) requerido para que un usuario pueda utilizar una BCI.
+Esto se debe que, estas fuentes son generadas por el usuario de forma poco
+consciente[17]. El segundo son las bajas tasas de comunicación (una sola palabra
+procesada, o menos, por minuto) que resultan insuficientes para permitir una
+interacción natural. Este último problema se debe a que cada una de estas fuentes
+requieren un “mapeo” o traducción al dominio del habla [6].
+Recientemente, producto de los problemas descritos previamente, algunos
+trabajos tratan de utilizar los potenciales relacionados con la producción del habla, con diversos grados de éxito [6]. En estos trabajos, la fuente electrofisiológica
+es el habla imaginada (imagined speech), también referida como habla interna o
+habla no pronunciada (unspoken speech). De acuerdo con Wester [27], el término
+habla imaginada se refiere a la pronunciación interna, o imaginada, de palabras
+pero sin emitir sonidos ni articular gestos para ello. Es importante mencionar
+que, Denby [8] incluye a estos trabajos dentro de un área de investigación
+denominada interfaces de habla silente (SSI, por Silent Speech Interfaces) cuya
+finalidad es desarrollar sistemas capaces de permitir la comunicación “hablada”
+que tienen lugar cuando la emisión de una señal acústica entendible es imposible.
+Es importante remarcar que los trabajos que utilizan habla imaginada pueden
+63
+
+Research in Computing Science 74 (2014)
+
+Erick Fernando González-Castañeda, Alejandro Antonio Torres-García, et al.
+
+dividirse, por la unidad de habla utilizada, en dos enfoques: palabras y sílabas.
+El primer enfoque es seguido en [19,25,27,22,23,26]. Mientras que, en [4,7,9] únicamente se tratan sílabas. La presente investigación tiene como objetivo aplicar
+un método de sonificación de EEG que permita obtener una retroalimentación
+audible de la señal cerebral durante la pronunciación imaginada de palabras y
+que además permita resaltar patrones que ayuden a un clasificador automático
+a mejorar los porcentajes de exactitud reportados en el trabajo de [23].
+
+3.
+
+Metodología
+
+El presente trabajo está compuesto de las siguientes etapas: Adquisición de la
+actividad cerebral, Preprocesamiento, Sonificación, Extracción de características
+y Clasificación. La metodología seguida en el trabajo se muestra de mejor manera
+en la Figura 1. Es importante mencionar que también se procesarán las señales
+de EEG sin la etapa de sonificación, de tal manera que pueda existir un marco
+de comparación con el trabajo descrito en [23].
+3.1.
+
+Adquisición de la actividad cerebral
+
+En esta etapa se utiliza el conjunto de datos de EEG registrados durante
+el habla imaginada utilizados en [23]. Este conjunto de datos se compone de
+las señales de EEG de 27 individuos cuyo idioma nativo es el español. Las
+señales de EEG se registraron utilizando el kit EPOC de EMOTIV c . Este
+kit es inalámbrico y consta de 14 canales (electrodos) de alta resolución (más las
+referencias CMS/DRL en las posiciones P3/P4, respectivamente) cuya frecuencia
+de muestreo es de 128 Hz. Los nombres de los canales, de acuerdo con el sistema
+internacional 10-20, son: AF3, F7, F3, FC5, T7, P7, O1, O2, P8, T8, FC6, F4,
+F8, AF4 (ver Figura 2).
+
+AF4
+
+AF3
+F7
+
+F3
+
+F4
+
+FC5
+
+F8
+FC6
+
+T7
+
+T8
+
+CMS
+
+P7
+
+DRL
+
+P4
+
+P3
+O1
+
+P8
+
+O2
+
+Fig. 2: Localización de los electrodos en el kit EPOC de Emotiv
+
+Este conjunto de datos se registró por medio de un protocolo básico para
+adquirir las señales de EEG de cada individuo. El protocolo consistió en colocar
+a la persona cómodamente sentada con los ojos abiertos cerca de un escritorio, y
+con la mano derecha sobre el mouse de una computadora. Con un clic al mouse,
+Research in Computing Science 74 (2014)
+
+64
+
+Sonificación de EEG para la clasificación de palabras no pronunciadas
+
+el usuario delimitaba tanto el inicio como el fin de la pronunciación imaginada de
+alguna de las palabras del vocabulario reducido, compuesto de las siguientes cinco
+palabras en español: “arriba”, “abajo”, “izquierda”, “derecha”, y “seleccionar”
+(ver Figura 3). El objetivo detrás de este protocolo de adquisición es saber a
+priori en qué parte de la señal de EEG se deben buscar los patrones asociados
+con la pronunciación imaginada de la palabra indicada.
+
+Fig. 3: Señal de EEG del canal F7 del individuo S1 mientras imagina la dicción de la palabra “Abajo”
+siguiendo el protocolo de adquisición de datos
+
+Los segmentos de interés de las señales de EEG son aquellos que se encuentran entre los marcadores de inicio y fin, estos segmentos son denominados
+épocas (ventanas). Cada época tiene una duración variable como el habla normal
+(pronunciada). Además, la pronunciación imaginada de cada una de las cinco
+palabras fue repetida 33 veces consecutivas durante el registro del EEG, es decir,
+cinco bloques de 33 repeticiones por palabra. Antes de cada bloque se le indicó
+al individuo cuál es la palabra que debía pronunciar internamente. Todos las
+épocas de un mismo individuo fueron registradas en una única sesión (mismo
+día). Además, todas las sesiones se registraron en un laboratorio alejado de ruido
+audible externo y de ruido visual.
+Es importante mencionar que al inicio del registro de las señales de EEG, se
+le indicó a la persona que evitara parpadear o realizar movimientos corporales
+mientras imaginaba la pronunciación de la palabra indicada, ya que después
+de cada marcador de fin podía tomarse un tiempo de descanso para dichos
+movimientos. Además, con la finalidad de que el individuo no supiera cuántas
+veces se repetiría una palabra, en la sala de experimentos, otra persona alejada
+del campo visual y guardando el debido silencio, se encargaba de realizar el
+conteo de repeticiones e indicaba cuando el individuo debía concluir. Esto con la
+finalidad de que el individuo no se distrajera contando el número de repeticiones
+ni se predispusiera a saber que le falta poco o mucho para concluir el experimento.
+65
+
+Research in Computing Science 74 (2014)
+
+Erick Fernando González-Castañeda, Alejandro Antonio Torres-García, et al.
+
+3.2.
+
+Preprocesamiento
+
+Las señales de EEG obtenidas son preprocesadas con el método de referencia
+promedio común (CAR, por sus siglas en inglés). Este método tiene como fin
+mejorar la relación señal a ruido de la señal de EEG. Básicamente, se busca quitar
+todo aquello que es común en todas las lecturas simultáneas de los electrodos.
+La CAR puede ser calculada mediante la resta del potencial entre cada electrodo
+y la referencia (el potencial promedio de todos los canales), se repite esto para
+cada instante de tiempo en la frecuencia de muestreo.
+3.3.
+
+Sonificación de la señal EEG
+
+Algoritmo 1 Sonificación de EEG
+Requerir: EEG (señal EEG), N T (Número de tonos), LowF (frec. mínima de la
+señal EEG), HiF (frec. máxima de la señal EEG), W (tamaño de la ventana del
+espectrograma), Shf (Traslape entre ventanas del espectrograma), Dur (Duración
+de los tonos), LowF Au (frec. mínima del audio), HiF Au (frec. máxima del audio),
+F s (frec. de muestreo del audio)
+Asegurar: Audio (Sonificación de la señal EEG)
+Spec
+←
+Construir
+Espectrograma
+de
+la
+señal
+EEG,
+usando
+EEG, LowF, HiF, W, Shf )
+Escalar amplitudes de frecuencias de Spec dividiendo entre la máxima amplitud.
+for i ← 1 hasta tamaño horizontal de Spec do
+Ordenar descendentemente Spec.columnai de acuerdo con las amplitudes.
+W inners.columnai ← tomar de Spec.columnai las primeras N T frecuencias y
+sus amplitudes.
+end for
+T onesF ← Escalar las frecuencias unicas de W inners al rango audible usando
+LowF Au y HiF Au.
+T ones ← Crear la onda sinusoidal para cada frecuencia en T onesF , usando F s y
+Dur.
+for j ← 1 hasta tamaño horizontal de Spec do
+Audio ← Unir el valor anterior de Audio con la Suma de las señales en tonos que
+corresponden a las frecuencias ganadoras en W inners.columnai de acuerdo con
+T ones y T onesF .
+end for
+return Audio
+
+En el presente trabajo se utilizó la técnica de Sonificación ’EEG to tones’ [1].
+Esta técnica es un proceso de audificación, en la cual se escalan las frecuencias
+de EEG a frecuencias audibles. Esta técnica se basa en el espectrograma de la
+señal EEG de entrada, el cual es calculado usando la transformada rápida de
+Fourier (FFT ). De cada ventana del espectrograma se calculan las frecuencias
+dominantes de la señal de EEG. Las frecuencias dominantes son escaladas a
+tonos, los cuales representan una frecuencia en el rango audible. Al final cada
+Research in Computing Science 74 (2014)
+
+66
+
+Sonificación de EEG para la clasificación de palabras no pronunciadas
+
+conjunto de tonos dominante por ventana es unido para formar el audio de salida.
+El pseudocódigo que explica con más detalle el método utilizado es mostrado en
+el algoritmo 1.
+3.4.
+
+Extracción de características
+
+Transformada wavelet discreta. En [15] se menciona que las características
+utilizadas en las BCI son no estacionarias ya que las señales de EEG pueden
+rápidamente variar con el tiempo. Además, estas características deben contener
+información del tiempo debido a que los patrones de actividad cerebral están
+generalmente relacionados a variaciones específicas del EEG en el tiempo. Lo
+anterior, hace necesaria una representación que considere eso.
+Una técnica que permite modelar dichas variaciones, en el dominio tiempoescala, es la transformada wavelet discreta (DWT, por su siglas en inglés).
+La DWT provee una representación wavelet altamente eficiente mediante la
+restricción de la variación en la traslación y la escala, usualmente a potencias
+de dos. En ese caso, la DWT es algunas veces llamada transformada wavelet
+diádica.
+El análisis DWT puede ser realizado usando un algoritmo piramidal rápido
+descrito en términos de bancos de filtros multi-tasa, es decir, aquellos donde
+se tiene más de una tasa de muestreo realizando conversiones mediante las
+operaciones de decimación e interpolación. La DWT puede ser vista como un
+banco de filtros con espacio de una octava entre ellos. Cada sub-banda contiene la mitad de las muestras de la frecuencia de la sub-banda vecina más
+alta. En el algoritmo piramidal la señal es analizada en diferentes bandas de
+frecuencias con diferentes resoluciones mediante la descomposición de la señal en
+una aproximación burda (coeficientes de aproximación) e información detallada
+(coeficientes de detalle). La aproximación burda es entonces adicionalmente
+descompuesta usando el mismo paso de descomposición wavelet. Esto se logra
+mediante un filtrado sucesivo de pasa-bajas y pasa-altas de la señal de tiempo,
+y un sub-muestreo. En [18] se muestra la información detallada de lo antes
+mencionado.
+En el presente trabajo se aplica la transformada wavelet discreta a los archivos
+de audio resultantes de la sonificación. Se calcularon 6 niveles de descomposición
+usando la wavelet madre Daubechies de orden 20 (db20). Asimismo, para el caso
+de las señales de EEG que no fueron sonificadas, la DWT se calculó con 5 niveles
+de descomposición utilizando la Daubechies de segundo orden (db2), como se
+describe en [23].
+Como es evidente, el número de coeficientes wavelet en cada uno de los niveles
+variará dependiendo del tamaño de la señal de EEG delimitada entre los marcadores. Esto debido a que, de manera similar al habla convencional, la duración
+de las ventanas de pronunciación imaginada de una palabra es variable tanto en
+ventanas de un sólo individuo como en ventanas de individuos distintos. Para
+tratar con este problema, los coeficientes wavelets son normalizados mediante la
+energía relativa wavelet que se describe a continuación.
+67
+
+Research in Computing Science 74 (2014)
+
+Erick Fernando González-Castañeda, Alejandro Antonio Torres-García, et al.
+
+Energía wavelet relativa. Tal como se explica en [23], una vez aplicada
+la DWT sobre la señal se obtienen coeficientes de aproximación y de detalle,
+desde los cuales es posible calcular la energía relativa wavelet. La energía relativa wavelet representa la energía que algún nivel de descomposición aporta al
+total de la energía wavelet de la señal. La energía relativa provee información
+para caracterizar la distribución de energía de la señal en diferentes bandas de
+frecuencia, con lo que se obtiene una independencia del tamaño de la ventana
+de señal de EEG o de audio, según sea el caso.
+A partir de la descripción anterior, en las señales EEG sonificadas se determinó usar 10 valores que representan la energía wavelet en todos los niveles de
+descomposición y el último de aproximación (D1-D9 y A9). Mientras que, cada
+ventana de habla imaginada de las señales de EEG no sonficadas se representa
+mediante un conjunto de 5 valores de energía wavelet, 4 de los niveles de descomposición y uno de aproximación (D2-D5 y A5) con respecto a la energía wavelet
+total. Tal como se realizó en [23], el valor asociado con D1 es descartado.
+
+3.5.
+
+Clasificación
+
+De acuerdo con Michie et al. [16], la clasificación cubre cualquier contexto
+en el que alguna decisión o pronóstico es hecho sobre la base de información
+histórica disponible. La base de información disponible está dada por vectores
+de información multi-dimensionales, cuyos valores (llamados atributos o características) pueden ser reales, discretos o nominales. El objetivo de la clasificación
+es inferir una relación entre un vector de datos y una posible clase (o categoría),
+para ello se crea un modelo que automáticamente encuentra dichas relaciones. El
+modelo es creado basado en una partición de entrenamiento del vector de datos.
+Los modelos aprendidos de los datos de entrenamiento son, entonces, evaluados
+con un conjunto de prueba distinto para determinar si los modelos pueden ser
+generalizados a nuevos casos. En el presente trabajo se entrena y prueba el
+clasificador Random Forest (RF) bajo un enfoque de validación cruzada usando
+10 pliegues (folds).
+
+Random forest (RF). RF es una combinación de árboles predictores tal que
+cada uno de los árboles depende de los valores de un vector aleatorio muestreado
+independientemente y con la misma distribución para todo los árboles en el
+bosque. Cada árbol arroja un único voto para la clase más popular para una
+entrada x dada, y al final la salida de RF se realiza usando voto mayoritario.
+En [3,20] se describe a detalle el algoritmo de clasificación de RF incluyendo el
+proceso para construir los arboles individuales.
+En el presente trabajo se utilizaron los siguientes hiper-parámetros para la implementación del clasificador en Weka 3.6.8: el número de árboles es 50 y el número de atributos considerados en cada nodo es log2 (numeroCaracteristicas) + 1.
+Research in Computing Science 74 (2014)
+
+68
+
+Sonificación de EEG para la clasificación de palabras no pronunciadas
+
+4.
+
+Experimentación y resultados
+
+A pesar de que el EPOC de Emotiv ofrece la posibilidad de registrar 14
+canales, sólo serán de interés para los experimentos los canales F7, FC5, T7 y
+P7. Estos canales, de acuerdo con el modelo Geschwind-Wernicke, son los más
+relacionadas con la producción del habla en el hemisferio izquierdo del cerebro
+(a excepción de algunas personas zurdas) [11].
+4.1.
+
+Selección de parámetros de la sonificación
+
+Dado que existen diversos parámetros en el proceso de sonificación, se tenía
+que elegir valores que favorecieran los porcentajes de exactitud de la clasificación, por ello para la selección de parámetros se realizó un proceso empírico de
+elección iterativo para cada parámetro. Es decir sólo variando un parámetro se
+evaluó su comportamiento de acuerdo a la exactitud de clasificación y se eligió
+el mejor valor, después usando ese valor se varió el siguiente parámetro y se
+eligió también su mejor valor, así hasta tener los mejores valores de todos los
+parámetros. Los valores seleccionados de los parámetros fueron: número de tonos
+(14), frecuencia mínima de la señal EEG (1 Hz), frecuencia máxima de la señal
+EEG (60 Hz), tamaño de la ventana del espectrograma(26 muestras), traslape
+entre ventanas del espectrograma (1 muestra), duración de los tonos (0.6 secs),
+frecuencia mínima del audio (50 Hz), frecuencia máxima del audio (5000 Hz),
+frecuencia de muestreo del audio (8000 Hz). En la figura 4 se muestran ejemplos
+de espectrogramas obtenidos usando los parámetros mencionados anteriormente.
+
+Fig. 4: Ejemplos de espectrogramas del sujeto 11, durante la pronunciación imaginada de dos
+distintas repeticiones de la palabra arriba, en el canal F7.
+
+4.2.
+
+Selección de wavelet
+
+En el proceso de extracción de características se siguió el mismo enfoque que
+en la selección de parámetros para la sonificación, se experimentó con distintos
+niveles de diferentes Wavelets Daubechies (db2, db6 y db20) probando una
+variación a la vez. La wavelet Daubechis 20 con 6 niveles fue la que mejores
+resultados obtuvo.
+69
+
+Research in Computing Science 74 (2014)
+
+Erick Fernando González-Castañeda, Alejandro Antonio Torres-García, et al.
+
+4.3.
+
+Resultados comparativos
+
+Los porcentajes de exactitud promedio al clasificar usando Random Forest
+para los 27 sujetos en los dos enfoques son mostrados en la figura 5.
+Al analizar la tabla podemos observar que el método que sonifica la señal
+de EEG mejora los porcentajes de exactitud promedio en 24 de los 27 sujetos
+analizados, inclusive existen diferencias arriba de 15 % en algunos casos. De
+manera general se puede concluir que el método para sonificar la señal de
+EEG usando el algoritmo EEG to tones permite mejorar en promedio 7.72 %
+al conjunto de los 27 sujetos.
+
+Fig. 5: Gráfica comparativa de los dos métodos EEG y Sonificación de EEG. Se muestran los
+porcentajes de exactitud promedio en la clasificación con Random Forest para los 27 sujetos usando
+4 canales. En la ultima columna se muestran los porcentajes de clasificación promedio: EEG 48.10 %
+y EEG usando Sonificación 55.83 %.
+
+5.
+
+Conclusiones
+
+En este trabajo se realizó la clasificación de la señal de EEG aplicando una
+transformación de la señal original de EEG a una señal de audio, con lo cual se
+mejoró la exactitud promedio de clasificación en 7.72 %. Mediante la elección de
+las frecuencias dominantes del espectrograma de la señal de EEG y el mapeo de
+las frecuencias de EEG a frecuencias del audio, se logró resaltar patrones de la
+señal que ayudaron a mejorar la exactitud de la clasificación, esto ocurrió incluso
+Research in Computing Science 74 (2014)
+
+70
+
+Sonificación de EEG para la clasificación de palabras no pronunciadas
+
+usando la misma métodologia de extracción de características y el mismo método
+de clasificación, con respecto con el cual se compara. Los resultados obtenidos
+dan pie a realizar pruebas con otros métodos de sonificación, extracción de
+características y clasificación, que permitan mejorar los porcentajes de exactitud
+alcanzados. Un aspecto a considerar, en el trabajo por realizar, es la elección de
+parámetros para cualquier forma de sonificación, la cual podría ser realizada
+por un algoritmo de búsqueda automática, como por ejemplo un algoritmo
+genético. También se tendrá que calcular y comparar el comportamiento de los
+dos enfoques usando los 14 canales disponibles.
+
+Referencias
+1. Andersonl, C.: Eeg to tones, dept. of commputer science, colorado state university
+(2005)
+2. Bashashati, A., Fatourechi, M., Ward, R., Birch, G.: A survey of signal processing
+algorithms in brain–computer interfaces based on electrical brain signals. Journal
+of Neural engineering 4, R32–R57 (2007)
+3. Breiman, L.: Random forests. Machine learning 45(1), 5–32 (2001)
+4. Brigham, K., Kumar, B.: Imagined Speech Classification with EEG Signals for
+Silent Communication: A Preliminary Investigation into Synthetic Telepathy.
+In: Bioinformatics and Biomedical Engineering (iCBBE), 2010 4th International
+Conference on. pp. 1–4. IEEE (2010)
+5. Brouse, A., Filatriau, J.J., Gaitanis, K., Lehembre, R., Macq, B., Miranda, E.,
+Zénon, A.: An instrument of sound and visual creation driven by biological signals.
+Proceedings of ENTERFACE06, Dubrovnik (Croatia).(Not peer-reviewed report.)
+(2006)
+6. Brumberg, J.S., Nieto-Castanon, A., Kennedy, P.R., Guenther, F.H.:
+Brain–computer interfaces for speech communication. Speech Communication
+(52), 367–379 (2010)
+7. DaSalla, C.S., Kambara, H., Koike, Y., Sato, M.: Spatial filtering and single-trial
+classification of EEG during vowel speech imagery. In: i-CREATe ’09: Proceedings
+of the 3rd International Convention on Rehabilitation Engineering & Assistive
+Technology. pp. 1–4. ACM, New York, NY, USA (2009)
+8. Denby, B., Schultz, T., Honda, K., Hueber, T., Gilbert, J., Brumberg, J.: Silent
+speech interfaces. Speech Communication 52(4), 270–287 (2010)
+9. D’Zmura, M., Deng, S., Lappas, T., Thorpe, S., Srinivasan, R.: Toward EEG
+sensing of imagined speech. Human-Computer Interaction. New Trends pp. 40–48
+(2009)
+10. Elgendi, M., Rebsamen, B., Cichocki, A., Vialatte, F., Dauwels, J.: Real-time
+wireless sonification of brain signals. In: Advances in Cognitive Neurodynamics
+(III), pp. 175–181. Springer (2013)
+11. Geschwind, N.: Language and the brain. Scientific American (1972)
+12. Hermann, T., Meinicke, P., Bekel, H., Ritter, H., Müller, H.M., Weiss, S.:
+Sonification for eeg data analysis. In: Proceedings of the 2002 International
+Conference on Auditory Display (2002)
+13. Kramer, G., Walker, B., Bonebright, T., Cook, P., Flowers, J., Miner, N., Neuhoff,
+J., Bargar, R., Barrass, S., Berger, J., et al.: The sonification report: Status of
+the field and research agenda. report prepared for the national science foundation
+71
+
+Research in Computing Science 74 (2014)
+
+Erick Fernando González-Castañeda, Alejandro Antonio Torres-García, et al.
+
+14.
+15.
+
+16.
+17.
+
+18.
+19.
+
+20.
+21.
+
+22.
+
+23.
+
+24.
+
+25.
+
+26.
+27.
+
+28.
+
+by members of the international community for auditory display. International
+Community for Auditory Display (ICAD), Santa Fe, NM (1999)
+Kramer, G.: Auditory display: Sonification, audification, and auditory interfaces.
+Addison-Wesley Reading, MA (1994)
+Lotte, F., Congedo, M., Lécuyer, A., Lamarche, F., Arnald, B.: A review of
+classication algorithms for EEG-based brain-computer interfaces. Journal of Neural
+Engineering 4, r1–r13 (2007)
+Michie, D., Spiegelhalter, D., Taylor, C.: Machine Learning, Neural and Statistical
+Classification. Overseas Press (2009)
+Pfurtscheller, G.: Brain-computer interfaces: State of the art and future prospects.
+In: Proceedings of the 12th European Signal Processing Conference: EUROSIPCO
+04. pp. 509–510 (2004)
+Pinsky, M.: Introduction to Fourier analysis and wavelets, vol. 102. Amer
+Mathematical Society (2002)
+Porbadnigk, A., Schultz, T.: EEG-based Speech Recognition: Impact of Experimental Design on Performance. Master’s thesis, Institut für Theoretische Informatik
+Universität Karlsruhe (TH), Karlsruhe, Germany (2008)
+Rokach, L.: Pattern Classification Using Ensemble Methods. World Scientific
+(2009)
+Rutkowski, T.M., Vialatte, F., Cichocki, A., Mandic, D.P., Barros, A.K.: Auditory
+feedback for brain computer interface management–an eeg data sonification
+approach. In: Knowledge-Based Intelligent Information and Engineering Systems.
+pp. 1232–1239. Springer (2006)
+Torres-García, A.A., Reyes-García, C.A., Villaseñor-Pineda, L.: Toward a silent
+speech interface based on unspoken speech. In: Huffel, S.V., Correia, C.M.B.A.,
+Fred, A.L.N., Gamboa, H. (eds.) BIOSTEC - BIOSIGNALS. pp. 370–373. SciTePress (2012)
+Torres-García, A.A., Reyes-García, C.A., Villaseñor-Pineda, L.: Análisis de Señales
+Electroencefalográficas para la Clasificación de Habla Imaginada. Revista Mexicana de Ingeniería Biomédica 34(1), 23–39 (2013)
+Vialatte, F., Cichocki, A., Dreyfus, G., Musha, T., Rutkowski, T.M., Gervais,
+R.: Blind source separation and sparse bump modelling of time frequency
+representation of eeg signals: New tools for early detection of alzheimer’s disease.
+In: Machine Learning for Signal Processing, 2005 IEEE Workshop on. pp. 27–32.
+IEEE (2005)
+Wand, M.: Wavelet-based Preprocessing of Electroencephalographic and Electromyographic Signals for Speech Recognition. Studienarbeit Lehrstuhl Prof. Waibel
+Interactive Systems Laboratories Carnegie Mellon University, Pittsburgh, PA, USA
+and Institut für Theoretische Informatik Universität Karlsruhe (TH), Karlsruhe,
+Germany (2007)
+Wang, L., Zhang, X., Zhong, X., Zhang, Y.: Analysis and classification of speech
+imagery eeg for bci. Biomedical Signal Processing and Control 8(6), 901–908 (2013)
+Wester, M., Schultz, T.: Unspoken Speech - Speech Recognition Based On
+Electroencephalography. Master’s thesis, Institut für Theoretische Informatik
+Universität Karlsruhe (TH), Karlsruhe, Germany (2006)
+Wolpaw, J., Birbaumer, N., McFarland, D., Pfurtscheller, G., Vaughan, T.:
+Brain-computer interfaces for communication and control. Clinical neurophysiology
+113(6), 767–791 (2002)
+
+Research in Computing Science 74 (2014)
+
+72
+
+

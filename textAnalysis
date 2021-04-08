@@ -1,0 +1,691 @@
+{
+ "metadata": {
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.8.2-final"
+  },
+  "orig_nbformat": 2,
+  "kernelspec": {
+   "name": "python382jvsc74a57bd031f2aee4e71d21fbe5cf8b01ff0e069b9275f58929596ceb00d14d90e3e16cd6",
+   "display_name": "Python 3.8.2 64-bit"
+  },
+  "metadata": {
+   "interpreter": {
+    "hash": "31f2aee4e71d21fbe5cf8b01ff0e069b9275f58929596ceb00d14d90e3e16cd6"
+   }
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2,
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 70,
+   "metadata": {},
+   "outputs": [
+    {
+     "output_type": "stream",
+     "name": "stderr",
+     "text": [
+      "[nltk_data] Downloading package stopwords to /Users/gary/nltk_data...\n[nltk_data]   Package stopwords is already up-to-date!\n"
+     ]
+    }
+   ],
+   "source": [
+    "import nltk, re\n",
+    "nltk.download('stopwords')\n",
+    "stopwords = set(map(lambda x: re.sub(\"'.*\", \"\", x), \n",
+    "    nltk.corpus.stopwords.words('english')))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 73,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import os, re, math\n",
+    "\n",
+    "def words_from_file(fname):\n",
+    "    f = open('txt/' + fname)\n",
+    "    text = f.read()\n",
+    "    f.close()\n",
+    "    text = re.sub('[^a-z ]', ' ', text.replace('\\n', ' ').lower())\n",
+    "    words = re.sub(' +', ' ', text).split(' ')\n",
+    "    words = list(filter(lambda w: len(w) > 3 and len(w) <= 15, words))\n",
+    "    words = list(filter(lambda w: w not in stopwords, words))\n",
+    "    return list(words)\n",
+    "\n",
+    "file_names = os.listdir('txt')\n",
+    "num_docs = len(file_names)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 83,
+   "metadata": {
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "min_doc_frac = 0.05  # Minimum fraction doc frequency allowed\n",
+    "max_doc_frac = 0.75  # Maximum fraction foc frequency allowed\n",
+    "word_doc_freq = {}   # Dict of words to doc frequencies\n",
+    "\n",
+    "# First pass: get raw doc frequencies\n",
+    "for fname in file_names:    \n",
+    "    words = set(words_from_file(fname))\n",
+    "    for word in words:\n",
+    "        word_doc_freq[word] = word_doc_freq.get(word, 0) + 1\n",
+    "\n",
+    "# Discard any term that occurs too much or too little\n",
+    "min_doc_count = min_doc_frac * num_docs\n",
+    "max_doc_count = max_doc_frac * num_docs\n",
+    "words = list(word_doc_freq.keys())\n",
+    "for word in words:\n",
+    "    df = word_doc_freq[word]\n",
+    "    if df < min_doc_count or df > max_doc_count:\n",
+    "        del word_doc_freq[word]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 84,
+   "metadata": {},
+   "outputs": [
+    {
+     "output_type": "execute_result",
+     "data": {
+      "text/plain": [
+       "4852"
+      ]
+     },
+     "metadata": {},
+     "execution_count": 84
+    }
+   ],
+   "source": [
+    "len(word_doc_freq)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 85,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "doc_word_freq = []  # Array of docs to dicts of words to freqs\n",
+    "doc_num_words = []  # Array of docs to num words\n",
+    "\n",
+    "# Second pass: get raw term freqs and num words\n",
+    "for fname in file_names:    \n",
+    "    words = words_from_file(fname)\n",
+    "    word_freq = {}\n",
+    "    for word in words:\n",
+    "        if word in word_doc_freq:\n",
+    "            word_freq[word] = word_freq.get(word, 0) + 1\n",
+    "    doc_num_words.append(len(words))\n",
+    "    doc_word_freq.append(word_freq)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 86,
+   "metadata": {
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "doc_tfidf = []  # Array of docs to dicts of words to tfidfs\n",
+    "for i in range(num_docs):\n",
+    "    num_words = doc_num_words[i]\n",
+    "    word_freq = doc_word_freq[i]\n",
+    "    tfidf = {}\n",
+    "    for word in word_freq:\n",
+    "        tf = word_freq[word] / num_words\n",
+    "        idf = math.log(num_docs / word_doc_freq[word])\n",
+    "        tfidf[word] = tf * idf\n",
+    "    sumsq = 0.0\n",
+    "    for val in tfidf.values():\n",
+    "        sumsq += val * val\n",
+    "    norm = math.sqrt(sumsq)\n",
+    "    for word in tfidf:\n",
+    "        tfidf[word] /= norm\n",
+    "    doc_tfidf.append(tfidf)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 88,
+   "metadata": {
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "import numpy as np\n",
+    "\n",
+    "pairs = []\n",
+    "min_similarity = 0.2\n",
+    "sims = np.zeros(shape = (num_docs, num_docs))\n",
+    "for i in range(num_docs):\n",
+    "    tfidf_i = doc_tfidf[i]\n",
+    "    keys_i = set(tfidf_i.keys())\n",
+    "    for j in range(num_docs):\n",
+    "        if i == j:\n",
+    "            sim = 1.0\n",
+    "        elif i < j:\n",
+    "            tfidf_j = doc_tfidf[j]\n",
+    "            keys_j = set(tfidf_j)\n",
+    "            keys = keys_i & keys_j\n",
+    "            sim = 0.0\n",
+    "            for key in keys:\n",
+    "                sim += tfidf_i[key] * tfidf_j[key]\n",
+    "            if sim >= min_similarity:\n",
+    "                pairs.append((sim, i, j))        \n",
+    "        else:\n",
+    "            sim = sims[j][i]\n",
+    "        sims[i][j] = sim\n",
+    "pairs.sort(reverse = True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 89,
+   "metadata": {},
+   "outputs": [
+    {
+     "output_type": "display_data",
+     "data": {
+      "text/plain": "<Figure size 432x288 with 1 Axes>",
+      "image/svg+xml": "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?>\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"\n  \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg height=\"262.19625pt\" version=\"1.1\" viewBox=\"0 0 385.78125 262.19625\" width=\"385.78125pt\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n <metadata>\n  <rdf:RDF xmlns:cc=\"http://creativecommons.org/ns#\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n   <cc:Work>\n    <dc:type rdf:resource=\"http://purl.org/dc/dcmitype/StillImage\"/>\n    <dc:date>2021-04-07T20:30:37.108417</dc:date>\n    <dc:format>image/svg+xml</dc:format>\n    <dc:creator>\n     <cc:Agent>\n      <dc:title>Matplotlib v3.4.1, https://matplotlib.org/</dc:title>\n     </cc:Agent>\n    </dc:creator>\n   </cc:Work>\n  </rdf:RDF>\n </metadata>\n <defs>\n  <style type=\"text/css\">*{stroke-linecap:butt;stroke-linejoin:round;}</style>\n </defs>\n <g id=\"figure_1\">\n  <g id=\"patch_1\">\n   <path d=\"M 0 262.19625 \nL 385.78125 262.19625 \nL 385.78125 0 \nL 0 0 \nz\n\" style=\"fill:none;\"/>\n  </g>\n  <g id=\"axes_1\">\n   <g id=\"patch_2\">\n    <path d=\"M 43.78125 224.64 \nL 378.58125 224.64 \nL 378.58125 7.2 \nL 43.78125 7.2 \nz\n\" style=\"fill:#ffffff;\"/>\n   </g>\n   <g id=\"matplotlib.axis_1\">\n    <g id=\"xtick_1\">\n     <g id=\"line2d_1\">\n      <defs>\n       <path d=\"M 0 0 \nL 0 3.5 \n\" id=\"m386915cce8\" style=\"stroke:#000000;stroke-width:0.8;\"/>\n      </defs>\n      <g>\n       <use style=\"stroke:#000000;stroke-width:0.8;\" x=\"58.999432\" xlink:href=\"#m386915cce8\" y=\"224.64\"/>\n      </g>\n     </g>\n     <g id=\"text_1\">\n      <!-- 0 -->\n      <g transform=\"translate(55.818182 239.238437)scale(0.1 -0.1)\">\n       <defs>\n        <path d=\"M 2034 4250 \nQ 1547 4250 1301 3770 \nQ 1056 3291 1056 2328 \nQ 1056 1369 1301 889 \nQ 1547 409 2034 409 \nQ 2525 409 2770 889 \nQ 3016 1369 3016 2328 \nQ 3016 3291 2770 3770 \nQ 2525 4250 2034 4250 \nz\nM 2034 4750 \nQ 2819 4750 3233 4129 \nQ 3647 3509 3647 2328 \nQ 3647 1150 3233 529 \nQ 2819 -91 2034 -91 \nQ 1250 -91 836 529 \nQ 422 1150 422 2328 \nQ 422 3509 836 4129 \nQ 1250 4750 2034 4750 \nz\n\" id=\"DejaVuSans-30\" transform=\"scale(0.015625)\"/>\n       </defs>\n       <use xlink:href=\"#DejaVuSans-30\"/>\n      </g>\n     </g>\n    </g>\n    <g id=\"xtick_2\">\n     <g id=\"line2d_2\">\n      <g>\n       <use style=\"stroke:#000000;stroke-width:0.8;\" x=\"101.777174\" xlink:href=\"#m386915cce8\" y=\"224.64\"/>\n      </g>\n     </g>\n     <g id=\"text_2\">\n      <!-- 200 -->\n      <g transform=\"translate(92.233424 239.238437)scale(0.1 -0.1)\">\n       <defs>\n        <path d=\"M 1228 531 \nL 3431 531 \nL 3431 0 \nL 469 0 \nL 469 531 \nQ 828 903 1448 1529 \nQ 2069 2156 2228 2338 \nQ 2531 2678 2651 2914 \nQ 2772 3150 2772 3378 \nQ 2772 3750 2511 3984 \nQ 2250 4219 1831 4219 \nQ 1534 4219 1204 4116 \nQ 875 4013 500 3803 \nL 500 4441 \nQ 881 4594 1212 4672 \nQ 1544 4750 1819 4750 \nQ 2544 4750 2975 4387 \nQ 3406 4025 3406 3419 \nQ 3406 3131 3298 2873 \nQ 3191 2616 2906 2266 \nQ 2828 2175 2409 1742 \nQ 1991 1309 1228 531 \nz\n\" id=\"DejaVuSans-32\" transform=\"scale(0.015625)\"/>\n       </defs>\n       <use xlink:href=\"#DejaVuSans-32\"/>\n       <use x=\"63.623047\" xlink:href=\"#DejaVuSans-30\"/>\n       <use x=\"127.246094\" xlink:href=\"#DejaVuSans-30\"/>\n      </g>\n     </g>\n    </g>\n    <g id=\"xtick_3\">\n     <g id=\"line2d_3\">\n      <g>\n       <use style=\"stroke:#000000;stroke-width:0.8;\" x=\"144.554916\" xlink:href=\"#m386915cce8\" y=\"224.64\"/>\n      </g>\n     </g>\n     <g id=\"text_3\">\n      <!-- 400 -->\n      <g transform=\"translate(135.011166 239.238437)scale(0.1 -0.1)\">\n       <defs>\n        <path d=\"M 2419 4116 \nL 825 1625 \nL 2419 1625 \nL 2419 4116 \nz\nM 2253 4666 \nL 3047 4666 \nL 3047 1625 \nL 3713 1625 \nL 3713 1100 \nL 3047 1100 \nL 3047 0 \nL 2419 0 \nL 2419 1100 \nL 313 1100 \nL 313 1709 \nL 2253 4666 \nz\n\" id=\"DejaVuSans-34\" transform=\"scale(0.015625)\"/>\n       </defs>\n       <use xlink:href=\"#DejaVuSans-34\"/>\n       <use x=\"63.623047\" xlink:href=\"#DejaVuSans-30\"/>\n       <use x=\"127.246094\" xlink:href=\"#DejaVuSans-30\"/>\n      </g>\n     </g>\n    </g>\n    <g id=\"xtick_4\">\n     <g id=\"line2d_4\">\n      <g>\n       <use style=\"stroke:#000000;stroke-width:0.8;\" x=\"187.332659\" xlink:href=\"#m386915cce8\" y=\"224.64\"/>\n      </g>\n     </g>\n     <g id=\"text_4\">\n      <!-- 600 -->\n      <g transform=\"translate(177.788909 239.238437)scale(0.1 -0.1)\">\n       <defs>\n        <path d=\"M 2113 2584 \nQ 1688 2584 1439 2293 \nQ 1191 2003 1191 1497 \nQ 1191 994 1439 701 \nQ 1688 409 2113 409 \nQ 2538 409 2786 701 \nQ 3034 994 3034 1497 \nQ 3034 2003 2786 2293 \nQ 2538 2584 2113 2584 \nz\nM 3366 4563 \nL 3366 3988 \nQ 3128 4100 2886 4159 \nQ 2644 4219 2406 4219 \nQ 1781 4219 1451 3797 \nQ 1122 3375 1075 2522 \nQ 1259 2794 1537 2939 \nQ 1816 3084 2150 3084 \nQ 2853 3084 3261 2657 \nQ 3669 2231 3669 1497 \nQ 3669 778 3244 343 \nQ 2819 -91 2113 -91 \nQ 1303 -91 875 529 \nQ 447 1150 447 2328 \nQ 447 3434 972 4092 \nQ 1497 4750 2381 4750 \nQ 2619 4750 2861 4703 \nQ 3103 4656 3366 4563 \nz\n\" id=\"DejaVuSans-36\" transform=\"scale(0.015625)\"/>\n       </defs>\n       <use xlink:href=\"#DejaVuSans-36\"/>\n       <use x=\"63.623047\" xlink:href=\"#DejaVuSans-30\"/>\n       <use x=\"127.246094\" xlink:href=\"#DejaVuSans-30\"/>\n      </g>\n     </g>\n    </g>\n    <g id=\"xtick_5\">\n     <g id=\"line2d_5\">\n      <g>\n       <use style=\"stroke:#000000;stroke-width:0.8;\" x=\"230.110401\" xlink:href=\"#m386915cce8\" y=\"224.64\"/>\n      </g>\n     </g>\n     <g id=\"text_5\">\n      <!-- 800 -->\n      <g transform=\"translate(220.566651 239.238437)scale(0.1 -0.1)\">\n       <defs>\n        <path d=\"M 2034 2216 \nQ 1584 2216 1326 1975 \nQ 1069 1734 1069 1313 \nQ 1069 891 1326 650 \nQ 1584 409 2034 409 \nQ 2484 409 2743 651 \nQ 3003 894 3003 1313 \nQ 3003 1734 2745 1975 \nQ 2488 2216 2034 2216 \nz\nM 1403 2484 \nQ 997 2584 770 2862 \nQ 544 3141 544 3541 \nQ 544 4100 942 4425 \nQ 1341 4750 2034 4750 \nQ 2731 4750 3128 4425 \nQ 3525 4100 3525 3541 \nQ 3525 3141 3298 2862 \nQ 3072 2584 2669 2484 \nQ 3125 2378 3379 2068 \nQ 3634 1759 3634 1313 \nQ 3634 634 3220 271 \nQ 2806 -91 2034 -91 \nQ 1263 -91 848 271 \nQ 434 634 434 1313 \nQ 434 1759 690 2068 \nQ 947 2378 1403 2484 \nz\nM 1172 3481 \nQ 1172 3119 1398 2916 \nQ 1625 2713 2034 2713 \nQ 2441 2713 2670 2916 \nQ 2900 3119 2900 3481 \nQ 2900 3844 2670 4047 \nQ 2441 4250 2034 4250 \nQ 1625 4250 1398 4047 \nQ 1172 3844 1172 3481 \nz\n\" id=\"DejaVuSans-38\" transform=\"scale(0.015625)\"/>\n       </defs>\n       <use xlink:href=\"#DejaVuSans-38\"/>\n       <use x=\"63.623047\" xlink:href=\"#DejaVuSans-30\"/>\n       <use x=\"127.246094\" xlink:href=\"#DejaVuSans-30\"/>\n      </g>\n     </g>\n    </g>\n    <g id=\"xtick_6\">\n     <g id=\"line2d_6\">\n      <g>\n       <use style=\"stroke:#000000;stroke-width:0.8;\" x=\"272.888143\" xlink:href=\"#m386915cce8\" y=\"224.64\"/>\n      </g>\n     </g>\n     <g id=\"text_6\">\n      <!-- 1000 -->\n      <g transform=\"translate(260.163143 239.238437)scale(0.1 -0.1)\">\n       <defs>\n        <path d=\"M 794 531 \nL 1825 531 \nL 1825 4091 \nL 703 3866 \nL 703 4441 \nL 1819 4666 \nL 2450 4666 \nL 2450 531 \nL 3481 531 \nL 3481 0 \nL 794 0 \nL 794 531 \nz\n\" id=\"DejaVuSans-31\" transform=\"scale(0.015625)\"/>\n       </defs>\n       <use xlink:href=\"#DejaVuSans-31\"/>\n       <use x=\"63.623047\" xlink:href=\"#DejaVuSans-30\"/>\n       <use x=\"127.246094\" xlink:href=\"#DejaVuSans-30\"/>\n       <use x=\"190.869141\" xlink:href=\"#DejaVuSans-30\"/>\n      </g>\n     </g>\n    </g>\n    <g id=\"xtick_7\">\n     <g id=\"line2d_7\">\n      <g>\n       <use style=\"stroke:#000000;stroke-width:0.8;\" x=\"315.665886\" xlink:href=\"#m386915cce8\" y=\"224.64\"/>\n      </g>\n     </g>\n     <g id=\"text_7\">\n      <!-- 1200 -->\n      <g transform=\"translate(302.940886 239.238437)scale(0.1 -0.1)\">\n       <use xlink:href=\"#DejaVuSans-31\"/>\n       <use x=\"63.623047\" xlink:href=\"#DejaVuSans-32\"/>\n       <use x=\"127.246094\" xlink:href=\"#DejaVuSans-30\"/>\n       <use x=\"190.869141\" xlink:href=\"#DejaVuSans-30\"/>\n      </g>\n     </g>\n    </g>\n    <g id=\"xtick_8\">\n     <g id=\"line2d_8\">\n      <g>\n       <use style=\"stroke:#000000;stroke-width:0.8;\" x=\"358.443628\" xlink:href=\"#m386915cce8\" y=\"224.64\"/>\n      </g>\n     </g>\n     <g id=\"text_8\">\n      <!-- 1400 -->\n      <g transform=\"translate(345.718628 239.238437)scale(0.1 -0.1)\">\n       <use xlink:href=\"#DejaVuSans-31\"/>\n       <use x=\"63.623047\" xlink:href=\"#DejaVuSans-34\"/>\n       <use x=\"127.246094\" xlink:href=\"#DejaVuSans-30\"/>\n       <use x=\"190.869141\" xlink:href=\"#DejaVuSans-30\"/>\n      </g>\n     </g>\n    </g>\n    <g id=\"text_9\">\n     <!-- number of components -->\n     <g transform=\"translate(152.778125 252.916562)scale(0.1 -0.1)\">\n      <defs>\n       <path d=\"M 3513 2113 \nL 3513 0 \nL 2938 0 \nL 2938 2094 \nQ 2938 2591 2744 2837 \nQ 2550 3084 2163 3084 \nQ 1697 3084 1428 2787 \nQ 1159 2491 1159 1978 \nL 1159 0 \nL 581 0 \nL 581 3500 \nL 1159 3500 \nL 1159 2956 \nQ 1366 3272 1645 3428 \nQ 1925 3584 2291 3584 \nQ 2894 3584 3203 3211 \nQ 3513 2838 3513 2113 \nz\n\" id=\"DejaVuSans-6e\" transform=\"scale(0.015625)\"/>\n       <path d=\"M 544 1381 \nL 544 3500 \nL 1119 3500 \nL 1119 1403 \nQ 1119 906 1312 657 \nQ 1506 409 1894 409 \nQ 2359 409 2629 706 \nQ 2900 1003 2900 1516 \nL 2900 3500 \nL 3475 3500 \nL 3475 0 \nL 2900 0 \nL 2900 538 \nQ 2691 219 2414 64 \nQ 2138 -91 1772 -91 \nQ 1169 -91 856 284 \nQ 544 659 544 1381 \nz\nM 1991 3584 \nL 1991 3584 \nz\n\" id=\"DejaVuSans-75\" transform=\"scale(0.015625)\"/>\n       <path d=\"M 3328 2828 \nQ 3544 3216 3844 3400 \nQ 4144 3584 4550 3584 \nQ 5097 3584 5394 3201 \nQ 5691 2819 5691 2113 \nL 5691 0 \nL 5113 0 \nL 5113 2094 \nQ 5113 2597 4934 2840 \nQ 4756 3084 4391 3084 \nQ 3944 3084 3684 2787 \nQ 3425 2491 3425 1978 \nL 3425 0 \nL 2847 0 \nL 2847 2094 \nQ 2847 2600 2669 2842 \nQ 2491 3084 2119 3084 \nQ 1678 3084 1418 2786 \nQ 1159 2488 1159 1978 \nL 1159 0 \nL 581 0 \nL 581 3500 \nL 1159 3500 \nL 1159 2956 \nQ 1356 3278 1631 3431 \nQ 1906 3584 2284 3584 \nQ 2666 3584 2933 3390 \nQ 3200 3197 3328 2828 \nz\n\" id=\"DejaVuSans-6d\" transform=\"scale(0.015625)\"/>\n       <path d=\"M 3116 1747 \nQ 3116 2381 2855 2742 \nQ 2594 3103 2138 3103 \nQ 1681 3103 1420 2742 \nQ 1159 2381 1159 1747 \nQ 1159 1113 1420 752 \nQ 1681 391 2138 391 \nQ 2594 391 2855 752 \nQ 3116 1113 3116 1747 \nz\nM 1159 2969 \nQ 1341 3281 1617 3432 \nQ 1894 3584 2278 3584 \nQ 2916 3584 3314 3078 \nQ 3713 2572 3713 1747 \nQ 3713 922 3314 415 \nQ 2916 -91 2278 -91 \nQ 1894 -91 1617 61 \nQ 1341 213 1159 525 \nL 1159 0 \nL 581 0 \nL 581 4863 \nL 1159 4863 \nL 1159 2969 \nz\n\" id=\"DejaVuSans-62\" transform=\"scale(0.015625)\"/>\n       <path d=\"M 3597 1894 \nL 3597 1613 \nL 953 1613 \nQ 991 1019 1311 708 \nQ 1631 397 2203 397 \nQ 2534 397 2845 478 \nQ 3156 559 3463 722 \nL 3463 178 \nQ 3153 47 2828 -22 \nQ 2503 -91 2169 -91 \nQ 1331 -91 842 396 \nQ 353 884 353 1716 \nQ 353 2575 817 3079 \nQ 1281 3584 2069 3584 \nQ 2775 3584 3186 3129 \nQ 3597 2675 3597 1894 \nz\nM 3022 2063 \nQ 3016 2534 2758 2815 \nQ 2500 3097 2075 3097 \nQ 1594 3097 1305 2825 \nQ 1016 2553 972 2059 \nL 3022 2063 \nz\n\" id=\"DejaVuSans-65\" transform=\"scale(0.015625)\"/>\n       <path d=\"M 2631 2963 \nQ 2534 3019 2420 3045 \nQ 2306 3072 2169 3072 \nQ 1681 3072 1420 2755 \nQ 1159 2438 1159 1844 \nL 1159 0 \nL 581 0 \nL 581 3500 \nL 1159 3500 \nL 1159 2956 \nQ 1341 3275 1631 3429 \nQ 1922 3584 2338 3584 \nQ 2397 3584 2469 3576 \nQ 2541 3569 2628 3553 \nL 2631 2963 \nz\n\" id=\"DejaVuSans-72\" transform=\"scale(0.015625)\"/>\n       <path id=\"DejaVuSans-20\" transform=\"scale(0.015625)\"/>\n       <path d=\"M 1959 3097 \nQ 1497 3097 1228 2736 \nQ 959 2375 959 1747 \nQ 959 1119 1226 758 \nQ 1494 397 1959 397 \nQ 2419 397 2687 759 \nQ 2956 1122 2956 1747 \nQ 2956 2369 2687 2733 \nQ 2419 3097 1959 3097 \nz\nM 1959 3584 \nQ 2709 3584 3137 3096 \nQ 3566 2609 3566 1747 \nQ 3566 888 3137 398 \nQ 2709 -91 1959 -91 \nQ 1206 -91 779 398 \nQ 353 888 353 1747 \nQ 353 2609 779 3096 \nQ 1206 3584 1959 3584 \nz\n\" id=\"DejaVuSans-6f\" transform=\"scale(0.015625)\"/>\n       <path d=\"M 2375 4863 \nL 2375 4384 \nL 1825 4384 \nQ 1516 4384 1395 4259 \nQ 1275 4134 1275 3809 \nL 1275 3500 \nL 2222 3500 \nL 2222 3053 \nL 1275 3053 \nL 1275 0 \nL 697 0 \nL 697 3053 \nL 147 3053 \nL 147 3500 \nL 697 3500 \nL 697 3744 \nQ 697 4328 969 4595 \nQ 1241 4863 1831 4863 \nL 2375 4863 \nz\n\" id=\"DejaVuSans-66\" transform=\"scale(0.015625)\"/>\n       <path d=\"M 3122 3366 \nL 3122 2828 \nQ 2878 2963 2633 3030 \nQ 2388 3097 2138 3097 \nQ 1578 3097 1268 2742 \nQ 959 2388 959 1747 \nQ 959 1106 1268 751 \nQ 1578 397 2138 397 \nQ 2388 397 2633 464 \nQ 2878 531 3122 666 \nL 3122 134 \nQ 2881 22 2623 -34 \nQ 2366 -91 2075 -91 \nQ 1284 -91 818 406 \nQ 353 903 353 1747 \nQ 353 2603 823 3093 \nQ 1294 3584 2113 3584 \nQ 2378 3584 2631 3529 \nQ 2884 3475 3122 3366 \nz\n\" id=\"DejaVuSans-63\" transform=\"scale(0.015625)\"/>\n       <path d=\"M 1159 525 \nL 1159 -1331 \nL 581 -1331 \nL 581 3500 \nL 1159 3500 \nL 1159 2969 \nQ 1341 3281 1617 3432 \nQ 1894 3584 2278 3584 \nQ 2916 3584 3314 3078 \nQ 3713 2572 3713 1747 \nQ 3713 922 3314 415 \nQ 2916 -91 2278 -91 \nQ 1894 -91 1617 61 \nQ 1341 213 1159 525 \nz\nM 3116 1747 \nQ 3116 2381 2855 2742 \nQ 2594 3103 2138 3103 \nQ 1681 3103 1420 2742 \nQ 1159 2381 1159 1747 \nQ 1159 1113 1420 752 \nQ 1681 391 2138 391 \nQ 2594 391 2855 752 \nQ 3116 1113 3116 1747 \nz\n\" id=\"DejaVuSans-70\" transform=\"scale(0.015625)\"/>\n       <path d=\"M 1172 4494 \nL 1172 3500 \nL 2356 3500 \nL 2356 3053 \nL 1172 3053 \nL 1172 1153 \nQ 1172 725 1289 603 \nQ 1406 481 1766 481 \nL 2356 481 \nL 2356 0 \nL 1766 0 \nQ 1100 0 847 248 \nQ 594 497 594 1153 \nL 594 3053 \nL 172 3053 \nL 172 3500 \nL 594 3500 \nL 594 4494 \nL 1172 4494 \nz\n\" id=\"DejaVuSans-74\" transform=\"scale(0.015625)\"/>\n       <path d=\"M 2834 3397 \nL 2834 2853 \nQ 2591 2978 2328 3040 \nQ 2066 3103 1784 3103 \nQ 1356 3103 1142 2972 \nQ 928 2841 928 2578 \nQ 928 2378 1081 2264 \nQ 1234 2150 1697 2047 \nL 1894 2003 \nQ 2506 1872 2764 1633 \nQ 3022 1394 3022 966 \nQ 3022 478 2636 193 \nQ 2250 -91 1575 -91 \nQ 1294 -91 989 -36 \nQ 684 19 347 128 \nL 347 722 \nQ 666 556 975 473 \nQ 1284 391 1588 391 \nQ 1994 391 2212 530 \nQ 2431 669 2431 922 \nQ 2431 1156 2273 1281 \nQ 2116 1406 1581 1522 \nL 1381 1569 \nQ 847 1681 609 1914 \nQ 372 2147 372 2553 \nQ 372 3047 722 3315 \nQ 1072 3584 1716 3584 \nQ 2034 3584 2315 3537 \nQ 2597 3491 2834 3397 \nz\n\" id=\"DejaVuSans-73\" transform=\"scale(0.015625)\"/>\n      </defs>\n      <use xlink:href=\"#DejaVuSans-6e\"/>\n      <use x=\"63.378906\" xlink:href=\"#DejaVuSans-75\"/>\n      <use x=\"126.757812\" xlink:href=\"#DejaVuSans-6d\"/>\n      <use x=\"224.169922\" xlink:href=\"#DejaVuSans-62\"/>\n      <use x=\"287.646484\" xlink:href=\"#DejaVuSans-65\"/>\n      <use x=\"349.169922\" xlink:href=\"#DejaVuSans-72\"/>\n      <use x=\"390.283203\" xlink:href=\"#DejaVuSans-20\"/>\n      <use x=\"422.070312\" xlink:href=\"#DejaVuSans-6f\"/>\n      <use x=\"483.251953\" xlink:href=\"#DejaVuSans-66\"/>\n      <use x=\"518.457031\" xlink:href=\"#DejaVuSans-20\"/>\n      <use x=\"550.244141\" xlink:href=\"#DejaVuSans-63\"/>\n      <use x=\"605.224609\" xlink:href=\"#DejaVuSans-6f\"/>\n      <use x=\"666.40625\" xlink:href=\"#DejaVuSans-6d\"/>\n      <use x=\"763.818359\" xlink:href=\"#DejaVuSans-70\"/>\n      <use x=\"827.294922\" xlink:href=\"#DejaVuSans-6f\"/>\n      <use x=\"888.476562\" xlink:href=\"#DejaVuSans-6e\"/>\n      <use x=\"951.855469\" xlink:href=\"#DejaVuSans-65\"/>\n      <use x=\"1013.378906\" xlink:href=\"#DejaVuSans-6e\"/>\n      <use x=\"1076.757812\" xlink:href=\"#DejaVuSans-74\"/>\n      <use x=\"1115.966797\" xlink:href=\"#DejaVuSans-73\"/>\n     </g>\n    </g>\n   </g>\n   <g id=\"matplotlib.axis_2\">\n    <g id=\"ytick_1\">\n     <g id=\"line2d_9\">\n      <defs>\n       <path d=\"M 0 0 \nL -3.5 0 \n\" id=\"mc27bbeac87\" style=\"stroke:#000000;stroke-width:0.8;\"/>\n      </defs>\n      <g>\n       <use style=\"stroke:#000000;stroke-width:0.8;\" x=\"43.78125\" xlink:href=\"#mc27bbeac87\" y=\"215.270453\"/>\n      </g>\n     </g>\n     <g id=\"text_10\">\n      <!-- 0.3 -->\n      <g transform=\"translate(20.878125 219.069672)scale(0.1 -0.1)\">\n       <defs>\n        <path d=\"M 684 794 \nL 1344 794 \nL 1344 0 \nL 684 0 \nL 684 794 \nz\n\" id=\"DejaVuSans-2e\" transform=\"scale(0.015625)\"/>\n        <path d=\"M 2597 2516 \nQ 3050 2419 3304 2112 \nQ 3559 1806 3559 1356 \nQ 3559 666 3084 287 \nQ 2609 -91 1734 -91 \nQ 1441 -91 1130 -33 \nQ 819 25 488 141 \nL 488 750 \nQ 750 597 1062 519 \nQ 1375 441 1716 441 \nQ 2309 441 2620 675 \nQ 2931 909 2931 1356 \nQ 2931 1769 2642 2001 \nQ 2353 2234 1838 2234 \nL 1294 2234 \nL 1294 2753 \nL 1863 2753 \nQ 2328 2753 2575 2939 \nQ 2822 3125 2822 3475 \nQ 2822 3834 2567 4026 \nQ 2313 4219 1838 4219 \nQ 1578 4219 1281 4162 \nQ 984 4106 628 3988 \nL 628 4550 \nQ 988 4650 1302 4700 \nQ 1616 4750 1894 4750 \nQ 2613 4750 3031 4423 \nQ 3450 4097 3450 3541 \nQ 3450 3153 3228 2886 \nQ 3006 2619 2597 2516 \nz\n\" id=\"DejaVuSans-33\" transform=\"scale(0.015625)\"/>\n       </defs>\n       <use xlink:href=\"#DejaVuSans-30\"/>\n       <use x=\"63.623047\" xlink:href=\"#DejaVuSans-2e\"/>\n       <use x=\"95.410156\" xlink:href=\"#DejaVuSans-33\"/>\n      </g>\n     </g>\n    </g>\n    <g id=\"ytick_2\">\n     <g id=\"line2d_10\">\n      <g>\n       <use style=\"stroke:#000000;stroke-width:0.8;\" x=\"43.78125\" xlink:href=\"#mc27bbeac87\" y=\"186.958051\"/>\n      </g>\n     </g>\n     <g id=\"text_11\">\n      <!-- 0.4 -->\n      <g transform=\"translate(20.878125 190.75727)scale(0.1 -0.1)\">\n       <use xlink:href=\"#DejaVuSans-30\"/>\n       <use x=\"63.623047\" xlink:href=\"#DejaVuSans-2e\"/>\n       <use x=\"95.410156\" xlink:href=\"#DejaVuSans-34\"/>\n      </g>\n     </g>\n    </g>\n    <g id=\"ytick_3\">\n     <g id=\"line2d_11\">\n      <g>\n       <use style=\"stroke:#000000;stroke-width:0.8;\" x=\"43.78125\" xlink:href=\"#mc27bbeac87\" y=\"158.645649\"/>\n      </g>\n     </g>\n     <g id=\"text_12\">\n      <!-- 0.5 -->\n      <g transform=\"translate(20.878125 162.444867)scale(0.1 -0.1)\">\n       <defs>\n        <path d=\"M 691 4666 \nL 3169 4666 \nL 3169 4134 \nL 1269 4134 \nL 1269 2991 \nQ 1406 3038 1543 3061 \nQ 1681 3084 1819 3084 \nQ 2600 3084 3056 2656 \nQ 3513 2228 3513 1497 \nQ 3513 744 3044 326 \nQ 2575 -91 1722 -91 \nQ 1428 -91 1123 -41 \nQ 819 9 494 109 \nL 494 744 \nQ 775 591 1075 516 \nQ 1375 441 1709 441 \nQ 2250 441 2565 725 \nQ 2881 1009 2881 1497 \nQ 2881 1984 2565 2268 \nQ 2250 2553 1709 2553 \nQ 1456 2553 1204 2497 \nQ 953 2441 691 2322 \nL 691 4666 \nz\n\" id=\"DejaVuSans-35\" transform=\"scale(0.015625)\"/>\n       </defs>\n       <use xlink:href=\"#DejaVuSans-30\"/>\n       <use x=\"63.623047\" xlink:href=\"#DejaVuSans-2e\"/>\n       <use x=\"95.410156\" xlink:href=\"#DejaVuSans-35\"/>\n      </g>\n     </g>\n    </g>\n    <g id=\"ytick_4\">\n     <g id=\"line2d_12\">\n      <g>\n       <use style=\"stroke:#000000;stroke-width:0.8;\" x=\"43.78125\" xlink:href=\"#mc27bbeac87\" y=\"130.333246\"/>\n      </g>\n     </g>\n     <g id=\"text_13\">\n      <!-- 0.6 -->\n      <g transform=\"translate(20.878125 134.132465)scale(0.1 -0.1)\">\n       <use xlink:href=\"#DejaVuSans-30\"/>\n       <use x=\"63.623047\" xlink:href=\"#DejaVuSans-2e\"/>\n       <use x=\"95.410156\" xlink:href=\"#DejaVuSans-36\"/>\n      </g>\n     </g>\n    </g>\n    <g id=\"ytick_5\">\n     <g id=\"line2d_13\">\n      <g>\n       <use style=\"stroke:#000000;stroke-width:0.8;\" x=\"43.78125\" xlink:href=\"#mc27bbeac87\" y=\"102.020844\"/>\n      </g>\n     </g>\n     <g id=\"text_14\">\n      <!-- 0.7 -->\n      <g transform=\"translate(20.878125 105.820062)scale(0.1 -0.1)\">\n       <defs>\n        <path d=\"M 525 4666 \nL 3525 4666 \nL 3525 4397 \nL 1831 0 \nL 1172 0 \nL 2766 4134 \nL 525 4134 \nL 525 4666 \nz\n\" id=\"DejaVuSans-37\" transform=\"scale(0.015625)\"/>\n       </defs>\n       <use xlink:href=\"#DejaVuSans-30\"/>\n       <use x=\"63.623047\" xlink:href=\"#DejaVuSans-2e\"/>\n       <use x=\"95.410156\" xlink:href=\"#DejaVuSans-37\"/>\n      </g>\n     </g>\n    </g>\n    <g id=\"ytick_6\">\n     <g id=\"line2d_14\">\n      <g>\n       <use style=\"stroke:#000000;stroke-width:0.8;\" x=\"43.78125\" xlink:href=\"#mc27bbeac87\" y=\"73.708441\"/>\n      </g>\n     </g>\n     <g id=\"text_15\">\n      <!-- 0.8 -->\n      <g transform=\"translate(20.878125 77.50766)scale(0.1 -0.1)\">\n       <use xlink:href=\"#DejaVuSans-30\"/>\n       <use x=\"63.623047\" xlink:href=\"#DejaVuSans-2e\"/>\n       <use x=\"95.410156\" xlink:href=\"#DejaVuSans-38\"/>\n      </g>\n     </g>\n    </g>\n    <g id=\"ytick_7\">\n     <g id=\"line2d_15\">\n      <g>\n       <use style=\"stroke:#000000;stroke-width:0.8;\" x=\"43.78125\" xlink:href=\"#mc27bbeac87\" y=\"45.396039\"/>\n      </g>\n     </g>\n     <g id=\"text_16\">\n      <!-- 0.9 -->\n      <g transform=\"translate(20.878125 49.195258)scale(0.1 -0.1)\">\n       <defs>\n        <path d=\"M 703 97 \nL 703 672 \nQ 941 559 1184 500 \nQ 1428 441 1663 441 \nQ 2288 441 2617 861 \nQ 2947 1281 2994 2138 \nQ 2813 1869 2534 1725 \nQ 2256 1581 1919 1581 \nQ 1219 1581 811 2004 \nQ 403 2428 403 3163 \nQ 403 3881 828 4315 \nQ 1253 4750 1959 4750 \nQ 2769 4750 3195 4129 \nQ 3622 3509 3622 2328 \nQ 3622 1225 3098 567 \nQ 2575 -91 1691 -91 \nQ 1453 -91 1209 -44 \nQ 966 3 703 97 \nz\nM 1959 2075 \nQ 2384 2075 2632 2365 \nQ 2881 2656 2881 3163 \nQ 2881 3666 2632 3958 \nQ 2384 4250 1959 4250 \nQ 1534 4250 1286 3958 \nQ 1038 3666 1038 3163 \nQ 1038 2656 1286 2365 \nQ 1534 2075 1959 2075 \nz\n\" id=\"DejaVuSans-39\" transform=\"scale(0.015625)\"/>\n       </defs>\n       <use xlink:href=\"#DejaVuSans-30\"/>\n       <use x=\"63.623047\" xlink:href=\"#DejaVuSans-2e\"/>\n       <use x=\"95.410156\" xlink:href=\"#DejaVuSans-39\"/>\n      </g>\n     </g>\n    </g>\n    <g id=\"ytick_8\">\n     <g id=\"line2d_16\">\n      <g>\n       <use style=\"stroke:#000000;stroke-width:0.8;\" x=\"43.78125\" xlink:href=\"#mc27bbeac87\" y=\"17.083636\"/>\n      </g>\n     </g>\n     <g id=\"text_17\">\n      <!-- 1.0 -->\n      <g transform=\"translate(20.878125 20.882855)scale(0.1 -0.1)\">\n       <use xlink:href=\"#DejaVuSans-31\"/>\n       <use x=\"63.623047\" xlink:href=\"#DejaVuSans-2e\"/>\n       <use x=\"95.410156\" xlink:href=\"#DejaVuSans-30\"/>\n      </g>\n     </g>\n    </g>\n    <g id=\"text_18\">\n     <!-- cumulative explained variance -->\n     <g transform=\"translate(14.798438 192.804375)rotate(-90)scale(0.1 -0.1)\">\n      <defs>\n       <path d=\"M 603 4863 \nL 1178 4863 \nL 1178 0 \nL 603 0 \nL 603 4863 \nz\n\" id=\"DejaVuSans-6c\" transform=\"scale(0.015625)\"/>\n       <path d=\"M 2194 1759 \nQ 1497 1759 1228 1600 \nQ 959 1441 959 1056 \nQ 959 750 1161 570 \nQ 1363 391 1709 391 \nQ 2188 391 2477 730 \nQ 2766 1069 2766 1631 \nL 2766 1759 \nL 2194 1759 \nz\nM 3341 1997 \nL 3341 0 \nL 2766 0 \nL 2766 531 \nQ 2569 213 2275 61 \nQ 1981 -91 1556 -91 \nQ 1019 -91 701 211 \nQ 384 513 384 1019 \nQ 384 1609 779 1909 \nQ 1175 2209 1959 2209 \nL 2766 2209 \nL 2766 2266 \nQ 2766 2663 2505 2880 \nQ 2244 3097 1772 3097 \nQ 1472 3097 1187 3025 \nQ 903 2953 641 2809 \nL 641 3341 \nQ 956 3463 1253 3523 \nQ 1550 3584 1831 3584 \nQ 2591 3584 2966 3190 \nQ 3341 2797 3341 1997 \nz\n\" id=\"DejaVuSans-61\" transform=\"scale(0.015625)\"/>\n       <path d=\"M 603 3500 \nL 1178 3500 \nL 1178 0 \nL 603 0 \nL 603 3500 \nz\nM 603 4863 \nL 1178 4863 \nL 1178 4134 \nL 603 4134 \nL 603 4863 \nz\n\" id=\"DejaVuSans-69\" transform=\"scale(0.015625)\"/>\n       <path d=\"M 191 3500 \nL 800 3500 \nL 1894 563 \nL 2988 3500 \nL 3597 3500 \nL 2284 0 \nL 1503 0 \nL 191 3500 \nz\n\" id=\"DejaVuSans-76\" transform=\"scale(0.015625)\"/>\n       <path d=\"M 3513 3500 \nL 2247 1797 \nL 3578 0 \nL 2900 0 \nL 1881 1375 \nL 863 0 \nL 184 0 \nL 1544 1831 \nL 300 3500 \nL 978 3500 \nL 1906 2253 \nL 2834 3500 \nL 3513 3500 \nz\n\" id=\"DejaVuSans-78\" transform=\"scale(0.015625)\"/>\n       <path d=\"M 2906 2969 \nL 2906 4863 \nL 3481 4863 \nL 3481 0 \nL 2906 0 \nL 2906 525 \nQ 2725 213 2448 61 \nQ 2172 -91 1784 -91 \nQ 1150 -91 751 415 \nQ 353 922 353 1747 \nQ 353 2572 751 3078 \nQ 1150 3584 1784 3584 \nQ 2172 3584 2448 3432 \nQ 2725 3281 2906 2969 \nz\nM 947 1747 \nQ 947 1113 1208 752 \nQ 1469 391 1925 391 \nQ 2381 391 2643 752 \nQ 2906 1113 2906 1747 \nQ 2906 2381 2643 2742 \nQ 2381 3103 1925 3103 \nQ 1469 3103 1208 2742 \nQ 947 2381 947 1747 \nz\n\" id=\"DejaVuSans-64\" transform=\"scale(0.015625)\"/>\n      </defs>\n      <use xlink:href=\"#DejaVuSans-63\"/>\n      <use x=\"54.980469\" xlink:href=\"#DejaVuSans-75\"/>\n      <use x=\"118.359375\" xlink:href=\"#DejaVuSans-6d\"/>\n      <use x=\"215.771484\" xlink:href=\"#DejaVuSans-75\"/>\n      <use x=\"279.150391\" xlink:href=\"#DejaVuSans-6c\"/>\n      <use x=\"306.933594\" xlink:href=\"#DejaVuSans-61\"/>\n      <use x=\"368.212891\" xlink:href=\"#DejaVuSans-74\"/>\n      <use x=\"407.421875\" xlink:href=\"#DejaVuSans-69\"/>\n      <use x=\"435.205078\" xlink:href=\"#DejaVuSans-76\"/>\n      <use x=\"494.384766\" xlink:href=\"#DejaVuSans-65\"/>\n      <use x=\"555.908203\" xlink:href=\"#DejaVuSans-20\"/>\n      <use x=\"587.695312\" xlink:href=\"#DejaVuSans-65\"/>\n      <use x=\"647.46875\" xlink:href=\"#DejaVuSans-78\"/>\n      <use x=\"706.648438\" xlink:href=\"#DejaVuSans-70\"/>\n      <use x=\"770.125\" xlink:href=\"#DejaVuSans-6c\"/>\n      <use x=\"797.908203\" xlink:href=\"#DejaVuSans-61\"/>\n      <use x=\"859.1875\" xlink:href=\"#DejaVuSans-69\"/>\n      <use x=\"886.970703\" xlink:href=\"#DejaVuSans-6e\"/>\n      <use x=\"950.349609\" xlink:href=\"#DejaVuSans-65\"/>\n      <use x=\"1011.873047\" xlink:href=\"#DejaVuSans-64\"/>\n      <use x=\"1075.349609\" xlink:href=\"#DejaVuSans-20\"/>\n      <use x=\"1107.136719\" xlink:href=\"#DejaVuSans-76\"/>\n      <use x=\"1166.316406\" xlink:href=\"#DejaVuSans-61\"/>\n      <use x=\"1227.595703\" xlink:href=\"#DejaVuSans-72\"/>\n      <use x=\"1268.708984\" xlink:href=\"#DejaVuSans-69\"/>\n      <use x=\"1296.492188\" xlink:href=\"#DejaVuSans-61\"/>\n      <use x=\"1357.771484\" xlink:href=\"#DejaVuSans-6e\"/>\n      <use x=\"1421.150391\" xlink:href=\"#DejaVuSans-63\"/>\n      <use x=\"1476.130859\" xlink:href=\"#DejaVuSans-65\"/>\n     </g>\n    </g>\n   </g>\n   <g id=\"line2d_17\">\n    <path clip-path=\"url(#p3574d61f67)\" d=\"M 58.999432 214.756364 \nL 59.427209 168.774582 \nL 59.854987 146.039789 \nL 60.496653 125.858425 \nL 61.138319 112.347232 \nL 61.993874 99.508478 \nL 62.849429 89.989462 \nL 63.704983 83.19993 \nL 64.774427 76.673061 \nL 65.629982 72.521652 \nL 67.127203 66.831576 \nL 68.410535 63.01267 \nL 69.907756 59.38008 \nL 71.191088 56.766339 \nL 72.902198 53.772004 \nL 74.827196 50.890533 \nL 76.538306 48.66562 \nL 78.677193 46.255689 \nL 80.81608 44.146026 \nL 83.168856 42.104527 \nL 85.949409 39.990696 \nL 88.729963 38.158597 \nL 91.938293 36.322498 \nL 95.574401 34.517051 \nL 99.638287 32.754682 \nL 103.702173 31.230192 \nL 108.621613 29.640723 \nL 113.968831 28.153658 \nL 119.957715 26.730751 \nL 126.374376 25.431812 \nL 133.646592 24.183086 \nL 141.560474 23.048367 \nL 150.757689 21.953523 \nL 161.238236 20.945671 \nL 172.574338 20.082879 \nL 185.835438 19.303672 \nL 200.807647 18.651687 \nL 218.560411 18.104788 \nL 239.949282 17.672068 \nL 267.113148 17.351849 \nL 304.543673 17.150715 \nL 363.363068 17.083636 \nL 363.363068 17.083636 \n\" style=\"fill:none;stroke:#1f77b4;stroke-linecap:square;stroke-width:1.5;\"/>\n   </g>\n   <g id=\"patch_3\">\n    <path d=\"M 43.78125 224.64 \nL 43.78125 7.2 \n\" style=\"fill:none;stroke:#000000;stroke-linecap:square;stroke-linejoin:miter;stroke-width:0.8;\"/>\n   </g>\n   <g id=\"patch_4\">\n    <path d=\"M 378.58125 224.64 \nL 378.58125 7.2 \n\" style=\"fill:none;stroke:#000000;stroke-linecap:square;stroke-linejoin:miter;stroke-width:0.8;\"/>\n   </g>\n   <g id=\"patch_5\">\n    <path d=\"M 43.78125 224.64 \nL 378.58125 224.64 \n\" style=\"fill:none;stroke:#000000;stroke-linecap:square;stroke-linejoin:miter;stroke-width:0.8;\"/>\n   </g>\n   <g id=\"patch_6\">\n    <path d=\"M 43.78125 7.2 \nL 378.58125 7.2 \n\" style=\"fill:none;stroke:#000000;stroke-linecap:square;stroke-linejoin:miter;stroke-width:0.8;\"/>\n   </g>\n  </g>\n </g>\n <defs>\n  <clipPath id=\"p3574d61f67\">\n   <rect height=\"217.44\" width=\"334.8\" x=\"43.78125\" y=\"7.2\"/>\n  </clipPath>\n </defs>\n</svg>\n",
+      "image/png": "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\n"
+     },
+     "metadata": {
+      "needs_background": "light"
+     }
+    }
+   ],
+   "source": [
+    "%matplotlib inline\n",
+    "import matplotlib.pyplot as plt\n",
+    "from sklearn.decomposition import PCA\n",
+    "\n",
+    "pca = PCA().fit(sims)\n",
+    "plt.plot(np.cumsum(pca.explained_variance_ratio_))\n",
+    "plt.xlabel('number of components')\n",
+    "plt.ylabel('cumulative explained variance');"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 90,
+   "metadata": {},
+   "outputs": [
+    {
+     "output_type": "execute_result",
+     "data": {
+      "text/plain": [
+       "array([0.30181578, 0.39388161, 0.46422439, 0.51544296, 0.54452416,\n",
+       "       0.5709608 , 0.59638053, 0.61580516, 0.63397912, 0.64944356,\n",
+       "       0.66352698, 0.67624488, 0.68792926, 0.69873209, 0.70887373,\n",
+       "       0.717946  , 0.72693146, 0.73484488, 0.74249509, 0.74920647])"
+      ]
+     },
+     "metadata": {},
+     "execution_count": 90
+    }
+   ],
+   "source": [
+    "np.cumsum(pca.explained_variance_ratio_[0:20])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 92,
+   "metadata": {
+    "tags": [
+     "outputPrepend"
+    ]
+   },
+   "outputs": [
+    {
+     "output_type": "stream",
+     "name": "stdout",
+     "text": [
+      "2, 2, 4, 2, 2, 3, 2, 2, 3, 5, 2, 2, 3, 2, 2, 2, 2, 3, 2, 7, 2, 2, 2, 1078, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 7, 2, 3, 4]\n",
+      "273 0.33196744508264514 [2, 2, 2, 2, 4, 1079, 2, 2, 3, 2, 2, 3, 5, 2, 2, 3, 2, 2, 2, 2, 3, 2, 7, 2, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 7, 2, 3, 4]\n",
+      "272 0.33174196534572664 [2, 2, 2, 2, 4, 2, 2, 3, 2, 2, 3, 5, 2, 1080, 2, 3, 2, 2, 2, 2, 3, 2, 7, 2, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 7, 2, 3, 4]\n",
+      "271 0.33096457303210675 [2, 2, 2, 2, 4, 2, 2, 3, 2, 2, 3, 5, 2, 2, 3, 2, 2, 2, 2, 1083, 2, 7, 2, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 7, 2, 3, 4]\n",
+      "270 0.3307888564382193 [2, 2, 2, 2, 4, 2, 2, 3, 2, 2, 3, 5, 2, 2, 3, 2, 1085, 2, 2, 2, 7, 2, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 7, 2, 3, 4]\n",
+      "269 0.33070945351092823 [2, 2, 2, 2, 4, 2, 2, 3, 2, 2, 3, 5, 2, 2, 3, 2, 2, 2, 2, 7, 2, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 1086, 7, 2, 3, 4]\n",
+      "268 0.3301976675870664 [2, 2, 2, 2, 4, 2, 2, 3, 2, 2, 3, 5, 2, 2, 3, 2, 2, 2, 2, 7, 2, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 7, 2, 3, 1087, 4]\n",
+      "267 0.3300918622247762 [2, 2, 2, 2, 4, 2, 2, 3, 2, 2, 3, 5, 2, 2, 3, 2, 2, 2, 2, 7, 2, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 7, 2, 3, 4, 1088]\n",
+      "266 0.3297600024123233 [2, 2, 2, 2, 4, 2, 2, 3, 2, 2, 3, 5, 2, 2, 3, 2, 2, 2, 2, 7, 2, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 8, 2, 3, 4, 1088]\n",
+      "265 0.3289667422810925 [2, 2, 2, 2, 4, 2, 2, 3, 2, 2, 3, 5, 2, 2, 3, 2, 2, 2, 2, 7, 2, 2, 2, 4, 3, 9, 2, 2, 2, 2, 9, 2, 2, 4, 2, 3, 4, 1088]\n",
+      "264 0.32815020781602405 [2, 2, 2, 2, 4, 2, 2, 3, 2, 2, 1091, 5, 2, 2, 3, 2, 2, 2, 2, 7, 2, 2, 2, 4, 3, 9, 2, 2, 2, 2, 9, 2, 2, 4, 2, 3, 4]\n",
+      "263 0.3279785159294487 [2, 2, 2, 2, 4, 2, 2, 3, 2, 2, 5, 2, 2, 3, 2, 2, 2, 2, 7, 1093, 2, 2, 4, 3, 9, 2, 2, 2, 2, 9, 2, 2, 4, 2, 3, 4]\n",
+      "262 0.327627028212963 [2, 2, 2, 2, 4, 2, 2, 3, 2, 2, 5, 2, 2, 3, 2, 2, 2, 2, 7, 2, 2, 4, 3, 9, 2, 2, 2, 2, 9, 1094, 2, 2, 4, 2, 3, 4]\n",
+      "261 0.3274947303357841 [2, 2, 2, 2, 4, 2, 2, 3, 2, 2, 2, 5, 2, 2, 3, 2, 2, 2, 2, 7, 2, 2, 4, 3, 9, 2, 2, 2, 2, 9, 1094, 2, 2, 4, 2, 3, 4]\n",
+      "260 0.3273845698826951 [2, 2, 2, 2, 4, 2, 2, 3, 1095, 2, 2, 2, 5, 2, 2, 3, 2, 2, 2, 2, 7, 2, 2, 4, 3, 9, 2, 2, 2, 2, 9, 2, 2, 4, 2, 3, 4]\n",
+      "259 0.3273239156161119 [2, 2, 2, 2, 4, 2, 2, 3, 2, 2, 2, 5, 2, 2, 3, 2, 2, 2, 2, 7, 2, 2, 4, 3, 9, 2, 2, 2, 2, 1096, 9, 2, 2, 4, 2, 3, 4]\n",
+      "258 0.3270237046010625 [2, 2, 2, 2, 4, 2, 2, 3, 2, 2, 2, 5, 2, 2, 3, 2, 2, 1098, 2, 7, 2, 2, 4, 3, 9, 2, 2, 2, 2, 9, 2, 2, 4, 2, 3, 4]\n",
+      "257 0.3268260016622488 [2, 2, 2, 2, 4, 2, 2, 3, 2, 1100, 2, 5, 2, 2, 3, 2, 2, 2, 7, 2, 2, 4, 3, 9, 2, 2, 2, 2, 9, 2, 2, 4, 2, 3, 4]\n",
+      "256 0.32653007365479053 [2, 2, 2, 2, 4, 2, 2, 3, 2, 2, 5, 2, 2, 3, 2, 2, 2, 7, 2, 2, 4, 3, 9, 2, 2, 2, 2, 9, 2, 2, 1101, 4, 2, 3, 4]\n",
+      "255 0.3265291797467828 [2, 2, 2, 2, 4, 2, 2, 3, 2, 2, 5, 2, 2, 3, 2, 2, 2, 7, 1102, 2, 2, 4, 3, 9, 2, 2, 2, 2, 9, 2, 2, 4, 2, 3, 4]\n",
+      "254 0.3259175265745646 [2, 2, 2, 2, 1106, 2, 2, 3, 2, 2, 5, 2, 2, 3, 2, 2, 2, 7, 2, 2, 4, 3, 9, 2, 2, 2, 2, 9, 2, 2, 4, 2, 3, 4]\n",
+      "253 0.325567201911021 [2, 2, 2, 2, 2, 2, 1107, 3, 2, 2, 5, 2, 2, 3, 2, 2, 2, 7, 2, 2, 4, 3, 9, 2, 2, 2, 2, 9, 2, 2, 4, 2, 3, 4]\n",
+      "252 0.3249095561233118 [2, 2, 2, 4, 2, 2, 2, 1107, 2, 2, 5, 2, 2, 3, 2, 2, 2, 7, 2, 2, 4, 3, 9, 2, 2, 2, 2, 9, 2, 2, 4, 2, 3, 4]\n",
+      "251 0.3247951203869271 [2, 2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 2, 3, 2, 2, 2, 7, 2, 2, 4, 3, 9, 2, 2, 2, 2, 9, 2, 2, 4, 2, 3, 1108, 4]\n",
+      "250 0.3247840316650564 [2, 2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 2, 3, 2, 2, 2, 7, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 2, 10, 3, 1108, 4]\n",
+      "249 0.32439254875314216 [2, 2, 2, 4, 2, 2, 2, 1109, 2, 2, 5, 2, 2, 3, 2, 2, 2, 7, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 2, 10, 3, 4]\n",
+      "248 0.32410118226993306 [2, 2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 2, 3, 2, 2, 2, 7, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 2, 10, 3, 1110, 4]\n",
+      "247 0.3237164379745927 [2, 2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 2, 3, 2, 2, 2, 7, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 2, 10, 3, 1111, 4]\n",
+      "246 0.3237111455721825 [2, 2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 2, 3, 2, 1113, 2, 7, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 2, 10, 3, 4]\n",
+      "245 0.3236662050330286 [2, 2, 2, 4, 2, 1114, 2, 2, 2, 2, 5, 2, 2, 3, 2, 2, 7, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 2, 10, 3, 4]\n",
+      "244 0.32355435264276156 [2, 2, 2, 4, 2, 1115, 2, 2, 2, 2, 5, 2, 2, 3, 2, 2, 7, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 2, 10, 3, 4]\n",
+      "243 0.32327704548628566 [2, 2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 2, 3, 2, 2, 7, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 2, 10, 3, 1116, 4]\n",
+      "242 0.3232749214327735 [2, 2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 2, 3, 2, 2, 7, 2, 2, 4, 3, 1117, 2, 2, 2, 2, 9, 2, 2, 4, 2, 10, 3, 4]\n",
+      "241 0.3231183173168842 [2, 2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 2, 3, 2, 2, 7, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 2, 10, 3, 4, 1118]\n",
+      "240 0.3230314396655907 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 7, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 2, 10, 3, 4, 1118]\n",
+      "239 0.32255741324628884 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 1125, 2, 2, 4, 3, 2, 2, 2, 2, 9, 2, 2, 4, 2, 10, 3, 4]\n",
+      "238 0.32249648092093774 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 4, 3, 2, 2, 2, 2, 1126, 9, 2, 2, 4, 2, 10, 3, 4]\n",
+      "237 0.3223936817566332 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 4, 3, 2, 2, 1127, 2, 2, 9, 2, 2, 4, 2, 10, 3, 4]\n",
+      "236 0.32229912596402027 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 4, 1130, 2, 2, 2, 2, 9, 2, 2, 4, 2, 10, 3, 4]\n",
+      "235 0.32179797701392565 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 4, 2, 2, 2, 2, 9, 2, 2, 4, 2, 10, 1131, 3, 4]\n",
+      "234 0.3216990608722538 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 4, 2, 2, 2, 2, 9, 2, 2, 4, 2, 1141, 3, 4]\n",
+      "233 0.32109352342125824 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 4, 2, 2, 2, 2, 9, 2, 2, 1142, 4, 2, 3, 4]\n",
+      "232 0.32071787777875327 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 9, 2, 2, 1142, 4, 2, 3, 4]\n",
+      "231 0.3197746132476806 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 1143, 2, 2, 2, 2, 9, 2, 2, 4, 2, 3, 4]\n",
+      "230 0.31941142338874884 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 9, 2, 2, 4, 2, 3, 1144, 4]\n",
+      "229 0.31940954801246924 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 1145, 2, 4, 2, 2, 2, 2, 9, 2, 2, 4, 2, 3, 4]\n",
+      "228 0.3186582619544879 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 9, 2, 2, 4, 2, 3, 1146, 4]\n",
+      "227 0.3184695372051657 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 2, 9, 2, 2, 4, 2, 3, 1146, 4]\n",
+      "226 0.31799636696356814 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 2, 9, 2, 2, 4, 2, 1149, 4]\n",
+      "225 0.3174180397253487 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 1150, 2, 9, 2, 2, 4, 2, 4]\n",
+      "224 0.3173401562148774 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 1151, 2, 9, 2, 2, 4, 2, 4]\n",
+      "223 0.3172387450902278 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 1152, 2, 2, 2, 9, 2, 2, 4, 2, 4]\n",
+      "222 0.3169714596331395 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 1153, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 2, 9, 2, 2, 4, 2, 4]\n",
+      "221 0.3165275622066032 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 1154, 2, 2, 4, 2, 2, 2, 2, 2, 9, 2, 2, 4, 2, 4]\n",
+      "220 0.3161604268304808 [2, 2, 4, 2, 2, 2, 2, 2, 1155, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 2, 9, 2, 2, 4, 2, 4]\n",
+      "219 0.31613509825768027 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 1156, 2, 2, 2, 2, 4, 2, 2, 2, 2, 2, 9, 2, 2, 4, 2, 4]\n",
+      "218 0.31611067196055365 [2, 2, 4, 2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 1157, 2, 2, 2, 4, 2, 2, 2, 2, 2, 9, 2, 2, 4, 2, 4]\n",
+      "217 0.31609644705771334 [2, 4, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 1157, 2, 2, 2, 4, 2, 2, 2, 2, 2, 9, 2, 2, 4, 2, 4]\n",
+      "216 0.31565695995126314 [2, 4, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 2, 9, 2, 2, 4, 2, 1158, 4]\n",
+      "215 0.31515257805951413 [2, 4, 2, 2, 1159, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 2, 9, 2, 2, 4, 2, 4]\n",
+      "214 0.3150678031743553 [2, 4, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 2, 9, 2, 2, 1160, 4, 2, 4]\n",
+      "213 0.315065422796715 [2, 4, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 1161, 2, 2, 2, 2, 2, 9, 2, 2, 4, 2, 4]\n",
+      "212 0.31414344260426313 [2, 4, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 1162, 2, 2, 4, 2, 2, 2, 2, 2, 9, 2, 2, 4, 2, 4]\n",
+      "211 0.31332459679028335 [2, 4, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 1163, 2, 2, 2, 9, 2, 2, 4, 2, 4]\n",
+      "210 0.31176167641298635 [2, 4, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 1164, 2, 2, 2, 2, 4, 2, 2, 2, 2, 2, 9, 2, 2, 4, 2, 4]\n",
+      "209 0.31164362673477464 [2, 1168, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 2, 9, 2, 2, 4, 2, 4]\n",
+      "208 0.311346073988492 [2, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 1169, 2, 2, 2, 2, 4, 2, 2, 2, 2, 2, 9, 2, 2, 4, 2, 4]\n",
+      "207 0.3111653579887276 [2, 1170, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 2, 9, 2, 2, 4, 2, 4]\n",
+      "206 0.31090175549510307 [2, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 2, 9, 2, 2, 4, 2, 4, 1171]\n",
+      "205 0.31072533125166757 [2, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 1173, 2, 9, 2, 2, 4, 2, 4]\n",
+      "204 0.3105735187944996 [2, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 9, 2, 2, 1174, 4, 2, 4]\n",
+      "203 0.31048519522364765 [2, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 9, 2, 2, 4, 1176, 4]\n",
+      "202 0.31004075935644976 [2, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 9, 2, 2, 4, 1177, 4]\n",
+      "201 0.3098865697669292 [2, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 1179, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "200 0.30988633009933164 [2, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 1180, 2, 2, 2, 4, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "199 0.3091587092487056 [2, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 9, 2, 2, 4, 4, 1181]\n",
+      "198 0.30836053742630337 [2, 2, 2, 1183, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "197 0.30819707997339735 [2, 1184, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "196 0.30815140028402505 [2, 2, 2, 3, 2, 1185, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "195 0.3077805716295057 [2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 2, 2, 2, 1186, 9, 2, 2, 4, 4]\n",
+      "194 0.30767182242622637 [2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 1188, 2, 2, 4, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "193 0.3073173909976832 [2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 4, 2, 2, 2, 9, 2, 1189, 2, 4, 4]\n",
+      "192 0.3069470418850326 [2, 1190, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 4, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "191 0.3062020239400381 [2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 1194, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "190 0.30619287540070367 [2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 1196, 2, 9, 2, 2, 4, 4]\n",
+      "189 0.3058483587318807 [2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 1197, 4, 4]\n",
+      "188 0.3057285331914096 [1198, 2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "187 0.3051440952445112 [2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 1199, 2, 2, 9, 2, 2, 4, 4]\n",
+      "186 0.3049367199891612 [2, 2, 2, 3, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 1200, 2, 2, 9, 2, 2, 4, 4]\n",
+      "185 0.3046952008277213 [2, 2, 2, 3, 1202, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "184 0.30421843065508203 [2, 2, 2, 2, 3, 1202, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "183 0.304202493361184 [2, 2, 2, 2, 3, 2, 5, 2, 3, 2, 3, 2, 2, 1203, 2, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "182 0.3041724937494853 [2, 2, 2, 2, 3, 2, 5, 2, 3, 2, 3, 2, 2, 1205, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "181 0.3040711541937256 [2, 2, 2, 2, 1208, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "180 0.3040611296087861 [2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 1209, 2, 9, 2, 2, 4, 4]\n",
+      "179 0.30385913053109725 [2, 2, 2, 2, 1210, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "178 0.30385292914479317 [2, 2, 2, 1212, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "177 0.3034708525186744 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 1213, 9, 2, 2, 4, 4]\n",
+      "176 0.303117462340824 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 1214, 2, 2, 9, 2, 2, 4, 4]\n",
+      "175 0.303080321434276 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 9, 2, 2, 4, 4, 1215]\n",
+      "174 0.30242570823290593 [2, 2, 2, 1216, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "173 0.30210705077295474 [2, 2, 2, 1216, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "172 0.30174712793369857 [2, 2, 1217, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "171 0.3014421817476089 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 1218, 4, 4]\n",
+      "170 0.3009580526231204 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 1219, 9, 2, 2, 4, 4]\n",
+      "169 0.30046213208823563 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 1220, 2, 2, 9, 2, 2, 4, 4]\n",
+      "168 0.30034612143956835 [2, 2, 2, 1221, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 4, 4]\n",
+      "167 0.30014876959560843 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 1222, 9, 2, 2, 4, 4]\n",
+      "166 0.3001458576768732 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 4, 1223, 4]\n",
+      "165 0.3001332619459254 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 2, 4, 1223, 4]\n",
+      "164 0.29973921009601456 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 2, 4, 1224, 4]\n",
+      "163 0.29820051176494944 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 2, 1228, 4]\n",
+      "162 0.29803992477329433 [2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 2, 1228, 4]\n",
+      "161 0.29659530485762353 [2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 1229, 2, 2, 2, 9, 2, 2, 2, 4]\n",
+      "160 0.2958489236930604 [2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 1230, 2, 4]\n",
+      "159 0.2954273020216998 [2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 2, 4, 1231]\n",
+      "158 0.2954267146963802 [2, 2, 1232, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 2, 4]\n",
+      "157 0.29525617766550866 [2, 2, 2, 1233, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 2, 4]\n",
+      "156 0.2951052066290283 [2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 1234, 2, 2, 2, 9, 2, 2, 2, 4]\n",
+      "155 0.2944089199790298 [2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 1235, 2, 2, 9, 2, 2, 2, 4]\n",
+      "154 0.2942849406584622 [2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 1237, 4]\n",
+      "153 0.2941450834462421 [2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 1238, 4]\n",
+      "152 0.2941257488127779 [2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 1239, 4]\n",
+      "151 0.29353268348610545 [2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 1240, 4]\n",
+      "150 0.2935212290494185 [2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 1241, 2, 2, 9, 2, 2, 4]\n",
+      "149 0.2918650298499592 [2, 2, 2, 2, 1242, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 9, 2, 2, 4]\n",
+      "148 0.2916364532517274 [2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 1243, 2, 2, 9, 2, 2, 4]\n",
+      "147 0.2907397813049418 [2, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 1252, 2, 2, 4]\n",
+      "146 0.2906023157552366 [1254, 2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 2, 2, 4]\n",
+      "145 0.29031046348039447 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 1256, 2, 2, 2, 2, 2, 4]\n",
+      "144 0.29015425128942607 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 2, 1257, 4]\n",
+      "143 0.28967379080337213 [2, 2, 1258, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 2, 4]\n",
+      "142 0.2895422335051106 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 2, 1259, 4]\n",
+      "141 0.28916665326604174 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 2, 1260, 4]\n",
+      "140 0.2890221629817377 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 2, 4, 1261]\n",
+      "139 0.28832576109993363 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 2, 1262, 4]\n",
+      "138 0.28733357509209995 [2, 2, 2, 1263, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 2, 4]\n",
+      "137 0.2872807728763284 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 1264, 2, 2, 2, 2, 4]\n",
+      "136 0.2872539830407003 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 1266, 2, 4]\n",
+      "135 0.28697035319246944 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 1268, 2, 2, 2, 4]\n",
+      "134 0.2868449295222974 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 1269, 4]\n",
+      "133 0.2867862318304633 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 1270, 4]\n",
+      "132 0.28674951500076556 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 1271, 4]\n",
+      "131 0.2864841884081367 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 1272, 2, 2, 2, 2, 4]\n",
+      "130 0.28611327338866804 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 1273, 2, 2, 4]\n",
+      "129 0.2844909119071562 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4, 1274]\n",
+      "128 0.28388490703551966 [2, 1275, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4]\n",
+      "127 0.28319617320819235 [2, 2, 1277, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4]\n",
+      "126 0.2823339298178673 [2, 2, 2, 5, 2, 3, 2, 3, 2, 1278, 2, 2, 2, 2, 4]\n",
+      "125 0.2816947424332254 [2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 1279, 4]\n",
+      "124 0.2815165865103677 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 1279, 4]\n",
+      "123 0.2811596627217862 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 1280, 2, 2, 2, 4]\n",
+      "122 0.2794152265324102 [2, 2, 2, 2, 5, 2, 3, 2, 1281, 3, 2, 2, 2, 2, 2, 4]\n",
+      "121 0.2790904560859831 [2, 2, 2, 2, 5, 2, 3, 2, 3, 2, 2, 1282, 2, 2, 2, 4]\n",
+      "120 0.27819156636772646 [2, 2, 2, 1283, 2, 5, 2, 3, 2, 3, 2, 2, 2, 2, 2, 4]\n",
+      "119 0.27813634993578706 [2, 2, 2, 1283, 2, 5, 3, 2, 3, 2, 2, 3, 2, 2, 2, 4]\n",
+      "118 0.2773603310092257 [2, 2, 2, 2, 5, 3, 2, 3, 2, 2, 1284, 3, 2, 2, 2, 4]\n",
+      "117 0.27715667604435373 [2, 2, 2, 2, 5, 3, 2, 3, 2, 2, 1287, 2, 2, 2, 4]\n",
+      "116 0.2769974280523796 [1289, 2, 2, 2, 5, 3, 2, 3, 2, 2, 2, 2, 2, 4]\n",
+      "115 0.2768859471968646 [2, 2, 2, 5, 3, 2, 3, 1291, 2, 2, 2, 2, 4]\n",
+      "114 0.2768660776973745 [2, 2, 1292, 2, 5, 3, 2, 3, 2, 2, 2, 2, 4]\n",
+      "113 0.2752676017610282 [2, 1294, 2, 5, 3, 2, 3, 2, 2, 2, 2, 4]\n",
+      "112 0.2746251814641443 [2, 2, 5, 3, 2, 3, 2, 2, 2, 2, 1295, 4]\n",
+      "111 0.2745786940982155 [2, 2, 5, 3, 2, 3, 2, 1296, 2, 2, 2, 4]\n",
+      "110 0.27421859046462466 [2, 2, 5, 3, 2, 3, 2, 2, 2, 2, 1297, 4]\n",
+      "109 0.27409207929299595 [2, 2, 5, 3, 2, 3, 2, 1298, 2, 2, 2, 4]\n",
+      "108 0.2740738569120862 [2, 2, 5, 3, 2, 3, 2, 2, 2, 2, 1299, 4]\n",
+      "107 0.27374647749521 [2, 2, 5, 3, 2, 3, 2, 1300, 2, 2, 2, 4]\n",
+      "106 0.27303865669153576 [2, 1301, 2, 5, 3, 2, 3, 2, 2, 2, 2, 4]\n",
+      "105 0.2729214773664856 [2, 2, 5, 3, 2, 3, 2, 1302, 2, 2, 2, 4]\n",
+      "104 0.2727925014265566 [2, 2, 5, 3, 2, 3, 2, 1303, 2, 2, 2, 4]\n",
+      "103 0.27250478736659745 [2, 2, 5, 3, 2, 3, 2, 2, 2, 2, 1304, 4]\n",
+      "102 0.271847687559578 [2, 2, 5, 3, 2, 1307, 2, 2, 2, 2, 4]\n",
+      "101 0.27162538779251505 [2, 2, 5, 3, 2, 2, 2, 2, 2, 1308, 4]\n",
+      "100 0.27142898054687514 [2, 2, 1313, 3, 2, 2, 2, 2, 2, 4]\n",
+      "99 0.27078069802305554 [2, 2, 3, 2, 2, 2, 2, 2, 1314, 4]\n",
+      "98 0.2704495999263167 [1315, 2, 2, 3, 2, 2, 2, 2, 2, 4]\n",
+      "97 0.2703652266704042 [2, 2, 1316, 3, 2, 2, 2, 2, 2, 4]\n",
+      "96 0.2698739415850557 [2, 1317, 2, 3, 2, 2, 2, 2, 2, 4]\n",
+      "95 0.26895063595565916 [2, 2, 1320, 2, 2, 2, 2, 2, 4]\n",
+      "94 0.2686555408668118 [1322, 2, 2, 2, 2, 2, 2, 4]\n",
+      "93 0.26829998211036044 [2, 2, 2, 1323, 2, 2, 2, 4]\n",
+      "92 0.267784524245423 [2, 2, 2, 2, 1324, 2, 2, 4]\n",
+      "91 0.26775723281298913 [2, 2, 2, 1325, 2, 2, 2, 4]\n",
+      "90 0.2674217324177667 [2, 2, 2, 2, 2, 2, 4, 1326]\n",
+      "89 0.2672764447535488 [1327, 2, 2, 2, 2, 2, 2, 4]\n",
+      "88 0.26702308316320617 [2, 2, 2, 1328, 2, 2, 2, 4]\n",
+      "87 0.2667449130683199 [2, 2, 2, 2, 2, 2, 1329, 4]\n",
+      "86 0.2661315932157319 [2, 2, 2, 1330, 2, 2, 2, 4]\n",
+      "85 0.2660604996665591 [2, 2, 2, 1331, 2, 2, 2, 4]\n",
+      "84 0.26586922697338616 [2, 2, 2, 2, 2, 1333, 4]\n",
+      "83 0.26584671569243035 [2, 2, 2, 2, 2, 1334, 4]\n",
+      "82 0.2658267776522216 [1335, 2, 2, 2, 2, 2, 4]\n",
+      "81 0.2631714163805434 [1335, 2, 2, 2, 2, 2, 2, 4]\n",
+      "80 0.2628405021946078 [2, 2, 2, 2, 2, 1336, 2, 4]\n",
+      "79 0.2627879712110277 [2, 2, 2, 2, 2, 1337, 2, 4]\n",
+      "78 0.26270656374749124 [2, 1338, 2, 2, 2, 2, 2, 4]\n",
+      "77 0.26189640518473123 [2, 2, 2, 1339, 2, 2, 2, 4]\n",
+      "76 0.2617984134369053 [2, 2, 2, 2, 2, 1340, 2, 4]\n",
+      "75 0.26159495242744923 [2, 2, 2, 2, 2, 1341, 2, 4]\n",
+      "74 0.26150761135290185 [1342, 2, 2, 2, 2, 2, 2, 4]\n",
+      "73 0.2600628185611969 [2, 2, 1343, 2, 2, 2, 2, 4]\n",
+      "72 0.25908002357056653 [2, 2, 2, 1344, 2, 2, 2, 4]\n",
+      "71 0.25797563822229375 [2, 2, 2, 1345, 2, 2, 2, 4]\n",
+      "70 0.2577071233356037 [1346, 2, 2, 2, 2, 2, 2, 4]\n",
+      "69 0.25556461126569296 [2, 2, 2, 2, 2, 2, 4, 1347]\n",
+      "68 0.2553142455071499 [2, 2, 2, 2, 1348, 2, 2, 4]\n",
+      "67 0.2551015711745432 [1349, 2, 2, 2, 2, 2, 2, 4]\n",
+      "66 0.2545031855863457 [2, 2, 2, 2, 2, 1350, 2, 4]\n",
+      "65 0.2537095232737528 [2, 2, 2, 2, 2, 1351, 2, 4]\n",
+      "64 0.2534614272639413 [2, 2, 2, 1352, 2, 2, 2, 4]\n",
+      "63 0.25145833232086584 [2, 2, 2, 1353, 2, 2, 2, 4]\n",
+      "62 0.2513424815061817 [1354, 2, 2, 2, 2, 2, 2, 4]\n",
+      "61 0.2510988333416403 [2, 2, 2, 1355, 2, 2, 2, 4]\n",
+      "60 0.25047052907942907 [2, 2, 2, 2, 2, 1356, 2, 4]\n",
+      "59 0.25040382520434157 [2, 2, 2, 2, 2, 1357, 2, 4]\n",
+      "58 0.2501192210327855 [2, 2, 2, 1358, 2, 2, 2, 4]\n",
+      "57 0.24973881150620092 [2, 2, 2, 2, 2, 2, 1359, 4]\n"
+     ]
+    }
+   ],
+   "source": [
+    "doc_cluster = [ set([i]) for i in range(num_docs) ]\n",
+    "clusters = [ doc_cluster[i] for i in range(num_docs) ]\n",
+    "for (sim, i, j) in pairs:\n",
+    "    ci, cj = doc_cluster[i], doc_cluster[j]\n",
+    "    if ci != cj:\n",
+    "        if len(ci) > len(cj):\n",
+    "            ci, cj = cj, ci\n",
+    "        ci |= cj\n",
+    "        for k in cj:\n",
+    "            doc_cluster[k] = ci\n",
+    "        clusters.remove(cj)\n",
+    "        print(len(clusters), sim, list(filter(lambda x: x != 1, map(lambda x: len(x), clusters))))\n",
+    "        if sim < 0.25: break\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 110,
+   "metadata": {},
+   "outputs": [
+    {
+     "output_type": "stream",
+     "name": "stdout",
+     "text": [
+      "(0.944408013666594, 510, 1089) \n\n[('para', 0.8840500327241815), ('como', 0.322056451385893), ('robot', 0.24343797747913995), ('este', 0.15255305591963353), ('forma', 0.0668821927652052), ('facial', 0.06322706709158843), ('visit', 0.061550434537068564), ('microsoft', 0.03699628400091733), ('gestures', 0.03429812691886724), ('precision', 0.03414376907580667)] \n\n[('para', 0.9207632909437463), ('como', 0.33543096778579895), ('este', 0.1235798302368733), ('tempo', 0.06965970888124813), ('face', 0.055445052950516494), ('hall', 0.03581557292859833), ('extra', 0.0337053698597582), ('tica', 0.03268899594916166), ('bayes', 0.027234179774358252), ('refer', 0.02706684700620421)] \n\n1032.txt 1066.txt\n"
+     ]
+    }
+   ],
+   "source": [
+    "k = 70\n",
+    "print(pairs[k], '\\n')\n",
+    "print(sorted(doc_tfidf[pairs[k][1]].items(), \n",
+    "    key = lambda x: x[1], reverse = True)[0:10], '\\n')\n",
+    "print(sorted(doc_tfidf[pairs[k][2]].items(), \n",
+    "    key = lambda x: x[1], reverse = True)[0:10], '\\n')\n",
+    "print(file_names[pairs[k][1]], file_names[pairs[k][2]])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 114,
+   "metadata": {
+    "tags": [
+     "outputPrepend"
+    ]
+   },
+   "outputs": [
+    {
+     "output_type": "stream",
+     "name": "stdout",
+     "text": [
+      ", 0.24789034639952703), ('skill', 0.2325859166797412), ('autism', 0.23018821441494092), ('therapy', 0.22979225434685732), ('kong', 0.1999524337740074), ('musical', 0.1558574373067211), ('hong', 0.13961124541624453)] \n",
+      "\n",
+      "[('emotions', 0.3286175551998284), ('emotion', 0.31122352110137314), ('classi', 0.20822450454135827), ('cation', 0.20427949266269535), ('valence', 0.1961854146947844), ('neutral', 0.1876534829090706), ('gomez', 0.18529326938661952), ('reserved', 0.17478179554682471), ('induction', 0.16105720958126407), ('silva', 0.14419532361360132)] \n",
+      "\n",
+      "[('gait', 0.36754137282349936), ('motion', 0.2633525322810706), ('ssvep', 0.24675442557894928), ('angular', 0.2377950065264631), ('artifact', 0.2374824168464145), ('ambulatory', 0.20982954526671138), ('gyroscope', 0.1994065699911812), ('velocity', 0.19875651569695457), ('walking', 0.16539955541645357), ('template', 0.1577970886401683)] \n",
+      "\n",
+      "[('radial', 0.5599383508905985), ('ssvep', 0.33249505802576046), ('horizontal', 0.31110996610126296), ('stimulus', 0.30640923140775694), ('maximal', 0.2323895819674489), ('circles', 0.22038589413994164), ('ring', 0.1543026098389957), ('rank', 0.13920462256199312), ('participants', 0.13516770094483188), ('stimuli', 0.13084174498153323)] \n",
+      "\n",
+      "[('oscillation', 0.6988392712269664), ('pubmed', 0.28444683307418955), ('modern', 0.2281986164145993), ('peak', 0.22038408178444405), ('alpha', 0.18243117338218212), ('across', 0.17937341211463073), ('preprint', 0.17601040855287953), ('fraction', 0.12544077866002318), ('oscillations', 0.11922697566444543), ('energy', 0.11393538100836326)] \n",
+      "\n",
+      "[('driving', 0.4625086855994097), ('gaze', 0.39726614191626913), ('load', 0.3210566482426727), ('autism', 0.3083674403670806), ('pupil', 0.22156013627750826), ('fixation', 0.20574959607009907), ('blink', 0.17575247438555253), ('diameter', 0.17469301868654757), ('baseline', 0.1656901294708963), ('difficulty', 0.15858697382568146)] \n",
+      "\n",
+      "[('neuromarketing', 0.5051595085287357), ('marketing', 0.364535061130287), ('construction', 0.3033273901060734), ('fixation', 0.19874284138120163), ('neuroscience', 0.16488636628246683), ('workers', 0.15684291320939728), ('gaze', 0.1413769131735748), ('techniques', 0.13135299429537092), ('sector', 0.12900624238896793), ('market', 0.12852446652143162)] \n",
+      "\n",
+      "[('regularization', 0.4819736157402991), ('norm', 0.44083428161494576), ('matrix', 0.193007572925178), ('sizes', 0.1663130631219083), ('indoor', 0.14305824862313382), ('matrices', 0.13622095464015815), ('structural', 0.134107373101237), ('outdoor', 0.11404434321350049), ('spectral', 0.11292946731013141), ('inside', 0.11081951108314954)] \n",
+      "\n",
+      "[('flight', 0.3950861773193205), ('tuning', 0.20862387800202914), ('pilot', 0.18384096709328251), ('simulator', 0.15893716300631364), ('overfitting', 0.12061162980469976), ('automation', 0.11815658693620683), ('event', 0.11109342333079418), ('classifier', 0.10656031206595609), ('neighbors', 0.10629689151592588), ('accuracies', 0.10576617605704956)] \n",
+      "\n",
+      "[('robotic', 0.5123304481485296), ('grasp', 0.25037727475340465), ('crossref', 0.24313953237059574), ('cursor', 0.22231208315081025), ('robot', 0.21876410711601685), ('force', 0.20149961806128008), ('trajectory', 0.19245557130282698), ('target', 0.18089655712300737), ('tactile', 0.15623921450069453), ('imagination', 0.15413340204169446)] \n",
+      "\n",
+      "[('musical', 0.4961751552885069), ('preprint', 0.4535843232948809), ('music', 0.3254891555842704), ('holder', 0.26218391166975), ('composition', 0.22466286121452558), ('hemispheric', 0.18027537244154077), ('peer', 0.1524346778820765), ('emotional', 0.14293279844627213), ('reviewed', 0.13738004079345523), ('copyright', 0.11360003129333382)] \n",
+      "\n",
+      "[('music', 0.49216392902227474), ('valence', 0.35454395055965693), ('arousal', 0.2623524367181272), ('ramirez', 0.24039840871393212), ('therapy', 0.22798268816096004), ('session', 0.19888288834257148), ('cancer', 0.18245178988558713), ('care', 0.17845035615822055), ('patients', 0.15668888217511995), ('emotional', 0.15277032221446163)] \n",
+      "\n",
+      "[('robot', 0.4466772289236593), ('cutoff', 0.28197578583767835), ('command', 0.2668187648568052), ('motion', 0.22022177570252707), ('commands', 0.18254442974027976), ('backward', 0.1643960008738646), ('turn', 0.15222644156257556), ('bandpass', 0.1501049883558058), ('issn', 0.14698722762903157), ('butterworth', 0.13777183909781388)] \n",
+      "\n",
+      "[('music', 0.6379355635449555), ('expressive', 0.5495964647522458), ('valence', 0.15517427871198997), ('arousal', 0.13862964153371884), ('listening', 0.13002639812045794), ('ramirez', 0.1285971725978018), ('coordinate', 0.11560609307523402), ('pieces', 0.10886229799665119), ('emotion', 0.10802431714916712), ('depression', 0.10250737972421727)] \n",
+      "\n",
+      "[('inferring', 0.35167265846303436), ('inferences', 0.3138343202900359), ('preference', 0.28194661148325245), ('consumer', 0.25045277681709494), ('social', 0.22354038727878486), ('opposed', 0.20184548375930747), ('viewing', 0.1821188732637041), ('products', 0.17591591227143744), ('inference', 0.17498116286963974), ('cues', 0.15066910513327691)] \n",
+      "\n",
+      "[('thermal', 0.6732081927844298), ('costa', 0.3614958175353333), ('temperature', 0.24358539550986388), ('occupational', 0.2132102251436473), ('volunteer', 0.1839940750446272), ('beta', 0.1550268154877411), ('waves', 0.1402546321087458), ('alpha', 0.11642886273014698), ('environmental', 0.10400537455940832), ('occipital', 0.10031005106076674)] \n",
+      "\n",
+      "[('stimulation', 0.4769529305308314), ('home', 0.3593442998807174), ('self', 0.20065074478622288), ('regulatory', 0.14871586786345845), ('products', 0.12752799814404694), ('companies', 0.12326928480664649), ('quantified', 0.12226122100492914), ('enhancement', 0.12126486570664094), ('consumer', 0.11828291347985655), ('users', 0.11002702912736356)] \n",
+      "\n",
+      "[('classi', 0.75069520507933), ('cation', 0.4457597123786017), ('deep', 0.08078574723066219), ('output', 0.08015684299858064), ('unsupervised', 0.07616550028223043), ('nodes', 0.0734867000810164), ('programming', 0.06833281219887985), ('rule', 0.0674805835466849), ('seizure', 0.06708382887333098), ('node', 0.0613569428513931)] \n",
+      "\n",
+      "[('ssvep', 0.49171802173113277), ('cation', 0.41858282268689034), ('classi', 0.3972411544393036), ('canonical', 0.17127909627382845), ('window', 0.170145948194295), ('target', 0.16876154536128118), ('cient', 0.16059357550818687), ('accuracy', 0.1386197733933399), ('stimulus', 0.1272742991124587), ('correlation', 0.11711687306888603)] \n",
+      "\n",
+      "[('colour', 0.3772188505238541), ('ssvep', 0.34819163673074094), ('flickering', 0.2574062581867694), ('routine', 0.1697656679079963), ('matlab', 0.15803199936310108), ('robot', 0.15774397928252662), ('arrows', 0.14936954350639695), ('arduino', 0.13944641853899187), ('black', 0.12149790085559352), ('steady', 0.1095181986867295)] \n",
+      "\n",
+      "[('valence', 0.44315943696824145), ('videos', 0.4402226449122641), ('arousal', 0.2526604519711745), ('quality', 0.23311746976875578), ('elicitation', 0.22731454074527094), ('emotional', 0.16157651987371335), ('stimuli', 0.1614485435321761), ('deap', 0.15004486985073118), ('dominance', 0.1430340037871913), ('labs', 0.14145055306381246)] \n",
+      "\n",
+      "[('days', 0.37029981676167945), ('sparse', 0.3485642254790984), ('emotion', 0.28514270290001636), ('rank', 0.21961236813467888), ('music', 0.21092389861876845), ('listening', 0.19834619333693634), ('matrix', 0.19828861302813328), ('informative', 0.165477716614705), ('variability', 0.14613433954683472), ('cross', 0.14367028577344326)] \n",
+      "\n",
+      "[('heat', 0.4374067383145875), ('tracking', 0.35005916743649196), ('neuromarketing', 0.2982902893502086), ('turkey', 0.2294540687309297), ('service', 0.2161028699361715), ('prepared', 0.18722303806516924), ('public', 0.17377178125005957), ('texts', 0.17007659468199812), ('informative', 0.1683956146947078), ('marketing', 0.163923693494127)] \n",
+      "\n",
+      "[('para', 0.5879040706599463), ('prefrontal', 0.31197158678779324), ('gamma', 0.2776709367861839), ('como', 0.23295844559271367), ('cerebral', 0.21126279307969378), ('exercise', 0.20701690936725958), ('universidad', 0.20297419574659997), ('este', 0.1747188341945353), ('tica', 0.16175650494890745), ('card', 0.15964968204665841)] \n",
+      "\n",
+      "[('para', 0.8532284426728164), ('como', 0.2608152833491325), ('forma', 0.2001062608404997), ('auto', 0.17011119612718703), ('wavelets', 0.15316149251324002), ('sleep', 0.09716395141878045), ('wavelet', 0.09543357104422288), ('isbn', 0.09310170160167813), ('compression', 0.08214230646946145), ('tica', 0.08048849621031905)] \n",
+      "\n",
+      "[('camera', 0.5573334102270922), ('receiver', 0.320216700619776), ('transmitted', 0.25572536005643215), ('optical', 0.2438275835953052), ('bits', 0.23516567105376673), ('crossref', 0.21203486093358773), ('pixel', 0.11356375220447486), ('visible', 0.11166807058840378), ('transmission', 0.10629529049412378), ('image', 0.10625811675542561)] \n",
+      "\n",
+      "[('tissue', 0.3703012280010382), ('imaging', 0.22609834699225154), ('neurons', 0.20788426880817712), ('cell', 0.19056562695310125), ('optical', 0.1764319042789454), ('cells', 0.17171145313965888), ('molecular', 0.16662466843494433), ('technologies', 0.14605741897710317), ('cellular', 0.1209854778611069), ('neuron', 0.12043112014981235)] \n",
+      "\n",
+      "[('openbci', 0.6850226436689725), ('classi', 0.2626971436709951), ('cation', 0.24600554587512882), ('grade', 0.18630983841785798), ('peterson', 0.18343617419239552), ('openvibe', 0.17841893268413478), ('board', 0.12479851025347988), ('electro', 0.1042714972262272), ('consumer', 0.09766014541317598), ('cost', 0.09496407366684227)] \n",
+      "\n",
+      "[('tracker', 0.46692029920110484), ('frustration', 0.4548594340936867), ('mouse', 0.4540687101837849), ('pointing', 0.21045078649512286), ('gaze', 0.20449210190705197), ('questionnaire', 0.1707461963768051), ('cursor', 0.12156698567802071), ('users', 0.10819581776757725), ('targets', 0.10210631536529256), ('tracking', 0.09870063825074646)] \n",
+      "\n",
+      "[('fraction', 0.2896970776025168), ('memory', 0.28932432450977114), ('package', 0.2642569048259669), ('parallel', 0.26057014101538767), ('call', 0.23685556492293589), ('format', 0.20593278677722976), ('filtering', 0.13945264591543796), ('voltage', 0.13910230872669316), ('learner', 0.1223370666567153), ('serial', 0.11969265384747553)] \n",
+      "\n",
+      "[('robot', 0.44563672595676507), ('eyes', 0.3014376155407682), ('mobile', 0.24293036641813132), ('bayesian', 0.18938790145635817), ('kernel', 0.17299357913469593), ('trained', 0.1723777774067275), ('optimization', 0.1692991759574662), ('vectors', 0.16387864547398157), ('closed', 0.15190305623928121), ('layer', 0.12058232734693065)] \n",
+      "\n",
+      "[('muse', 0.42603606348250544), ('pipeline', 0.25915461718973115), ('dataset', 0.16370426852414952), ('python', 0.1547284962175818), ('classification', 0.14623217832685603), ('imagery', 0.13995666499791146), ('logistic', 0.1376271106845748), ('chapter', 0.13276180180647493), ('configuration', 0.11850479664532017), ('score', 0.1160473800655209)] \n",
+      "\n",
+      "[('dual', 0.1686973500673229), ('fuzzy', 0.16806256063641356), ('radio', 0.16443351105234863), ('scheme', 0.16429905521912022), ('ultra', 0.1600692612446609), ('cloud', 0.15389649086165647), ('image', 0.14255768296220014), ('wireless', 0.13712886122788712), ('logic', 0.13596196001933633), ('segmentation', 0.135399093851801)] \n",
+      "\n",
+      "[('stroke', 0.5006935341732629), ('rehabilitation', 0.3700336840953035), ('mirror', 0.2980448978691531), ('game', 0.23011970015690697), ('ssvep', 0.21550117363066187), ('therapy', 0.2005349718201206), ('unity', 0.18339927019439167), ('patient', 0.1666698140522748), ('patients', 0.1345429667138455), ('hand', 0.12608145119502664)] \n",
+      "\n",
+      "[('alpha', 0.26782104993208783), ('beta', 0.21556067817996594), ('imagery', 0.2072446055942821), ('task', 0.18765146981431152), ('relative', 0.17925102375790375), ('motor', 0.17503526272596606), ('expertise', 0.14953515363554148), ('familiarity', 0.1474901126701264), ('neurosci', 0.14416463263493626), ('block', 0.14046884708131543)] \n",
+      "\n",
+      "[('load', 0.4840680297989856), ('taxonomy', 0.3772510695655792), ('smartphone', 0.3416237072061545), ('smartphones', 0.18942916786945535), ('cognitive', 0.15470598747885925), ('mobile', 0.15176223739166234), ('interactions', 0.1487607736204744), ('tasks', 0.14849099158814222), ('consumption', 0.11330429779467907), ('search', 0.10759891654647448)] \n",
+      "\n",
+      "[('boredom', 0.4600859990848407), ('game', 0.4258526910221602), ('player', 0.28977700998365513), ('flow', 0.20965926896794168), ('affective', 0.19340509016521273), ('dialogue', 0.1909460429582819), ('gaming', 0.14770932671626605), ('chest', 0.1358729324177168), ('difficulty', 0.13311603392351717), ('events', 0.11374669526175316)] \n",
+      "\n",
+      "[('para', 0.8644267185074647), ('como', 0.39430920707268663), ('multimodal', 0.1710499598600205), ('este', 0.10753887465618724), ('emotion', 0.07964696881249356), ('java', 0.06533560996072584), ('neutral', 0.06349905402201524), ('recognition', 0.05226814455914979), ('audio', 0.051577174360323344), ('comput', 0.048107801210630755)] \n",
+      "\n",
+      "[('reading', 0.4361276249947736), ('disabilities', 0.28562153092677917), ('letters', 0.21658961578385114), ('read', 0.18925480668346592), ('resting', 0.1776391528628615), ('letter', 0.16343050125143602), ('theta', 0.15760490393708831), ('turkey', 0.1569467180192927), ('print', 0.15693059288345984), ('children', 0.1494901283759346)] \n",
+      "\n",
+      "[('music', 0.41895691729018675), ('musical', 0.2760298343457787), ('artefact', 0.23898339830999799), ('asymmetry', 0.2132866970598133), ('emotion', 0.19741817389808086), ('offline', 0.18548159007275036), ('hemisphere', 0.1749950423864507), ('reviews', 0.1541480522921121), ('handed', 0.15025511678493875), ('manual', 0.13333376493524618)] \n",
+      "\n",
+      "[('call', 0.4182822443902516), ('phone', 0.36533881734415324), ('emergency', 0.23263435428709647), ('facial', 0.21642549815807083), ('contacts', 0.19161027323348598), ('message', 0.16060335139607132), ('expression', 0.14719365644756147), ('functionalities', 0.13388872370486296), ('mobile', 0.13196120006068543), ('impaired', 0.12704997328843354)] \n",
+      "\n",
+      "[('entropy', 0.4451847575533298), ('rhythm', 0.285150660060889), ('rhythms', 0.2558927634617496), ('group', 0.22692836227146204), ('epoch', 0.17917834017446477), ('pain', 0.17322250469254666), ('effectiveness', 0.14997030997687508), ('accuracies', 0.13802990143621124), ('therapy', 0.1350435003151974), ('fuzzy', 0.1333303195112495)] \n",
+      "\n",
+      "[('para', 0.900655795006852), ('este', 0.2637861113098868), ('como', 0.21723562107873026), ('base', 0.11795101711238559), ('garc', 0.1081571813346551), ('forma', 0.09183883462602223), ('primer', 0.0902313513843538), ('issn', 0.07764657473238981), ('wavelet', 0.05109914717695072), ('imagined', 0.05074589377513371)] \n",
+      "\n",
+      "[('convolutional', 0.37804306810367766), ('layers', 0.32636379932919446), ('layer', 0.32435358722967755), ('filters', 0.2285112215719644), ('output', 0.2085164417334427), ('dense', 0.18997935591835274), ('convolution', 0.16154639811688506), ('wheelchair', 0.1435658751086138), ('stop', 0.14056899276251186), ('gesture', 0.1294830066044911)] \n",
+      "\n",
+      "[('neurons', 0.2538319147422229), ('optical', 0.1892017959754744), ('talk', 0.18582086275006393), ('nerve', 0.1723400087649247), ('stimulation', 0.12822373948577398), ('anderson', 0.12039560086103243), ('decoding', 0.11915050807978465), ('decoded', 0.11742139155009075), ('topics', 0.11366416974441208), ('speaker', 0.11322859635033716)] \n",
+      "\n",
+      "[('musical', 0.5458963388367127), ('insight', 0.4529542531298297), ('music', 0.25122038517108597), ('rhythm', 0.16522823924567728), ('miranda', 0.16087237990451583), ('rhythms', 0.15472172676888582), ('sound', 0.1396134830461571), ('expressions', 0.13754967981108962), ('gyroscope', 0.1089235140050188), ('sends', 0.10451292797365057)] \n",
+      "\n",
+      "[('brand', 0.61673369613228), ('marketing', 0.3762715566347617), ('advertising', 0.2860921889149432), ('downloaded', 0.2731894232617561), ('consumer', 0.20906072410402457), ('responsibility', 0.20388189811664478), ('february', 0.17082290023902255), ('consumers', 0.14458206032239432), ('neuromarketing', 0.12640570174169694), ('television', 0.09177881804986401)] \n",
+      "\n",
+      "[('vigilance', 0.6236032441591277), ('erps', 0.37757340951577634), ('latency', 0.2946057997656281), ('amplitude', 0.2673957026239249), ('alarm', 0.19728474194722667), ('variation', 0.12619244752113373), ('clock', 0.12554483578459882), ('cation', 0.11731487378399647), ('target', 0.11430412957273386), ('participant', 0.09988066771972594)] \n",
+      "\n",
+      "[('conferences', 0.3284677732541397), ('operator', 0.28436465500462094), ('dangerous', 0.23208002105070275), ('robotic', 0.22312605032301855), ('solution', 0.1863367878652994), ('action', 0.184470562019648), ('chemical', 0.1734099824797839), ('eeglab', 0.168189090809979), ('mental', 0.15295701511394816), ('industrial', 0.12854438333231227)] \n",
+      "\n",
+      "[('musical', 0.6605792201871435), ('music', 0.30291150965017455), ('ssvep', 0.2252702881666575), ('miranda', 0.19710209705215925), ('composition', 0.16733616077747163), ('pathway', 0.15418258357629872), ('score', 0.12271400282088521), ('piece', 0.12255812398921426), ('brainwave', 0.10651544625768773), ('laptop', 0.10510748669444894)] \n",
+      "\n",
+      "[('advertising', 0.5054031109444489), ('native', 0.4034680931787631), ('elements', 0.2335112022988123), ('video', 0.2123605023167768), ('mobile', 0.20618146023497536), ('attitude', 0.1928935233023559), ('attitudes', 0.18935018289627492), ('feed', 0.1736893861291697), ('participants', 0.16616332178464158), ('valence', 0.1515686618232981)] \n",
+      "\n",
+      "[('stroke', 0.6005517196705703), ('symmetric', 0.3331216179300572), ('imagery', 0.2725550020994227), ('wavelet', 0.2564298588919026), ('post', 0.19375228172009312), ('motor', 0.15464221597071404), ('meanwhile', 0.13239348967142733), ('accuracy', 0.12354622347472836), ('patients', 0.11933630351913328), ('seconds', 0.11847467977577036)] \n",
+      "\n",
+      "[('alertness', 0.5168315106725072), ('sleepiness', 0.3150576959944507), ('drivers', 0.29314123583502494), ('slope', 0.23117310094430918), ('exposure', 0.21542134305551092), ('accidents', 0.21406072908115428), ('traffic', 0.19773533923809997), ('driving', 0.1521039317292317), ('manufacturing', 0.14930399394348776), ('accident', 0.1392775095350783)] \n",
+      "\n",
+      "[('stress', 0.7362735430402824), ('difficulty', 0.30152826476872413), ('load', 0.2486973198176467), ('peak', 0.16893783684915126), ('math', 0.14198084883079315), ('workload', 0.11231819776909784), ('levels', 0.10377424297245777), ('cognitive', 0.09089704729100744), ('galvanic', 0.08548443875377942), ('index', 0.08008329822687575)] \n",
+      "\n",
+      "[('shapes', 0.4676846021712706), ('generative', 0.24925173533798703), ('iterations', 0.24109729178792072), ('evolutionary', 0.23835432021161856), ('openvibe', 0.20828980368626415), ('lotte', 0.19373589019910048), ('shape', 0.16621423736280785), ('generation', 0.15564341850042665), ('imagined', 0.1500732122237945), ('augmented', 0.1423765885296826)] \n",
+      "\n",
+      "[('professionals', 0.5009700340836903), ('interventions', 0.46120323703230803), ('reactions', 0.2885088078640826), ('scores', 0.19963908049578613), ('healthcare', 0.16488938932570973), ('patients', 0.15943020160204158), ('enjoyment', 0.15490260977338446), ('health', 0.13455459161513106), ('engagement', 0.12682383413956863), ('universit', 0.12657983613086823)] \n",
+      "\n",
+      "[('ssvep', 0.5498722403718737), ('keyboard', 0.3422523977141555), ('hybrid', 0.2471890155471102), ('openvibe', 0.19666831417637654), ('evoked', 0.1720713345398647), ('python', 0.15941662714335872), ('letter', 0.15288170811316032), ('region', 0.1516575527517061), ('flash', 0.12583828063979913), ('amplitudes', 0.11026712694337305)] \n",
+      "\n",
+      "[('surgery', 0.35657053728444194), ('datasets', 0.2535962493454071), ('bayes', 0.22473789614392553), ('incremental', 0.1989815582803731), ('dataset', 0.19194311721466598), ('tree', 0.18914472279050445), ('multilayer', 0.18675091977985442), ('classification', 0.17554869618058858), ('naive', 0.16465460904955584), ('regression', 0.1620872455607265)] \n",
+      "\n",
+      "[('diagnosis', 0.3859481715017703), ('expert', 0.3819614183981276), ('fuzzy', 0.23024583764026202), ('disease', 0.22779582340743004), ('soft', 0.18842395563772332), ('neurology', 0.1729751702911214), ('symptoms', 0.16677859747876497), ('stroke', 0.14294685091500053), ('rule', 0.1341152168516304), ('sclerosis', 0.13374429676754981)] \n",
+      "\n"
+     ]
+    }
+   ],
+   "source": [
+    "for k in doc_cluster[510]:\n",
+    "    print(sorted(doc_tfidf[k].items(), \n",
+    "        key = lambda x: x[1], reverse = True)[0:10], '\\n')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 116,
+   "metadata": {},
+   "outputs": [
+    {
+     "output_type": "execute_result",
+     "data": {
+      "text/plain": [
+       "73"
+      ]
+     },
+     "metadata": {},
+     "execution_count": 116
+    }
+   ],
+   "source": [
+    "word_doc_freq['este']"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ]
+}

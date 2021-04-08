@@ -1,0 +1,1479 @@
+brain
+sciences
+Article
+
+Using Data Assimilation for Quantitative
+Electroencephalography Analysis
+Lizbeth Peralta-Malváez 1, *,† , Rocio Salazar-Varas 1,† , Gibran Etcheverry 1,†
+and David Gutiérrez 2,†
+1
+
+2
+
+*
+†
+
+Department of Computing, Electronics and Mechatronics, Universidad de las Américas Puebla,
+San Andrés Cholula, Puebla 72810, Mexico; rocio.salazarv@udlap.mx (R.S.-V.);
+gibran.etcheverry@udlap.mx (G.E.)
+Monterrey’s Unit Apodaca, Center for Research and Advanced Studies (Cinvestav),
+Nuevo León 66600, Mexico; dgtz@ieee.org
+Correspondence: lizbeth.peraltamz@udlap.mx
+These authors contributed equally to this work.
+
+Received: 5 September 2020; Accepted: 9 November 2020; Published: 12 November 2020
+
+
+
+
+Abstract: We propose a method based on the ensemble Kalman filter (EnKF) together with quantitative
+electroencephalogram (QEEG) coherence and power spectrum analysis for evaluating changes in
+brain activity associated with cognitive processes. Such analysis framework has been widely used
+in the context of data assimilation (DA) in areas such as geosciences, meteorology, and aerospace.
+However, the use of this approach is less common in neurosciences. In our case, EnKF highlights
+the spectral contribution of brain signals that are more likely (according to their coherence analysis)
+to be related to the cognitive process of interest. The power enhancement, due to the cognitive
+activity, is later validated in the power spectrum analysis by comparing through statistical tests
+relevant frequency content in two datasets in which assessing the development of cognitive
+abilities is of interest: the process of getting concentrated and of learning a new skill. Our results
+show that our DA-based methodology can highlight important frequency characteristics of the
+electroencephalogram (EEG) data that have been related to different cognitive processes. Hence, our
+proposal has the potential to understand of neurocognitive phenomena that is tracked through QEEG.
+
+Keywords: data assimilation; quantitative electroencephalography; Ensemble Kalman filter;
+neurocognitive processes
+
+1. Introduction
+Data assimilation (DA) is a technique that combines numerical data modeling and observations to
+obtain an accurate representation of the phenomenon of interest [1]. Typically, model parameters and
+conditions are used for representing an event. Instead, in the context of DA framework, these are used
+for the prediction of the next state. Such a forecast is updated with the DA and new observations for
+analysis purposes. Next, the model is restarted with this analysis and a new prediction is computed.
+This cycle is repeated until all the observations have been assimilated. Some of the methods used are
+optimal interpolation, 3D or 4D variational method, and Kalman filter (KF), along with its variants like
+extended KF (EKF), unscented KF (UKF), and ensemble KF (EnKF) [2]. This last one is the method of
+interest for this research.
+DA has been widely used in areas like aerospace, navigation systems, oceanography, meteorology,
+and geosciences [3]. Some articles declare that the researchers are recently using the DA methods to
+analyze the brain activity [4–6]. Nevertheless, in the late 1970s, KF was used for studying the power
+Brain Sci. 2020, 10, 853; doi:10.3390/brainsci10110853
+
+www.mdpi.com/journal/brainsci
+
+Brain Sci. 2020, 10, 853
+
+2 of 18
+
+spectrum in the electroencephalogram (EEG) signals [7]. It is true that if we compare the use of DA
+methods in the neuroscience area with the other fields described previously, the contributions are still
+less common [3].
+In terms of analysis of brain activity, DA has been mainly used for three purposes: state estimation,
+modeling, and noise reduction. In the first one, searching for the relationship between brain activity
+and a task of interest is the main purpose. For example, Ref. [8] estimates brain connectivity in different
+regions to improve source localization techniques. In [9], the correlation between cortical dynamics
+and seizures was analyzed to gain a better understanding of epilepsy. In terms of using DA for data
+modeling, most of the work is related to signal improvement for brain-computer interfaces (BCI)
+[10,11], and to study the brain during certain conditions like sleeping [12]. Finally, for the goal of
+eliminating noise in brain data, some examples of how DA has been used can be found in [13–15].
+For the analysis of the brain signal, the quantitative electroencephalogram (QEEG) features can be
+used direct- or indirectly with the DA methods. Direct usage refers to using a main characteristic of the
+input data itself, such as its amplitude (the most used in the studies described). The indirect approach
+uses modeling parameters obtained from the data that represent the task of concern, for example,
+the QEEG coherence (which is part of our research proposal). Another indirect form is to use the results
+obtained from the DA method and calculate other variables. This allows the obtaining of additional
+information of the brain signals, e.g., the power spectrum (also used in the majority of the studies).
+Here we consider that with the use of two QEEG characteristics, along with DA, we can obtain more
+information about the brain areas involved in the task of interest, as well as analyze changes in the
+behavior of different brain rhythms related to the same task. With this, the experts of the field can
+make a better interpretation of the analysis outcome regarding the event of concern.
+In this paper, we propose a methodology that uses DA with the EnKF method along with the
+power spectrum and QEEG coherence as features of interest. Although the power of different frequency
+bands is used for evaluating a significant change in the phenomenon of interest, the coherence is
+used for selecting the most relevant sensors for each user related to this event. With this information,
+we can better understand the behavior of the brain rhythms in the different brain areas related the
+task of interest. As described previously, this approach can be helpful to the experts of the area of
+neurosciences, like neurologists and academics, to make diagnosis and medical decisions related
+to patient performance. In this research, we focus our attention in showing the applicability of our
+proposed technique through the analysis of cognitive abilities that have been previously measured
+in two different datasets previously analyzed in [16,17]. Both datasets acquire QEEG data related
+to the development of a cognitive activity. Hence, this paper is organized as follows: In Section 2,
+we explained the methodology for the analysis of the brain signals. We include the description of the
+datasets used, the selection of the relevant sensors with the coherence feature, the use of EnKF as our
+DA method, and the statistical analysis performed with the Wilcoxon signed-rank test. The results
+obtained are presented in Section 3; in Section 4, the results are discussed; and concluding remarks are
+provided in Section 5.
+2. Materials and Methods
+An overview of the methodology proposed in this paper is shown in Figure 1. The first step
+is based on the coherence-based method proposed in [18], in which the EEG data was used for
+selecting sensors that provide the most relevant information for the brain task of interest. Since the
+coherence expresses the correlation between two signals in the frequency domain, it gives an idea of the
+interconnection level that two different brain areas had. Moreover, the signal is filtered with a bandpass
+and independent component analysis (ICA) for eliminating artifacts. With the relevant sensors and
+the filtered signal, the EnKF is applied. For this, a Python program was developed with different
+libraries like Numpy. The main reason for using this programming language along with these libraries
+is two-fold: the reduction of computer memory for storage and the easier manipulation of matrix
+structures since Numpy is implemented in C. Hence, matrix operations are faster to compute [19].
+
+Brain Sci. 2020, 10, 853
+
+3 of 18
+
+Our Python implementation is freely available in [20]. The program returns the original signal and the
+output of applying EnKF in three scenarios: considering all the electrodes, considering the relevant
+ones (referred to as winner channels or WC), and not considering these electrodes (not winner channels
+or simply NWC). Then, the power spectrum density (PSD) is obtained from these outcomes. Finally,
+the Wilcoxon signed-rank test is computed with the PSD of the relevant sensors to find out if there was
+a significant change in the frequency range selected regarding the phenomenon of interest.
+A more detailed description of the main components of our proposed method is provided in the
+following subsections. Specifically, more details on the EEG data we used are given, as well as an
+explanation on the use of coherence for selecting the relevant electrodes for each user, the use of EnKF
+with EEG recordings, and the statistical analysis of the results.
+
+Figure 1. The proposed methodology that combines EnKF and QEEG features.
+
+2.1. EEG Data
+To demonstrate the viability of the proposed methodology, real EEG data were used from two
+different datasets. In both, the activities performed were related to cognitive skills. For future
+references, we will refer the dataset from [16] as LGR and the one from [17] as DM (related to the
+authors’ names of each dataset). In Table 1, different characteristics of each dataset are described,
+such as the headset used for acquisition, its sampling rate, and the number of recordings. Regarding
+the users in Dataset LGR, we used the first five participants. The reason is that they have the same
+number of sessions recorded and consistency in performing the task, compared to the rest of the users.
+Table 1. Features of the datasets analyzed with the proposed methodology.
+
+Number of subjects
+Headset
+Number of sensors
+Sampling rate (Hz)
+Sessions recorded
+Recordings per session
+Frequency bands (Hz)
+
+LGR
+
+DM
+
+5
+Emotiv EPOC+
+14
+128
+19
+3
+Alpha (8–12)
+
+10
+B-Alert X10
+9
+256
+3
+5
+Beta (13–29) and gamma (30–40)
+
+LGR was acquired at Universidad de las Américas Puebla (UDLAP) as part of the PhD thesis
+research of the first author. The five participants used for this study are undergraduate students
+
+Brain Sci. 2020, 10, 853
+
+4 of 18
+
+(average 19.6 years ± 1.74) from the same university. The users were asked to focus on moving a
+3D figure and imagine that they were pushing the object away for five seconds. When they finished
+the activity successfully, they received an auditory stimulus. Each session consisted of three brain
+recordings: before, during, and after the activity. As presented in Table 1, the headset used was the
+Emotiv EPOC+, with fourteen sensors and two references (AF3, F7, F3, FC5, T7, P7, O1, O2, P8, T8,
+FC6, F4, F8, AF4, CMS, and DRL). The five users performed this task in 19 sessions, depending on their
+schedule and time availability. The main goal was to analyze the possible change in the PSD of the
+individual alpha peak frequency (IAPF), the frequency in the range of alpha with the largest value in
+the spectrum [21], by performing a concentration task. This improvement in the spectrum has positive
+effects on cognition and memory enhancement, as well as clinical treatment [22,23].
+DM was acquired at the Center for Research and Advanced Studies (Cinvestav) Monterrey’s
+Unit, as part of a MSc thesis research. We selected this dataset to analyze a cognitive task combined
+with motor movement. Another reason was related to study other frequency bands besides the alpha
+rhythm. The ten users from the dataset are part of the same institution (average 29.3 years ± 5.7).
+The participants performed 12 different lessons for learning to type in a computer with the Colemak
+keyboard layout [24]. The difficulty of the task increased as the lessons progressed. The users repeated
+each of them five times, and in lesson four, eight, and eleven, their brain signals were recorded.
+As described in Table 1, the headset used was the B-Alert X10, with nine sensors (F3, Fz, F4, C3, Cz,
+C4, P3, POz, and P4). The main aim was to study the spectrum behavior in different frequency bands
+during the process of learning a new skill. As a result, they reported a significant decrease in the PSD
+of beta and gamma bands. This change in the former rhythm is related to motor learning activities,
+and the decrease in the latter band can be associated with temporal binding, which is the ability to
+group separate events that occur at different lapses of time [25]. Both datasets are freely available
+at [26,27].
+For this research, we considered the recordings before and after the activity from all sessions in
+Dataset LGR. Likewise, we used the first and last repetition from the lessons recorded (4, 8, and 11) in
+Dataset DM. Such selection was made as we are interested in finding if there was a significant change
+in the user’s PSD as a result of performing an activity related to the corresponding cognitive ability
+(concentration and learning a new skill, respectively). For future references, the EEG recordings from
+Dataset LGR will be referred to as pre- and post-recording, while the EEG registrations from Dataset
+DM will be addressed as the #1- and #5-recording. With these recordings, we can perform the selection
+of most relevant electrodes to the task of concern.
+2.2. Selection of Relevant Sensors
+In this work, we consider as relevant sensors those that are more likely to have a significant
+coherence value in the selected frequency range related to the phenomenon of interest. To find these
+electrodes, the following methodology was used:
+•
+•
+
+Data was filtered with a bandpass Butterworth filter of fourth order, with cutoff frequencies of
+1 and 63 Hz.
+The coherence-based electrode selection method described in [18] was adapted to be applied to
+the datasets used in this work, considering the characteristics of the cognitive activity performed.
+This methodology takes into account the connectivity between different brain areas by analyzing
+the values of coherence between different electrodes in the frequency band of interest. In the
+case of Dataset LGR, the brain rhythm analyzed was the alpha band (8–12 Hz), while in Dataset
+DM it was beta (13–29 Hz) and gamma (30–40 Hz) bands. For each frequency, the coherence was
+evaluated as follows:
+–
+
+From the m available electrodes, all possible combinations of three are assessed with the
+
+binomial coefficient C3m ,
+
+Brain Sci. 2020, 10, 853
+
+–
+
+5 of 18
+
+For each subset of three electrodes, the coherence value was computed between all
+pairs of electrodes, generating three coherence values: γ1,2 ( f ), γ1,3 ( f ), γ2,3 ( f ), which are
+computed as
+| Pj,k ( f )|2
+γ2j,k ( f ) =
+,
+(1)
+Pj ( f ) Pk ( f )
+where f is the frequency, j and k are the sensors to analyze, Pj,k ( f ) is the cross-spectral density
+(CSD), Pj ( f ) and Pk ( f ) are the PSD (i.e., the auto-spectral densities, or ASD) of j and k,
+respectively. The ASD of the signal recorded with one electrode is given by:
+∞
+
+P{∗} ( f ) =
+
+∑
+
+τ =−∞
+
+n
+o
+E x{∗} (n) x{∗} (n − τ ) e− j2πτ f ,
+
+(2)
+
+where {∗} indicates either j or k, E {·} is the expected value, and n = 1, 2, . . . , N time samples.
+Similarly, CSD is given by:
+∞
+
+Pj,k ( f ) =
+–
+
+–
+•
+
+•
+
+∑
+
+τ =−∞
+
+
+E x j (n) xk (n − τ ) e− j2πτ f .
+
+(3)
+
+To assure that each one of the obtained values expressed a true connectivity, the significance
+of those coherence values was evaluated according to [28]. Here, pairs of surrogate
+time series are generated as realizations of two linearly independent stochastic processes.
+Those surrogate series share features of the original EEG recordings but are uncoupled.
+Then, the coherence between each pair and its frequency histogram are calculated. Finally,
+the threshold is set at the 95-percentile of the sampling distribution. If the actual signals from
+the subset of sensors being tested had a significant coherence (i.e., γ2j,k ( f ) >threshold) in all
+three values, the subset was stored.
+This process was repeated for all trials of the EEG recordings.
+
+Since the coherence is a frequency-based metric, the subsets were evaluated in the selected
+frequency range (Dataset LGR: 8–12 Hz; Dataset DM: 13–29 Hz and 30–40 Hz). The subset that
+had 100% of appearance in all the frequency range in the EEG recordings, was taken into account
+as a possible candidate,
+The subset that had more repetitions in all the studies was selected as the relevant one.
+
+With the relevant set of electrodes for each user, we performed DA by using the EnKF and the
+brain recordings.
+2.3. Data Assimilation with EnKF
+The EnKF is a Monte Carlo-based implementation of the KF for high-dimensional and nonlinear
+state estimation problems [3,29]. Compared to the main KF (described in Appendix A), the EnKF
+increases the numerical precision of the KF, and the computational requirements are affordable since it
+does not need derivatives for calculating the state and observation matrices like in other variants like
+EKF [30–32].
+p
+Here, the state xt and the observation yt are calculated according to Equations (A1) and (A2).
+The state transition matrix F is calculated with Taylor series [33], and the transformation matrix H is
+modeled based on the relevant sensors of each user. Compared to the traditional KF, EnKF transforms
+the process covariance matrix Pt into squared root matrices (SRM) as follows:
+Pt = St StT ,
+
+(4)
+
+Brain Sci. 2020, 10, 853
+
+6 of 18
+
+where St is a SRM with size m × m. By applying this transformation, we reduce the computational
+burden in a real-time system implementation with greater precision, and it solves the problem of
+the round-off error’s sensitivity [31]. Please note that in the following steps, we use St instead of Pt .
+To calculate St , we can use the Cholesky factorization algorithm or the LDL T decomposition [31,34].
+For this work, we used the LDL T decomposition since we avoid the use of square-root operations for
+the diagonal elements [35].
+p
+p
+For calculating the new predicted St , hence Pt (Equation (A3)), it is important to perform the
+next calculation:
+"
+#
+"
+#
+p
+( St −1 ) T F T
+( St ) T
+= B∗
+,
+(5)
+0
+QtT/2
+−1
+where B is a 2m × 2m orthogonal matrix that can be computed through different methods such as
+Householder, Gram-Schmidt, modified Gram-Schmidt, and Givens rotation [31]. In this work, we
+used the Givens rotation, since it is less sensitive to scaling problems, and it is more flexible for
+zero-converting [36,37]. With this method, B is defined as follows:
+"
+B=
+
+c
+−s
+
+s
+c
+
+#
+,
+
+(6)
+
+where c and s indicate the cosine and sine functions of an angle, respectively. According to [36],
+the trigonometric functions are not required since its application is as follows:
+"
+
+c
+−s
+
+s
+c
+
+#"
+
+a
+b
+
+#
+
+"
+
+=
+
+r
+0
+
+#
+,
+
+(7)
+
+√
+where r = a2 + b2 , c = a/r and s = −b/r. The complete process can be found in Appendix B as
+Algorithm A1.
+Another important component of the EnKF is the update of the process covariance matrix Pt
+and state xt (A5,A6), along with the calculation of the Kalman gain in (A4). Hence, James E. Potter’s
+algorithm (used for NASA’s Apollo space program) was implemented but modified for vectorial
+measurements [31]. According to [38], this method guarantees the positivity of the computed error
+covariance. The process is shown in Appendix C as Algorithm A2. The outcomes of this method
+become the previous values and the process is repeated. To perform DA of our data through EnKF,
+the following methodology was applied:
+•
+
+•
+
+As a preprocessing step, Dataset LGR was filtered with a bandpass Butterworth filter of 4th order
+in the range [1,63] Hz while for Dataset DM, a bandpass Butterworth filter of 5th order was used
+in the range [1,100] Hz. These cutoff ranges were selected according to the Fs of each dataset.
+For both datasets, independent component analysis (ICA) was performed to remove movement
+and sensor artifacts. Please note that regardless of this filtering process, measurement noise zt was
+taken into account to calculate the sensor noise covariance matrix R used in Potter’s algorithm.
+Then, the EnKF was applied in the signal and we analyzed three cases for comparison purposes:
+(i) using measurements from all sensors, (ii) considering only those signals from relevant
+electrodes (according to the process in Section 2.2, and (iii) leaving out relevant sensors. The main
+reason to contemplate these situations is to see the spectral contribution from different brain
+regions, as well as assessing the advantage of sensor selection given that as described previously,
+these electrodes are significantly correlated with the frequency bands associated with the task of
+interest. Under those conditions, PSD was obtained for those cases through Welch’s method with
+a 50% overlap.
+
+Plotting the PSD of different sessions allow us to have an illustrative representation of the results
+to compare them. The main goal was to analyze, depending on the brain rhythm of interest, a possible
+
+Brain Sci. 2020, 10, 853
+
+7 of 18
+
+increase or decrease in the PSD of each user. Nevertheless, it was necessary to evaluate if this significant
+change was presented because of the activities performed in each study and not by chance. We did
+this evaluation with the Wilcoxon signed-rank test.
+2.4. Statistical Analysis
+Once we performed the DA method, we evaluated whether there was a significant change in
+the PSD values due to the performance of cognitive tasks. For this work, we used the Wilcoxon
+signed-rank test for two reasons: the PSD data does not have a normal distribution and we wanted
+to examine paired groups [39,40]. For Dataset LGR, pre- and post-recordings were compared, while
+for Dataset DM, we were interested to find differences between trial #1 and #5 in each of the three
+sessions measured. Please note that for this statistical analysis, we used only the signal that considers
+the relevant sensors. The reason was to know how these electrodes contributed or not with the user’s
+performance regarding the PSD, since these are the most correlated with the task of concern.
+All statistical tests were carried out with a 5% significance level. We were particularly interested
+in looking for significant differences in the PSD values at alpha, low- and high-beta, or gamma
+bands, given the previously reported findings in [16,17], respectively. Please note that a change in
+the frequency band was considered to be relevant when the majority of its PSD values (with 1 Hz
+resolution) turned out to have significant differences between the groups.
+3. Results
+In this Section, we present the results of the proposed analysis. For each dataset, we display the
+outcomes corresponding to the channel selection, next the PSD resulting from the EnKF in the three
+scenarios described previously, and at last, the statistical analysis.
+3.1. Dataset LGR
+Please note that for this dataset, the headset used was the Emotiv EPOC+ for the brain recording.
+With the 14 sensors available, we have 364 possible combinations of three electrodes. These subsets
+were evaluated with the methodology in Section 2.2, and the one that had more repetitions in all the
+EEG recordings was selected as the relevant one. Table 2 displays the position of the relevant sensors
+for each user.
+Table 2. Relevant electrodes for each participant in Dataset LGR.
+User
+
+Relevant Sensors
+
+1
+2
+3
+4
+5
+
+F4, F8, AF4
+F3, FC6, AF4
+FC5, F4, AF4
+F3, FC5, F4, F8, AF4
+FC5, T8, F4, F8, AF4
+
+As it can be seen, at least one relevant electrode was located on the frontal area for all users. This is
+an expected result since the alpha band, specifically the IAPF, was already been identified in the frontal
+lobe in relationship to cognitive activity [41]. In the case of Users 4 and 5, they presented more than
+three relevant sensors because they had a tie of different subsets that got repeated the most number
+of times in all sessions. For instance, User 5 had a tie between subset FC5, F8, AF4, and T8, F4, AF4.
+Also note that all users had AF4 as relevant. According to [42], the right dorsolateral prefrontal cortex
+(DLPFC) is related to the cognitive processes by allowing people to control their actions, and its activity
+is known to increase during working memory tasks as a reflection of focus and attention [43,44].
+As described in Section 2.3, we analyzed the original signal, and the use of EnKF in three different
+cases: all the sensors, only the relevant sensors, and without these electrodes. Since these outcomes
+were calculated with distinct numbers of sensors (m = 14, 3, 11), we compared the mean (µ) and
+
+Brain Sci. 2020, 10, 853
+
+8 of 18
+
+median from these measurements to verify that no bias had been introduced by possible outliers.
+Figure 2 displays an example of this comparison for User 1.
+As displayed in Figure 2, the µ and median of each of the histograms have very close values.
+With these variables, we can see that there was no bias if we considered fewer or more electrodes in
+our EEG analysis.
+All channels
+µ : 0.03
+median : −0.08
+
+Appearance frequency
+
+800
+
+WC
+µ : 0.07
+median : −0.15
+
+600
+
+NWC
+µ : 0.02
+median : −0.02
+
+400
+200
+0
+−4
+−2
+0
+2
+4
+EEG normalized amplitude (µV)
+Figure 2. Histograms of User 1 pre-recording.
+
+Afterwards, every spectrum from the original signal and those after the proposed DA technique
+were computed. An example of this process is shown in Figure 3 for User 1, which contains four curves
+that represent the original signal, all sensors, only relevant sensors, and not considering them.
+Please note that the PSD for the WC case has higher magnitude in comparison to the other
+cases. This behavior is supported by the fact that its result is more correlated with the activity of
+interest. In contrast, the NWC yielded lower power, since it does not contain the relevant electrodes.
+Another thing to remark is the behavior of the original signal and the case that considers all sensors.
+Both curves have the same performance, and we expected this behavior since the EnKF is modeling
+and predicting the pre-filtered EEG recording.
+
+PSD (dB/Hz)
+
+0
+
+−20
+
+Original
+All channels
+WC
+NWC
+
+20
+PSD (dB/Hz)
+
+Original
+All channels
+WC
+NWC
+
+20
+
+0
+
+−20
+0
+
+20
+
+40
+
+Frequency (Hz)
+
+(a) Pre-recording
+
+60
+
+0
+
+20
+
+40
+
+60
+
+Frequency (Hz)
+
+(b) Post-recording
+
+Figure 3. PSD results from EnKF outputs of User 1.
+
+As described in Section 2.4, the statistical testing was performed to find significant changes for all
+users and sessions. Please note that the main goal of the Dataset was to study a possible increase in the
+IAPF’s spectrum with the concentration task. The statistical results can be seen in Figure 4, where the
+
+Brain Sci. 2020, 10, 853
+
+9 of 18
+
+x-axis represents the users and the y-axis is each of the sessions recorded. There, the points represent in
+which sessions the participants had a significant increase in the alpha band. We note that all users had
+this performance in more than one session. This is an expected result since the alpha band is related to
+cognitive processes like concentration [41]. Moreover, we can appreciate that in consecutive sessions
+the participants had the significant increase, and then there is a range of sessions without a change.
+For example, User 1 had sessions 3, 4, and 5 highlighted, and she did not have another significant
+increase until session 8. As well, the participants have less than half of the sessions performed with a
+significant change. This behavior is discussed in detail in Section 4.
+20
+18
+16
+Session
+
+14
+12
+10
+8
+6
+4
+2
+1
+
+2
+
+3
+
+4
+
+5
+
+User
+Figure 4. Sessions with significant change in Dataset LGR.
+
+3.2. Dataset DM
+For this dataset, the authors used the B-Alert X10 headset for the EEG recordings. In this case,
+with the nine available sensors, we had 84 possible combinations of three electrodes. With the #1 and
+#5 recordings and the procedure described in Section 2.2, the relevant sensors were obtained and they
+are displayed in Table 3. Likewise, Dataset LGR, some of the users had more than three significant
+electrodes. For example, Users 4 and 9 had a tie between subset C3, P3, POz, and Cz, POz, and F4.
+As described in Section 3.1 the reason of these outcomes is that they had a tie of different subsets that
+repeated the most in the study. Also note that nine of ten participants had in common subset C3, P3,
+POz. Such set of sensors cover and acquire the activity of the primary motor cortex, whose activation
+is known to be implicated in the process of skilled movement [45].
+Table 3. Relevant electrodes for each participant in Dataset DM.
+User
+
+Relevant Sensors
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+
+C3, P3, POz
+C3, Cz, P3, POz
+F3, C3, Cz
+F4, C3, Cz, P3, POz
+C3, Cz, P3, POz
+C3, P3, POz
+C3, P3, POz
+C3, P3, POz
+F4, C3, Cz, P3, POz
+C3, P3, POz
+
+Just like Dataset LGR, we analyzed the original signal, and the use of EnKF in the three scenarios
+described previously. Please note that since the authors used the B-Alert System, the number of
+
+Brain Sci. 2020, 10, 853
+
+10 of 18
+
+sensors differs (m = 9, 3, 6). We also compared the mean (µ) and median from the EnKF measurements.
+The aim was to verify that no bias had been introduced by possible outliers. Figure 5 displays this
+comparison for User 5 and, since the µ and median have similar values, we can say that there was no
+bias if we considered fewer or more electrodes.
+·104
+All channels
+µ : 0.02
+median : −0.03
+
+Appearance frequency
+
+5
+
+WC
+µ : 0.04
+median : 0.01
+
+4
+
+NWC
+µ : 0.01
+median : −0.01
+
+3
+2
+1
+0
+−8
+
+−6 −4 −2
+0
+2
+4
+6
+EEG normalized amplitude (µV)
+
+Figure 5. Histograms of User 5 first recording.
+
+40
+
+40
+
+20
+
+20
+
+PSD (dB/Hz)
+
+PSD (dB/Hz)
+
+An example of the results obtained with the EnKF are shown in Figure 6 for the case of User 5.
+In the same fashion as with Dataset LGR, the figure contains four cases: the original signal, all sensors,
+WC, and NWC.
+
+0
+Original
+All channels
+WC
+NWC
+
+−20
+0
+
+20
+
+40
+
+0
+Original
+All channels
+WC
+NWC
+
+−20
+60
+
+80
+
+Frequency (Hz)
+
+(a) #1-recording
+
+100
+
+120
+
+140
+
+0
+
+20
+
+40
+
+60
+
+80
+
+100
+
+120
+
+140
+
+Frequency (Hz)
+
+(b) #5-recording
+
+Figure 6. PSD results from EnKF outputs of User 5.
+
+Again, the plot corresponding to WC stands out as the one with higher power for most
+of the frequencies; however, NWC curve is on top for some frequencies and not far away of
+WC. Such behavior could be related to different factors that affect the user’s performance and,
+in consequence, the power of certain frequency bands [46]. Nevertheless, this behavior could be
+related to the selection of the relevant sensors. As described in Section 2.2, the subsets needed to
+have a 100% appearance in all the frequency range in the brain recording so we could consider it as
+a candidate.
+Please note that the main goal of this dataset was to study the spectrum behavior in different
+frequency bands during the process of learning a new skill. They reported a significant decrease in
+
+Brain Sci. 2020, 10, 853
+
+11 of 18
+
+the PSD of beta (13–29 Hz) and gamma (30–40 Hz) bands. With this information, the corresponding
+statistical analysis for beta (low and high) and gamma bands was performed on selected channels and
+significant changes found are presented in Figure 7. Like in Figure 4, the x-axis presents the users of
+the dataset and the y-axis is every lesson recorded. Moreover, each point (according to each frequency
+band) displays where the users had the desirable performance. Please note that most of the users show
+significant changes in the beta band (either low, high, or both) in most of the lessons. This agrees with
+beta band being related to motor learning activities, as in the case of the typing task. The gamma band
+also had a significant change, which could be associated with temporal binding, which is the ability to
+group separate events occurring at different lapses of time [25].
+11
+
+Session
+
+8
+
+4
+low Beta
+high Beta
+Gamma
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10
+
+User
+Figure 7. Sessions with significant change in Dataset DM.
+
+4. Discussion
+Our proposed analysis allowed us to obtain new insight regarding the cognitive processes taking
+place in each of the datasets.
+Regarding the selection of relevant sensors, the process could identify electrodes with a significant
+coherence value in the frequency bands related to the tasks of interest. Please note that the majority
+of the participants had sensors whose location over the head cover brain areas associated with the
+concentration and the process of learning a new skill. For DM, beta and gamma bands in the primary
+motor cortex (central and parietal lobes) are related to the acquisition and performance of the skilled
+movement. The activation of these areas can be seen in the subset of sensors C3, P3, POz, which
+appeared in most of the users. Nevertheless, three participants (3, 4, and 9) had at least one frontal
+electrode. According to [47], beta rhythm in the frontal lobe is associated with cognitive tasks regarding
+decision making, which could be presented during the typing activity. Furthermore, gamma rhythm
+in the same brain area is correlated with movement execution [48], and phonological processing [49].
+For the EnKF outcomes, the graphs displayed contain four different curves showing the original
+signal, the use of all electrodes, and considering or not the relevant sensors. The main result there is that
+magnitude of the PSD when WC are considered is greater than the one for other channel’s combinations.
+This behavior is the result of the use of electrodes mainly correlated with the corresponding frequency
+bands studied.
+In regards to the statistical results, the users in LGR had less than half of the sessions with a
+significant increase in the alpha band. This outcome could be the result of two different aspects:
+overtraining and cognitive demand. Overtraining could be linked to an excess of practice, which leads
+to a decrease in the user’s performance. This performance could have a possible increase in the
+progression of the experiment [50,51]. This behavior can be seen, for example, in Users 3, 4, and 5 in
+Figure 4. Cognitive demand might be related to the memory demand and attentiveness that increases
+
+Brain Sci. 2020, 10, 853
+
+12 of 18
+
+power in alpha band [50,52]. Some users in Figure 4 did not show a significant increase over the last
+sessions, and this is possibly related to the low cognitive demand because of the activity repetitiveness,
+as the concentration activity was the same in all the sessions. In Dataset DM, we can see that all
+users had a significant change in beta (low, high, or both) in most of the sessions. This behavior is in
+agreement with the activation of the primary motor cortex (due to typing) and the parietal activation,
+where a variety of cognitive tasks like working memory and attention converge [53]. Regarding the
+changes in the gamma band, this can be certainly related to the process of looking at a paragraph,
+remembering it, and then writing it with a specific keyboard layout. Besides this, the gamma band is
+known to control coupling perception, which is associated with motor skills and learning [54,55].
+5. Conclusions
+In this paper, we proposed an analysis process of brain activity signals through DA foundations,
+specifically those related to the EnKF, and QEEG features. We showed the applicability of the proposed
+method through a series of numerical examples in real EEG data, corresponding to cognitive processes.
+The results show the advantage of using the proposed method together with channel selection
+techniques in order to provide the most relevant information from data; hence, those most likely
+related to the cognitive process of interest. In both databases here analyzed, we were able to confirm
+the observations previously made on the relationship of changes in different brain rhythms as the
+cognitive process progressed.
+Future work will include a validation of the proposed methodology with the assistance of
+neuroscience experts (e.g., neurologists and academics). For this, we need to perform more tests with
+other brain signals related to different human skills. Moreover, we contemplate the creation of a
+user interface so the outcomes can be interpreted easily by the experts. With these improvements,
+the methodology can be used for evaluating the progress of the patients regarding cognitive ability,
+motor skills, neurological disorders, among others.
+Author Contributions: Conceptualization, L.P.-M., R.S.-V., G.E., and D.G.; methodology, L.P.-M., R.S.-V., G.E.,
+and D.G.; software, L.P.-M.; validation, L.P.-M.; formal analysis, L.P.-M., R.S.-V., G.E., and D.G.; investigation,
+L.P.-M., R.S.-V., G.E., and D.G.; resources, L.P.-M., R.S.-V., G.E., and D.G.; data curation, L.P.-M.; writing–original
+draft preparation, L.P.-M., R.S.-V., G.E., and D.G.; writing–review and editing, L.P.-M., R.S.-V., G.E., and D.G.;
+visualization, L.P.-M.; supervision, R.S.-V., G.E., and D.G.; project administration, L.P.-M., R.S.-V., G.E., and D.G.
+All authors have read and agreed to the published version of the manuscript.
+Funding: This research received no external funding.
+Acknowledgments: The authors would like to thank Universidad de las Américas Puebla (UDLAP), the Mexican
+Council of Science and Technology (CONACyT), and the Laboratory of Biomedical Signal Processing at Cinvestav
+Monterrey for their support during the development of this project.
+Conflicts of Interest: The authors declare no conflict of interest.
+
+Abbreviations
+The following abbreviations are used in this manuscript:
+ASD
+BCI
+Cinvestav
+CSD
+DA
+DLPFC
+EEG
+WC
+EKF
+EnKF
+IAPF
+ICA
+
+Auto-spectral density
+Brain-computer interface
+Center for Research and Advanced Studies
+Cross-spectral density
+Data assimilation
+Dorsolateral prefrontal cortex
+Electroencephalogram
+Winner channels
+Extended Kalman filter
+Ensemble Kalman filter
+Individual alpha peak frequency
+Independent component analysis
+
+Brain Sci. 2020, 10, 853
+
+KF
+NWC
+PSD
+QEEG
+SRM
+UKF
+UDLAP
+WC
+
+13 of 18
+
+Kalman filter
+Not winner channels
+Power spectrum density
+Quantitative electroencephalogram
+Squared root matrix
+Unscented Kalman filter
+Universidad de las Américas Puebla
+Winner channels
+
+Appendix A. Kalman Filter (KF)
+Kalman filter (KF), also known as linear quadratic estimator, is a recursive method whose
+principal goal is to estimate the state of a phenomenon of interest when the measured data can
+p
+contain uncertainty errors [56]. It estimates the state xt ∈ Rm of a discrete-time controlled process,
+where p denotes a predictor, t is the time step and m is the number of elements. It is driven by the
+following linear stochastic calculation [57]:
+p
+
+xt = Fxt−1 + wt ,
+
+(A1)
+
+with a measurement yt ∈ Rn , where n is the number of elements to study. This variable is given by,
+yt = Hxt + zt ,
+
+(A2)
+
+where F is a state transition matrix with size m × m. According to [58,59], F can be achieved through
+Taylor series, Padé series, inverse Laplace transform, matrix decomposition methods, among others.
+H is a transformation matrix with size n × m, wt , and zt are the process and measurement noise,
+respectively. We consider the former as the noise that is originated from the input data itself, while the
+latter is the noise that is generated in the sensors that read the data. Both are zero-mean Gaussian
+processes and column vectors with size m × 1 and n × 1, respectively. This filter operation can be
+summarized in five steps:
+•
+•
+
+An initial state is given to the filter, which includes the state (x0 ) and the process covariance
+matrix (P0 );
+Then, a new predicted state and process covariance matrix are calculated, the former using (A1)
+and the latter by:
+p
+Pt = FPt−1 F T + Qt ,
+(A3)
+
+•
+
+where Qt is the process noise covariance matrix with size m × m, and it is determined with wt ;
+The measured input is considered and Kalman gain is calculated. The former is given by (A2)
+and the latter is obtained through the following:
+p
+
+K=
+
+•
+
+Pt H T
+p
+
+HPt H T + R
+
+,
+
+(A4)
+
+where R is the sensor noise covariance diagonal matrix with size n × n, and it is determined
+with zt ;
+The process state and covariance matrix are updated as follows:
+p
+
+Pt = ( I − KH ) Pt ,
+
+(A5)
+
+
+
+p
+p
+xt = xt + K yt − Hxt ,
+
+(A6)
+
+where I is the identity matrix with size m × m;
+
+Brain Sci. 2020, 10, 853
+
+•
+
+14 of 18
+
+The results of (A5) and (A6) become the previous values. Next, the process is repeated starting
+from the second step.
+
+Appendix B. Givens Rotation
+Algorithm A1 Givens rotation
+1:
+2:
+
+Input: F, Qt−1 , St−1
+p
+
+Output: St
+
+m ← size of St−1
+
+
+4:
+T
+T
+ F • St −1 
+5: U ← 
+
+QtT/2
+−1
+3:
+
+. size 2 m × 2 m
+
+6:
+7:
+
+for j ← 1 to m do
+
+for i ← 2m : −1 : j + 1 do
+
+8:
+
+B←I
+
+9:
+
+a ← Ui−1,j
+
+10:
+
+b ← Ui,j
+
+11:
+12:
+
+if b = 0 then
+
+13:
+
+c←1
+
+s←0
+
+14:
+
+else
+
+15:
+
+if abs(b) > abs( a) then
+
+16:
+
+r ← a/b
+p
+s ← 1/ (1 + r2 )
+
+17:
+18:
+
+c ← s×r
+
+19:
+
+else
+
+20:
+
+r ← b/a
+p
+c ← 1/ (1 + r2 )
+
+21:
+22:
+
+s ← c×r
+
+23:
+
+end if
+
+24:
+
+end if
+
+25:
+26:
+
+B[i−1,i],[i−1,i]
+
+27:
+
+U ← BT • U
+
+end for
+
+28:
+29:
+
+end for
+
+30:
+
+St ← U[1:m],[1:m]
+
+p
+
+
+ c
+=
+s
+
+
+−s 
+
+c
+
+. size 2 m × 2 m
+
+Brain Sci. 2020, 10, 853
+
+15 of 18
+
+Appendix C. Potter’s Algorithm
+Algorithm A2 Potter’s algorithm.
+p
+
+p
+
+1:
+
+Input: xt , St , yt , H, R
+
+2:
+
+Output: xt , St
+
+3:
+4:
+
+p
+
+p
+
+Initialize x0,t ← xt and S0,t ← St
+
+5:
+6:
+7:
+8:
+9:
+10:
+11:
+12:
+13:
+14:
+15:
+16:
+
+for i ← 1 to n do
+
+. n: Size of yt
+
+Hi ← ith row of H
+
+yi,t ← ith element of yt
+
+Ri ← variance of ith measurement
+
+φi ← SiT−1,t HiT
+
+ai ← 1/(φiT φi + Ri )
+√
+γi ← a i / ( 1 ± a i R i )
+
+Si,t ← Si−1,t ( I − ai γi φi φiT )
+Ki,t ← Si,t φi
+
+. Kalman gain of ith measurement
+
+xi,t ← xi−1,t + Ki,t (yi,t − Hi xi−1,t )
+
+end for
+
+17:
+18:
+
+Set xt ← xm,t , St ← Sm,t
+
+References
+1.
+
+2.
+3.
+4.
+
+5.
+6.
+7.
+8.
+
+9.
+10.
+
+Zhang, Z.; Moore, J.C. Chapter 9: Data Assimilation. In Mathematical and Physical Fundamentals
+of Climate Change; Zhang, Z., Moore, J.C., Eds.; Elsevier: Boston, MA, USA, 2015; pp. 291–311,
+doi:10.1016/B978-0-12-800066-3.00009-7.
+O’Neill, A. Introduction to Data Assimilation. 1st ENVISAT Data Assimilation Summer School. 2003.
+Available online: https://bit.ly/3hWOoKR (accessed on 5 August 2020).
+Roth, M.; Hendeby, G.; Fritsche, C.; Gustafsson, F. The Ensemble Kalman filter: A signal processing
+perspective. EURASIP J. Adv. Signal Process. 2017, 56, doi:10.1186/s13634-017-0492-x.
+Politi, N.; Feng, J.; Lu, W. Comparing data assimilation filters for parameter estimation in a neuron model.
+In Proceedings of the 2016 International Joint Conference on Neural Networks (IJCNN), Vancouver, BC,
+Canada, 24–29 July 2016; pp. 4767–4774.
+Carrassi, A.; Bocquet, M.; Bertino, L.; Evensen, G. Data assimilation in the geosciences: An overview of
+methods, issues, and perspectives. WIREs Clim. Chang. 2018, 9, doi:10.1002/wcc.535.
+Moye, M.; Diekman, C. Data Assimilation Methods for Neuronal State and Parameter Estimation.
+J. Math. Neurosci. 2018, 8, doi:10.1186/s13408-018-0066-8.
+Bohlin, T. Analysis of EEG signals with changing spectra using a short-word Kalman estimator. Math. Biosci.
+1977, 35, 221–259, doi:10.1016/0025-5564(77)90026-8.
+Rajabioun, M.; Nasrabadi, A.; Shamsollahi, M. Estimation of effective brain connectivity with dual
+Kalman filter and EEG source localization methods. Australas. Phys. Eng. Sci. Med. 2017, 40, 675–686,
+doi:10.1007/s13246-017-0578-7.
+Freestone, D.R.; Karoly, P.J.; Nešić, D.; Aram, P.; Cook, M.J.; Grayden, D.B. Estimation of effective connectivity
+via data-driven neural modeling. Front. Neurosci. 2014, 8, 383, doi:10.3389/fnins.2014.00383.
+Li, Z.; O’Doherty, J.E.; Hanson, T.L.; Lebedev, M.A.; Henriquez, C.S.; Nicolelis, M.A.L. Unscented Kalman
+Filter for Brain-Machine Interfaces. PLoS ONE 2009, 4, 1–18, doi:10.1371/journal.pone.0006243.
+
+Brain Sci. 2020, 10, 853
+
+11.
+
+12.
+
+13.
+14.
+
+15.
+
+16.
+
+17.
+18.
+
+19.
+20.
+21.
+
+22.
+23.
+24.
+25.
+26.
+27.
+28.
+29.
+30.
+31.
+
+16 of 18
+
+Durantin, G.; Scannella, S.; Gateau, T.; Delorme, A.; Dehais, F. Processing Functional Near Infrared
+Spectroscopy Signal with a Kalman Filter to Assess Working Memory during Simulated Flight.
+Front. Hum. Neurosci. 2016, 9, 707, doi:10.3389/fnhum.2015.00707.
+Bahari, F.; Tulyaganova, C.; Billard, M.; Alloway, K.; Gluckman, B.J. The neural basis for sleep
+regulation—Data assimilation from animal to model. In Proceedings of the 2016 50th Asilomar Conference
+on Signals, Systems and Computers, Pacific Grove, CA, USA, 6–9 November 2016; pp. 1061–1065.
+Yakoubi, M.; Hamdi, R.; Salah, M.B. EEG enhancement using extended kalman filter to train multi-layer
+perceptron. Biomed. Eng. Appl. Basis Commun. 2019, 31, 1950005, doi:10.4015/S1016237219500054.
+Dong, S.; Jeong, J. Noise reduction in fNIRS data using extended Kalman filter combined with short
+separation measurement. In Proceedings of the 2018 6th International Conference on Brain-Computer
+Interface (BCI), GangWon, Korea, 15–17 January 2018; Institute of Electrical and Electronics Engineers Inc.:
+Piscataway, NJ, USA, 2018; Volume 2018-January, pp. 1–3, doi:10.1109/IWW-BCI.2018.8311501.
+Morbidi, F.; Garulli, A.; Prattichizzo, D.; Rizzo, C.; Manganotti, P.; Rossi, S. Off-line removal of TMS-induced
+artifacts on human electroencephalography by Kalman filter. J. Neurosci. Methods 2007, 162, 293–302,
+doi:10.1016/j.jneumeth.2006.12.013.
+Peralta-Malváez, L.; Etcheverry, G. Individual Alpha Peak Frequency’s Dataset Through Neurofeedback’s
+Protocol. In Converging Clinical and Engineering Research on Neurorehabilitation III; Masia, L., Micera, S.,
+Akay, M., Pons, J.L., Eds.; Springer International Publishing: Cham, Switzerland, 2019; pp. 691–695.
+Gutiérrez, D.; Ramírez-Moreno, M. Assessing a learning process with functional ANOVA estimators of EEG
+power spectral densities. Cogn. Neurodyn. 2016, 10, 175–183, doi:10.1007/s11571-015-9368-7.
+Salazar-Varas, R.; Gutiérrez, D. An optimized feature selection and classification method for using
+electroencephalographic coherence in brain–computer interfaces. Biomed. Signal Process. Control 2015,
+18, 11–18, doi:10.1016/j.bspc.2014.11.001.
+McKinney, W. Chapter 1: Preliminaries. In Python for Data Analysis; Steele, J., Blanchette, M., Eds.;
+O’Reilly Media: Sebastopol, CA, USA, 2013; pp. 1–15.
+Peralta-Malváez, L.; Etcheverry, G.; Salazar-Varas, R. EnKF for Brain Signal Analysis. 2020 Available online:
+https://github.com/Lizalete/EnKF-for-brain-signal-analysis (accessed on 30 August 2020).
+Köpruner, V.; Pfurtscheller, G.; Auer, L. Quantitative EEG in Normals and in Patients with Cerebral Ischemia.
+In Brain Ischemia: Quantitative EEG and Imaging Techniques; Pfurtscheller, G., Jonkman, E., Silva, F.L.D.,
+Eds.; Elsevier: Amsterdam, The Netherlands, 1984; Volume 62 Progress in Brain Research, pp. 29–50,
+doi:10.1016/S0079-6123(08)62168-8.
+Bazanova, O.; Vernon, D. Interpreting EEG alpha activity. Neurosci. Biobehav. Rev. 2014, 44, 94–110,
+doi:10.1016/j.neubiorev.2013.05.007.
+Gruzelier, J.H. EEG-neurofeedback for optimising performance. I: A review of cognitive and affective outcome in
+healthy participants. Neurosci. Biobehav. Rev. 2014, 44, 124–141, doi:10.1016/j.neubiorev.2013.09.015.
+Colemark. Colemark Keyboard Layout. 2019. Available online: https://colemak.com/ (accessed on
+3 August 2020).
+Buehner, M.J. Chapter 15: Temporal binding. In Attention and Time; Oxford Scholarship Online: Oxford, UK,
+2010; doi:10.1093/acprof:oso/9780199563456.001.0001.
+Peralta-Malváez, L.and Etcheverry, G.; Salazar-Varas, R. Database EEG Concentration. 2020. Available
+online: https://bit.ly/3bnzlaC (accessed on 1 July 2020).
+Gutiérrez, D.; Ramírez-Moreno, M.A. Electroencephalography Measurements during Colemak Typing Lessons;
+IEEE: Piscataway, NJ, USA, 2020; doi:10.21227/7dmt-jj36.
+Faes, L.; Pinna, G.D.; Porta, A.; Maestri, R.; Nollo, G. Surrogate data analysis for assessing the significance of
+the coherence function. IEEE Trans. Biomed. Eng. 2004, 51, 1156–1166, doi:10.1109/TBME.2004.827271.
+Evensen, G. Chapter 4: Sequential data assimilation. In Data Assimilation: The Ensemble Kalman Filter, 2nd ed.;
+Evensen, G., Ed.; Springer: Berlin, Germany, 2009; pp. 27–45, doi:10.1007/978-3-642-03711-5.
+Rhudy, M.B.; Salguero, R.A.; Holappa, K. A Kalman Filtering Tutorial For Undergraduate Students. Int. J.
+Comput. Sci. Eng. Surv. 2017, 8, doi:10.5121/ijcses.2017.8101.
+Simon, D. Alternate Kalman filter formulations.
+In Optimal State Estimation. Kalman, H Infinity,
+and Nonlinear Approaches; John Wiley & Sons, Ltd.: Hoboken, NJ, USA, 2006; Chapter 6, pp. 149–181,
+doi:10.1002/0470045345.ch6.
+
+Brain Sci. 2020, 10, 853
+
+32.
+33.
+34.
+35.
+36.
+
+37.
+38.
+39.
+40.
+41.
+
+42.
+43.
+
+44.
+45.
+46.
+
+47.
+
+48.
+
+49.
+
+50.
+51.
+52.
+53.
+
+17 of 18
+
+Tippett, M.K.; Anderson, J.L.; Bishop, C.H.; Hamill, T.M.; Whitaker, J.S. Ensemble Square-Root Filters. Mon.
+Weather Rev. 2003, 131, 1485–1490.
+Johnson, J.; Phillips, C. An algorithm for the computation of the integral of the state transition matrix.
+IEEE Trans. Autom. Control 1971, 16, 204–205.
+Strang, G. Chapter 1.3: Positive Definite Matrices and A = LDL T . In Introduction to Applied Mathematics;
+Wellesley College: Wellesley, MA, USA, 1986; pp. 15–31.
+Krishnamoorthy, A.; Menon, D. Matrix Inversion Using Cholesky Decomposition. arXiv 2011,
+arXiv:cs.MS/1111.4144.
+Gibbs, B.P. Chapter 5: Linear least-squares estimation: Solution techniques. In Advanced Kalman Filtering,
+Least-Squares and Modeling: A Practical Handbook; John Wiley and Sons, Inc.: Hoboken, NJ, USA, 2011;
+pp. 139–192, doi:10.1002/9780470890042.
+Moon, T.; Stirling, W. Mathematical Methods and Algorithms for Signal Processing; Prentice-Hall: Upper Saddle
+River, NJ, USA, 2000.
+Thornton, C.L. Triangular Covariance Factorizations for Kalman Filtering. Ph.D. Thesis, California Institute
+of Technology, Pasadena, CA, USA, 1976.
+Huang, G.; Statistical Analysis. In EEG Signal Processing and Feature Extraction; Hu, L., Zhang, Z., Eds.;
+Springer: Singapore, 2019; pp. 335–375, doi:10.1007/978-981-13-9113-2_17.
+Marinstatslectures. Wilcoxon Signed Rank Test|Statistics Tutorial 22| MarinStatsLectures. 2018. Available
+online: https://bit.ly/3lMcSJa (accessed on 11 July 2020).
+Angelakis, E.; Stathopoulou, S.; Frymiare, J.L.; Green, D.L.; Lubar, J.F.; Kounios, J. EEG Neurofeedback:
+A Brief Overview and an Example of Peak Alpha Frequency Training for Cognitive Enhancement in the
+Elderly. Clin. Neuropsychol. 2007, 21, 110–129, doi:10.1080/13854040600744839.
+Weissman, D.; Perkins, A.; Woldorff, M. Cognitive control in social situations: A role for the dorsolateral
+prefrontal cortex. NeuroImage 2008, 40, 955–962, doi:10.1016/j.neuroimage.2007.12.021.
+Sridharan, D.; Levitin, D.J.; Menon, V. A critical role for the right fronto-insular cortex in switching
+between central-executive and default-mode networks. Proc. Natl. Acad. Sci. USA 2008, 105, 12569–12574,
+doi:10.1073/pnas.0800005105.
+Smith, E.E.; Jonides, J.; Koeppe, R.A. Dissociating Verbal and Spatial Working Memory Using PET.
+Cereb. Cortex 1996, 6, 11–20, doi:10.1093/cercor/6.1.11.
+Kleim, J. Synaptic Mechanisms of Learning. In Encyclopedia of Neuroscience; Squire, L.R., Ed.; Academic Press:
+Oxford, UK, 2009; pp. 731– 734, doi:10.1016/B978-008045046-9.01316-4.
+Trápaga Ortega, C.; Pelayo González, H.; Sánchez Ortiz, I. Neuropsicología cognitiva. De los paradigmas
+experimentales a la clínica. In De la Psicología Cognitiva a la Neuropsicología; Trápaga Ortega, C.,
+Pelayo González, H., Sánchez Ortiz, I., Eds.; El Manual Moderno: Cuauhtémoc, Mexico, 2018.
+Kulkarni, N.; Bairagi, V. Chapter Two—Electroencephalogram and Its Use in Clinical Neuroscience.
+In EEG-Based Diagnosis of Alzheimer Disease; Kulkarni, N.; Bairagi, V., Eds.; Academic Press: Cambridge, MA,
+USA, 2018; pp. 25–35, doi:10.1016/B978-0-12-815392-5.00002-2.
+Babiloni, C.; Del Percio, C.; Vecchio, F.; Sebastiano, F.; Di Gennaro, G.; Quarato, P.P.; Morace, R.; Pavone, L.;
+Soricelli, A.; Noce, G.; et al. Alpha, beta and gamma electrocorticographic rhythms in somatosensory,
+motor, premotor and prefrontal cortical areas differ in movement execution and observation in humans.
+Clin. Neurophysiol. 2016, 127, 641–654, doi:10.1016/j.clinph.2015.04.068.
+Meeuwissen, E.B.; Takashima, A.; Fernández, G.; Jensen, O. Evidence for Human Fronto-Central
+Gamma Activity during Long-Term Memory Encoding of Word Sequences. PLoS ONE 2011, 6, 1–9,
+doi:10.1371/journal.pone.0021356.
+Strehl, U. What learning theories can teach us in designing neurofeedback treatments. Front. Hum. Neurosci.
+2014, 8, 894, doi:10.3389/fnhum.2014.00894.
+Enriquez-Geppert, S.; Huster, R.J.; Herrmann, C.S. EEG-Neurofeedback as a Tool to Modulate Cognition
+and Behavior: A Review Tutorial. Front. Hum. Neurosci. 2017, 11, 51, doi:10.3389/fnhum.2017.00051.
+Haegens, S.; Cousijn, H.; Wallis, G.; Harrison, P.J.; Nobre, A.C. Inter- and intra-individual variability in
+alpha peak frequency. NeuroImage 2014, 92, 46–55, doi:10.1016/j.neuroimage.2014.01.049.
+Culham, J.C.; Kanwisher, N.G. Neuroimaging of cognitive functions in human parietal cortex.
+Curr. Opin. Neurobiol. 2001, 11, 157–163.
+
+Brain Sci. 2020, 10, 853
+
+54.
+
+55.
+56.
+57.
+58.
+59.
+
+18 of 18
+
+Thelen, E. Coupling Perception and Action in the Development of Skill: A Dynamic Approach.
+In Sensory-Motor Organizations and Development in Infancy and Early Childhood; Bloch, H., Bertenthal, B.I., Eds.;
+Springer: Dordrecht, The Netherlands, 1990; pp. 39–56.
+Blanco, A.D.; Ramirez, R. Evaluation of a Sound Quality Visual Feedback System for Bow Learning Technique
+in Violin Beginners: An EEG Study. Front. Psychol. 2019, 10, 165, doi:10.3389/fpsyg.2019.00165.
+Van Biezen, M. Special Topics—The Kalman Filter- Lecture 1: What Is A Kalman Filter? 2015. Available
+online: https://bit.ly/2EZHmXo (accessed on 21 July 2020).
+Welch, G.; Bishop, G. Course 8: An Introduction to the Kalman Filter. PDF. 2001. Available online:
+https://unc.live/3bqYv8q (accessed on 29 April 2020).
+Moler, C.; Van Loan, C. Nineteen Dubious Ways to Compute the Exponential of a Matrix, Twenty-Five Years
+Later. SIAM Rev. 2003, 45, 3–49, doi:10.1137/S00361445024180.
+Gibbs, B.P. Chapter 2: System dynamics and models. In Advanced Kalman Filtering, Least-Squares
+and Modeling: A Practical Handbook; John Wiley and Sons, Inc.: Hoboken, NJ, USA, 2011; pp. 13–66,
+doi:10.1002/9780470890042.
+
+Publisher’s Note: MDPI stays neutral with regard to jurisdictional claims in published maps and institutional
+affiliations.
+c 2020 by the authors. Licensee MDPI, Basel, Switzerland. This article is an open access
+article distributed under the terms and conditions of the Creative Commons Attribution
+(CC BY) license (http://creativecommons.org/licenses/by/4.0/).
+
+

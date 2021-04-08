@@ -1,0 +1,1295 @@
+A customizable, multi-parametric auditory
+display technique for theta-alpha
+neurofeedback training
+
+Aluizio Oliveira
+
+MASTER THESIS UPF / 2013
+Master in Sound and Music Computing
+
+Master thesis coordinator:
+Dr. Sergi Jordà Puig
+Master thesis supervisor:
+Sebastián Mealla Cincuegrani
+Music Technology Group
+Department of Information and Communication Technologies
+Universitat Pompeu Fabra, Barcelona
+
+	 
+
+II	 
+
+Acknowledgments
+I would like to thank Dr. Sergi Jordà for his insightful comments and suggestions, Dr.
+Xavier Serra for his patience and availability whenever I went in his office - always with
+many doubts about which path to choose and how to better structure all those questions
+in my head.
+Can’t be thankful enough for the endless support and patience of my thesis supervisor,
+Sebastian Mealla, every time things seemed to be working right and I showed up with
+new problems and doubts about our work. Thanks for keeping us on track!
+Gràcies, Xavier Marimon - el meu company de tesi - per tot l'esforç i el treball dur de
+principi a fi.
+Above it all, I have to deeply and sincerely say thanks to my family. You supported me
+to get into this journey from the start, and even when I had doubts about it you were all
+there to support me and show me the right path. Thanks to my sister, for supporting my
+decision of quitting my job to get into this endeavor. Thanks to my grandfather, Dr.
+Aluizio, who planted the seed of curiosity and hunger for knowledge in my life. Thanks
+to my mom and dad for teaching me how to love art, music and engineering. Thanks to
+Maria Silvia and Walter, for their very particular ways of helping me to better
+understand my desires and myself.
+Last but not least, thanks to the many friends I made during these two years in Barcelona
+and those that I already had before and were brave enough to stay by my side – I know it
+wasn’t easy.
+
+	 
+
+III	 
+
+Abstract
+Advances in physiological measurement systems allowed equipment that used to be
+exclusive to medical or research centers to be acquired and used by virtually anyone.
+The Electroencephalogram is a good example of how these new technologies are getting
+closer to the non-scientific community, with portable and affordable devices like the
+Enobio and the Emotiv EPOC brain-computer interfaces. Together with advances in
+fields like behavioral and cognitive neurosciences, and psychology, we now can easily
+access complex data that gives us unparalleled insight of our brain and body states.
+On the other hand, the field of Auditory Display is a relatively young one but has
+nonetheless been successfully applied to a great group of very diverse research fields
+(data exploration, musical composition, interaction design, and for studying medical
+conditions to cite a few). Being perfectly suitable for displaying complex physiological
+data, it has been gaining much attention in last decades, especially when applied to
+monitoring and biofeedback systems. One important issue that arises from this situation
+is the fact that in such an interdisciplinary field, sonification experts have to design
+mappings for many different situations and users.
+In this master thesis we aim at investigating how the use of multi-parameterization
+combined with the user customization of such mappings can play a role in the field of
+auditory neurofeedback. In order to explore this problem we developed a system capable
+of generating a broad range of sonifications from EEG signals and used it to explore
+these concepts in the well-established Theta-Alpha Neurofeedback Training paradigm.
+We analyze the subjective and physiological response from the subjects in an
+experimental scenario involving customizable natural soundscapes and musical elements
+as an auditory display of brain activity in specific frequency bands.
+Results show that multi-parameterization seem to have a positive influence in the
+neurofeedback scenario and can be a promising direction to pursue while usercustomization is desired but still require some improvements to become feasible.
+KEYWORDS: Electroencephalography, EEG, Sonification, Auditory display,
+Biofeedback, Neurofeedback, Sound perception, Psychoacoustics, alpha band, theta
+band, theta alpha ratio, music
+
+	 
+
+IV	 
+
+Table of Contents
+1. INTRODUCTION………………………………………………………………….
+1.1 – Context
+1.2 – Problem Statement
+
+1
+1
+1
+
+2. STATE OF THE ART……………………………………………………………...
+2.1 – The Anatomy of the human brain
+2.2 – Electroencephalography, EEG Rhythms and Signal Processing
+2.3 – Auditory Displays and EEG Sonification Techniques
+
+3
+3
+4
+6
+
+3. SYSTEM DESIGN………………………………………………………………...
+3.1 – General Considerations
+3.2 – Data acquisition and DSP
+3.3 – Sonification Engine
+
+9
+9
+9
+11
+
+4. METHODS…………………………………………………………………………
+4.1 – Research Question
+4.2 – Experimental Setup
+4.3 – Sample and Groups
+4.4 – Experimental Design
+
+17
+17
+17
+18
+18
+
+5. RESULTS AND ANALYSIS……………………………………………………...
+5.1 – The dataset structure
+5.2 – Subjective Data (SAM scale)
+5.3 – EEG data: Objective measurements
+
+22
+22
+22
+26
+
+6. DISCUSSION……………………………………………………………………... 29
+6.1 – Multiple vs. Single feature
+29
+6.2 – Custom vs. Fixed mappings
+29
+7. FUTURE WORK AND CONCLUSIONS………………………………………...
+7.1 – Future Work
+7.2 – Conclusions
+
+	 
+
+30
+30
+30
+
+V	 
+
+1. Introduction
+1.1 – Context
+With the advances of physiological measurement techniques like the
+electroencephalography, paralleled with research in fields as cognitive and behavioral
+neuroscience and psychology, it is now possible to measure and classify neural
+correlates of different cognitive and affective states by analyzing specific EEG features
+[1]. It’s also important to notice how these devices are increasingly small, portable and
+affordable. That means that this technology is now available for the regular user and not
+only something exclusive of hospitals, clinics and research centers.
+Data acquired by equipment like the EEG is very complex and multi-dimensional in
+nature. In order to present it to the user, some relevant decisions have to be taken. Such
+information can be displayed using visualization techniques and/or sonification
+strategies, either with pre-recorded data or in real time. The later is used for two main
+purposes: state monitoring or neurofeedback.
+1.2 - Problem Statement
+The neurofeedback paradigm is a type of biofeedback that displays the users’ brain
+activity in real time, with signals acquired either from an EEG, PET or fMRI system.
+Due to its higher time-resolution, the EEG is usually the choice. Many neurofeedback
+applications require the use of the subject’s visual channel for specific tasks or can’t use
+it at all when the task itself requires eyes to be closed (e.g. when trying to induce sleep
+or states of deep relaxation). In these situations the auditory counterpart becomes even
+more important. When displaying EEG activity by means of sonification, one crucial
+aspect is the mapping from EEG-to-Sound. The low frequency range of EEG activity is
+not suitable for direct amplification, and thus at least some transformation on the data is
+required for a human listener to be able to perceive the sound. This mapping can be
+quite arbitrary and being so, the following duality arises:
+- A direct and reversible mapping can preserve all the information contained in the
+original signal but is unnatural and hard to perceptually decode (e.g. in
+“audification”, the original temporal data is kept as it is and usually just frequency
+shifted so it can be presented within the range of an audible sound).
+- When applying more complex mappings, the perceptual quality of the resulting
+sound can be greatly improved but information from the original signal is lost,
+since some kind of irreversible transformation usually has to be applied (e.g.
+	 
+
+1	 
+
+musical mappings, where some EEG features are converted to musical features of
+a computer-generated piece).
+Also, typically only one (or some) dimension(s) of the data being explored are of
+interest for a given application and when that’s the case, only these specific features
+have to be translated to the auditory and/or visual domain. With that in mind, two
+possible ways of reducing the effects of the issue exposed above are proposed:
+A - The system designer may allow the final user to fine tune his or her own mappings.
+Ideally a subject should be able to design her own mapping in order to focus on the
+specific features required and their own subjective liking. As an example, a musician
+would probably perform better detecting smooth nuances of the sonified data in a
+carefully tailored musical mapping than in an arbitrary sonification that uses any sort of
+sounds. On the other hand, a mechanical would probably be very used to extract
+information from slight changes of a car’s engine sound and this could his optimum
+mapping (an engine sound model). It should be clear that designing a universal mapping
+that suits any auditory neurofeedback scenario is an extremely hard (if not impossible)
+task. By giving some control to the user, we aim at reducing the subjectivity inherent to
+the mapping design, or at least transferring these decisions to the subject himself. It is
+important to notice that most of the current sonification techniques applied to EEG data
+only offer pre-defined, fixed mappings.
+B – When treating multivariate, multidimensional complex data as a human EEG signal,
+one single state can correlate to many different features. The number of signal
+dimensions that should be used to generate a neurofeedback auditory display is crucial
+and subject to perceptual limitations. By increasing the number of signal dimensions
+(coherent and sometimes even redundant EEG features to be sonified) we get a more
+robust but also more complex display. Here again we deal with a trade-off between
+information bandwidth and easiness of perceptual decoding. One proposed solution is to
+increase the number of features to be mapped into sound elements (or its parameters) but
+having them varying in consonance with each other so that the subject can correlate the
+desired state into a single perceptual quality of the resulting sound environment.
+In the following chapters we present the State-of-the-Art of the field, the system we
+have designed to explore our research questions, the methods and experimental setup
+used, our results and discussion.
+
+	 
+
+2	 
+
+2. State-of-the-art
+In the following sections, an overview of concepts and previous research related to this
+thesis is presented. Neuroanatomy, EEG and DSP concepts are discussed in a basic
+level, followed by a historical overview on auditory displays and a more exhaustive
+discussion over EEG sonification techniques developed in the last couple decades.
+Special emphasis is given to the neurofeedback paradigm.
+2.1 – The anatomy of the Human Brain
+The human central nervous system is composed of the cerebrum, the cerebellum and the
+medulla oblongata (or brain stem). The research presented in this document concerns the
+cerebrum and analysis of its electrical activity. Figure 1 presents the four lobes of the
+left hemisphere of the human brain.
+
+Figure 1: The four lobes of the human brain – Gray's Anatomy
+
+The largest of them is the frontal lobe, situated at the anterior tip of the brain and
+extended to the central sulcus, which separates it from the temporal lobe. It is know to
+	 
+
+3	 
+
+be responsible for the primary motor functions as well as what are called executive
+functions: personality, insight and foresight [2].
+The parietal lobe, located in the central part of the brain, is generally associated with
+three main functions:
+• Initial cortical processing of positional and tactile information;
+• Spatial orientation and directing attention;
+• Language comprehension;
+The temporal lobe is in charge of high-order processing of visual information and
+auditory information, playing an important role in learning and memory.
+Finally, the smallest of the four, the occipital lobe can be found in the rear of the skull,
+and is almost exclusively associated with visual functions.
+2.2 – Electroencephalography, EEG Rhythms and Signal Processing
+Electroencephalography is a technique for measuring brain electrical activity presented
+in 1912 by the Russian physiologist Vladmir Vladimirovich Pravdich-Neminsky [3].
+Hans Berger, who is also credited for the invention of the electroencephalogram, first
+used it with humans in 1924. [4]
+It refers to recording electrical activity within the cerebral cortex by attaching electrodes
+to a person's scalp. These electrodes are sensitive to very small voltage fluctuations
+resulting from ionic current flows within the brain's neurons being measured. For higher
+voltage readings the electrodes could be placed directly on the surface of the brain, but
+that demands an invasive surgical procedure that is clearly not suitable for many types of
+research.
+Electrical activity measured by EEG is known to be oscillatory in nature since it's first
+recording by Dr. Berger. It is usually classified according to its spectral content and
+divided into different frequency bands as shown in figure 2. There’s no agreed range for
+each frequency band but the most used grouping goes as follows:
+•
+•
+•
+•
+•
+
+	 
+
+Delta: 0.5 to 4 Hz
+Theta: 4 to 8 Hz
+Alfa: 8 to13Hz
+Beta: 14 to 30Hz
+Gamma: 30 a >100 Hz
+
+4	 
+
+Figure 2 – The EEG Frequency bands
+
+Modern EEG equipment can be compact, lightweight and low-cost. These devices
+usually have an integrated amplifier and analog-to-digital converter, allowing the
+acquired signal to be fed into a personal computer for further processing and analysis.
+With the aid of techniques like digital filtering and envelope detection, we are able to
+obtain the energy concentrated in each of these bands and their cognitive correlate.
+The full signal bandwidth ranges from 0.5 Hz to 30-40 Hz. Classification of EEG signals
+is made based on frequency, and historically, five types of rhythmic activity have been
+used: alpha (α), beta (β), theta (θ), delta (δ) and gamma (γ). There is no precise
+agreement on the frequency range for each type. The following paragraphs describe
+briefly each of the bands and the activity they are associated with.
+Delta Rhythms - Usually up to 4 Hz, these are waves of high amplitude and are picked
+up from the frontal cortex in adults and posteriorly in children. The state is usually that
+of slow wave sleep in adults, although they are detected during some continuous
+attention tasks as well.
+
+	 
+
+5	 
+
+Theta Rhythms - Between 4-8 Hz normally, these rhythms are detected in locations not
+related to the task at hand. They are frequently observed in young children, during
+phases of drowsiness or arousal and idling.
+Alpha Rhythms - of particular relevance to this study, alpha rhythms oscillate at
+approximately 7-13 Hz and are found on either side of the posterior regions of the head.
+They are higher in amplitude on the non-dominant side. The central sites (C3-C4) are at
+rest. Alpha waves are particularly prominent in subjects who are relaxed and awake with
+their eyes closed, alpha suppression takes place in open-eye conditions.
+Beta Rhythms – These are fast rhythms oscillating between 14-30 Hz. The amplitudes
+are relatively low. Beta rhythms are associated with an activated cortex and can be
+observed during certain sleep stages. The main points of observation are the frontal and
+central regions of the scalp.
+Gamma Rhythms – Gamma rhythms are fast rhythms oscillating above 30 Hz indicative
+of a state of active information processing in the cortex [5].
+2.3 – Auditory Displays and EEG Sonification Techniques
+Auditory displays are techniques for presenting information in the auditory domain. It is
+a field concerned with the study of how the human auditory system can be used as the
+primary interface channel for communicating and transmitting information. It
+encompasses all the aspects of the system, the setup, speakers/headphones, modes of
+interaction within the display and all the processing and computing required to obtain a
+conversion from data to sound. Sonification is one of its main components, being “the
+technique of rendering sound in response to data and interactions” [6].
+2.3.1 – EEG Sonification: An overview
+Recent developments in wearable computing and wireless low- cost physiological
+sensors have brought brain activity monitoring out of the lab. Many such systems are
+now commercially available (e.g. NeuroSky [7], Enobio [8], Emotiv [9] and Nexus
+[10]).
+Progress in these areas has been accompanied by equally rapid developments in auditory
+hardware, signal processing techniques and wearable audio capability. These joint
+developments make practical several new approaches for exploiting the real-time
+representation of brain activity using sound. The sonification opportunities created in
+this way promise new applications in several areas; pervasive medicine and health
+monitoring, neuro and biofeedback and implicit interaction interfaces, as well as in other
+domains that involve the real-time sensing of users perceptual, emotional and cognitive
+states. Sound-based monitoring and feedback of physiological data have clear
+	 
+
+6	 
+
+advantages in these areas. Indeed, in many respects human auditory perception provides
+the highest temporal resolution among the sensory modalities. Additionally, in many
+cases the non-visual information channel is more suitable for wearable applications.
+The idea of making electroencephalographic (EEG) signals audible accompanied brain
+imaging development from the very first steps in the early 1930s. For example, Prof.
+Edgar Adrian listened to his own EEG signal while replicating Hans Bergers
+experiments [4]. Indeed, sonification appears to be well suited for applications based on
+real-time EEG, since sound can readily represent the complexity and fast temporal
+dynamics of brain signals. Since the 1930s, a number of scholars and media artists have
+been experimenting with converting EEG activity into sound. Unfortunately, many of
+these studies have used rather arbitrary data-to-sound conversions. In addition, the
+associated publications often do not provide sufficient details about either physiological
+data acquisition or applied sound synthesis. Very few of these studies have conducted
+any kind of controlled evaluation of their chosen methods, making it impossible to
+replicate or validate most studies. Given these widespread limitations, a critical review
+of the current state of this emerging multidisciplinary field may facilitate its future
+healthy development.
+2.3.2 – Application areas of EEG Sonification
+In the next chapters, the outcome of an analysis of more than fifty real-time EEG
+sonification works is presented. They are classified by the techniques employed to
+generate sound and the EEG features used.
+Two main applications of real-time EEG sonification have to be distinguished:
+monitoring and neurofeedback. Real-time monitoring is designed to inform a third
+person about the user's state (e.g. an anesthetist during surgery [12]) or informing the
+user of his/her own state (e.g. a pilot or driver being warned of his critical fatigue level).
+Neurofeedback applications target learning about a users own brain state and,
+importantly, aim at altering this state, e.g. for post-stroke rehabilitation.
+Figure 3 divides the various types of EEG sonification in a 2-dimensional map.
+
+	 
+
+7	 
+
+Figure 3 - Bi-dimensional map of EEG sonification
+application areas [21]	 
+
+These application domains have different goals, different constraints and different
+validation methods. One of the dimensions that helps to differentiate between all the
+sonification approaches is to contrast ways in which one would expect the end results to
+be judged, for example quantitative vs. qualitative judgment. With Miranda’s BCMI
+[13], just listening to the sonification may be sufficient for demonstrating that the system
+works. With BCI based musical instruments like in [14], the player can judge the extent
+to which the interface allows the musically necessary degree of control. But both of
+these domains are more concerned with the aesthetics of the resulting sonic composition
+than any other kind of validation. The situation is very different for diagnostic and
+neurofeedback uses of real-time EEG sonification, where the informational and
+perceptual value of produced sounds is of primary importance and determines the
+functionality of the application.
+
+	 
+
+8	 
+
+3. System Design
+In this chapter the whole system will be described in detail. The session is composed of
+three main parts: The general considerations, the data-acquisition and DSP system and
+finally the sonification engine designed with its strategies and mappings.
+3.1 – General Considerations
+For designing a system for real-time auditory neurofeedback many technical constraints
+have to be satisfied. The diagram in Figure 4 represents the system developed and used
+for this project. It is grouped in three main modules responsible for 1- acquiring the
+signal, 2- extracting the desired EEG features, and 3- generating the sound output.
+
+Figure 4 - The EEG-to-sound chain	 
+
+Since our research deals with real-time sonification, it was utterly important to maintain
+a constant data flow through the entire signal chain. This has to be done within the
+boundaries imposed by the acceptable delay that arises from real time signal processing.
+Using previous research as a reference, we established a limit of 3000 milliseconds
+delay between an onset on the EEG side of the chain to its sonic response [15].
+3.2 – Data acquisition and DSP
+The Emotiv EPOC wireless neuroheadset [9] was selected for signal acquisition due to
+its low cost and good temporal resolution. Data acquired with it is converted to a digital
+signal at a sampling rate of 128Hz. Using the Emotiv EPOC Research SDK we have
+access to the raw data that is then fed into a Matlab/Simulink [16] model for further
+processing.
+	 
+
+9	 
+
+This model can be customized for each desired neurofeedback and/or monitoring
+application created. To achieve this goal, a toolbox (Figure 6) was developed, allowing
+us to obtain and process a great number of EEG features. The OSC block allows direct
+communication via UDP with virtually any modern real-time sound synthesis
+environment through the Open Sound Control protocol [17].
+
+Figure 6: The Matlab/Simulink EEG Toolbox
+
+The toolbox will also comprises some visualization blocks that allows the final user to
+have insight about the spatial origin of the neuronal activity by using positional
+inference based on the LORETA (low-resolution brain electromagnetic tomography)
+technique [18].
+
+	 
+
+10	 
+
+3.3 – Sonification Engine
+In this section, the various mappings are described in their direct form. The system is
+intended to allow the control over these mappings so that any relationship between data
+and sonification parameter can be inverted or even canceled. The description below
+corresponds to the direct, default parameterization (referred to as “fixed mapping” from
+now on).
+3.3.1 - Pedal:
+A fixed pitch tonic is initialized on loading (“D2”, midi note nº38) and a tremolo effect
+is applied and phase shifted to each of the even harmonics, giving a slowly moving
+chorus-like timbre to the drone.
+- Tremolo is linearly mapped to the control signal
+- Panning is linearly mapped to the control signal
+- Gain is linearly mapped to the control signal
+
+Figure 7: The Pedal	 
+
+3.3.2 - Melody:
+Melody is constructed using a major scale spamming from five semitones (one
+fourth) bellow the central tonic to sixteen semitones above it (major third).
+
+	 
+
+11	 
+
+Figure 8: The main melody
+
+- Note triggering speed is a function of the slope of the signal (in direct mapping,
+faster changes yield more notes per second)
+- Note pitch is controlled by the slope (rate of change) of the incoming signal. In
+direct mapping, positive changes yield ascending pitch while negative ones lead
+melody downwards. Higher rate of change yields bigger jumps in melody (more
+semitones between two consecutive notes)
+- Note volume is a linear function of the input signal
+3.3.3 - Soundscape rewards
+One block of the engine is devoted to enhancing the foreground elements of the
+generated soundscape by triggering specific sound effects (nature sounds like birds,
+owls, crickets, etc.) when the control signal goes over 50% of the calibrated maximum
+value. In this sense, every time the subject’s Theta/Alpha ratio is over this predefined
+threshold he/she is “rewarded” with a more vivid yet still relaxing soundscape.
+
+	 
+
+12	 
+
+Figure 9 - Sonic rewards
+
+There’re no parameters mapped to this part of the engine besides the triggering itself
+being a function of the power of the control signal. Dynamic panning allows the
+perception of an immersive three-dimensional environment.
+3.3.4 – Windy sound-scape
+A procedural audio approach was chosen for this block of the sonification engine. A
+series of white noise generators are filtered and modulated in different frequency bands
+and with different delays to generate a sound scape environment that resembles a windy
+scenario. The idea of using procedural audio (in contrast to a sample-based approach)
+was to give complete control of the sound parameters to the designer. Different features
+can be plugged to different parameters allowing a mapping that changes the perceptual
+quality of the windy scene according to the select data features.
+The mapping used for the experiments uses the incoming signal to control wind speed of
+the modeled sound object. In direct mapping, the higher the input the faster the wind
+will blow.
+
+	 
+
+13	 
+
+Figure 10 - Wind sound synth
+
+3.3.5 – Rainy sound-scape
+For this block we decided to use a sample based approach aiming at the fidelity of the
+resulting sound and also to allow a comparison with the pros and cons of the procedural
+audio approach of the “wind” block. Dynamic cross fading between different rain
+recordings was used to modulate the sound. Input signal modulates the amount of each
+of the samples in the resulting sound that goes from light rain to a small thunderstorm.
+Only one parameter is used in the final patch, varying linearly and controlling the “Rain
+density” perceptual quality.
+3.3.6 – The control module
+Another Pd abstraction was created to allow the patching between all the previous
+mentioned blocks and the data communication one. It contains time and frequency
+signal monitoring scopes for both input and output data. This control module is also
+responsible for the midi communication between the system and the user. A subject is
+able to adjust his/her mapping on the fly with a standard midi controller, listening to the
+results as the neurofeedback or monitoring process is going.
+
+	 
+
+14	 
+
+Figure 11 - Sample-based rain generator
+
+	 
+
+15	 
+
+Figure 12: The control block
+
+The user is allowed to customize / fine-tune the mappings as follows. One data feature is
+associated to one sound element (e.g. alpha band power is mapped to the amount of
+rain). The user is allowed to change how this mapping is done in a continuous scale
+from -1 to +1. If the potentiometer is dragged to -1, the mapping is inversed, i.e. a
+greater value of the data feature yields a smaller value for the sound parameter (more
+alpha would lead to less rain). If it is positioned at 1, the mapping is positive (more
+alpha yields more rain). In the middle (zero), the sound is fixed and not influenced by
+the data (in this example, there would be a fixed amount of rain equivalent to 50% of its
+maximum value, independently of the alpha power).
+In Figure 12 we can see an example configuration within the block
+“User_controlled_parameters” where the Rain and Wind models are fixed at 50% and
+the Theta/Alpha ratio is directly mapped to the Foreground sound engine (Pedal +
+Melody + Soundscape rewards).
+
+	 
+
+16	 
+
+4. Methods
+4.1 – Research Question
+The research presented here is concerned with answering the following questions:
+ADo personalized, custom EEG sonification mappings perform better than
+predefined, fixed ones in a T/A Neurofeedback scenario?
+BIs it possible to improve the identification of a cognitive state and its sonified
+EEG correlate by increasing the number of features mapped to the Auditory Display in a
+T/A Neurofeedback scenario?
+Concerning the number of features used for generating the sonification, we hypothesize
+that a multiple-feature mapping will be perceived as more relaxing and more
+representative of the subject’s relaxation state. This should be noticeable by both the
+subjective and objective measurements acquired during the experiments.
+The rhythmic structure of brain signals is very complex and the link between the activity
+in each frequency band for each region of the brain and its cognitive correlates are still
+not completely understood. The use of more than one feature to represent a certain
+mental state is desirable in the sense that it should allow a more robust and complete
+representation of the complex patterns that arise from the analysis of the EEG signal.
+We also hypothesize that a user-customizable mapping should have a better performance
+than a pre-defined, fixed one. The higher familiarity of a subject with a mapping finetuned by himself as well as the possibility of adjusting it to his liking should yield better
+results in terms of neurofeedback and induced relaxation. As in the first hypothesis, this
+difference should be noticeable by both subjective and objective measurements acquired
+in the experimental scenario.
+4.2 – Experimental Setup
+To operationalize such questions, we developed an experiment using the Theta-Alpha
+(T/A) Neurofeedback Training paradigm, and the above-mentioned DSP and Sound
+Engine systems. The experiment aims at inducing a state of deep relaxation on the
+subjects and allowing some degree of control of how their EEG features are converted to
+sound. To allow us inquiring both research questions we created four groups of subjects
+as described in the next section.
+	 
+
+17	 
+
+4.3 – Sample and Groups
+A total sample of twenty subjects with ages between 23 and 30, and equally distributed
+between men and women was distributed in the following groups:
+Single feature, Fixed mapping (SF): Can't control the mapping between data and sound
+and only one EEG feature (the Theta/Alpha ratio) is used to control one element of the
+sound engine.
+Multiple features, Fixed mappings (MF): Can't control the mapping between data and
+sound but three EEG features (Alpha, Theta and the Theta/Alpha ratio) are used to
+control three different elements of the sound engine.
+Single Feature, Custom mapping (SC): Can tune the feature-to-sound mapping to their
+liking, only having one feature mapped to one sound element.
+Multiple features, Custom mappings (MC): Can tune the feature-to-sound mapping to
+their liking, having three features mapped to three sound elements.
+Each group is composed of five subjects and all of them go through the same steps as
+described in the next chapter.
+From now on we will refer to these four groups by their respective codes: SF, MF, SC
+and MC.
+4.4 - Experimental design
+In this section we discuss the many aspects related to how the experiment was designed.
+The organization of the sampling groups and experimental procedure, physical setup of
+the equipment and data acquisition are discussed in detail.
+4.4.1 – Experimental protocol
+The experiment is comprised of three main steps:
+1- Mapping adjustment;
+2- Basal state inducing, with a pre-recorded relaxing sound scape;
+3- Neurofeedback session;
+	 
+
+18	 
+
+Three subjective measurements of arousal and valence levels are done three times using
+the SAM Scale [19], [20]:
+1- When the subject arrives at the lab;
+2- After the 5-minute control session with pre-recorded relaxing sound scape;
+3- After the neurofeedback session;
+
+Figure 12 - Experimental setup
+
+	 
+
+The setup is done with a quadraphonic system where the sound elements are positioned
+around the subject to give an immersive, realistic experience. The lights are dimmed
+down for the adjustment and pre-relaxation sessions and completely turned off for the
+neurofeedback session. Figure 12 shows one of our subjects preparing to begin the
+session.
+
+	 
+
+19	 
+
+Figure 13 – Experimental setup diagram
+
+Figure 13 represents the setup used for the experiment. Great attention was given to
+avoid electromagnetic interference between the equipment. The subject’s positioning
+was also a topic of concern since he/she should always be at the “sweet spot” (the point
+in the room equally distant to the four loudspeakers, where the sound is correctly
+balanced).
+The two computers used were of similar configuration:
+DSP and Signal Acquisition Station: Intel Core2-Duo 2.0 GHz with 2GB RAM running
+Matlab R2012a and the Emotiv Epoc Signal Server on Windows 7.
+Sound Engine Computer: Intel Core2-Duo 2.6GHz with 4GB RAM running PureData
+0.42.5-Extended on MAC OSX 10.8.
+
+	 
+
+20	 
+
+4.4.2 – Measures
+For the subsequent analysis, subjective and objective data was collect for every subject.
+For acquiring the subjective data, a paper form was created using the standard 9-point
+SAM Scale as a tool for enquiring the subject’s mood. This is done in terms of arousal
+and valence. In Figure 14 the printed form scale can be seen.
+
+Figure 14 - Subjective mood assessment: The SAM Scale
+
+This form is presented three times during the experiment for each subject, who’s asked
+to mark a number from 1 to 9 that best represents his/her current state in terms of
+Valence and Arousal.
+For the objective analysis, raw data acquired by the Emotiv EPOC was recorded using
+the Matlab / Simulink Toolbox prior to the DSP processing and later analyzed to extract
+the minima, the maxima and average value for alpha, theta and theta/alpha ratio in 3minute blocks. The first and last 3-minute blocks were used in order to obtain a
+measurement of the evolution of each feature during the experiment.
+	 
+
+21	 
+
+5 – Results and analysis
+5.1 – The dataset structure
+As described previously, our subjects are divided in four groups according to the number
+of EEG features / Sound Parameters and the possibility of customizing or not the
+mapping scheme. Table 1 reviews and summarizes the nomenclature used for each
+group:
+Code
+SF
+SC
+MF
+MC
+
+Group name
+Single feature, fixed mapping
+Single feature, customizable mapping
+Multiple features, fixed mappings
+Multiple features, customizable mappings
+
+N
+5
+5
+5
+5
+
+Table 1 – Group description
+
+In order to evaluate if the results are consistent with our hypotheses, we start comparing
+the subjective data acquired with the forms. The levels of arousal and valence as
+indicated by the subjects for each stage of the experiment are compared between the
+groups. Objective data acquired with the EEG system for each group is also compared
+using the Theta/Alpha ratio during the whole neurofeedback session.
+5.2 – Subjective data (SAM scale)
+In this section we describe the results regarding the data collected with the selfassessment of the subjects’ levels of arousal and valence. First we compare the results
+for the paired groups (multiple vs. single-feature and custom vs. fixed mapping) and
+then for each one of the four.
+5.2.1 – Multiple vs. Single-feature
+Firstly we evaluate the significance of having multiple EEG features mapped to multiple
+parameters instead of a single one. The graph on Figure 15 shows the mean values for
+pre and post-neurofeedback session for each macro group. As expected, using multiple
+features seems to have a more effective result on decreasing the arousal levels of the
+subjects. An analysis of variance is performed with the Statistics Toolbox of Matlab and
+the resulting values of significance between pre and post-feedback session are presented
+for each group. The analysis of significance gives a positive result for the Multiplefeature group, with p < 0.05.
+	 
+
+22	 
+
+	  
+Arousal	  Mean	  
+Arousal	  Std.	  
+P-­‐value	  
+Valence	  Mean	  
+Valence	  Std.	  
+P-­‐value	  
+
+Multiple	  Pre	  
+3.4000	  
+1.5055	  
+
+Multiple	  Post	  
+1.8000	  
+1.3166	  
+
+Single	  Pre	  
+2.5000	  
+1.9003	  
+
+0.0210	  
+4.7000	  
+1.2517	  
+
+Single	  Post	  
+2.1000	  
+1.3703	  
+0.5959	  
+
+5.2000	  
+2.0440	  
+
+6.5000	  
+1.1785	  
+
+6.8000	  
+1.6193	  
+
+0.5178	  
+0.6414	  
+Table 2 – SAM data grouped by number of features used
+
+Figure 15 – SAM data analysis: Multiple vs. Single feature
+
+5.2.2 – Custom vs. Fixed mappings
+Now we combine the four groups into the macro-categories of custom and fixed
+mappings. The results can be seen in Figure 16. Here however it seems that the groups
+having fixed parameters perform better than the customizable ones. Running a 1-way
+analysis of variance we find that only the decrease in arousal of the fixed parameter
+group has a low p-value indicating some possible significance. Using a p<0.05 threshold
+no variation can be evaluated as significant.
+
+	 
+
+23	 
+
+	  
+Arousal	  Mean	  
+Arousal	  Std.	  
+P-­‐Value	  
+Valence	  Mean	  
+Valence	  Std.	  
+P-­‐Value	  
+
+Custom	  Pre	  
+1.9000	  
+0.9944	  
+
+Custom	  Post	  
+1.4000	  
+0.8433	  
+
+Fixed	  Pre	  
+4.0000	  
+1.6997	  
+
+0.2409	  
+5.8000	  
+1.5492	  
+
+Fixed	  Post	  
+2.5000	  
+1.5092	  
+0.0514	  
+
+5.7000	  
+2.6687	  
+
+5.4000	  
+1.5055	  
+
+6.3000	  
+0.9487	  
+
+0.9195	  
+0.1271	  
+Table 3 – SAM data grouped by mapping type (fixed vs. custom)
+
+Figure 16 - Subjective analysis: Custom vs. Fixed mappings
+
+5.2.3 – Analysis by groups
+To further investigate the results presented in the previous sections, we go one level
+down and gather the individual results for each of the four groups. In Figure 17 the
+corresponding graph is presented.
+Here we can see a trend for all groups when it comes to decreasing the arousal between
+pre and post-neurofeedback session. There also seems to be a trend to increase the
+valence between the two stages but with lower significance. The group with the smallest
+p-value (higher significance) is the one with multiple features and customizable
+mappings when it comes to reducing arousal. However, a p-value over 0.5 can’t be
+considered to deny the null hypothesis (that the variation between before and after the
+session is enough to represent a statistical difference between then) and thus the results
+can’t be considered significant.
+	 
+
+24	 
+
+Figure 17 - Subjective analysis: All four groups
+
+MC
+MC
+MF
+MF
+(pre)
+(post)
+(pre)
+(post)
+Valence (mean) 5.0000 4.6000 4.4000 5.8000
+Valence (std)
+1.2247 2.7928 1.3416 0.8367
+P-Value
+0.7768
+0.0831
+Arousal (mean) 2.6000 1.6000 4.2000 2.0000
+Arousal (std)
+0.8944 0.5477 1.6432 1.8708
+P-Value
+0.0656
+0.0836
+Table 4a – Descriptive statistics for the SAM data
+
+SC
+SC
+SF
+SF
+(pre)
+(post)
+(pre)
+(post)
+Valence (mean) 6.6000 6.8000 6.4000 6.8000
+Valence (std)
+1.5166 0.8367 0.8944 0.8367
+P-Value
+0.8743
+0.4860
+Arousal (mean) 1.2000 1.2000 4.2000 2.0000
+Arousal (std)
+0.4472 1.0954 1.6432 1.8708
+P-Value
+1
+0.4332
+Table 4b – Descriptive statistics for the SAM data
+
+	 
+
+25	 
+
+5.3 – EEG data: Objective measurements
+In the following sections the results obtained with the analysis of the EEG data are
+presented. The Theta/Alpha ratio is the only feature used for all the subjects and it’s also
+the most relevant one for Alpha-Theta Neurofeedback Training scenarios according to
+the bibliography.
+5.3.1 – Multiple vs. single parameter
+As with the subjective data, we start by comparing the results of the groups using
+multiple and single features before and after the neurofeedback session (stages 1 and 2
+respectively)
+
+Figure 18 – EEG data analysis: Multiple vs. Single feature
+Time(s)
+Multiple
+Single
+
+90
+0.623
+0.367
+
+180
+0.543
+0.487
+
+270
+0.683
+0.503
+
+360
+0.657
+0.506
+
+450
+0.720
+0.601
+
+540
+0.824
+0.607
+
+630
+0.912
+0.649
+
+720
+0.974
+0.790
+
+810
+1.050
+0.677
+
+900
+0.947
+0.695
+
+To investigate how significant these results are we perform an ANOVA contrasting the
+first and last 90s windows for each group. The results are that the significance falls short
+to the p < 0.05 criteria even though the difference between stages in the Multiple-feature
+group is bigger than in the Single-feature one.
+ANOVA
+P-Value
+
+	 
+
+Multiple
+feature
+0.12
+
+Single
+feature
+0.15
+
+26	 
+
+5.3.2 – Custom vs. fixed mappings
+
+Figure 19 – EEG data analysis: Custom vs. Fixed Mappings
+Time(s)
+Custom
+Fixed
+
+90
+0.488
+0.504
+
+180
+0.518
+0.511
+
+270
+0.684
+0.482
+
+360
+0.584
+0.578
+
+ANOVA
+P-Value
+
+450
+0.720
+0.588
+
+Custom
+mappings
+0.10
+
+540
+0.755
+0.668
+
+630
+0.879
+0.660
+
+720
+0.953
+0.814
+
+810
+0.975
+0.728
+
+900
+0.929
+0.689
+
+Fixed
+mappings
+0.17
+
+5.3.3 – Individual groups
+Here we gather the results for all the individual groups. Figure 20 shows the evolution in
+time for the theta/alpha ratio for each one of them. The lines represent the mean ratio of
+all subjects from each group. It has been calculated every 90 seconds during the
+neurofeedback sessions to get some insight on the evolution of this feature during the
+whole process.
+All groups show a trend of increasing the T/A ratio during the neurofeedback session,
+which is a good indication that the procedure works even with just a 15-minute session.
+The MC group has the best results with a steeper curve and a final value much higher
+
+	 
+
+27	 
+
+than the others. The possible implications of this result are going to be analyzed in depth
+in the discussion session.
+
+Figure 20 – EEG data analysis: Comparing all four groups
+Group
+MC
+MF
+SC
+SF
+
+90s
+0.717
+0.529
+0.297
+0.428
+
+180s
+0.662
+0.424
+0.398
+0.587
+
+270s
+0.949
+0.418
+0.463
+0.526
+
+360s
+0.739
+0.575
+0.456
+0.545
+
+450s
+0.879
+0.560
+0.586
+0.580
+
+540s
+0.964
+0.685
+0.580
+0.618
+
+630s
+1.143
+0.680
+0.658
+0.602
+
+720s
+1.189
+0.759
+0.716
+0.891
+
+810s
+1.353
+0.747
+0.660
+0.661
+
+900s
+1.228
+0.666
+0.680
+0.677
+
+Table 7 – TA ratio evolution in time (90s slots)
+
+Now we present some basic statistical analysis to compare the first and last 90s blocks
+of each group. This is done in order to evaluate if there’s a significant increase in the
+ratio for every group and if it is more significant in some groups than others. The pvalue was again calculated using the anova1 function of Matlab’s Statistics Toolbox.
+In table 8 the mean values of
+ratio for the first and last 3
+minutes of each group are
+presented. In the P-value
+column we compute the
+Table 8 – First 3m vs. last 3m
+ANOVA for each group
+between the two time slots.
+Despite the positive trend in favor of our approach, the analysis of variance can’t
+guarantee these values are significant. This will be further discussed in the next chapter.
+Group
+MC
+MF
+SC
+SF
+
+	 
+
+T3
+Mean
+Std.
+0.690
+0.720
+0.477
+0.393
+0.347
+0.462
+0.507
+0.164
+
+T15
+Mean
+1.290
+0.707
+0.670
+0.669
+
+Std.
+0.648
+0.401
+0.515
+0.174
+
+P
+value
+0.203
+0.386
+0.279
+0.207
+
+28	 
+
+6 - Discussion
+6.1 – Multiple vs. Single feature
+The first question we approach in this work is that about the number of EEG features
+used to generate a sound that conveys a subject’s physiological state. As previously
+described, we create two scenarios to understand how this design decision plays a part in
+the overall system. The group using the Single-feature scheme only listens to a
+sonification of their Theta/Alpha ratio while the Multiple-feature group has one sound
+element mapped to each of the three brain signals acquires (Theta power, Alpha power
+and T/A ratio).
+To enquire the relevance of using more features we analyze the subjective data acquired
+with the SAM scale form and the objective data measured by the EEG. As shown in
+sections 5.2.1 and 5.3.1 respectively, the multiple-feature group seems to perform better
+than the single-feature group in both scenarios. Even though the significance is low, the
+fact that both subjective and objective data point to the same direction is a very good
+indication that this approach should be further investigated and may result in improved
+performance for auditory neurofeedback scenarios.
+6.2 – Custom vs. Fixed Mappings
+The second question explored in this thesis is that of the advantage of having usercustomizable mappings when using auditory displays in a neurofeedback scenario.
+Again we split the groups into two categories. The fixed mappings group is given a
+defined sonification strategy for each of the EEG features acquires while the custom
+mapping group’s subjects have the chance of adjusting the mapping themselves. This
+proved to have advantages and disadvantages. On one hand, the customizable mappings
+allow the subject to achieve a more pleasant sound for his/her liking and also seem to
+facilitate the understanding of how the system works. On the other hand, many subjects
+have trouble trying to grasp how the system responded to their relaxation state while
+when the mapping was fixed it seemed easier for them to do such a task.
+The data also points to different assumptions when comparing subjective and objective
+results. The SAM-scale analysis indicate that the users respond better to fixed mappings
+while the objective EEG data indicates a better result for the customizable mappings.
+The low significance of both results and the fact that they indicate opposite results let us
+believe that this question deserves further investigation and no conclusion should be
+extracted from this data. A bigger sample group and different experimental design are to
+be discussed in the “Future Work” session of this document as a means to further
+investigate the topic.
+	 
+
+29	 
+
+7 – Future Work and Conclusions
+7.1 – Future Work
+During the course of the evaluation we detected some challenges and speculated about
+possible solutions that could guide future work on this research field. Firstly it’s
+important to notice that the low significance value for many of the situations analyzed
+could be due to the small number of samples used for the experiments and / or the
+experimental design itself. For a master project like this one, it’s rather difficult to
+achieve a big enough group of subjects due to time restrictions. For the next steps of this
+project we are working with bigger groups and hope that would solve this issue.
+About the experimental design, some points are worth mentioning. For starters, the usercustomization process for the mapping scheme should be the clearest, simplest possible
+one. Even though we tried to achieve this, many subjects have had trouble to understand
+what they were controlling and how the mapping process occurs. With that in mind, a
+more straightforward approach should be investigated. As an example, we could use a
+discrete setup: instead of continuously adjusting faders to setup the mapping, the subject
+could simply select which feature should be mapped to which sound parameter and if
+this mapping should be positive or negative.
+In terms of system design, we believe that the spatial filtering of the EEG signal could
+be further improved by using a learning phase. The system could automatically adjust
+each signal’s spatial filter in order to maximize the variation of signal power when
+certain tasks are performed (e.g. maximize alpha power increase when closing eyes).
+This could reduce the influence of imprecise electrode positioning and the low spatial
+resolution of the Emotiv EPOC neuroheadset.
+
+7.2 – Conclusions
+The use of advanced sonification techniques on an auditory neurofeedback scenario has
+not yet been deeply explored. There is certainly a great range of research opportunities
+and challenges in the field and promising directions are constantly being discovered.
+We consider this work to be one of these seeds and also a partial success, since one of
+the hypotheses has been confirmed by the acquired experimental data. We also hope that
+this can serve as an inspiration for research to come, and that our positive results can be
+replicated by others.
+	 
+
+30	 
+
+The question of customizable mappings is left partially open and as discussed in section
+7.1, we believe that a different system and experimental design could solve the problem.
+It’s important to notice how relevant this question is. The user-customizable
+parameterization means that the user controls how the system works and how he or she
+wants to perceive his/her own state. Imagining a future scenario where auditory
+neurofeedback is somewhat part of society, it’s really important to give the user the
+freedom of this choice.
+
+	 
+
+31	 
+
+References:
+[1] R. S. Huang, C. J. Kuo, L. L. Tsai, and O. T. C. Chen, “EEG pattern recognition arousal states detection and classification,” in Proc. IEEE Conf. Neural Networks, vol. 2,
+Jun. 1996, pp. 641–646
+[2] Schnitzlein, H. N. (1999). The Human Brain: An Introduction To Its Functional
+Anatomy.
+[3] Pravdich-Neminsky, V. V. (1913). Ein Versuch der Registrierung der elektrischen
+Gehirnerscheinungen. Zbl Physiol, 27, 951-960.
+[4] Millet, D. (2002). The Origins of EEG. In 7th Annual Meeting of the International
+Society for the History of the Neurosciences (ISHN).
+[5] Núñez, B., & Manuel, I. (2011). EEG artifact detection.
+[6] Hermann, T., Hunt, A., Neuhoff, J. G. (2011). The Sonification Handbook, chapter
+1, pages 1–6. Logos Verlag.
+[7] “Neurosky,” www.neurosky.com, 31/05/2013.
+[8] “Neuroelectrics,” www.neuroelectrics.com, 31/05/2013.
+[9] “Emotive,” www.emotiv.com, accessed: 30/03/2013.
+[10] “MindMedia Nexus,” www.mindmedia.nl, 31/05/2013.
+[11] E. Adrian and B. Matthews, “The Berger rhythm: potential changes from the
+occipital lobes in man,” Brain, vol. 57, no. 1, pp. 355–385, Jan. 1934.
+[12] Glen, J. (2010). Use of audio signals derived from electroencephalographic
+recordings as a novel ‘depth of anaesthesia’monitor. Medical hypotheses, 75(6), 547549.
+[13] Miranda, E. R., & Brouse, A. (2005). Interfacing the brain directly with musical
+systems: on developing systems for making music with brain signals. Leonardo, 38(4),
+331-336.
+
+	 
+
+32	 
+
+[14] Arslan, B., Brouse, A., Castet, J., Filatriau, J. J., Lehembre, R., Noirhomme, Q., &
+Simon, C. (2005). Biologically-driven musical instrument. In Proceedings of the
+Summer Workshop on Multimodal Interfaces (eNTERFACE’05).
+[15] Evans, J. R., & Abarbanel, A. (Eds.). (1999). Introduction to quantitative EEG and
+neurofeedback. Elsevier.
+[16] “Mathworks”, www.mathworks.com (31/05/2013)
+[17] “OpenSoundControl.org”, www.opensoundcontrol.org (31/05/2013)
+[18] "Low resolution Brain Electromagnetic Tomography: A new method for localizing
+electrical activity in the brain" R. D. Pascual-Marqui, in International Journal of
+Psychophysiology, 1994, pp. 49-65
+[19] Lang, P. J. (1980). Behavioral treatment and bio-behavioral assessment: Computer
+applications.
+[20] J. B. Sidowski, J. H. Johnson, & T. A. Williams (Eds.), Technology in mental
+health care delivery systems (pp. 119-l37). Norwood, NJ: Ablex.
+[21] A. Valjamaë et. al., A Review Of Real-Time EEG Sonification Research. In
+Proceedings of The 19th International Conference on Auditory Display (ICAD-2013)
+
+	 
+
+33	 
+
+

@@ -1,0 +1,2000 @@
+Multi-Person Brain Activity Recognition via Comprehensive
+EEG Signal Analysis
+Xiang Zhang
+
+University of New South Wales
+Sydney, Australia
+xiang.zhang3@student.unsw.edu.au
+
+arXiv:1709.09077v1 [cs.HC] 26 Sep 2017
+
+Xianzhi Wang
+
+Singapore Management University
+Singapore
+xzwang@smu.edu.sg
+
+Lina Yao
+
+University of New South Wales
+Sydney, Australia
+lina.yao@unsw.edu.au
+
+Quan Z. Sheng
+
+Macquarie University
+Sydney, Australia
+michael.sheng@mq.edu.au
+
+ABSTRACT
+An electroencephalography (EEG) based brain activity recognition is a fundamental field of study for a number of significant
+applications such as intention prediction, appliance control, and
+neurological disease diagnosis in smart home and smart healthcare
+domains. Existing techniques mostly focus on binary brain activity
+recognition for a single person, which limits their deployment in
+wider and complex practical scenarios. Therefore, multi-person
+and multi-class brain activity recognition has obtained popularity
+recently. Another challenge faced by brain activity recognition is
+the low recognition accuracy due to the massive noises and the
+low signal-to-noise ratio in EEG signals. Moreover, the feature
+engineering in EEG processing is time-consuming and highly relies on the expert experience. In this paper, we attempt to solve
+the above challenges by proposing an approach which has better
+EEG interpretation ability via raw Electroencephalography (EEG)
+signal analysis for multi-person and multi-class brain activity recognition. Specifically, we analyze inter-class and inter-person EEG
+signal characteristics, based on which to capture the discrepancy
+of inter-class EEG data. Then, we adopt an Autoencoder layer to
+automatically refine the raw EEG signals by eliminating various artifacts. We evaluate our approach on both a public and a local EEG
+datasets and conduct extensive experiments to explore the effect of
+several factors (such as normalization methods, training data size,
+and Autoencoder hidden neuron size) on the recognition results.
+The experimental results show that our approach achieves a high
+accuracy comparing to competitive state-of-the-art methods, indicating its potential in promoting future research on multi-person
+EEG recognition.
+
+KEYWORDS
+Brain computer interface, EEG classification, Activity recognition,
+Auto-encoder
+
+Permission to make digital or hard copies of part or all of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for third-party components of this work must be honored.
+For all other uses, contact the owner/author(s).
+Mobiquitous 2017, MELBOURNE, AU
+© 2017 Copyright held by the owner/author(s). 123-4567-2567/08/06. . . $15.00
+DOI: 10.475/123 4
+
+Dalin Zhang
+
+University of New South Wales
+Sydney, Australia
+dalin.zhang@student.unsw.edu.au
+
+Tao Gu
+
+RMIT University
+Melbourne, Australia
+tao.gu@rmit.edu.au
+
+ACM Reference format:
+Xiang Zhang, Lina Yao, Dalin Zhang, Xianzhi Wang, Quan Z. Sheng, and Tao
+Gu. 2017. Multi-Person Brain Activity Recognition via Comprehensive EEG
+Signal Analysis. In Proceedings of Mobiquitous 2017, MELBOURNE, AU, Nov.
+2017, 10 pages.
+DOI: 10.475/123 4
+
+1
+
+INTRODUCTION
+
+Brain activity recognition is one of the most promising research
+areas over the last few years. It has the potential to revolutionize a
+wide range of applications such as ICU (Intensive Care Unit) monitoring [18], appliance control [13, 28], assisted living of disabled
+people and elderly people [5], and diagnosis of neurological diseases [9]. For instance, people with Amyotrophic Lateral Sclerosis
+(ALS) generally have only limited physical capacities and they are
+unable to communicate with the outer world, such as performing
+most daily activities, e.g., turning on/off a light. In such occasions,
+brain activity recognition can help interpret their demands and
+assist them to live more independently with dignity through the
+mind-control intelligence. Brain activities are mostly represented
+by Electroencephalography (EEG) signals, which record the voltage
+fluctuations of brain neurons with the electrodes placed on the
+scalp in a non-invasive way.
+Although brain activity recognition has been widely investigated
+over the past decade, it still faces several challenges such as multiperson and multi-class classification. First, despite several studies
+on multi-person EEG classification, e.g., [6] employed a LDA (linear
+discriminant analysis) classifier to classify two datasets with nine
+and three subjects, there still has space for improvement over the
+existing methods in terms of the classification accuracy (86.06%
+and 93% over the two datasets in [6]). Second, to the best of our
+knowledge, most existing applications that adopt EEG classification
+are for diseases diagnosis (such as epilepsy and Alzheimer’s diseases), which requires only binary classification (normal or abnormal). However, there exist various other deployment occasions (e.g.,
+smart home and assisted living) that demand multi-class EEG classification. For instance, EEG-based assisting robots require more than
+two commands (such as walking straight, turning left/right, and
+raising/lowering hands) to complete assisted living tasks. Regarding this, only some preliminary research exists, such as [26], which
+adopted SVM to classify a four-class EEG dataset and achieved the
+accuracy of 70%.
+
+Mobiquitous 2017, Nov. 2017, MELBOURNE, AU
+
+Xiang Zhang, Lina Yao, Dalin Zhang, Xianzhi Wang, Quan Z. Sheng, and Tao Gu
+
+In this paper, we propose a novel brain activity recognition approach to classifying the multi-person and multi-class EEG data.
+We analyze the similarity of EEG signals and calculates the correlation coefficients matrix in both inter-class and inter-person
+conditions. Then, on top of data similarity analysis, we extract
+EEG signal features by the Autoencoder algorithm, and finally feed
+the features into the XGBoost classifier to recognize categories of
+EEG data, with each category corresponding to one specific brain
+activity. The main contributions of this paper are summarized as
+follows:
+• We present a novel brain activity recognition approach
+based on comprehensive EEG analysis. The proposed approach directly works on the raw EEG data, which enhances the ductility, relieves from EEG signal pre/postprocessing, and decreases the need of human expertise.
+• We calculate the correlation coefficients matrix and measure the self-similarity and cross-similarity under both
+inter-class and inter-person conditions. Based on the similarity investigation, we propose three favorable conditions
+of multi-person and multi-class EEG classification.
+• We adopt the Autoencoder, an unsupervised neuron network algorithm, to refine EEG features. Moreover, we
+investigate the size of hidden-layer neurons to optimize
+the neurons size to optimize the classification accuracy.
+• We conduct an experiment to evaluate the proposed approach on a public EEG dataset (containing 560,000 samples
+from 20 subjects and 5 classes) and obtain the accuracy
+of 79.4%. Our approach achieves around 10% accuracy improvement compared with other popular EEG classification
+methods.
+• We design a case study to evaluate the proposed approach
+on a local dataset which consists of 172,800 samples collected from 5 subjects and 6 classes. Our approach obtains
+the accuracy of 74.85% and outperforms the result of the
+state-of-the-art methods.
+The rest of this paper is organized as follows. Some existing
+studies related to this paper are introduced in Section 2. Section 3
+investigates the EEG data characteristic and provides the EEG sample similarity intra-class and inter-class. Section 4 describes the
+methodology details of the approach adopted in this paper. The
+experimental results and evaluation are presented in Section 5. A
+local experiment case study is introduced in Section 6. Finally, we
+summarized the paper and highlight the future work in Section 7.
+
+2
+
+RELATED WORK
+
+Over the last decade, much attention has been drawn to brain data
+modeling, a crucial pathway to translating human brain activity
+into computer commands to realize Brain-Computer Interaction
+(BCI). BCI systems are an alternative way to allow paralyzed or
+severely muscular disordered patients to recover communication
+and control abilities, as well as to save scarce medical care resources.
+Recent research has also found its application in virtual reality [25]
+and space applications [20]. As EEG signals are the most commonly
+used brain data for BCI system [2, 30, 31], significant efforts have
+been devoted to build accurate and effective models for EEG-based
+brain activity analysis [3, 15, 21, 27].
+
+EEG Feature Representation Method. Feature representation of EEG raw data has great impact on classification accuracy due
+to the complexity and high dimensionality of EEG signals. Vzard
+et al. [24] employed common spatial pattern (CSP) along with LDA
+to pre-process EEG data and obtained an accuracy of 71.59% on binary alertness states. Meisheri et al. [14] exploited multi-class CSP
+(mCSP) combined with Self-Regulated Interval Type-2 Neuro-Fuzzy
+Inference System (SRIT2NFIS) classifier for four EEG-based motor
+imagery classes (movement imagination of left hand, right hand,
+both feet, and tongue) classification and achieved the accuracy of
+54.63%, which is significantly lower than the accuracy of binary
+classification. Shiratori et al. [23] achieved a similar accuracy of
+56.7% using mCSP coupled to the random forests for a three-class
+EEG-based motor imagery task. The autoregressive (AR) modeling
+approach, a widely used algorithm for EEG feature extraction, is
+also broadly combined with other feature extraction techniques to
+gain a better performance [19]. For example, [29] investigated two
+methods EEG with AR and feature extraction combination: 1) AR
+model and approximate entropy, 2) AR model and wavelet packet
+decomposition. They employed SVM as the classifier and showed
+that AR can effectively improve classification performance. Duan
+et al. [7] introduced the Autoencoder method for feature extraction
+and obtained an accuracy of 86.69%.
+EEG Multi-person Classification. Multi-person EEG classification investigates mental signals from multiple participants,
+each of whom undergoing the same brain activities. It is the requirement of future ubiquitous application of EEG instruments to
+capture the underlying consistency and inter-subject variations
+among EEG patterns of different subjects. Kang et al. [12] presented a Bayesian CSP model with Indian Buffet process (IBP) to
+investigate the shared latent subspace across subjects for EEG classification. Their experiments on two EEG datasets containing five
+and nine subjects showed the superior performance of approximate 70% accuracy. Djemal et al. [6] utilized two multi-person
+multi-class EEG datasets to validate sequential forward floating
+selection (SFFS) and a multi-class LDA algorithm. Eugster et al.
+[8] involved forty participants in their experiments to perform relevance judgment tasks. They also recorded the EEG signals for
+further classification research. Ji et al. [11] investigated a dataset
+containing nine subjects for analyzing and evaluating a hybrid
+brain-computer interface.
+EEG Multi-class Classification. Multi-class classification
+is a major challenge in EEG signal analysis, given that current EEG
+classification research is mostly focused on binary classification.
+Usually, an algorithm achieves only inferior performance when
+handling multi-classification than in handling binary classification.
+Anh et al. [1] used Artificial Neural Network trained with output
+weight optimization back-propagation (OWO-BP) training scheme
+for dual- and triple-mental state classification problems. They got
+a classification accuracy of 95.36% on dual mental state for triple
+classification problems, the algorithm performance fell off to 76.84%.
+With the four-class problem, Olivier et al. [17] got an accuracy of
+around 50% when using a voting ensemble neural network classifier.
+Aiming at four-class EEG classification, Wang et al. [26] employed
+four preprocessing steps and a simple SVM classifier and got an
+average classification accuracy of 70%.
+
+Multi-Person Brain Activity Recognition
+In summary, differing from previous work, this paper proposes
+an Autoencoder+XGBoost algorithm to address the multi-class multiperson EEG signal classification problem, which is a core challenge
+in applying brain activity recognition technologies to many important domains. The proposed algorithm engages the Autoencoder for
+EEG feature representation to explore the relevant EEG features.
+Also, it emphasizes on the generalization over participants by solving an EEG classification problem with as much as five classes
+and taking twenty subjects. The present approach is supposed to
+improve the accuracy and practical feasibility of EEG classification.
+
+3
+
+EEG CHARACTERISTIC ANALYSIS
+
+To gain knowledge about EEG data characteristics and prepare for
+the further EEG classification, we quantify the similarity between
+EEG samples by calculating their Pearson correlation coefficients,
+using the following equation:
+N̄
+
+ρ(A, B) =
+
+1 Õ Ai¯ − µ¯A Bi¯ − µ¯B ¯
+(
+)(
+), i = 1, 2, . . . , N̄
+σ¯A
+σ¯B
+N̄ − 1 ¯
+i =1
+
+where A and B denote two EEG vector samples, each containing N̄
+elements. µ A and σA denote the mean and standard deviation of A.
+µ B and σ B denote the mean and standard deviation of B. The Person
+correlation coefficient is positively correlated with the similarity,
+and both are in the range of [0, 1].
+We introduce two similarity concepts used in our measurement:
+self-similarity and cross-similarity. The self-similarity is defined by
+the similarity of EEG signals within the same EEG category while
+the cross-similarity is defined by the similarity of EEG signals of
+two different EEG categories. Both the self-similarity and crosssimilarity are measured under two conditions: inter-class and interperson, respectively.
+Inter-class measurement. Under the inter-class situation,
+we measure the correlation coefficient matrix for every specific
+subject and calculate the average matrix by calculating the mean
+value of all the matrix. For example, there are 5 classes for the
+specific subject, we calculate a 5 ∗ 5 correlation coefficient matrix.
+In this matrix, ρ i,˘ j˘ denotes the correlation coefficient between the
+samples of the class i˘ and the samples of the class j.˘ The selfsimilarity indicates the similarity between two different samples
+from the same class. The cross-similarity indicates the average of
+similarity of each possible class pair of samples belonging to the
+specific subject.
+Inter-person measurement. Under the inter-person situation, we measure the correlation coefficients matrix for every specific
+class and then calculate the average matrix. The self-similarity indicates the similarity between two different samples from the same
+class of the same subject. The cross-similarity denotes the average
+of similarity of each possible subject pair of samples belonging to
+the specific class.
+Table 1 shows the inter-class correlation coefficient matrix and
+the corresponding statistical self- and cross-similarity. The last
+column (PD) denotes the Percentage Difference between the selfsimilarity and cross-similarity. We can observe from the results that
+the self-similarity is always higher than the cross-similarity for all
+classes, meaning that the samples’ intra-class cohesion is stronger
+
+Mobiquitous 2017, Nov. 2017, MELBOURNE, AU
+than the inter-class cohesion. The percentage difference has a
+noticeable fluctuation, indicating the varying intra-class cohesion
+over different class pairs. Class 1 is easier to be distinguished due
+to its highest percentage difference, while in contrast, class 0 and
+class 4 are difficult to be accurately classified.
+Similarly, Table 2 shows the inter-person correlation coefficient
+matrix and gives an alternative visualization of the results. Again,
+we find that, for each class, the self-similarity is higher than crosssimilarity with varying percentage difference. The standard deviations of cross-similarity in the five classes are similar. This indicates
+the steady and even distribution of the dataset between different
+subjects and different classes.
+The above analysis results basically satisfy our following hypothesis for multi-person multi-class classification: 1) the self-similarity
+is consistently higher than cross-similarity both under inter-class
+and inter-person conditions; 2) the higher inter-class percentage
+difference, the better classification results; 3) lower average percentage differences and standard deviations of the subjects result in the
+better classification performance under the inter-person condition.
+
+4
+
+METHODOLOGY
+
+In this section, we review the algorithm by first normalizing the
+input EEG data and then automatically explore the feature representation of the normalized data. At last, we adopt the XGBoost
+classifier to classify the trained features. The methodology flowchart is shown in Figure 1.
+
+4.1
+
+Normalization
+
+Normalization plays a crucial role in a knowledge discovery process
+for handling different units and scales of features. For instance,
+given one input feature ranges from 0 to 1 while another ranges
+from 0 to 100, the analysis results will be dominated by the latter
+feature. Generally, there are three widely used normalization methods: Min-Max Normalization, Unity Normalization, and Z-score
+Scaling (also called standardization).
+Min-Max Normalization. Min-Max Normalization projects
+all the elements in an vector to the range of [0, 1]. This method
+maps features to the same range despite of their original means
+and standard deviations. The formula of Min-Max normalization is
+given below:
+x − xmin
+x new =
+xmax − xmin
+where xmin and xmax separately denotes the minimum and maximum in the feature x.
+Unity Normalization. Unity Normalization re-scales the features by the percentage or the weight of each single element. It
+calculates the sum of all the elements and then divides each element
+by the sum. The equation is:
+x
+x new = Í
+
+x
+
+where x denotes the sum of feature x. Similar to Min-Max Normalization, the results of this method also belong to the range of
+[0, 1].
+Z-score Scaling. Z-score Scaling forces features under normal Gaussian distribution (zero mean and unit variance), using the
+Í
+
+Mobiquitous 2017, Nov. 2017, MELBOURNE, AU
+
+Xiang Zhang, Lina Yao, Dalin Zhang, Xianzhi Wang, Quan Z. Sheng, and Tao Gu
+
+Table 1: Inter-class correlation coefficients matrix. The correlation coefficients matrix (upper left section) is the average of 20
+correlation coefficients matrix separately from 20 subjects.
+Class
+0
+1
+2
+3
+4
+Range
+Average
+STD
+
+0
+0.4010
+0.2855
+0.4146
+0.4787
+0.3700
+0.1932
+0.3900
+0.0631
+
+1
+0.2855
+0.5100
+0.0689
+0.0162
+0.0546
+0.4938
+0.1870
+0.1869
+
+2
+0.4146
+0.0689
+0.4126
+0.2632
+0.3950
+0.3458
+0.3109
+0.1334
+
+3
+0.4787
+0.0162
+0.2632
+0.3062
+0.2247
+0.4625
+0.2578
+0.1487
+
+4
+0.3700
+0.0546
+0.3950
+0.2247
+0.3395
+0.3404
+0.2768
+0.1255
+
+Self-similarity
+0.401
+0.51
+0.4126
+0.3062
+0.3395
+0.2038
+0.3939
+0.0700
+
+Cross-similarity
+0.3872
+0.1063
+0.2854
+0.2457
+0.3156
+0.2809
+0.2680
+0.0932
+
+Percentage difference
+3.44%
+79.16%
+30.83%
+19.76%
+7.04%
+75.72%
+28.05%
+27.33%
+
+Table 2: Inter-person correlation coefficients matrix. STD denotes Standard Deviation, SS denotes Self-similarity, CS denotes
+Cross-similarity, and PD denotes Percentage Difference.
+
+subjects
+subject1
+subject2
+subject3
+subject4
+subject5
+subject6
+subject7
+subject8
+subject9
+subject10
+subject11
+subject12
+subject13
+subject14
+subject15
+subject16
+subject17
+subject18
+subject19
+subject20
+Min
+Max
+Range
+Average
+STD
+
+SS
+0.451
+0.3596
+0.51
+0.3196
+0.4127
+0.33
+0.4142
+0.362
+0.324
+0.335
+0.403
+0.4596
+0.3956
+0.3001
+0.3629
+0.3042
+0.396
+0.4253
+0.5431
+0.3964
+0.3001
+0.5431
+0.2430
+0.3902
+0.0644
+
+Class 0
+CS
+0.3934
+0.2064
+0.3464
+0.1781
+0.2588
+0.2924
+0.3613
+0.1784
+0.2568
+0.1889
+0.1969
+0.2893
+0.2581
+0.299
+0.3423
+0.1403
+0.1761
+0.3194
+0.3059
+0.3459
+0.1403
+0.3934
+0.2531
+0.2667
+0.0723
+
+PD
+12.77%
+42.60%
+32.08%
+44.27%
+37.29%
+11.39%
+12.77%
+50.72%
+20.74%
+43.61%
+51.14%
+37.05%
+34.76%
+0.37%
+5.68%
+53.88%
+55.53%
+24.90%
+43.68%
+12.74%
+0.37%
+55.53%
+55.16%
+31.40%
+0.1695
+
+SS
+0.2936
+0.3591
+0.3695
+0.4022
+0.3961
+0.3869
+0.3559
+0.4281
+0.3462
+0.3654
+0.3326
+0.4966
+0.4061
+0.3164
+0.3901
+0.3901
+0.3001
+0.3645
+0.3526
+0.3265
+0.2936
+0.4966
+0.2030
+0.3689
+0.0456
+
+Class 1
+CS
+0.1998
+0.1876
+0.2949
+0.1604
+0.2904
+0.3196
+0.342
+0.2121
+0.2987
+0.2089
+0.2066
+0.3702
+0.3795
+0.2374
+0.2278
+0.3595
+0.2232
+0.2286
+0.2547
+0.2849
+0.1604
+0.3795
+0.2191
+0.2643
+0.0636
+
+PD
+31.95%
+47.76%
+20.19%
+60.12%
+26.69%
+17.39%
+3.91%
+50.46%
+13.72%
+42.83%
+37.88%
+25.45%
+6.55%
+24.97%
+41.60%
+7.84%
+25.62%
+37.28%
+27.77%
+12.74%
+3.91%
+60.12%
+56.21%
+28.14%
+0.1518
+
+SS
+0.3962
+0.5936
+0.3979
+0.3362
+0.3128
+0.3369
+0.3959
+0.4126
+0.3399
+0.2654
+0.3561
+0.3326
+0.3965
+0.4269
+0.7203
+0.4236
+0.6235
+0.6825
+0.4326
+0.4025
+0.2654
+0.7203
+0.4549
+0.4292
+0.1223
+
+equation below:
+x −µ
+x new =
+σ
+where µ denotes the expectation of feature x and σ denotes the
+standard deviation.
+Depending on the feature characteristics of datasets, these 3
+categories of normalization methods may lead to differed analysis
+results.
+
+4.2
+
+Feature Representation
+
+To exploit the deeper correlationship between EEG signals, we
+adopt Autoencoder to have a better representation of EEG. The
+Autoencoder [16] is an unsupervised machine learning algorithm
+
+Class 2
+CS
+0.3449
+0.3927
+0.3418
+0.2682
+0.2393
+0.3281
+0.3867
+0.2368
+0.3079
+0.2158
+0.3173
+0.2506
+0.3588
+0.3763
+0.2428
+0.331
+0.3579
+0.222
+0.3394
+0.3938
+0.2158
+0.3938
+0.1780
+0.3126
+0.0589
+
+PD
+12.95%
+33.84%
+14.10%
+20.23%
+23.50%
+2.61%
+2.32%
+42.61%
+9.41%
+18.69%
+10.90%
+24.65%
+9.51%
+11.85%
+66.29%
+21.86%
+42.60%
+67.47%
+21.54%
+2.16%
+2.16%
+67.47%
+65.31%
+22.96%
+0.1853
+
+SS
+0.4023
+0.2354
+0.4226
+0.4639
+0.4256
+0.4523
+0.4032
+0.3523
+0.3516
+0.3326
+0.4133
+0.4836
+0.3326
+0.3856
+0.3623
+0.4203
+0.5109
+0.4236
+0.5632
+0.3265
+0.2354
+0.5632
+0.3278
+0.4032
+0.0717
+
+Class 3
+CS
+0.1911
+0.2324
+0.3702
+0.3905
+0.1889
+0.1905
+0.3874
+0.1658
+0.1984
+0.2102
+0.1697
+0.3545
+0.1776
+0.1731
+0.3274
+0.1634
+0.198
+0.3886
+0.3729
+0.1873
+0.1634
+0.3905
+0.2271
+0.2519
+0.0890
+
+PD
+52.50%
+1.27%
+12.40%
+15.82%
+55.62%
+57.88%
+3.92%
+52.94%
+43.57%
+36.80%
+58.94%
+26.70%
+46.60%
+55.11%
+9.63%
+61.12%
+61.24%
+8.26%
+33.79%
+42.63%
+1.27%
+61.24%
+59.97%
+36.84%
+0.2066
+
+SS
+0.5986
+0.3265
+0.4931
+0.3695
+0.3958
+0.4526
+0.4862
+0.4953
+0.3986
+0.3395
+0.5054
+0.3968
+0.3598
+0.4629
+0.3862
+0.4206
+0.3339
+0.4936
+0.4625
+0.3976
+0.3265
+0.5986
+0.2721
+0.4288
+0.0690
+
+Class 4
+CS
+0.4375
+0.2225
+0.4635
+0.2401
+0.3797
+0.3321
+0.2723
+0.2438
+0.177
+0.2921
+0.44
+0.3142
+0.3035
+0.3281
+0.3303
+0.3137
+0.2608
+0.3017
+0.219
+0.2338
+0.177
+0.4635
+0.2865
+0.3053
+0.0759
+
+PD
+26.91%
+31.85%
+6.00%
+35.02%
+4.07%
+26.62%
+43.99%
+50.78%
+55.59%
+13.96%
+12.94%
+20.82%
+15.65%
+29.12%
+14.47%
+25.42%
+21.89%
+38.88%
+52.65%
+41.20%
+4.07%
+55.59%
+51.53%
+28.39%
+0.1485
+
+that aims to explore a lower-dimensional representation of highdimensional input data for dimensionality reduction. In structure,
+Autoencoder is a multi-layer back propagation neural network
+that contains three types of layers: the input layer, the hidden
+layer, and the output layer. The procedure from the input layer
+to the hidden layer is called encoder while the procedure from
+the hidden layer to the output layer is called decoder. Both the
+encoder and the decoder yield a set of weights W and biases b.
+Autoencoder is called either Basic Autoencoder when there is only
+one hidden layer or Stacked Autoencoder when there are more than
+one hidden layers. Based on our prior experiment experience, basic
+Autoencoder works better than stacked Autoencoder when dealing
+with EEG signals. Therefore, in this paper, we adopt the basic
+Autoencoder structure.
+
+Multi-Person Brain Activity Recognition
+
+Mobiquitous 2017, Nov. 2017, MELBOURNE, AU
+
+Figure 1: The methodology flowchart. The collected EEG data flow into the Feature Representation component to seek for the
+appropriately representation and interpretation. Ii and Ii0 separately indicate the input and output EEG data. x i , hi , and x i0
+indicate the neurons in the input layer, the hidden layer and the output layer, respectively. The learned feature representation
+h will be sent to an XGBoost classifier with K trees. The classifier’s predict result is corresponding to the user’s brain activity,
+which indicates the user’s intention such as closing eye, moving left hand or moving right hand.
+Let X = {X i |i = 1, 2 · · · , N }, X ∈ RN , X i ∈ Rd be the entire
+training data (unlabeled), where X i denotes the i-th sample, N denotes the number of training samples, and d denotes the number of
+elements in each sample. hi = {hi j |j = 1, 2, · · · , M }, hi ∈ RM represents the learned feature in the hidden layer for the i-th sample,
+where M denotes the number of neural units in current layer (the
+number of elements in hi ). For simplicity, we use x and h to represent the input data and the data in the hidden layer, respectively.
+First, the encoder transforms the input data x to the corresponding representation h by the encoder weights Wen and the encoder
+biases ben :
+h = Wen x + ben
+Then, the decoder transforms the hidden layer data h to the output
+layer data x 0 by the decoder weights Wde and the decoder biases
+bde :
+x 0 = Wde h + bde
+The function of the decoder is to reconstruct the encoded feature h
+and make the reconstructed data x 0 as similar to the input data x
+as possible. The discrepancy between x and x 0 is calculated by the
+MSE (mean squared error) cost function which is optimized by the
+RMSPropOptimizer.
+In summary, training Autoencoder is the task of optimizing
+the parameters to achieve the minimum cost between the input
+x and the reconstructed data x 0 . At last, the hidden layer data h
+would contain the refined information. Such information can be
+regarded as representation of the input data, which is also the final
+outcome of Autoencoder. In above formulation, the dimension
+of the input data x and the refined feature (the hidden layer data
+h) are d and M, respectively. The function of the Autoencoder is
+either dimensionality reduction if d > M or dimensionality ascent
+if d < M.
+
+4.3
+
+Brain Activity Recognition
+
+To recognize the brain activity based on the represented feature, in
+this section, we employ the XGBoost [4] classifier. XGBoost, also
+known as Extreme Gradient Boosting, is a supervised scalable tree
+
+boosting algorithm derived from the concept of Gradient Boosting
+Machine [10]. Compared with gradient boosting algorithm, XGBoost proposes a more regularized model formalization to prevent
+over-fitting, with the engineering goal of pushing the limit of computation resources for boosted tree algorithms to achieve better
+performance.
+Consider n sample pairs D = {(x i 0 , yi 0 )}, (|D| = n, x i 0 ∈ Rm , yi 0 ∈
+R) where x i 0 denotes a m-dimensional sample and yi 0 denotes the
+corresponding label. XGBoost aims to predict the label y˜i 0 of every
+given sample x i 0 .
+The XGBoost model is the ensemble of a set of classification and
+regression trees (CART), each having its leaves and corresponding
+scores. The finial results of tree ensemble is the sum of all the
+individual trees. For a tree ensemble model of K 0 trees, the predict
+output is:
+K
+Õ
+y˜i 0 =
+fk 0 (x i 0 ), fk 0 ∈ F
+k 0 =1
+
+where F is the space of all trees and fk 0 denotes a single tree.
+The objective function of XGBoost includes loss function and
+regularization. The loss function evaluates the difference between
+each ground truth label yi 0 and the predict result y˜i 0 . It can be chosen based on various conditions such as cross-entropy, logistic, and
+mean square error. The regularization part is the most outstanding
+contribution of XGBoost. It calculates the complexity of the model
+and a more complex structure brings larger penalty.
+The objective function is defined as:
+Ψ=
+
+n
+Õ
+i
+
+l(y˜i 0 , yi 0 ) +
+
+K
+Õ
+
+Ω(fk 0 )
+
+(1)
+
+k0
+
+Í
+where l(y˜i 0 , yi 0 ) is the loss function and k 0 Ω(fk 0 ) is the regularization term. The complexity of a single tree is calculated as
+1
+Ω(fk 0 ) = γT + λkω k 2
+(2)
+2
+where T is the number of leaves in the tree, kω k 2 denotes the
+square of the L2-norm of the weights in the tree, γ and λ are the
+
+Mobiquitous 2017, Nov. 2017, MELBOURNE, AU
+
+Xiang Zhang, Lina Yao, Dalin Zhang, Xianzhi Wang, Quan Z. Sheng, and Tao Gu
+
+coefficients. The regularized objective helps deliver a model of
+simple structure and predictive functions. More specifically, the first
+term, Ω, penalizes complex structures of the tree (fewer leaves lead
+to a smaller Ω), while the second term penalizes the overweights
+of individual trees in case of the overbalanced trees dominating
+the model. Moreover, the second term helps smooth the learned
+weights to avoid overfitting.
+
+5
+
+EXPERIMENT
+
+In this section, we evaluate the proposed approach on a public EEG
+dataset and report the results of our experimental studies. Firstly,
+we introduce the experimental setting and evaluation criterion.
+Then, we provide the classification results, followed by the analysis
+of influencing factors (e.g., normalization method, training data
+size, and neuron size in the Autoencoder hidden layer). Additional
+experiments are conducted to study the efficiency and robustness
+by comparing our approach with the state-of-the-art methods.
+
+5.1
+
+Experimental Setting
+
+We use the EEG data from PhysioNet eegmmidb (EEG motor movement/imagery database) database1 , a widely used EEG database
+collected by the BCI2000 (Brain Computer Interface) instrumentation system2 [22], to evaluate the proposed method. In particular,
+the data is collected by the BCI 2000 system, which owns 64 channels and an EEG data sampling rate of 160 Hz. During the collection
+of this database, the subject sits in front of one screen and performs
+the corresponding action as one target appears in different edges of
+the screen. According to the tasks, different annotations are labeled
+and can be downloaded from PhysioBank ATM 3 . The actions in
+different tasks are as follows:
+Task 1: The subject closes his or her eyes and keeps relax.
+Task 2: A target appears at the left side of the screen and then
+the subject focuses on the left hand and imagines he/she is opening
+and closing the left hand until the target disappears.
+Task 3: A target appears at the right side of the screen and then
+the subject focuses on the right hand and imagines he/she is opening
+and closing the right hand until the target disappears.
+Task 4: A target appears on the top of the screen, and the subject
+focuses on both hands and imagines he/she is opening and closing
+both hands until the target disappears.
+Task 5: A target appears on the bottom of the screen, and the
+subject focuses on both feet and imagines he/she is opening and
+closing both feet until the target disappears.
+Specifically, we select 560,000 EEG samples from 20 subjects
+(28,000 samples each subject) for our experiments. Every sample is
+one vector which includes 64 elements corresponding to 64 channels. Each sample corresponding to one task (from task 1 to task 5
+separately is eye closed, focus on left hand, focus on right hand, focus
+on both hands and focus on both feet). Every task is labeled as one
+class, and there are totally 5 classes labels (from 0 to 4).
+
+• True Positive (TP): the ground truth is positive and the
+prediction is positive;
+• False Negative (FN): the ground truth is positive but the
+prediction is negative;
+• True Negative (TN): the ground truth is negative and the
+prediction is negative;
+• False Positive (FP): the ground truth is negative but the
+prediction is positive;
+Based on these concepts, we define criteria to evaluate the performance of the classification results as follows:
+Accuracy. The proportion of all correctly predicted samples.
+Accuracy is a measure of how good a model is.
+TP + FN
+FP + FN + TP + T N
+The test error used in this paper refers to the incorrectly predicted
+samples’ proportion, which equals to 1 minus accuracy.
+Precision. The proportion of all positive predictions that are
+correctly predicted.
+accuracy =
+
+TP
+TP + FP
+Recall. The proportion of all real positive observations that
+are correctly predicted.
+Precision =
+
+TP
+TP + FN
+F1 Score. A ‘weighted average’ of precision and recall. The
+higher F1 score, the better the classification performance.
+Recall =
+
+F 1 Score = 2
+
+precision ∗ recall
+precision + recall
+
+ROC. The ROC (Receiver Operating Characteristic) curve
+describes the relationship between TPR (True Positive Rate) and
+FPR (False Positive Rate) at various threshold settings.
+AUC. The AUC (Area Under the Curve) represents the area
+under the ROC curve. The value of AUC drops in the range [0.5, 1].
+The higher the AUC, the better the classifier.
+
+5.3
+
+Experiments and Results
+
+1 https://www.physionet.org/pn4/eegmmidb/
+
+In our experiments, the Autoencoder model is trained by the training dataset then the testing dataset is fed into the trained Autoencoder model for feature extraction. The extracted features of the
+training dataset are used by the XGBoost classifier, which will be
+evaluated by the features of the testing dataset. The number of
+neurons in the input and output layers in the Autoencoder model
+fixed at 64 (the input EEG data contains 64 dimensions), and the
+learning rate is set as 0.01. Parameter tuning experience shows
+that Autoencoder performs better with more hidden layer neurons. For XGBoost, we set the objective function as softmax for
+multi-class classification through pre-experiment experience. The
+parameters of XGBoost are selected based on the parameters tuning
+document4 . More specifically, we set the learning rate η = 0.7, the
+parameter related to the minimum loss reduction and the number
+of leaves дamma = 0, the maximum depth of a tree maxdepth = 6
+(too large maxdepth may lead to overfitting), the subsampling ratio of training instance subsample = 0.9 (to prevent overfitting),
+
+3 https://www.physionet.org/cgi-bin/atm/ATM
+
+4 https://github.com/dmlc/xgboost/blob/master/doc/parameter.md
+
+5.2
+
+Evaluation
+
+Basic definitions related to classification problems include:
+2 http://www.schalklab.org/research/bci2000
+
+Multi-Person Brain Activity Recognition
+
+Mobiquitous 2017, Nov. 2017, MELBOURNE, AU
+
+Table 3: The confusion matrix of 5-class EEG classification
+and the performance evaluation (Precision, Recall, F1 score,
+and AUC)
+
+total amount
+average
+
+Ground Truth
+1
+2
+3
+0
+300
+235
+7857 515
+445
+174
+3929 341
+125
+209
+3304
+367
+247
+205
+8523 5200 4530
+
+4
+417
+488
+212
+153
+3397
+4667
+
+Evaluation
+Precision Recall F1 Score
+0.7973
+0.7703 0.7836
+0.8108
+0.9219 0.8628
+0.8017
+0.7556 0.7780
+0.8429
+0.7294 0.7820
+0.7427
+0.7279 0.7352
+3.9954
+3.9051 3.9416
+0.7991
+0.7810 0.7883
+
+AUC
+0.9454
+0.9572
+0.9492
+0.9506
+0.9258
+4.7282
+0.9456
+
+0.8
+
+True Positive Rate
+
+Predict
+Label
+
+0
+1
+2
+3
+4
+
+0
+3745
+385
+245
+129
+358
+4862
+
+1
+
+class 0
+class 1
+class 2
+class 3
+class 4
+
+0.6
+
+0.4
+
+0.2
+
+0
+0
+
+0.1
+
+0.2
+
+0.3
+
+0.4
+
+0.5
+
+0.6
+
+0.7
+
+0.8
+
+0.9
+
+1
+
+False Positive Rate
+
+Figure 2: ROC curve for 5-class classification by XGBoost.
+Five curves separately indicate the ROC curve of five classes.
+The dotted diagonal line denotes the random classifier
+where TPR=FPR. The closer the ROC curve to the upper left
+corner, the better performance the classifier has. It is clear
+to notice that the class 1 has the best classification performance.
+
+0.7
+Min-Max
+Z-score
+Unity
+
+0.6
+
+Test error
+
+and numcl ass = 5, since we have samples of 5 categories. All the
+other parameters are set as default value. Without specific explanation, all the Autoencoder and XGBoost classifiers are taking above
+parameters setting.
+The hardware used in experiments is a GPU-accelerated machine with Nvidia Titan X pascal GPU, 768G memory, and 1.45TB
+PCIe based SSD. The training time is listed in related experiments,
+respectively.
+Multi-person Multi-class EEG Classification. To evaluate
+the proposed approach, 560,000 EEG sample patches are utilized
+in this experiment. Each sample patch contains a feature vector
+of 64 dimensions and a ground truth label. The raw EEG data is
+normalized by the z-score scaling method and then randomly split
+into training dataset (532,000 samples) and testing dataset (28,000
+samples). The representative features are extracted by Autoencoder
+with 121 hidden neurons and are input to the XGBoot classifier. The
+confusion matrix of the results is listed in Table 3. The classification
+accuracy of 28,000 testing samples (from 20 subjects and belong
+to 5 classes) is 0.794. The average precision, recall, F1 score, and
+AUC are 0.7991, 0.781, 0.7883, and 0.9456, respectively. Among
+the evaluation standards, the class 1 obtains the highest precision,
+recall, F1 score, and AUC. This means that the class 1 samples have
+the most obvious divergence and are most distinguishable. On
+the contrary, class 4 is most confusing. This conclusion is highly
+consistent with our similarity analysis results in Section 3. From
+the ROC curve, shown as Figure 2, we can deduce to the same
+conclusion. All the classes achieved the AUC higher than 0.92,
+indicating that the classifier is steady and of high quality, according
+to the characteristics of AUC mentioned in Section 5.2.
+Effect of Normalization Method. The Autoencoder component regards the input data as the training target and calculates the
+discrepancy between them for error back propagation. This character of Autoencoder determines that the feature extraction quality
+and training cost are affected by the amplitude of the input data.
+In data pre-processing stage, the data values are directly related to
+the normalization method.
+To explore the impact of the normalization method, 560,000 EEG
+samples from 20 subjects are randomly split into a training dataset
+of 532,000 samples (95% proportion) and a testing dataset of 28,000
+samples (5% proportion). By setting 121 neurons for the hidden
+layer of Autoencoder, the XGBoost test error under three kinds
+of normalization methods is shown in Figure 3. The figure shows
+that the z-score scaling normalization earns the lowest test error
+while the unity normalization obtains the highest test error. All the
+curves trend to convergence after 1,600 iterations. Without specific
+
+0.5
+
+0.4
+
+0.3
+
+0.2
+0
+
+200
+
+400
+
+600
+
+800
+
+1000
+
+1200
+
+1400
+
+1600
+
+1800
+
+The number of iterations
+
+Figure 3: The effect of normalization method. The three test
+error curves denote Min-Max, Z-score, and Unity normalization method, respectively.
+explanation, all the remaining experiments in this paper use the
+z-score scaling method.
+Effect of Training Data Size. We explore in this section the
+relationship between the classification performance and the training data size. We design five experiments with the training data
+proportion of 60%, 70%, 80%, 90%, and 95%, respectively. Each experiment is repeated 5 times and the test error’s error bar is shown in
+Figure 5. The training time is positively correlated with the training
+data proportion. The test error arrives at the lowest point 0.206,
+with an acceptable training time, while the proportion is 95%. All
+the following experiments in this paper will take 95% proportion.
+The relationships between test error and the iterations under
+various training data proportions are shown in Figure 4. All the
+curves trend to convergence after 1,600 iterations and the higher
+proportion leads to lower test error.
+Effect of Neuron Size in Autoencoder Hidden Layer. The
+neuron size in the hidden layer of Autoencoder indicates the number
+of dimensions of the extracted features. Thus it has great impact on
+the quality of feature extraction as well as the classification results.
+
+Mobiquitous 2017, Nov. 2017, MELBOURNE, AU
+
+Xiang Zhang, Lina Yao, Dalin Zhang, Xianzhi Wang, Quan Z. Sheng, and Tao Gu
+
+Table 4: Comparison of various classification methods. The first nine groups investigate the proper EEG data classifier and
+the last 7 groups illustrate the most efficient feature representation method.
+1
+SVM
+0.3333
+9
+XGBoost
+0.7453
+
+2
+RNN
+0.6104
+10
+PCA+XGBoost
+0.7902
+
+3
+LDA
+0.3384
+11
+PCA+AE+XGBoost
+0.6717
+
+4
+RNN+SVM
+0.6134
+12
+EIG+AE+XGBoost
+0.5125
+
+5
+CNN
+0.5729
+13
+EIG+PCA+XGBoost
+0.6937
+
+7
+AdaBoost
+0.3533
+15
+Stacked AE+XGBoost
+0.7048
+
+8
+RF
+0.6805
+16
+AE+XGBoost
+0.794
+10 4
+14
+
+0.35
+
+0.7
+
+Dimensionality
+Reduction
+
+95%
+90%
+80%
+70%
+60%
+
+0.6
+
+Dimensionality
+Ascent
+
+12
+0.3
+
+0.5
+
+10
+
+Test error
+
+Test error
+
+6
+DT
+0.3345
+14
+DWT+XGBoost
+0.7221
+
+0.4
+
+8
+0.25
+
+6
+
+Training time (s)
+
+No.
+Classifier
+Acc
+No.
+Classifier
+Acc
+
+0.3
+4
+0.2
+0
+
+200
+
+400
+
+600
+
+800
+
+1000
+
+1200
+
+1400
+
+1600
+
+0.2
+20
+
+1800
+
+The number of iterations
+
+40
+
+60 64 80
+
+100
+
+120
+
+140
+
+160
+
+180
+
+200
+
+2
+220
+
+The neuron size in Autoencoder hidden layer
+
+Figure 4: The relationships between test error and the iterations under various training data proportions
+10 4
+8.5
+
+0.32
+
+8
+
+0.3
+
+Figure 6: The effect of neuron size in Autoencoder hidden
+layer. Since the input data is 64-dimension (marked as red
+line), the left part (smaller than 64) is dimensionality reduction area while the right part (larger than 64) is dimensionality ascent area.
+
+Test error
+
+7
+
+0.26
+
+6.5
+6
+
+0.24
+
+5.5
+0.22
+0.2
+55
+
+Training time (s)
+
+7.5
+0.28
+
+5
+60
+
+65
+
+70
+
+75
+
+80
+
+85
+
+90
+
+95
+
+4.5
+100
+
+Training data proportion (%)
+
+Figure 5: The relationship between the test error with error
+bars, the training time and the training data proportion
+We design the experiment with the neuron size ranges from 30 to
+200 and the experimental results (the test error and the training
+time) are shown in Figure 6.
+In the first stage (0-120), the test error keeps decreasing with the
+increase of the neuron size; in the second stage (larger than 120),
+the test error stands at around 0.21 with slight fluctuation. The
+training time curve has a linear relationship with the neuron size
+on the whole. Although the gap between the test error curve and
+the training time curve arrives at the minimum around 100 neurons,
+the test error is still high. The test error reaches the bottom while
+the neuron size is 121, and the training time is acceptable at this
+point. Moreover, the test error curve keeps steady after 121. We set
+the hidden layer neuron size for all other experiments as 121.
+
+5.4
+
+Comparison
+
+In our approach, we employ XGBoost as the classifier to classify the
+refined EEG features yielded by Autoencoder. To demonstrate the
+efficiency of this method, in this section, we compare the proposed
+approach with several widely used classification methods. All the
+
+classifiers work on the same EEG dataset and their corresponding
+performance is listed in Table 4.
+In Table 4, LDA denotes Linear Discriminant Analysis; SVM
+denotes Support Vector Machine; RNN denotes (Recurrent Neuron
+Network) alongside LSTM denotes Long-Short Term Memory (kind
+of RNN architecture); AdaBoost denotes Adaptive Boosting; RF
+denotes Random Forest; DT denotes Decision Tree; EIG denotes
+the eigenvector-based dimensionality reduction method used in
+Eigenface recognition5 ; PCA denotes Principal Components Analysis which is a commonly used dimensionality reduction method;
+DWT denotes Discrete Wavelet Transform, which is the wavelet
+transformation with the wavelets discretely sampled. The stacked
+Autoencoder contains 3 hidden layers with 100, 121, 100 neurons,
+respectively.
+The comparison is divided into two aspects: the classifier and
+the feature representation method. At first, we classify our dataset
+separately by 9 commonly used sensing data classifier (e.g., SVM, RF,
+RNN, and CNN) to investigate the most suitable classifier for raw
+EEG data. Then 7 categories feature extraction method (e.g., PCA,
+AE, and DWT) are conducted to investigate the most appropriately
+EEG feature representation approach. The comparison results show
+that the XGBoost classifier outperforms its counterpart (without
+pre-processing and feature extraction) and obtains the accuracy
+of 0.74, which means that XGBoost is more suitable to solve this
+problem. On the other hand, some feature extraction is positive to
+the classification whilst some are negative. Through the comparison,
+5 http://www.vision.jhu.edu/teaching/vision08/Handouts/case
+
+study pca1.pdf
+
+Multi-Person Brain Activity Recognition
+
+Mobiquitous 2017, Nov. 2017, MELBOURNE, AU
+
+(a) EEG collection
+
+(b) EEG raw data
+
+Figure 7: EEG collection and the raw data . The pure EEG data is selected for recognition and the data, which is contaminated
+by eye blink and other noise, is not included in the local dataset (dropped).
+Table 5: Comparison of various classification methods over the case study dataset
+No.
+Classifier
+Acc
+No.
+Classifier
+Acc
+
+1
+SVM
+0.356
+9
+XGBoost
+0.6913
+
+2
+RNN
+0.675
+10
+PCA+XGBoost
+0.7225
+
+3
+LDA
+0.343
+11
+PCA+AE+XGBoost
+0.6045
+
+4
+RNN+SVM
+0.6312
+12
+EIG+AE+XGBoost
+0.4951
+
+we find that Autoencoder (121 hidden neurons) achieves the highest
+multi-person classification accuracy as 0.794.
+
+6
+
+CASE STUDY
+
+In this section, to further demonstrate the feasibility of the proposed
+approach, we conduct a local experiment and present the classification result. At first, we design an EEG collection experiment.
+Secondly, we report the recognition classification results under the
+optimal hyper-parameters. Subsequently, we show the comparison
+between our approach and the state-of-the-art methods.
+
+6.1
+
+Experimental Setting
+
+This experiment is carried on by 5 subjects (3 males and 2 females)
+aged from 24 to 30. During the experiment, the subject wearing the
+Emotiv Epoc+6 EEG collection headset, facing the computer screen
+and focus on the corresponding mark which appears on the screen
+(shown in Figure 7). The Emotiv Epoc+ contains 14 channels and
+the sampling rate is set as 128 Hz. The marks are shown on the
+screen and the corresponding brain activities and labels used in this
+paper are listed in Table 6. Summarily, this experiment contains
+172,800 samples with 34,560 samples for each subject.
+
+6.2
+
+Recognition Results and Comparison
+
+The dataset is divided into a training set (155,520 samples) and a
+testing set (17,280 samples). There are 9 mini-batches and the batch
+size is 17,280. All the other parameters are the same as listed in
+6 https://www.emotiv.com/product/emotiv-epoc-14-channel-mobile-eeg/
+
+5
+CNN
+0.5291
+13
+EIG+PCA+XGBoost
+0.6249
+
+6
+DT
+0.305
+14
+DWT+XGBoost
+0.6703
+
+7
+AdaBoost
+0.336
+15
+StackedAE+XGBoost
+0.6593
+
+8
+RF
+0.6609
+16
+AE+XGBoost
+0.7485
+
+Table 6: Mark in experiment and corresponding brain activity and label in case study
+Mark
+Brain Activity
+Label
+
+up arrow
+upward
+0
+
+down arrow
+downward
+1
+
+left arrow
+leftward
+2
+
+right arrow
+rightward
+3
+
+central cycle
+center
+4
+
+close eye
+relax
+5
+
+Table 7: The confusion Matrix and the evaluation
+
+Predicted label
+
+Ground truth
+0
+1
+0 2314 197
+1 165
+2271
+2 131
+176
+3 177
+156
+4 191
+190
+5 85
+76
+
+2
+126
+153
+2363
+142
+118
+78
+
+3
+188
+171
+180
+2179
+219
+77
+
+4
+258
+214
+164
+216
+2269
+127
+
+5
+57
+75
+74
+85
+79
+1539
+
+Evaluation
+Precision Recall
+0.7369
+0.7555
+0.7448
+0.7407
+0.7652
+0.7930
+0.7374
+0.7230
+0.7401
+0.6986
+0.7765
+0.8062
+
+F1
+0.7461
+0.7428
+0.7788
+0.7301
+0.7187
+0.7911
+
+AUC
+0.8552
+0.8395
+0.8931
+0.8695
+0.8759
+0.9125
+
+Section 5. The proposed approach achieves the 6-class classification accuracy of 0.7485. The confusion matrix and evaluation is
+reported in Table 7. Clearly, the 5th class brain activity (eye closed
+and keep relax) has the highest precision and is the easiest activity
+to be recognized.
+Subsequently, to demonstrate the efficiency of the proposed approach, we compare our method with the state-of-the-art methods
+and the results are shown in Table 5.
+
+7
+
+CONCLUSION
+
+In this paper, we have focused on multi-class EEG signal classification based on EEG data that come from different subjects (multiperson). To achieve this goal, we aim at discovering the patterns
+in the discrepancy between different EEG classes with robustness
+
+Mobiquitous 2017, Nov. 2017, MELBOURNE, AU
+
+Xiang Zhang, Lina Yao, Dalin Zhang, Xianzhi Wang, Quan Z. Sheng, and Tao Gu
+
+over the difference between various subjects. Firstly, we analyze
+three widely used normalization methods in pre-processing stage.
+Then, we feed the normalized EEG data into the Autoencoder and
+train the Autoencoder model. Autoencoder transforms the original
+64-dimension features to 121-dimension features and essentially
+maps the data to a new feature space when meaningful features
+play a dominating role. Finally, we evaluate our approach over an
+EEG dataset of 560,000 samples (belongs to 5 categories) and achieve
+the accuracy of 0.794. Compared with the accuracy of around 0.34
+achieved by traditional methods (e.g., SVM, AdaBoost, Decision
+Tree, and RNN), our results 0.794 show significant improvement.
+Furthermore, we explore the effect of two factors (the training data
+size and the neuron size in Autoencoder hidden layer) on the training results. At last, we conduct a case study to gather 6 categories
+of brain activities and obtain the classification accuracy of 0.7485.
+As part of our future work, we will build multi-view model of
+multi-class EEG signals to improve the classification performance.
+In particular, we plan to establish multiple models with each single
+model dealing with a single class. Following this philosophy, the
+correlation between test sample and each model can be calculated
+in the test stage and the sample can be classified to the class with
+minimum correlation coefficient. Besides, the work introduced in
+this paper only represents our preliminary study on exploring the
+common patterns of brain activities. Establishing a universal and
+efficient EEG classification model will be a major goal of our future
+research.
+
+REFERENCES
+[1] Nguyen The Hoang Anh, Tran Huy Hoang, Vu Tat Thang, TT Quyen Bui, and
+others. 2016. An Artificial Neural Network approach for electroencephalographic
+signal classification towards brain-computer interface implementation. In Computing & Communication Technologies, Research, Innovation, and Vision for the
+Future (RIVF), 2016 IEEE RIVF International Conference on. IEEE, 205–210.
+[2] Mahnaz Arvaneh, Cuntai Guan, Kai Keng Ang, and Chai Quek. 2013. Optimizing
+spatial filters by minimizing within-class dissimilarities in electroencephalogrambased brain–computer interface. IEEE Transactions on Neural Networks and
+Learning Systems 24, 4 (2013), 610–619.
+[3] Saugat Bhattacharyya, Abhronil Sengupta, Tathagatha Chakraborti, Amit Konar,
+and DN Tibarewala. 2014. Automatic feature selection of motor imagery EEG
+signals using differential evolution and learning automata. Medical & biological
+engineering & computing 52, 2 (2014), 131–139.
+[4] Tianqi Chen and Carlos Guestrin. 2016. Xgboost: A scalable tree boosting system.
+In Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge
+Discovery and Data Mining. ACM, 785–794.
+[5] D De Venuto, VF Annese, M de Tommaso, E Vecchio, and AL Sangiovanni Vincentelli. 2015. Combining EEG and EMG signals in a wireless system for preventing
+fall in neurodegenerative diseases. In Ambient Assisted Living. Springer, 317–327.
+[6] Ridha Djemal, Ayad G Bazyed, Kais Belwafi, Sofien Gannouni, and Walid
+Kaaniche. 2016. Three-Class EEG-Based Motor Imagery Classification Using
+Phase-Space Reconstruction Technique. Brain Sciences 6, 3 (2016), 36.
+[7] Lijuan Duan, Yanhui Xu, Song Cui, Juncheng Chen, and Menghu Bao. 2016.
+Feature extraction of motor imagery EEG based on extreme learning machine
+auto-encoder. In Proceedings of ELM-2015 Volume 1. Springer, 361–370.
+[8] Manuel JA Eugster, Tuukka Ruotsalo, Michiel M Spapé, Ilkka Kosunen, Oswald
+Barral, Niklas Ravaja, Giulio Jacucci, and Samuel Kaski. 2014. Predicting termrelevance from brain signals. In Proceedings of the 37th International ACM SIGIR
+Conference on Research & Development in Information Retrieval. 425–434.
+[9] Oliver Faust, U Rajendra Acharya, Hojjat Adeli, and Amir Adeli. 2015. Waveletbased EEG processing for computer-aided seizure detection and epilepsy diagnosis. Seizure 26 (2015), 56–64.
+[10] Jerome H Friedman. 2001. Greedy function approximation: a gradient boosting
+machine. Annals of Statistics (2001), 1189–1232.
+[11] Hongfei Ji, Jie Li, Rongrong Lu, Rong Gu, Lei Cao, and Xiaoliang Gong. 2016. EEG
+classification for hybrid brain-computer interface using a tensor based multiclass
+multimodal analysis scheme. Computational Intelligence and Neuroscience 2016
+(2016), 51.
+
+[12] Hyohyeong Kang and Seungjin Choi. 2014. Bayesian common spatial patterns
+for multi-subject EEG classification. Neural Networks 57 (2014), 39–50.
+[13] Wei Tuck Lee, Humaira Nisar, Aamir S Malik, and Kim Ho Yeap. 2013. A brain
+computer interface for smart home control. In Consumer Electronics (ISCE), 2013
+IEEE 17th International Symposium on. IEEE, 35–36.
+[14] Hardik Meisheri, Nagaraj Ramrao, and Suman K Mitra. 2016. Multiclass common
+spatial pattern with artifacts removal methodology for EEG signals. In Computational and Business Intelligence (ISCBI), 2016 4th International Symposium on.
+IEEE, 90–93.
+[15] Gernot R Müller-Putz, Patrick Ofner, Andreas Schwarz, Joana Pereira, Andreas
+Pinegger, Catarina Lopes Dias, Lea Hehenberger, Reinmar Kobler, and Andreea Ioana Sburlea. 2017. Towards non-invasive EEG-based arm/hand-control
+in users with spinal cord injury. In Brain-Computer Interface (BCI), 2017 5th
+International Winter Conference on. IEEE, 63–65.
+[16] Thanh Nguyen, Saeid Nahavandi, Abbas Khosravi, Douglas Creighton, and Imali
+Hettiarachchi. 2015. EEG signal analysis for BCI application using fuzzy system.
+In Neural Networks (IJCNN), 2015 International Joint Conference on. IEEE, 1–8.
+[17] Tobie Erhard Olivier, Shengzhi Du, Barend Jacobus van Wyk, and Yskandar
+Hamam. 2016. Independent components for EEG signal classification. In Proceedings of the 2016 International Conference on Intelligent Information Processing.
+ACM, 33.
+[18] Gamaleldin Osman, Daniel Friedman, and Lawrence J Hirsch. 2017. Diagnosing
+and Monitoring Seizures in the ICU: The Role of Continuous EEG for Detection
+and Management of Seizures in Critically Ill Patients, Including the Ictal-Interictal
+Continuum. In Seizures in Critical Care. Springer, 31–49.
+[19] Mohammad Rahman, Wanli Ma, Dat Tran, and John Campbell. 2012. A comprehensive survey of the feature extraction methods in the EEG research. Algorithms
+and Architectures for Parallel Processing (2012), 274–283.
+[20] Luca Rossini, Dario Izzo, and Leopold Summerer. 2009. Brain-machine interfaces
+for space applications. In Engineering in Medicine and Biology Society, 2009. EMBC
+2009. Annual International Conference of the IEEE. IEEE, 520–523.
+[21] Roberto Santana, Laurent Bonnet, Jozef Legény, and Anatole Lécuyer. 2012.
+Introducing the use of model-based evolutionary algorithms for EEG-based
+motor imagery classification. In Proceedings of the 14th Annual Conference on
+Genetic and Evolutionary Computation. ACM, 1159–1166.
+[22] Gerwin Schalk, Dennis J McFarland, Thilo Hinterberger, Niels Birbaumer, and
+Jonathan R Wolpaw. 2004. BCI2000: a general-purpose brain-computer interface
+(BCI) system. IEEE Transactions on Biomedical Engineering 51, 6 (2004), 1034–
+1043.
+[23] T Shiratori, H Tsubakida, A Ishiyama, and Y Ono. 2015. Three-class classification
+of motor imagery EEG data including firest statefi using filter-bank multi-class
+Common Spatial pattern. In Brain-Computer Interface (BCI), 2015 3rd International
+Winter Conference on. IEEE, 1–4.
+[24] Laurent Vézard, Pierrick Legrand, Marie Chavent, Frédérique Faı̈ta-Aı̈nseba, and
+Leonardo Trujillo. 2015. EEG classification for the detection of mental states.
+Applied Soft Computing 32 (2015), 113–131.
+[25] Maitreyee Wairagkar, Ioannis Zoulias, Victoria Oguntosin, Yoshikatsu Hayashi,
+and Slawomir Nasuto. 2016. Movement intention based Brain Computer Interface
+for Virtual Reality and Soft Robotics rehabilitation using novel autocorrelation
+analysis of EEG. In Biomedical Robotics and Biomechatronics (BioRob), 2016 6th
+IEEE International Conference on. IEEE, 685–685.
+[26] Deng Wang, Duoqian Miao, and Gunnar Blohm. 2012. Multi-class motor imagery
+EEG decoding for brain-computer interfaces. Frontiers in Neuroscience 6 (2012),
+151.
+[27] Bahia Yahya-Zoubir, Maouia Bentlemsan, ET-Tahir Zemouri, and Karim Ferroudji.
+2015. Adaptive Time Window for EEG-based Motor Imagery Classification. In
+Proceedings of the International Conference on Intelligent Information Processing,
+Security and Advanced Communication. ACM, 83.
+[28] Xiang Zhang, Lina Yao, Chaoran Huang, Quan Z Sheng, and Xianzhi Wang. 2017.
+Intent Recognition in Smart Living Through Deep Recurrent Neural Networks.
+The 24th International Conference on Neural Information Processing (2017).
+[29] Yong Zhang, Bo Liu, Xiaomin Ji, and Dan Huang. 2016. Classification of EEG
+Signals Based on Autoregressive Model and Wavelet Packet Decomposition.
+Neural Processing Letters (2016), 1–14.
+[30] Yu Zhang, Guoxu Zhou, Jing Jin, Xingyu Wang, and Andrzej Cichocki. 2014.
+Frequency recognition in SSVEP-based BCI using multiset canonical correlation
+analysis. International Journal of Neural Systems 24, 04 (2014), 1450013.
+[31] Yu Zhang, Guoxu Zhou, Jing Jin, Qibin Zhao, Xingyu Wang, and Andrzej Cichocki. 2016. Sparse bayesian classification of EEG for brain–computer interface.
+IEEE Transactions on Neural Networks and Learning Systems 27, 11 (2016), 2256–
+2267.
+
+

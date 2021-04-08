@@ -1,0 +1,1946 @@
+Detecting driver distraction using stimuli-response EEG analysis
+Garima Bajwa∗1,2 , Mohamed Fazeen1 , and Ram Dantu1
+1
+
+2
+
+University of North Texas, 1155 Union Circle, Denton, TX, USA
+Capitol Technology University, 11301 Springfield Rd, Laurel, MD, USA
+April 22, 2019
+
+arXiv:1904.09100v1 [cs.HC] 19 Apr 2019
+
+Abstract
+Introduction: Detecting driver distraction is a significant concern for future intelligent transportation
+systems. We present a new approach for identifying a distracted driver’s behavior by evaluating a stimulus
+and response interaction with the brain signals in two ways. First, measuring driver’s response through
+EEG by creating various types of distraction stimuli such as reading, texting, calling and using phone camera
+(risk odds ratio of these activities determined by NHTSA study). Second, using a survey, comparing driver’s
+order/perception of severity of distraction with the derived distraction index from EEG bands.
+Method: A 14 electrodes headset was used to record the brain signals while driving in the pilot study
+with two subjects and a single dry electrode headset with 13 subjects in the main study. We used a naturalistic on-the-road driving study as opposed to a virtual-reality driving simulator to perform the distracted
+driving maneuvers, consisting of over 100 short duration trials (three to five seconds) for a subject.
+Results: We overcame a big challenge in EEG analysis –reducing the number of electrodes by isolating
+one electrode (FC5) from 14 electrode locations to identify certain distractions. Our machine learning
+methods achieved a mean accuracy (averaged over the subjects and tasks) of 91.54 ± 5.23% to detect a
+distracted driving event and 76.99 ± 8.63% to distinguish between the five distraction cases in our study
+(read, text, call, and snapshot) using a single electrode.
+Practical Applications: The quantification of distracted driving detailed in this paper is necessary to
+guide future policies in road safety. Our real–time system addresses the safety concerns resulting from driver
+distraction and aims to bring about behavioral changes in drivers.
+
+1
+
+Background
+
+Electroencephalography (EEG) is a technique for the measurement of electrical activity or the potential difference between different parts of the brain. It occurs as a result of ionic current flows when neurons communicate
+with each other. The novel idea of using EEG to communicate with a computer emerged in the early 70’s with
+the research initiated by Vidal [52]. Since then, many diverse areas such as robotics, gaming, and neurofeedback applications use this technique [11]. Brain-computer-interfaces (BCI) are being adopted increasingly for
+real-time monitoring of patients, neural prosthetics, affective computing, gaming, and security [58, 36, 5]. The
+future developments are being focused on recording and transmitting EEG signals using a wireless platform and
+at the same time supporting mobility for such applications [28, 8, 56].
+In the recent past, many investigations have been made for driver distraction behavior. Specifically, the
+U.S. National Highway Traffic Safety Administration (NHTSA) has given significant attention to this issue
+[18, 47, 23]. It reported nearly 3,450 deaths in 2016 (9% of overall fatalities) resulting from distracted driving
+crashes in the United States [41]. NHTSA defines driver distraction as “any activity that takes a driver’s
+attention away from the task of driving”. Their guidelines [40] have listed manual text entry, reading and
+displaying graphics unrelated to driving as unsafe driver distractions. According to studies on drivers’ willingness
+to engage in various sorts of potentially distracting tasks, highest mean ratings were shown in activities like
+entering text messages from the phone, looking up stored phone numbers, picking up and reading a message
+on PDA and sending emails [26, 7]. It influenced us to formulate an experiment to study an individual’s brain
+pattern involved in common distraction activities.
+Measuring whether a driver is distracted or not is not an easy task and may involve analysis of many parameters [9]. There must be proper metrics and measurements available to quantify driver distraction accurately.
+Obtaining data directly from the brain to measure distraction sounds more natural and plausible. According
+to a review by Dong et al. [12], there are primarily three types of inattention detection methods –biological
+∗ corresponding
+
+author
+
+1
+
+signal processing approaches, subjective report approaches and behavior signal processing approaches. Under
+biological signal processing approaches, EEG plays a critical role in detecting driver distractions. Further, their
+study highlights EEG technique as one of the most accurate methods of detecting driver inattention. Their
+findings inspired the usage of EEG in our research to study about driver distraction.
+Most of the existing work for analyzing driver distraction using EEG was performed in simulated environments [2, 21, 49, 25, 30]. Faro et al. [17] in their study of analyzing driver status observed that channel locations
+F7, F8, FC5 (according to international 10−20 system, Fig. 1) play an active role in detecting distraction. They
+observed the frontal areas as the most significant channels for 18 out of 20 peoples’ sample. Using a virtualreality (VR) based simulator, Lin et al. [29] observed increased powers in the theta, and beta frequency bands
+in the frontal cortex while studying the dynamics of dual-task driving performance. They also proposed that
+motor area was not related to the distraction effects as most of the brain resources were occupied in the frontal
+area to deal with the two tasks. Also, the correlation was low between EEG dynamics in motor area and its
+corresponding response times.
+
+Figure 1: 10-10 Electrode positioning system. Black circles indicate positions of the original 10-20 system,
+gray circles indicate additional positions introduced in the 10-10 extension [43]. The letters F, T, C, P and O
+stand for frontal, temporal, central, parietal, and occipital lobes, respectively. The electrodes used in EPOC
+headset are marked in green color and Neurosky electrode placement in orange.
+Detecting driver emotions using EEG can also be very useful in observing driver distraction. Fan et al. [16]
+explained the importance of emotions towards driver safety. Their research claims to detect human emotion
+using EEG with an accuracy of 72.25% for the targeted group samples. Studies in the past have also evaluated
+drivers’ mental workload [45]. Lei, Welke and Roetting [27] assessed this workload using EEG data when drivers
+were performing multiple tasks simultaneously. They also used a virtual driving simulator to present each subject
+with four different blocks of lane change tasks and observed that EEG is very effective tool for evaluating a
+driver’s mental workload. An EEG-based drowsiness estimation system used the EEG power spectrum methods
+to estimate indirectly a driver’s drowsiness level in a VR-based driving simulator [32]. Another work by Lin et
+al. showed the use of independent component analysis (ICA) in estimating driver’s drowsiness effectively [31].
+
+1.1
+
+Contributions
+
+Current literature focuses on the use of simulated driving in distraction studies using EEG. In this work, we
+collected responses from human subjects during on-the-road driving in a real environment that incorporates
+complexities arising from multisensory cues as opposed to virtual–reality driving that involves only distal cues
+and non-vestibular self-motion cues [46, 20, 48]. The newer generation of EEG recording devices [37, 14] have
+eased the signal acquisition process and storage. Our aim wad to utilize these devices to develop a reliable and
+robust application that supports mobility as well as simplification of high-dimensional EEG data to generate
+2
+
+EEG Data
+
+Acquisition
+Process
+
+EEG noise filtering
+Analyze
+
+Time domain analysis
+
+Frequency domain analysis
+
+Independent component analysis
+
+Temporal scalp activation
+patterns
+
+Capture features
+
+Classify
+
+Distraction classification
+
+Figure 2: A schematic depiction of the processing stages of the distraction detection system. The
+first process stage deals with EEG signal acquisition and filtering. In the analyze stage, three techniques
+–time, frequency and independent components were used to understand the signals behavior in distractions.
+The classify stage incorporates feature formation, selection, and classification evaluation of various distraction
+events.
+safe real-time feedbacks for the drivers’. A user acceptable assistive application is highly desirable to disrupt
+and change behavior, and prevent fatal accidents resulting from distracted driving.
+The key contributions of this paper are:
+• Performed extensive on-the-road trials with 15 subjects in a real-life naturalistic driving setup where the
+brain responses are much more complex and intriguing than a simulated driving environment. Nearly all
+the prior studies focused on the use of simulated study [29, 55, 54].
+• Localized the identification of common distractions to one electrode (FC5) from 14 electrode locations.
+All the previous work performed classification and prediction with more than one electrode [12]. Using a
+single dry sensor EEG also increases the usability and acceptability of our system.
+• Established a system to understand and distinguish between multiple scenarios of everyday driver distractions such as reading, texting, calling and taking a snapshot.
+• Developed an interactive real-time training and calibration of a mobile application to provide safety alerts
+to the drivers based on their level of cognitive distraction computed using the EEG spectrum.
+The methodology of the driver distraction system consists of three main stages; process the EEG signals,
+analyze using time, frequency and independent components, and classify them into various types of distraction
+events (Fig. 2). The rest of the paper discusses scenarios of distraction and the methods that help to recognize
+such behaviors. The last section is dedicated to the feasibility of detecting these events on a mobile platform.
+
+2
+2.1
+
+Materials and Methods
+Ethics Statement
+
+Ethical approval for the study was obtained from the Institutional Review Board at the University where
+research was conducted.
+
+3
+
+Figure 3: The risk odds ratio determined by the NHTSA study [1]
+
+2.2
+
+Stimuli
+
+The stimuli used in this study were based on the common distractions (read, text, call, & snapshot) observed
+while driving [47, 22, 1]. The NHTSA study [1] provides a summary of the risks associated with performing
+these distraction tasks (Fig. 3). Following is a brief description of all the stimuli used to study the EEG
+responses:
+1. Base (undistracted): Normal driving behavior of a subject without engaging in any tasks while driving
+2. Read : Subject was presented with an unseen article on a printed paper to read while driving
+3. Text: Involved composing and sending a message while driving by using any of the standard messaging
+services on the mobile phone
+4. Call : Subject browsed his/her contact list and made a call to the desired person
+5. Snapshot: Subject operated the phone’s camera that involved taking pictures either using the front or
+back camera
+We also performed a pretending to text activity to observe the differences from an actual distraction task.
+In this activity, the driver looked at his phone screen intermittently while driving. The testing conditions were
+purposely kept simple in order to implement a controlled driving environment by isolating only the designated
+distraction. Adding complicated driving courses and behaviors such as hard turns or lane changes cause more
+complex brain activity that could mask or mislead the driver distraction signals.
+
+2.3
+
+Driving Location
+
+The road section adjacent to a parking lot on the University campus was chosen for the study (Fig. 4). We
+conducted the experiment during the time the parking lot was rarely used to ensure a safe environment for
+the study. The path driven was a straight and curved stretch of nearly one mile. There was a minor risk of
+accident associated with performing the tasks while driving. Therefore, principal investigator and the student
+investigator constantly kept a check for any undesirable events such as subjects moving out of the lane while
+driving, monitoring incoming traffic on the opposite lane, and rare cases of any pedestrians being present to
+make sure of the safety on the road. There was no case of any injury or accident at the end of data collection
+process from any subject.
+
+2.4
+
+EEG Acquisition Devices
+
+The distracted driving study was conducted using two different EEG recording devices; Emotiv’s EPOC neuroheadset [14] and Neurosky’s Mindband [37]. EPOC is a portable device to record EEG data from 14 saline
+4
+
+Figure 4: A view of the road section inside the university campus used to conduct the distracted
+driving experiment.
+electrodes placed according to the international 10−20 system (Fig. 1). Its sampling rate is 128 Hz. It has a
+built-in gyroscope that generates optimal positional information for cursor and camera controls allowing a total
+range of motion. The Neurosky headband contains a single sensor dry electrode with an ear clip reference to
+record signals from the scalp. Its sampling rate is 512 Hz and records signals up to 100Hz. It has a rechargeable
+battery, and a stretchable fabric makes it very convenient to wear and adjustable to different head sizes. A
+significant benefit over Emotiv is that it has a single dry electrode and needs no preparation. Since, the data
+collection was carried out in a dynamic environment with multiple subjects, we used conductive gel in some
+cases to ensure good contact with the Neurosky electrode. Quality of the signals was monitored using the signal
+strength information from the electrode (good strength equivalent to 200 is solid contact with the skin/scalp).
+
+2.5
+
+Data Collection
+
+The data was recorded for 15 right handed subjects, nine males, and five females with ages between 24 –28
+years, and one male with age 55 years. In the pilot study with two subjects, EEG data was recorded from both
+the 14 electrodes and single electrode headsets. In the main study with 13 subjects, EEG data was collected
+using the single electrode device (explained in forthcoming sections). A session consisted of performing one
+trial of each distraction activity (read, text, call, and snapshot). The recording time for each task was nearly
+60 seconds over the pre-defined road route. We avoided contaminating the EEG readings of participants with
+any known factors such as tiredness or boredom. At the end of every session, the participants either chose to
+come back or continue with the data collection. The variation in sessions was dependent upon the willingness
+of participants to volunteer for more than one session. Hence, the number of sessions varied from two to four
+for the subjects. The details of the complete dataset are shown in Table 1.
+The experiment was carried out by two people; one performed the driving task, and the other person recorded
+the data as well as gave the audio prompts for the desired activity. The driver was asked to relax for few seconds
+before a prompt to start driving. An audio cue was given to perform a certain distraction activity (text or read)
+and finally, the driver was asked to stop the vehicle safely. The subject was not aware of the order in which
+he/she will perform the distraction tasks. We wanted to carry the distraction activity as a controlled event to
+visualize the maximum effect of distraction in the EEG activity. Also, we did not want to bias the EEG signals
+with any known criteria prior to performing the distraction activity and intended to keep the experimental
+conditions similar for all participants.
+A laptop was used to establish a wireless connection to the EEG headsets and record the data for further
+processing. A video of the driver was also recorded simultaneously throughout the experiment for reference
+and verification of the distraction tasks. Both the EEG and video recording were synchronized at all times.
+The same EEG data was also collected synchronously on the smartphone using the mobile API (Application
+Interface) described in the section on Brain Mobile Application Interface. During the whole experiment, the
+5
+
+Table 1: Statistics of the dataset. Each row corresponds to the details of the trials for a subject performing the
+various distraction tasks. Duration of each trial varies from three to five seconds.
+Subject
+
+Interface
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BMI
+
+Baseline Text Read
+Number of trials
+20
+20
+20
+20
+20
+20
+25
+25
+25
+25
+25
+25
+15
+15
+15
+25
+25
+25
+30
+30
+30
+30
+30
+30
+30
+30
+30
+25
+25
+25
+15
+15
+15
+25
+25
+25
+35
+35
+35
+30
+30
+30
+60
+69
+69
+
+Snapshot
+
+Call
+
+Total
+
+20
+20
+25
+25
+15
+25
+30
+30
+30
+25
+15
+25
+35
+30
+69
+
+20
+20
+25
+25
+15
+25
+30
+30
+30
+25
+15
+25
+35
+30
+69
+
+100
+100
+125
+125
+75
+125
+150
+150
+150
+125
+75
+125
+175
+150
+336
+
+BCI - Brain-Computer-Interface, BMI - Brain-Mobile-Interface
+
+second person in the vehicle also kept a check on any undesirable events. In such a situation, the experiment
+was aborted and started again.
+
+3
+
+Stimuli-Response Identification
+
+The challenge in this experiment was whether we could localize the identification of response to distracted stimuli
+using a few scalp locations. The data collected from 14 electrodes added many parameters and constraints for
+carrying out effective real-time analysis on the recorded brain signals. Also, the subjects preferred to wear an
+EEG cap with less number of electrodes. So, the initial phase of the experiment involved reducing the electrode
+positions to study the EEG responses to stimuli with a 14 electrode headset. We performed three analysis
+- time domain, frequency domain and independent component analysis to discover the electrodes
+capable of detecting distraction with reasonable accuracy.
+
+3.1
+
+Time Domain Analysis
+
+A base trial (undistracted activity) was recorded before each distracted driving task trial using 14 electrodes.
+This collection generated a large number of data readings. Therefore, for illustration purpose, we plot the
+brain activity of only one trial of two activity types for a subject. Figs. 5 and 6 show the brain activity
+during normal driving and sending a text message while driving. O1, O2, FC5 and FC6 electrodes showed
+a rhythmic pattern of occurrence of high and low frequency in the EEG signals of text activity compared to
+the baseline signals (statistical tests detailed in Results and Discussion section). Shweizer et al. fMRI study
+suggested that brain activation shifted dramatically from the posterior, visual, and spatial areas to the prefrontal
+cortex during distracted driving [50]. We also observed that channel-4 (FC5) showed sudden bursts of high and
+low frequency in the brain signals compared to other electrodes for various types of distraction events. We
+further investigated to verify if the EEG behavior identified in the FC5 channel correlated to driver’s distracted
+activity. As the recorded video of the driver was synchronized with the EEG data recording, it was easy to
+find a correlation between our observations and the behavior exhibited by the EEG signals. Fig. 7 shows the
+moments of distraction extracted from the video frames of the distracted activity. The time of the extracted
+event shown under each frame explains the corresponding EEG pattern. The text while driving activity showed
+the appearance of rhythmic occurrence of EEG bursts corresponding to the action of typing a text while looking
+at the screen of the phone.
+
+3.2
+
+Time-Frequency Analysis
+
+Similar to the previous experiment with the 14 electrodes headset, EEG signal acquisition, and video recording
+were synchronized while collecting the data. The recording was started a few seconds before the distraction
+activity to verify the base profile. We observed a similar pattern of high and low alternating frequency bursts
+in the time-frequency data obtained from the single electrode band for other tasks such as reading while driving
+(Fig. 8). Likewise, the time-frequency spectrum of other distraction tasks obtained from the single electrode
+also showed similar changes with different signatures in average power during the distraction time span (Fig.
+6
+
+Figure 5: EEG signals from a base profile (undistracted driving) trial of a subject using the 14
+electrodes headset.
+9). The change was spread across the higher frequency bands except the low frequencies between 1−4 Hz.
+EEG signals have inherent characteristics that lower frequency components have higher magnitude compared to
+higher frequency components. No difference observed in the intensity for frequencies above 10 Hz in baseline is
+because the magnitude of lower frequencies have masked the subtle changes in the higher frequency components.
+We observed this behavior in power spectrums of all the subjects. However, again for illustration purposes, the
+spectrum plots show activities from only a single subject. Thus, the power spectrum analysis further strengthened
+our hypothesis of identifying distraction from FC5 location (statistical tests detailed in Results and Discussion
+section).
+
+3.3
+
+Independent Component Analysis
+
+The 2D scalp map for each component of the independent component analysis (ICA) of all 14 channels is shown
+in Fig. 10. Again, ICA was carried out for all the activities, but we discuss the components of one distraction
+type (texting) to facilitate our discussion. The components were calculated for the entire duration of a trial
+[10]. ICA is a popular method to separate linearly mixed sources. However, even when the sources are not truly
+independent, it converges to a maximally independent space of sources separation, which was desired by our
+study. Component 13 accounts for a significant EEG variance observed in the distraction activity of texting.
+Component 4 contributes to the eye movement artifacts in the frontal region. The ICA algorithm has no apriori
+knowledge about the electrode positions for the EEG signals and gives us maximally independent sources of
+cortical synchrony [34, 4]. Fig. 11 shows the topographical distribution of power at the center frequencies
+of the EEG bands (theta-θ, alpha-α, beta-β, gamma-γ) and each colored trace represents power spectrum of
+the texting activity in a channel. We can see the scalp distribution of power at 25 Hz (beta-β) and 34 Hz
+(gamma-γ) of a texting task were concentrated in regions around FC5 and FC6 electrodes. Similarly, the scalp
+map distribution (Fig. 10) of the components shows that IC 13 accounts for a significant variance in the activity
+spectrum. Also, it was evident that IC 13 has the highest contribution to the activity at FC5 electrode at 25
+Hz as shown in Fig. 14. We compared the activity spectra of all components at this electrode and contribution
+of IC 13 to other scalp locations to validate this (only two included here due to space constraints). The activity
+spectrum plots in Figs. 12 and 13 showed a perfect synchronization between the neural activations recorded at
+FC5 electrode and the cortex source identified by Component 13. Hence, it was reasonable to conclude that
+the activity observed in FC5 electrode could be used as a cortical source to identify distractions without any
+significant loss of distraction related information (ignoring the smaller contributions of other cortical sources to
+the power distributions in higher frequency bands such as beta and gamma). This favors the use of the single
+electrode (FC5) compared to that of bulky 14-electrode system.
+7
+
+Figure 6: EEG signals from a texting while driving trial of a subject using the 14 electrodes
+headset. Signals corresponding to the O1, O2, FC5 and FC6 electrode regions exhibit alternating high-low
+frequency patterns in the raw EEG compared to the baseline signals (Fig. 5).
+
+Figure 7: An example of the time frames extracted from the video recording of a texting while
+driving activity. These recordings were used to verify the observed changes in the EEG signals corresponding
+to the distraction events captured in the video frames.
+
+4
+
+Stimuli-Response Quantification
+
+People develop different kinds of driving habits over time. The level of concentration, skill and reaction times
+vary among subjects. EEG signals of each person while driving are different (significant or minute), even if
+they are performing the same activities. Our goal was to study the effects of the various types of distraction
+stimuli on these signals. Therefore, we looked into the problem of classifying the distraction response for each
+8
+
+Figure 8: Time-frequency plot of the FC5 scalp location comparing the baseline (a) and texting
+activity (b) of a subject while driving. The left part of each figure shows power (dB) in the various EEG
+frequencies averaged over time, and the right part shows the detail time-frequency power spectrum. There
+was an overall increase in the total power of the texting activity. Also, the observed rhythmic appearance of
+high-low frequency in time domain EEG signals corresponded to a pattern mainly in the frequency range of 20
+Hz to 40 Hz.
+subject separately through the existing machine learning models. Later, we shall discuss how this information
+can be used to calibrate an application to detect the distraction levels and create an index to measure such
+distractions.
+
+4.1
+
+Quantification
+
+We studied the classification problem of EEG distraction response as a two-class problem and a five-class
+problem. In the two-class problem, the distraction class was the positive class –a grouping of all the distraction
+tasks (read, text, call and snapshot). The other category, the base class was the negative class which represented
+a normal driving pattern of a subject. For the five-class problem, each of the tasks performed while driving
+were considered a separate category –base, text, read, call, and snapshot and we performed multi-class machine
+learning assessment. Since each task recording was nearly 60 seconds, we split the baseline and distraction tasks
+to form multiple trials of three to five seconds. This sub-sampling of the tasks was done to increase the instances
+and have a balanced dataset for classification. Also, it was difficult to precisely perform a distraction activity
+for three to five seconds. Hence, the same distraction activity was carried out for a longer time and repeated
+in multiple sessions to reliably capture distraction signatures. Secondly, the variations in brain dynamics were
+better captured in smaller intervals than using the whole reading as a single event.
+Additionally, we compare the performance of distraction classification between 14 channels and one channel
+(FC5) for the pilot study subjects. Table 1 shows the details of the complete dataset with the number of trials
+for each task. Subjects 1 and 2 performed the distraction maneuvers using 14 electrodes headset. Subject 15’s
+data was recorded on the mobile phone to test the real-time application for distraction detection. Therefore, we
+label the data obtained from either the Brain-Computer-Interface (BCI) or the Brain-Mobile-Interface (BMI).
+
+4.2
+
+Feature Extraction
+
+The feature extraction process was the same for the data obtained from both the 14 electrodes and single
+electrode headsets. We used two approaches for feature extraction.
+• Fast Fourier Transform (FFT): First, the raw time domain data was converted to frequency-time spectrums. Then, the window size was increased to the whole EEG reading duration of a trial, so that it will
+eliminate the time axis of the plots and only produce the frequency spectrum. Thus, the time window for
+the FFT was the total EEG recording duration of a trial. The attributes consisted of 5 bands, namely
+Delta (1-4 Hz), Theta (4-8 Hz), Alpha (8-12 Hz), Beta (12-30 Hz) and Gamma (31-40 Hz). The power
+values in each window were averaged to produce the feature value. Hence, for 14 channels there were
+9
+
+Figure 9: Time-frequency representation of the distraction activities (read, text, call, snapshot)
+from one driving session of a subject recorded using the single electrode headband at FC5 location.
+All the distracted driving maneuvers exhibited an increase in the total EEG power spectrum compared to
+baseline (undistracted driving).
+14 × 5 = 70 values in the final feature vector for each EEG reading. Similarly, for the single electrode we
+had five values in the feature vector of a trial (Fig. 15).
+• Discrete Wavelet Transform (DWT): We used the Daubechies family (db8) as the mother wavelet for the
+transform. It’s irregular shape and compact nature help in analyzing signals with discontinuities and sharp
+changes such as EEG signals. Instead of using all the coefficients at each decomposition level, we extracted
+the information from the wavelet coefficients only at the levels corresponding to the five frequency bands
+mentioned in FFT feature extraction (Fig. 15). The mean of the absolute values of the coefficients and
+their average power in these levels were used as features. Thus, the DWT feature vector was composed of
+10 features for an electrode.
+Once the feature vectors were extracted from an each EEG reading, they were organized into an ARFF
+(Attribute-Relation File Format) file format for Weka [19] tool to process various machine learning models.
+10
+
+Figure 10: 2D scalp map projection for all the independent components. These components were
+obtained from the independent component analysis (ICA) of the 14 channels EEG data for a texting trial of a
+subject. ICA helped to unmix the multi-channel EEG data into a sum of linearly independent, spatially fixed
+cortical sources.
+
+Figure 11: The electrode spectra of the 14 channels (colored traces) and associated topographical
+distribution of power at the specified center frequencies of the EEG bands (theta-θ, alpha-α,
+beta-β, gamma-γ).
+
+5
+5.1
+
+Results and Discussion
+Classification
+
+The classification of EEG distraction response was performed using supervised learning models. We include the
+Brain-Computer-Interface (BCI) and Brain-Mobile-Interface (BMI) to compare the classification performance
+using both the interfaces. We used the standard probabilistic and neural network classifiers - Bayesian Network
+and Multilayer Perceptron as the machine learning methods because of their extensive use in EEG analysis
+[3, 44, 33, 51]. K-fold cross validation was conducted for each classifier. The training set was randomly divided
+11
+
+Figure 12: Activity power spectrum and the scalp map projection of component 13 for a texting
+trial of a subject (same trial as in Fig. 10). This dipole-like scalp map distribution of component 13 has
+a beta band peak near 25 Hz and accounts for a significant EEG variance observed in the distraction activity
+of the texting trial.
+
+FC5
+
+Figure 13: Activity power spectrum of FC5 channel for the same texting trial of a subject as in
+Fig. 12. The power spectrum showed a perfect synchronization between the neural activations recorded at
+FC5 electrode and the cortex source identified by component 13 with a similar beta band peak near 25 Hz.
+into K disjoint sets of equal size, K-1 folds used for training and the remaining one for testing with each time
+a different set held out as the test set. The overall performance was analyzed by using various indexes such as
+accuracy, precision, recall, F-score, and AUC (area under curve). F-score is a measure that combines precision
+and recall, and is computed as the harmonic mean of them.
+Tables 2 and 3 show the distraction performance of the classifiers for the two-class (base, distract) and
+five-class (base, read, text, call, camera) problem respectively for each subject. Similarly, we analyzed the
+complete dataset consisting of all the subjects together to study the two-class and the five-class problem (Table
+4). The performance measures were weak compared to the subjective classification of distraction because of
+the difference in the EEG response among the subjects while performing similar tasks. Five-class classification
+measures were worse than the two-class problem. The normalized confusion matrices of the five-class problem
+12
+
+Figure 14: Contributions of the five largest independent components as a percentage of the total
+power at FC5 electrode at frequency 25 Hz for the texting trial (same trial as Figure 12) of a
+subject. Component 13 accounted for the maximum variance compared to other independent components with
+more than 87% of the power at the FC5 electrode.
+were compared among different subjects (Fig. 16 shows for two subjects). It clearly reflects the variation in
+the classification of the same distraction activities for the subjects. Hence, a real-time distraction detection
+application requires calibration for each driver, as discussed in the section below.
+
+5.2
+
+Distraction Index
+
+We can observe the differences in the active regions of the frequency bands for various distraction activities.
+However, it’s difficult to quantify these distractions from raw EEG signals, time-frequency plots or even machine
+learning models, especially for real-time alerts. Therefore, we developed an index of distraction using the signal
+power in various frequency bands of EEG as follows;
+DistractionIndex(DI) = θ/α + α/β + β/γ
+where θ is the average EEG power between 4-8 Hz, α - between 8-12 Hz, β - between 12-30 Hz, and γ - between
+31-40 Hz.
+The reasons to include these EEG frequency bands was to capture their varying contribution in distraction.
+The ratios were important because the common noise in all the bands such as muscle artifacts will be mitigated.
+Table 2: Classification performance of the two class distraction problem for each subject measured with Bayesian
+Networks and Multilayer Perceptron using k-fold cross validation. The true class consisted of the distraction
+events, and the other class was the base driving (undistracted) activity.
+Subject
+1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+
+Electrodes
+14
+one
+14
+one
+one
+one
+one
+one
+one
+one
+one
+one
+one
+one
+one
+one
+
+Interface
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BMI
+
+Classifier
+Bayesian Network
+Bayesian Network
+Multilayer Perceptron
+Bayesian Network
+Multilayer Perceptron
+Multilayer Perceptron
+Multilayer Perceptron
+Multilayer Perceptron
+Bayesian Network
+Multilayer Perceptron
+Bayesian Network
+Multilayer Perceptron
+Bayesian Network
+Bayesian Network
+Multilayer Perceptron
+Multilayer Perceptron
+
+Precision
+0.962
+0.917
+0.96
+0.955
+0.951
+1
+0.907
+0.929
+1
+0.946
+0.904
+0.944
+0.9
+0.889
+0.864
+0.87
+
+Recall
+0.958
+0.917
+0.957
+0.95
+0.947
+1
+0.889
+0.92
+1
+0.938
+0.882
+0.938
+0.875
+0.84
+0.813
+0.868
+
+Accuracy %
+95.83
+91.66
+95.65
+95
+94.73
+100
+88.88
+92
+100
+93.75
+88.23
+93.75
+87.5
+84
+81.25
+86.84
+
+F-Measure
+0.958
+0.917
+0.956
+0.95
+0.946
+1
+0.886
+0.918
+1
+0.938
+0.88
+0.937
+0.873
+0.843
+0.806
+0.869
+
+AUC
+0.986
+0.847
+1
+0.97
+1
+1
+0.775
+0.923
+1
+0.908
+0.757
+0.898
+0.906
+0.774
+0.695
+0.923
+
+BCI - Brain-Computer-Interface, BMI - Brain-Mobile-Interface, AUC - Area under curve
+13
+
+F1
+F2
+F3
+
+F4
+
+F5
+
+(a) Fast Fourier Transform (FFT) features
+
+EEG signal
+
+s[n]
+
+Low-Pass
+
+2
+
+High-Pass
+
+2
+
+Low-Pass
+
+2
+
+High-Pass
+
+2
+
+Level n
+DWT coefficients
+Level 2
+DWT coefficients
+
+Level 1
+DWT coefficients
+
+(b) Discerete Wavelet Transfrom (DWT) features
+Figure 15: The process of extracting features from the frequency spectrum of EEG to form feature
+vectors used in distraction classification. Fast Fourier Transform (FFT) and Discrete Wavelet Transform
+(DWT) were the two methods used to obtain the relevant features. Using FFT (a), power values in each
+frequency band of the transformed signal were averaged for the feature vector. Using DWT (b), mean of the
+absolute values of the coefficients and average power of the coefficients in each level wavelet band were averaged
+to produce the feature vector.
+
+(a) Subject 4
+
+(b) Subject 15
+
+Figure 16: Normalized confusion matrices of two subjects to depict the performance of the system
+to distinguish between various types of distraction (read, text, call, and snapshot). The normalized
+counts on the diagonal are the true positives for each class and the counts not on the diagonal are the errors
+for each class. The classifier performance for a subject was independent of the other subjects.
+EEG signals have inherent characteristics that lower frequency components have higher magnitude compared to
+higher frequency components. Hence, each term (e.g. θ/α) in the index was specifically a ratio of the adjacent
+band so that no band masks the contribution of another frequency band. The addition of the three ratios
+increases the dynamic range of the index and helps in evaluating the extent of distraction. We also ranked the
+tasks in order of the severity of distraction and compared it to the actual order of distractions rated by the
+subjects (Table 5 and Fig. 17). An average over all the trials was taken to represent the mean Distraction Index
+for each task of a subject. The differences in the levels of distraction were certainly unique to the activity and
+subject.
+14
+
+Table 3: Classification performance of the five class distraction problem for each subject measured with Bayesian
+Networks and Multilayer Perceptron using k-fold cross validation. Each of the tasks performed while driving
+were considered a separate class - base (undistracted), text, read, call, and snapshot.
+Subject
+1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+
+Electrodes
+14
+one
+14
+one
+one
+one
+one
+one
+one
+one
+one
+one
+one
+one
+one
+one
+
+Interface
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BCI
+BMI
+
+Classifier
+Bayesian Network
+Bayesian Network
+Multilayer Perceptron
+Multilayer Perceptron
+Multilayer Perceptron
+Bayesian Network
+Multilayer Perceptron
+Multilayer Perceptron
+Multilayer Perceptron
+Multilayer Perceptron
+Bayesian Network
+Multilayer Perceptron
+Multilayer Perceptron
+Multilayer Perceptron
+Multilayer Perceptron
+Multilayer Perceptron
+
+Precision
+0.961
+0.876
+0.941
+0.857
+0.856
+0.804
+0.728
+0.816
+0.724
+0.835
+0.823
+0.726
+0.71
+0.607
+0.665
+0.79
+
+Recall
+0.947
+0.871
+0.929
+0.848
+0.856
+0.8
+0.728
+0.813
+0.7
+0.768
+0.792
+0.724
+0.672
+0.6
+0.651
+0.789
+
+Accuracy %
+94.73
+87.09
+92.85
+84.8
+85.6
+80
+72.8
+81.33
+70
+76.8
+79.2
+72.4
+67.2
+60
+66
+78.86
+
+F-Measure
+0.946
+0.871
+0.929
+0.847
+0.856
+0.803
+0.727
+0.814
+0.698
+0.777
+0.794
+0.719
+0.676
+0.599
+0.667
+0.789
+
+AUC
+1
+0.993
+0.981
+0.956
+0.966
+0.953
+0.921
+0.95
+0.881
+0.92
+0.935
+0.882
+0.873
+0.837
+0.868
+0.918
+
+BCI - Brain-Computer-Interface, BMI - Brain-Mobile-Interface, AUC - Area under curve
+
+Table 4: Overall classification performance of the two class and the five class distraction problem using the trials
+from all subjects. Baseline (undistracted) driving, and collectively the distracted driving activities constituted
+the two class problem. The various tasks performed while driving - base (undistracted), text, read, call, and
+snapshot separately formed the five class problem.
+Classifier
+Bayesian Network
+Multilayer Perceptron
+
+5.3
+
+Classes
+Two class
+Five class
+Two class
+Five class
+
+Precision
+0.776
+0.502
+0.81
+0.511
+
+Recall
+0.774
+0.509
+0.81
+0.511
+
+Accuracy (%)
+77.37
+50.93
+80.99
+51.06
+
+F-measure
+0.774
+0.498
+0.809
+0.51
+
+AUC
+0.81
+0.816
+0.803
+0.792
+
+Statistical Analysis
+
+Magnitudde of D-Index
+
+Nonparametric test - Wilcoxon matched pairs signed rank test [35] was used to compare between the base and
+distraction activities as we had two paired groups with sample size 15. H 0 (null hypothesis): There was no
+difference in the average EEG power of the subjects in normal (base) driving compared to distracted driving
+scenario. The critical value for this two-sided test with n=15 (sample size) and α=0.05 (level of significance)
+is 25 and the decision rule is to reject H 0 if W ≤ 25 (test statistic) [42]. We obtained p = 6.1035e-05 and
+signed rank (W) = 0. Since W ≤ 25, we can reject the null hypothesis that there was no difference between the
+average power spectrums of the two groups. Table 6 shows the average EEG power in the activity spectrum of
+15 subjects during normal/base driving and various distracted driving scenarios.
+Nonparametric Friedman’s test [35] was used to examine whether performing distraction tasks while driving
+caused any difference in the average EEG power measured at various electrodes (14) for a subject using a
+two-way layout as shown in Table 7.
+H 0 (null hypothesis): There was no difference in the average EEG power measured at the 14 electrodes
+Call
+
+3
+
+Snapshot
+
+Read
+
+Text
+
+2.5
+
+2
+1.5
+1
+0.5
+0
+
+Sub-1
+
+Sub-2
+
+Sub-3
+
+Sub-4
+
+Sub-5
+
+Sub-6
+
+Sub-7
+
+Sub-8
+
+Sub-9 Sub-10 Sub-11 Sub-12 Sub-13 Sub-14 Sub-15
+
+Subject
+
+Figure 17: Distraction Index (D-Index) of various types of distractions (read, text, call, and
+snapshot) for each subject. Features from the time-frequency spectrum were used to rank these distractions.
+The rank was obtained from the value of distraction index given by a summation of power ratios obtained in
+different frequency spectrums of the EEG for an activity (θ/α + α/β + β/γ).
+15
+
+Table 5: Users’ perception of the level of distraction for the various driving tasks compared to the order obtained
+by our distraction index metric (Figure 18).
+Subject
+1
+2
+3
+4
+5
+6
+7
+8
+
+Tasks in descending
+order of distraction
+Snapshot, Text, Read, Call
+Read, Text, Snapshot, Call
+Snapshot, Text, Read, Call
+Text, Snapshot, Read, Call
+Text and Read, Snapshot, Call
+Text, Read, Snapshot, Call
+Read, Text, Snapshot, Call
+Read, Text, Snapshot, Call
+
+Least distraction
+task
+None
+None
+Call
+None
+Call
+None
+Call
+None
+
+Subject
+9
+10
+11
+12
+13
+14
+15
+
+Tasks in descending
+order of distraction
+Snapshot, Text, Read, Call
+Text, Snapshot, Read, Call
+Snapshot, Read, Text, Call
+Snapshot, Read, Text, Call
+Snapshot, Text, Read, Call
+Read, Snapshot, Text, Call
+Snapshot, Read, Text, Call
+
+Least distraction
+task
+Call
+Call
+Call
+Call
+None
+None
+None
+
+Table 6: Average EEG power (µV 2 /Hz) in the activity spectrum of 15 subjects during normal/base driving
+and various distracted driving scenarios.
+Subject
+1
+2
+3
+4
+5
+6
+7
+8
+
+Baseline
+4.322328629
+2.664582
+3.111189679
+2.086580297
+2.336924079
+1.585887914
+1.836878292
+1.083730232
+
+Distraction
+8.106168937
+3.4866521
+7.875135417
+9.029101508
+5.267485052
+4.56627038
+2.757522033
+2.590520998
+
+Subject
+9
+10
+11
+12
+13
+14
+15
+
+Baseline
+4.449198532
+2.604087967
+1.803099442
+2.150271466
+3.682609891
+3.857001751
+3.346612251
+
+Distraction
+5.391230252
+6.304723748
+3.435682585
+8.187098718
+4.267558023
+4.310074392
+6.025901425
+
+for the various distraction distractions performed by a subject with α=0.05 (level of significance). We obtained
+that there was a statistically significant difference in the average EEG power of various electrodes during
+distraction while driving, χ2 (2) = 34.54, p = 0.001.
+To examine where the differences actually occurred, we ran separate post hoc test - Wilcoxon signed-rank
+tests on the three combinations based on our previous observations. We used one-tailed test with n=16 (sample
+size) and α = (0.05/3 = 0.0166) (Bonferroni corrected level of significance). The summary of the test is as
+follows:
+• FC5 to FC6 - Test revealed an increase in the average EEG power at FC5 compared to FC6 (p = 0.0015,
+zval: 2.9733)
+• FC5 to O1 - Test revealed an increase in the average EEG power at FC5 compared to O1 (p = 0.0039,
+zval: 2.6630)
+• FC5 to O2 - Test revealed an increase in the average EEG power at FC5 compared to O2 (p = 0.0070,
+zval: 2.4562)
+
+5.4
+
+Discussion
+
+Previous studies have revealed the effects of distracted driving regarding the attentional resources of one brain
+region being compromised over another. The observations indicated a substantial shift in brain activations from
+posterior (back of head area) to anterior (forehead area) regions, particularly in prefrontal area that is critical
+to driving [57] [13] [24]. In our study through EEG signals, we also observed similar demands on the mental
+processing of different tasks while driving.
+Qualitative analysis of the subjects’ EEG signals using time domain, frequency domain and independent
+component analysis led to FC5 scalp location as the most appropriate identifiable location for determining a
+distraction event (Figs. 7, 8, and 14). The machine learning results were in agreement with our observations
+from the distraction analysis. The mean classification results using one electrode for both the two-class (91.54
+± 5.23)% and five-class problems (76.99 ± 8.63)% were reasonable across all the subjects (Tables 2 and 3).
+The F-measures and ROC areas were reasonably high as well (greater than 0.7). We see that the classification
+accuracy dropped from 95.83% to 91.66% using only the single electrode for the two-class problem in the pilot
+study for subject 1. However, the processing overhead and overall training time was significantly reduced from
+14 electrodes down to one electrode with a small compromise in classification results. On the other hand,
+distinguishing between different kinds of distractions using a single electrode was relatively difficult as reflected
+by the accuracies of the five-class problem for all the subjects (Table 3). There was a significant drop in classifier
+performance for subject one, from 94.73% (14 electrodes) to 87.09% (one electrode). The normalised confusion
+matrix of classification highlights these variations in detecting different types of distractions (Figure 16). For
+instance, the subtle differences in brain activations during a read and text activity while driving for subject 4
+were hard to capture by the feature extraction mechanisms employing a single electrode. Nearly 25% of the
+time classifier misclassified text as a reading activity and vice-versa.
+16
+
+Table 7: Average EEG power (µV 2 /Hz) measured at various electrodes (14) for a subject performing different
+distraction tasks while driving.
+Activity
+Call
+
+Read
+
+Snapshot
+
+Text
+
+Activity
+Call
+
+Read
+
+Snapshot
+
+Text
+
+Trial
+1
+2
+3
+4
+1
+2
+3
+4
+1
+2
+3
+4
+1
+2
+3
+4
+Trial
+1
+2
+3
+4
+1
+2
+3
+4
+1
+2
+3
+4
+1
+2
+3
+4
+
+AF3
+2.4214752
+2.4347413
+2.4279513
+2.5287697
+2.6744332
+2.9250038
+2.635082
+2.6065793
+3.2478967
+2.8223073
+2.6893418
+2.6671553
+2.9869101
+2.5955961
+2.4637313
+2.4745536
+O2
+2.8621693
+2.7133338
+2.6805191
+3.0501297
+2.7799065
+2.8175149
+2.614526
+2.5711627
+3.839448
+3.1243985
+2.4218996
+2.4215443
+2.6944857
+2.4593246
+2.4223473
+2.411974
+
+F7
+2.4981809
+2.4729524
+2.4650245
+2.5791395
+4.0664635
+2.9563489
+3.5064738
+3.4197419
+3.5448542
+4.2352448
+2.9432366
+3.0878718
+4.2868524
+2.7717819
+3.039103
+2.4191566
+P8
+2.5580797
+2.5219572
+2.5085919
+2.8355846
+2.7040005
+2.426374
+2.5878289
+2.4911165
+3.120744
+2.7641568
+2.4387803
+2.4266396
+2.6453888
+2.386148
+2.4383831
+2.4470479
+
+F3
+2.3926721
+2.4361315
+2.4330645
+2.5299034
+2.6502247
+2.8790686
+2.5460846
+2.6382325
+3.9311559
+2.8834374
+2.7538092
+2.7727659
+3.1079965
+2.4941945
+2.547775
+2.4521291
+T8
+2.3760216
+2.4690683
+2.4453657
+2.6063755
+2.6929064
+2.5852654
+2.6682968
+2.5489254
+3.3499269
+2.6531153
+2.4160261
+2.4192357
+2.9356737
+2.4703412
+2.5079806
+2.3850336
+
+FC5
+2.4672167
+2.3754349
+2.4140978
+2.517122
+4.4818392
+3.3520169
+5.0874629
+3.9598022
+4.0561976
+4.7531309
+3.6618721
+3.7537279
+5.8076501
+2.9578588
+3.0722754
+2.3884513
+FC6
+2.4576824
+2.4598217
+2.3933685
+2.5199046
+3.6230438
+2.8593514
+3.1144288
+3.1336505
+3.3758676
+2.9631443
+2.6179724
+2.5572968
+4.284204
+2.6398413
+2.8174579
+2.4338882
+
+T7
+2.4537251
+2.4241006
+2.4705017
+2.4597104
+3.8846357
+3.1556339
+3.5924051
+2.9867475
+3.4324446
+2.7212167
+2.5144477
+2.5740485
+3.3425231
+2.5736146
+2.5503836
+2.4261627
+F4
+2.4028533
+2.4115481
+2.4249372
+2.4523113
+2.6564288
+2.6942704
+2.6079624
+2.518424
+3.3225701
+2.6733487
+2.6229534
+2.5817022
+3.0896397
+2.4761744
+2.4746096
+2.4373732
+
+P7
+2.5601602
+2.6834061
+2.522824
+2.8035517
+2.7514007
+2.7855651
+2.6608219
+2.5310094
+3.5578644
+2.6228042
+2.415884
+2.4142389
+2.6736579
+2.3959432
+2.4926076
+2.430717
+F8
+2.4821734
+2.4615436
+2.4244306
+2.494493
+5.0124846
+3.2400942
+3.3645532
+4.1870437
+3.4972935
+3.0371733
+2.7957058
+2.8330786
+5.5555711
+3.1388083
+3.0528491
+2.373611
+
+O1
+2.8574317
+2.7273037
+2.676507
+3.1059065
+2.7116179
+2.7135143
+2.599179
+2.4755123
+3.6534033
+3.3407328
+2.4211514
+2.3955367
+2.6249413
+2.413789
+2.3438687
+2.3713632
+AF4
+2.4983783
+2.4418302
+2.4233027
+2.5130088
+2.9661417
+2.9929171
+2.7210817
+2.6842604
+3.2727661
+2.7402406
+3.064657
+2.8972125
+3.5289237
+2.6252344
+2.7614758
+2.5013528
+
+The individual differences in classification results have interesting implications. It suggests that the
+brain activations of each subject are different (significant or minute) even when they are carrying out the same
+distraction activity. The machine learning outcomes of training the classifiers with data from all the subjects
+help us to understand this (Table 4). We clearly observed that there was no improvement in mean classification
+results of the two-class problem. The performance of the classifiers was worse even with the increase in the
+training and testing instances for the five-class problem (read, text, call and snapshot). It clearly signifies that
+a general classifier cannot be obtained for the entire population to provide metrics for distracted driving by just
+increasing the amount of training data. Hence, the need for an application that provides individual calibration
+was tested using the data from subject 15, acquired by the brain-mobile-interface (BMI). We achieved 86.84%
+and 78.86% accuracy for the two-class and the five-class problems respectively. Wang et al. [53] showed the
+potential to predict the start of a map viewing distraction event during navigation while driving. Their study
+produced interesting results with nearly 81% accuracy of prediction, however, conducted only in a simulated
+environment with 36 active EEG electrodes and a single distraction task. A combination of our mobile phone
+based detection application coupled with their prediction algorithm could form a robust framework for predicting
+driver intentions a-priori to the distraction events.
+The feature vectors also play a significant role in the overall classification of the distraction events. We
+observed that the DWT features alone gave good classification accuracies for the two-class problem. So, the
+size of feature vector was reduced by deselecting the FFT features. However, we needed more features for the
+five-class problem to improve the classification. Hence, the combined FFT-DWT feature vector was used for
+the classification of various distraction tasks, although, using both DWT and FFT feature vectors will add
+overhead in the application for real-time alerts. In addition to the features selection, standard probabilistic
+and neural network classifiers such as Bayesian Network and Multilayer Perceptron were chosen as the machine
+learning methods because of their application to diverse BCI problems such as motor imagery and mental tasks
+[3, 44, 33, 51]. Through our analysis, we also observed that these two classifiers performed better in classifying
+distraction and it’s types. The overall performance of these classifiers varied among the subjects. Comparing
+all the measures - recall, precision, accuracy, F-measure and ROC area, we observed that Multilayer Perceptron
+achieved better classification results for many subjects in our dataset, even though Bayesian Networks offered
+a computationally efficient approach. Therefore, classifier selection also showed a dependence on the individual
+differences in the synchronous brain activations of the drivers’.
+Our findings suggest that quantifying drivers’ distraction responses and generating real-time
+alerts is possible through a single electrode placed at FC5 location. The system offers a comfortable,
+wearable EEG option without compromising mobility, and usability. A limitation of this study is the assumption
+that the tasks while driving (read, text, call and snapshot) were the only source of distraction in a given frame
+of time. Our replication of the on-road driving incorporates many other complexities that are not addressed
+by simulated driving such as anxiety and attention that are absent in a virtual environment as there are no
+17
+
+real consequences of distraction tasks. Another limitation is that we did not test the cognitive abilities of the
+subjects before the data collection. The subjects confirmed that they had no known neurological disorders
+before participating in the study. Also, our current study did not involve younger (<24 yrs) and older drivers
+(>55 yrs), that may be an interesting comparison for further study.
+The Brain Mobile Application Interface describes the prototype of the driver alert system that can communicate with the EEG headset, retrieve data, and perform the necessary signal processing to generate safe
+feedbacks to the distracted driver in real-time. In the following section we discuss the prototype of the driver
+alert system to achieve this goal.
+
+6
+
+Brain Mobile Application Interface
+
+We intended to use mobile computing resources to extract useful cognitive information from the brain signals
+to determine the real-time distraction level of a driver. Therefore, we developed a reliable interface between the
+brain sensor and the mobile phone. It provides ease of mobility for recording and processing the data in any
+driving environment. An Android API was used to display the raw EEG data and power in various frequency
+bands simultaneously while the data was being collected. We performed onboard processing in the phone to
+analyze, and compare these power levels in various EEG frequency bands. The expected primary results were
+displayed using the existing API; otherwise the rest of the data was stored in the phone memory or sent to a
+cloud [6]. The cloud analysis of this mobile data can be advantageous to not only to the current driver but also
+the other vehicles/drivers for vehicle to vehicle (V2V) communication network in future.
+
+6.1
+
+Design
+
+The brainwaves were captured via a single EEG sensor [37]. The formula for converting raw EEG values to
+voltage is given by equation below [39];
+ScalpV oltage =
+
+Rawvalue × (inputvoltage)
+4096
+2000
+
+(1)
+
+where the input voltage is 1.8v, 2000x is the gain, and 4096 is the value range.
+
+Figure 18: The architecture of the Brain Mobile system used to obtain and process EEG data on
+the smartphone using an Android application interface.
+Bluetooth protocol was used to establish the communication to the headband (Fig. 18). An Android API
+was used to retrieve the EEG data on the smartphone [38]. The messages exchanged between the integrated chip
+in the headband, and API were parsed to obtain the necessary data on the phone. All the data was obtained at
+a frequency of 1 Hz except the raw data that was sampled at 512 Hz. Fig. 19 shows our Android API, which
+retrieves the raw EEG data and the power plots of different frequency bands.
+Our Brain Mobile Interface API implements a real-time capturing of EEG signals on the phone without any
+delay. The system consists of two modes: (1) Recording mode and (2) Replay mode. In the recording mode,
+the application shows the contact strength of the headband at the top to indicate a user the signal quality - a
+complete status bar for full strength. User records the EEG data via a toggle button on the screen. All the
+calculated EEG parameters are made available to the user on the go. In the replay mode, the saved files in the
+phone memory can be retrieved for display and further analysis off the phone for driver behavior metrics (Fig.
+20).
+
+18
+
+Figure 19: An example screen from the Android application interface. The application displays
+connection strength with the headband (top), the raw EEG signals, and power values of each frequency band
+(bottom). A voice prompt alerts the user when the peak detection algorithm detects a distraction event.
+
+6.2
+
+Mobile EEG Data Processing
+
+Distraction occurs in a high-low frequency pattern as observed in the power spectrums of the data from the
+subjects. Hence, a peak detection algorithm is useful at the start of a distraction event. Our detection algorithm
+was tailored to various customized thresholds for a subject and tested during the replay mode of the API (Fig.
+21). The alerts were in the form voice prompts to the user if the power in frequency bands or a combination of
+frequency bands passed the customized threshold level. The instantaneous value of the Distraction Index was
+used to differentiate the extent of distraction.
+
+7
+
+Conclusions and Future Work
+
+In sum, we have shown that using a single dry sensor in the frontal region of the scalp (FC5) is sufficient to
+detect driver distraction using an individuals’ EEG signals in a mobile environment. We tested our mobile
+application interface for detecting distraction events using peaks in the higher frequency bands of EEG data.
+Our real-time detection and feedback can help to bring about the cultural change needed in distraction driving
+intuitively and create safer driving scenarios. The scientific understanding of distracted driving is necessary to
+guide policies and support laws to answer critical questions for investment in next car technologies.
+More work is in progress to develop an active real-time application guide to assist drivers in situations of
+active or passive distraction using their EEG signals via smart phones, including the combination of atomic
+events detection such as swipe, tap and pinch. In future, we plan to investigate the behavioral change of the
+drivers while interacting with our application. We are also working on identifying other driver behaviors such
+as taking turns, lane changes, sudden acceleration, braking time and reaction time using the brain signals. This
+multi-paradigm integration into a single mobile application will lead to predicting drivers’ behavior based on
+their current state. It would be a substantial improvement in ensuring the health and safety of the drivers
+and other drivers who are becoming a part of the vehicle-to-vehicle communication network. The classification
+performance can be further improved using statistical feature selection algorithms. Classifier fusion methods
+[15] can also be used to extract EEG feature vectors that can further improve the detection capability of a
+distraction activity.
+
+8
+
+Acknowledgements
+
+This work is partially supported by the National Science Foundation under grants CNS-0751205, and CNS1229700. We thank Dr. Jason M. Pittman for proof-reading and providing constructive criticism of the
+manuscript.
+19
+
+Figure 20: An example screen from the Android application interface in the replay mode. The
+replay mode is used to calibrate and test the peak detection algorithm for each subject separately to minimize
+false alerts.
+
+Online
+Analysis
+
+Connecting the EEG
+device using Bluetooth
+
+Recording
+enabled?
+
+False
+
+Replay
+enabled?
+
+False
+
+True
+
+True
+
+Parse the data
+(In the AP)
+
+Parse the data
+(In the AP)
+
+Smoothing
+
+Smoothing
+
+Calibration (for threshold)
+
+Peak detection (threshold based)
+
+Compute
+distraction Index
+
+Test alerts
+Update
+
+Generate alerts
+to the user
+
+False
+
+Offline
+Analysis
+
+Disconnected
+
+Compare results
+
+Video analysis
+(offline)
+
+Saving
+enabled?
+
+Time, frequency and
+independent
+component analysis
+(offline)
+
+True
+
+Save to default
+
+Figure 21: Flowchart representing functionality of the system.
+
+20
+
+References
+[1] National Highway Traffic Safety Administration et al. Visual-manual nhtsa driver distraction guidelines for
+in-vehicle electronic devices. Washington, DC: National Highway Traffic Safety Administration (NHTSA),
+Department of Transportation (DOT), 2012.
+[2] Hossam Almahasneh, Weng-Tink Chooi, Nidal Kamel, and Aamir Saeed Malik. Deep in thought while
+driving: An eeg study on drivers cognitive distraction. Transportation research part F: traffic psychology
+and behaviour, 26:218–226, 2014.
+[3] Charles W Anderson and Zlatko Sijercic. Classification of eeg signals from four subjects during five mental
+tasks. In Solving engineering problems with neural networks: proceedings of the conference on engineering
+applications in neural networks (EANN96), pages 407–414. Turkey, 1996.
+[4] Jörn Anemüller, Terrence J Sejnowski, and Scott Makeig. Complex independent component analysis of
+frequency-domain electroencephalographic data. Neural Networks, 16(9):1311–1323, 2003.
+[5] Garima Bajwa and Ram Dantu. Neurokey: Towards a new paradigm of cancelable biometrics-based key
+generation using electroencephalograms. computers & security, 62:95–113, 2016.
+[6] Garima Bajwa, Ram Dantu, and R Joseph. Self-tracking via brain-mobile-cloud interface. AAAI Spring
+Symposium Series, 2013.
+[7] Jeff K Caird, Katherine A Johnston, Chelsea R Willness, and Mark Asbridge. The use of meta-analysis or
+research synthesis to combine driving simulation or naturalistic study results on driver distraction. Journal
+of safety research, 49:91–e1, 2014.
+[8] Andrew Campbell, Tanzeem Choudhury, Shaohan Hu, Hong Lu, Matthew K Mukerjee, Mashfiqui Rabbi,
+and Rajeev DS Raizada. Neurophone: brain-mobile phone interface using a wireless eeg headset. In
+Proceedings of the second ACM SIGCOMM workshop on Networking, systems, and applications on mobile
+handhelds, pages 3–8. ACM, 2010.
+[9] Cher Carney, Karisa K Harland, and Daniel V McGehee. Examining teen driver crashes and the prevalence
+of distraction: Recent trends, 2007–2015. Journal of safety research, 64:21–27, 2018.
+[10] Arnaud Delorme and Scott Makeig. Eeglab: an open source toolbox for analysis of single-trial eeg dynamics
+including independent component analysis. Journal of neuroscience methods, 134(1):9–21, 2004.
+[11] Rohan Dixit. Meditation training and neurofeedback using a personal eeg device. AAAI Spring Symposium
+Series, 2012.
+[12] Yanchao Dong, Zhencheng Hu, Keiichi Uchimura, and Nobuki Murayama. Driver inattention monitoring system for intelligent vehicles: A review. Intelligent Transportation Systems, IEEE Transactions on,
+12(2):596–614, 2011.
+[13] Paul E Dux, Jason Ivanoff, Christopher L Asplund, and René Marois. Isolation of a central bottleneck of
+information processing with time-resolved fmri. Neuron, 52(6):1109–1120, 2006.
+[14] Emotiv. Available: http://www.emotiv.com/, 2017.
+[15] Maryam Esmaeili. Classifiers fusion for eeg signals processing in human-computer interface systems. In
+Proceedings of the 22nd national conference on Artificial intelligence-Volume 2, pages 1856–1857. AAAI
+Press, 2007.
+[16] Xin-An Fan, Lu-Zheng Bi, and Zhi-Long Chen. Using eeg to detect drivers emotion with bayesian networks.
+In Machine Learning and Cybernetics (ICMLC), 2010 International Conference on, volume 3, pages 1177
+–1181, july 2010.
+[17] A. Faro, D. Giordano, and C. Spampinato. A multi-facets analysis of the driver status by eeg and fuzzy
+hardware processing. In Engineering in Medicine and Biology Society, 2006. EMBS 2006. 28th Annual
+International Conference of the IEEE, pages 6095 –6100, 30 2006-sept. 3 2006.
+[18] GHSA. Distracted driving: What research shows and what states can do. Governors Highway Safety
+Association (GHSA), Jan 2011.
+[19] Mark Hall, Eibe Frank, Geoffrey Holmes, Bernhard Pfahringer, Peter Reutemann, and Ian H. Witten. The
+weka data mining software: An update. SIGKDD Explor. Newsl., 11(1):10–18, November 2009.
+21
+
+[20] Shihui Han, Yi Jiang, Glyn W Humphreys, Tiangang Zhou, and Peng Cai. Distinct neural substrates for
+the perception of real and virtual visual worlds. NeuroImage, 24(3):928–935, 2005.
+[21] Liang Jingkun, Xu Guizhi, Ge Jianrong, Zhu Feng, and Feng Xiuyan. Analysis of virtual simulation
+environment for driving behavior based on imaging movements. In Networking and Digital Society (ICNDS),
+2010 2nd International Conference on, volume 1, pages 246 –248, may 2010.
+[22] Sheila G Klauer, Thomas A Dingus, Vicki L Neale, Jeremy D Sudweeks, David J Ramsey, et al. The
+impact of driver inattention on near-crash/crash risk: An analysis using the 100-car naturalistic driving
+study data. NHTSA, 2006.
+[23] D. Kochhar, J. Auflick, J. Hogsett, L. Angell, L. Tijerina, P. A. Austria, S. Kiger, T. Diptiman, and
+W. Biever. Driver workload metrics project, task 2 final report. Final Research Report for National
+Highway Traffic Safety Administration (NHTSA), 2001-2005.
+[24] A Kramer and R Parasuraman. Neuroergonomics–application of neuroscience to human factors. Handbook
+of psychophysiology, 2:704–722, 2007.
+[25] Saroj KL Lal, Ashley Craig, Peter Boord, Les Kirkup, and Hung Nguyen. Development of an algorithm
+for an eeg-based driver fatigue countermeasure. Journal of Safety Research, 34(3):321–328, 2003.
+[26] N. Learner and S. Boyd. On-road study of willingness to engage in distracting tasks. Interim (Task2)
+Report for Highway Traffic Safety Administration (NHTSA), Aug. 2004.
+[27] S. Lei, S. Welke, and M. Roetting. Drivers mental workload assessment using eeg data in a dual task
+paradigm. Proceedings Of The 21st (Esv) International Technical Conference On The Enhanced Safety Of
+Vehicles, National highway traffic safety administration, 2009.
+[28] C-T Lin, L-W Ko, M-H Chang, J-R Duann, J-Y Chen, T-P Su, and T-P Jung. Review of wireless
+and wearable electroencephalogram systems and brain-computer interfaces–a mini-review. Gerontology,
+56(1):112–119, 2009.
+[29] Chin-Teng Lin, Shi-An Chen, Tien-Ting Chiu, Hong-Zhang Lin, Li-Wei Ko, et al. Spatial and temporal
+eeg dynamics of dual-task driving performance. Journal of neuroengineering and rehabilitation, 8(1):11–23,
+2011.
+[30] Chin-Teng Lin, Shi-An Chen, Li-Wei Ko, and Yu-Kai Wang. Eeg-based brain dynamics of driving distraction. In Neural Networks (IJCNN), The 2011 International Joint Conference on, pages 1497 –1500, 31
+2011-aug. 5 2011.
+[31] Chin-Teng Lin, Sheng-Fu Liang, Yu-Chieh Chen, Yung-Chi Hsu, and Li-Wei Ko. Driver’s drowsiness
+estimation by combining eeg signal analysis and ica-based fuzzy neural networks. In Circuits and Systems,
+2006. ISCAS 2006. Proceedings. 2006 IEEE International Symposium on, pages 4 pp. –2128, may 2006.
+[32] Chin-Teng Lin, Ruei-Cheng Wu, Tzyy-Ping Jung, Sheng-Fu Liang, and Teng-Yi Huang. Estimating driving
+performance based on eeg spectrum analysis. EURASIP Journal on Applied Signal Processing, 2005:3165–
+3174, 2005.
+[33] Fabien Lotte, Marco Congedo, Anatole Lécuyer, Fabrice Lamarche, and Bruno Arnaldi. A review of
+classification algorithms for eeg-based brain–computer interfaces. Journal of neural engineering, 4(2):R1,
+2007.
+[34] Scott Makeig, Anthony J Bell, Tzyy-Ping Jung, Terrence J Sejnowski, et al. Independent component
+analysis of electroencephalographic data. Advances in neural information processing systems, pages 145–
+151, 1996.
+[35] Marius Marusteri and Vladimir Bacarea. Comparing groups for statistical differences: How to choose the
+right statistical test? Biochemia medica, 20(1):15–32, 2010.
+[36] Christian Mühl, Brendan Allison, Anton Nijholt, and Guillaume Chanel. A survey of affective brain
+computer interfaces: principles, state-of-the-art, and challenges. Brain-Computer Interfaces, 1(2):66–84,
+2014.
+[37] Neurosky. Available: http://www.neurosky.com/, 2017.
+[38] NeuroskyDeveloper. Available: http://store.neurosky.com/collections/developer-tools-3, 2016.
+22
+
+[39] NeuroskyTools.
+voltage, 2016.
+
+Available:
+
+http://support.neurosky.com/kb/technology/how-to-convert-raw-values-to-
+
+[40] NHTSA. New guidance lists unsafe driver distractions :. Occupational Health and Safety (OHS), Feb 2012.
+
+[41] NHTSA. Traffic safety facts: Research note, available: https://crashstats.nhtsa.dot.gov/api/public/viewpublication/8125
+National Highway Traffic Safety Administration (NHTSA), Apr 2018.
+[42] Critical Values of the Wilcoxon Signed Ranks Test.
+ner/tables/wilcox signrank.pdf, 2016.
+
+Available:
+
+http://www.stat.ufl.edu/ win-
+
+[43] Robert Oostenveld and Peter Praamstra. The five percent electrode system for high-resolution eeg and erp
+measurements. Clinical neurophysiology, 112(4):713–719, 2001.
+[44] Ramaswamy Palaniappan. Brain computer interface design using band powers extracted during mental
+tasks. In Neural Engineering, 2005. Conference Proceedings. 2nd International IEEE EMBS Conference
+on, pages 321–324. IEEE, 2005.
+[45] A. Pauzie. A method to assess the driver mental workload: The driving activity load index (dali). Intelligent
+Transport Systems, IET, 2(4):315 –322, december 2008.
+[46] Daniela Perani, Ferruccio Fazio, Nunzio Alberto Borghese, Marco Tettamanti, Stefano Ferrari, Jean Decety,
+and Maria C Gilardi. Different brain correlates for watching real and virtual hand actions. Neuroimage,
+14(3):749–758, 2001.
+[47] T.A. Ranney, E. Mazzae, R. Garrot, and M.J. Goodman. Nhtsa driver distraction research: Past, present
+and future. 17th International Technical Conference on the Enhances Safety of Vehicles, 2001.
+[48] Pascal Ravassard, Ashley Kees, Bernard Willers, David Ho, Daniel Aharoni, Jesse Cushman, Zahra M
+Aghajan, and Mayank R Mehta. Multisensory control of hippocampal spatiotemporal selectivity. Science,
+340(6138):1342–1346, 2013.
+[49] Mark A Schier. Changes in eeg alpha power during simulated driving: a demonstration. International
+Journal of Psychophysiology, 37(2):155–162, 2000.
+[50] Tom A Schweizer, Karen Kan, Yuwen Hung, Fred Tam, Gary Naglie, and Simon J Graham. Brain activity
+during driving with distraction: an immersive fmri study. Frontiers in human neuroscience, 7, 2013.
+[51] S Solhjoo and MH Moradi. Mental task recognition: A comparison between some of classification methods.
+In BIOSIGNAL 2004 International EURASIP Conference, pages 24–26, 2004.
+[52] J J Vidal. Toward direct brain-computer communication. Annual Review of Biophysics and Bioengineering,
+2(1):157–180, 1973. PMID: 4583653.
+[53] Shouyi Wang, Yiqi Zhang, Changxu Wu, Felix Darvas, and Wanpracha Art Chaovalitwongse. Online
+prediction of driver distraction based on brain activity patterns. Intelligent Transportation Systems, IEEE
+Transactions on, 16(1):136–150, 2015.
+[54] YK Wang, TP Jung, and CT Lin. Eeg-based attention tracking during distracted driving. IEEE transactions on neural systems and rehabilitation engineering: a publication of the IEEE Engineering in Medicine
+and Biology Society, 2015.
+[55] Yu-Kai Wang, Shi-An Chen, and Chin-Teng Lin. An eeg-based brain–computer interface for dual task
+driving detection. Neurocomputing, 129:85–93, 2014.
+[56] Yu-Te Wang, Yijun Wang, and Tzyy-Ping Jung. A cell-phone-based brain–computer interface for communication in daily life. Journal of neural engineering, 8(2):025018, 2011.
+[57] Christopher D Wickens. Multiple resources and mental workload. Human Factors: The Journal of the
+Human Factors and Ergonomics Society, 50(3):449–455, 2008.
+[58] Jonathan R Wolpaw, Niels Birbaumer, Dennis J McFarland, Gert Pfurtscheller, and Theresa M Vaughan.
+Brain–computer interfaces for communication and control. Clinical neurophysiology, 113(6):767–791, 2002.
+
+23
+
+
